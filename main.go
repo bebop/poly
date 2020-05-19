@@ -26,6 +26,7 @@ type Meta struct {
 	Version         string
 	Keywords        string
 	Organism        string
+	Source          string
 	Origin          string
 	Locus           Locus
 	References      []Reference
@@ -231,24 +232,20 @@ func parseGbk(path string) {
 		case "LOCUS":
 			meta.Locus = parseLocus(line)
 		case "DEFINITION":
-			baseDefinition := strings.Join(splitLine[1:], " ")
-			sublines := lines[numLine+1:]
-			for _, subLine := range sublines {
-				if string(subLine[0]) == " " {
-					baseDefinition = strings.TrimSpace(strings.TrimSpace(baseDefinition) + " " + strings.TrimSpace(subLine))
-				} else {
-					break
-				}
-			}
-			meta.Definition = baseDefinition
+			subLines := lines[numLine+1:]
+			meta.Definition = joinSubLines(splitLine, subLines)
 		case "ACCESSION":
-			meta.Accession = strings.Join(splitLine[1:], " ")
+			subLines := lines[numLine+1:]
+			meta.Accession = joinSubLines(splitLine, subLines)
 		case "VERSION":
-			meta.Version = strings.Join(splitLine[1:], " ")
+			subLines := lines[numLine+1:]
+			meta.Version = joinSubLines(splitLine, subLines)
 		case "KEYWORDS":
-			meta.Keywords = strings.Join(splitLine[1:], " ")
+			subLines := lines[numLine+1:]
+			meta.Keywords = joinSubLines(splitLine, subLines)
 		case "SOURCE":
-			continue
+			subLines := lines[numLine+1:]
+			meta.Source, meta.Organism = getSourceOrganism(splitLine, subLines)
 		case "REFERENCE":
 			continue
 		case "FEATURES":
