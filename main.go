@@ -2,35 +2,13 @@ package main
 
 import (
 	"bufio"
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 )
-
-var genbankDivisions = []string{
-	"PRI", //primate sequences
-	"ROD", //rodent sequences
-	"MAM", //other mamallian sequences
-	"VRT", //other vertebrate sequences
-	"INV", //invertebrate sequences
-	"PLN", //plant, fungal, and algal sequences
-	"BCT", //bacterial sequences
-	"VRL", //viral sequences
-	"PHG", //bacteriophage sequences
-	"SYN", //synthetic sequences
-	"UNA", //unannotated sequences
-	"EST", //EST sequences (expressed sequence tags)
-	"PAT", //patent sequences
-	"STS", //STS sequences (sequence tagged sites)
-	"GSS", //GSS sequences (genome survey sequences)
-	"HTG", //HTG sequences (high-throughput genomic sequences)
-	"HTC", //unfinished high-throughput cDNA sequencing
-	"ENV", //environmental sampling sequences
-}
 
 type Meta struct {
 	// shared
@@ -101,67 +79,6 @@ type AnnotatedSequence struct {
 	Meta     Meta
 	Features []Feature
 	Sequence Sequence
-}
-
-func parseGff(path string) AnnotatedSequence {
-	file, _ := ioutil.ReadFile(path)
-	splitFile := strings.Split(string(file), "\n")
-	metaString := splitFile[0:2]
-	versionString := metaString[0]
-	regionStringArray := strings.Split(metaString[1], " ")
-
-	meta := Meta{}
-	meta.GffVersion = strings.Split(versionString, " ")[1]
-	meta.Name = regionStringArray[1] // Formally region name, but changed to name here for generality/interoperability.
-	meta.RegionStart, _ = strconv.Atoi(regionStringArray[2])
-	meta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
-	meta.Size = meta.RegionEnd - meta.RegionStart
-
-	records := []Feature{}
-	sequence := Sequence{}
-	var sequenceBuffer bytes.Buffer
-	fastaFlag := false
-	for _, line := range splitFile {
-		if line == "##FASTA" {
-			fastaFlag = true
-		} else if len(line) == 0 {
-			continue
-		} else if line[0:2] == "##" {
-			continue
-		} else if fastaFlag == true && line[0:1] != ">" {
-			// sequence.Sequence = sequence.Sequence + line
-			sequenceBuffer.WriteString(line)
-		} else if fastaFlag == true && line[0:1] == ">" {
-			sequence.Description = line
-		} else {
-			record := Feature{}
-			fields := strings.Split(line, "\t")
-			record.Name = fields[0]
-			record.Source = fields[1]
-			record.Type = fields[2]
-			record.Start, _ = strconv.Atoi(fields[3])
-			record.End, _ = strconv.Atoi(fields[4])
-			record.Score, _ = strconv.ParseFloat(fields[5], 64)
-			record.Strand = fields[6][0]
-			record.Phase, _ = strconv.Atoi(fields[7])
-			record.Attributes = make(map[string]string)
-			attributes := fields[8]
-			var eqIndex int
-			for i := strings.Index(attributes, ";"); i > 0; i = strings.Index(attributes, ";") {
-				eqIndex = strings.Index(attributes[:i], "=")
-				record.Attributes[attributes[:i][:eqIndex]] = attributes[:i][eqIndex+1:]
-				attributes = attributes[i+1:]
-			}
-			records = append(records, record)
-		}
-	}
-	sequence.Sequence = sequenceBuffer.String()
-	annotatedSequence := AnnotatedSequence{}
-	annotatedSequence.Meta = meta
-	annotatedSequence.Features = records
-	annotatedSequence.Sequence = sequence
-
-	return annotatedSequence
 }
 
 // getReference loops through to get all references within genbank file
@@ -296,7 +213,7 @@ func parseGbk(path string) {
 	// End read of file into buffer
 
 	// Create meta struct
-	// meta := Meta{}
+	meta := Meta{}
 
 	// Create features struct
 	// features := []Feature{}
@@ -304,31 +221,55 @@ func parseGbk(path string) {
 	// Create sequence struct
 	// sequence := Sequence{}
 
-	// Populate Locus
-	//locus parser
-	locus := Locus{}
-
-	locusString := strings.TrimSpace(lines[0])
-	locusSplit := strings.Split(locusString, " ")
-	var filteredLocusSplit []string
-	for i := range locusSplit {
-		if locusSplit[i] != "" {
-			filteredLocusSplit = append(filteredLocusSplit, locusSplit[i])
+	for numLine, line := range lines {
+		// fmt.Print / ln(numLine)
+		splitLine := strings.Split(line, " ")
+		switch splitLine[0] {
+		//case should just be alphanumeric character.
+		case "":
+			continue
+		case "LOCUS":
+			meta.Locus = parseLocus(line)
+		case "DEFINITION":
+			baseDefinition := strings.Join(splitLine[1:], " ")
+			sublines := lines[numLine+1:]
+			for _, subLine := range sublines {
+				if string(subLine[0]) == " " {
+					baseDefinition = strings.TrimSpace(strings.TrimSpace(baseDefinition) + " " + strings.TrimSpace(subLine))
+				} else {
+					break
+				}
+			}
+			meta.Definition = baseDefinition
+		case "ACCESSION":
+			meta.Accession = strings.Join(splitLine[1:], " ")
+		case "VERSION":
+			meta.Version = strings.Join(splitLine[1:], " ")
+		case "KEYWORDS":
+			meta.Keywords = strings.Join(splitLine[1:], " ")
+		case "SOURCE":
+			continue
+		case "REFERENCE":
+			continue
+		case "FEATURES":
+			continue
+		case "ORIGIN":
+			continue
+		default:
+			fmt.Println(numLine)
+			if numLine == 1000000 {
+				continue
+			}
 		}
-	}
-	locus.Name = filteredLocusSplit[1]
-	locus.SequenceLength = strings.Join([]string{filteredLocusSplit[2], filteredLocusSplit[3]}, " ")
-	locus.MoleculeType = filteredLocusSplit[4]
 
-	// locus.Name = strings.TrimSpace(string(lines[0])[12:25])
-	// locus.SequenceLength = strings.TrimSpace(string(lines[0])[36:41])
-	// locus.MoleculeType = strings.TrimSpace(string(lines[0])[41:43])
-	// locus.GenBankDivision = strings.TrimSpace(string(lines[0])[47:51])
-	// locus.ModDate = strings.TrimSpace(string(lines[0])[68:79])
-	fmt.Println(locus)
+	}
+	file, _ := json.MarshalIndent(meta, "", " ")
+
+	_ = ioutil.WriteFile("test.json", file, 0644)
+
+	//definition parsing
 
 	// // Assign locus to meta struct
-	// meta.Locus = locus
 
 	// buf := 0
 
@@ -552,5 +493,6 @@ func parseGbk(path string) {
 func main() {
 
 	// fmt.Println(parseGff("data/ecoli-mg1655.gff"))
-	parseGbk("data/addgene-plasmid-50005-sequence-74677.gbk")
+	// parseGbk("data/addgene-plasmid-50005-sequence-74677.gbk")
+	parseGbk("data/test.gbk")
 }
