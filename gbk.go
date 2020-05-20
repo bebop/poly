@@ -111,16 +111,19 @@ func joinReferenceSubLines(splitLine, subLines []string) string {
 		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
 		headString := featureSplitLine[0]
 		breakFlag := false
+		//breaks if there's a sub level feature.
 		for _, subLevelFeature := range genbankSubLevelFeatures {
 			if headString == subLevelFeature {
 				breakFlag = true
 			}
 		}
+		//breaks if there's a top level feature.
 		for _, topLevelFeature := range genbankTopLevelFeatures {
 			if headString == topLevelFeature {
 				breakFlag = true
 			}
 		}
+		//if there's no need to break append this line to the last and trim.
 		if breakFlag != true {
 			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
 		} else {
