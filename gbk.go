@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -181,3 +184,18 @@ func getReference(splitLine, subLines []string) Reference {
 // func getFeatures(splitLine, subLines []string) []Feature {
 
 // }
+
+func getSequence(subLines []string) Sequence {
+	sequence := Sequence{}
+	var sequenceBuffer bytes.Buffer
+	reg, err := regexp.Compile("[^a-zA-Z]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, subLine := range subLines {
+		sequenceBuffer.WriteString(reg.ReplaceAllString(subLine, ""))
+	}
+	sequence.Sequence = sequenceBuffer.String()
+
+	return sequence
+}

@@ -117,7 +117,7 @@ func parseGbk(path string) {
 	// features := []Feature{}
 
 	// Create sequence struct
-	// sequence := Sequence{}
+	sequence := Sequence{}
 
 	for numLine, line := range lines {
 		// fmt.Print / ln(numLine)
@@ -147,13 +147,16 @@ func parseGbk(path string) {
 			// features = getFeatures(splitLine, subLines)
 			continue
 		case "ORIGIN":
-			continue
+			sequence = getSequence(subLines)
 		default:
 			continue
 		}
 
 	}
-	file, _ := json.MarshalIndent(meta, "", " ")
+	var annotatedSequence AnnotatedSequence
+	annotatedSequence.Meta = meta
+	annotatedSequence.Sequence = sequence
+	file, _ := json.MarshalIndent(annotatedSequence, "", " ")
 
 	_ = ioutil.WriteFile("test.json", file, 0644)
 
