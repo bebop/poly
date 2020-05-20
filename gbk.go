@@ -53,6 +53,7 @@ var genbankSubLevelFeatures = []string{
 	"REMARK",
 }
 
+// checks for only top level features in genbankTopLevelFeatures array
 func topLevelFeatureCheck(featureString string) bool {
 	flag := false
 	cleanedFeatureString := strings.TrimSpace(featureString)
@@ -65,6 +66,7 @@ func topLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
+// checks for only sub level features in genbankSubLevelFeatures array
 func subLevelFeatureCheck(featureString string) bool {
 	flag := false
 	cleanedFeatureString := strings.TrimSpace(featureString)
@@ -77,6 +79,7 @@ func subLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
+// checks for both sub and top level features in genbankSubLevelFeatures and genbankTopLevelFeatures array
 func allLevelFeatureCheck(featureString string) bool {
 	flag := false
 	cleanedFeatureString := strings.TrimSpace(featureString)
@@ -86,6 +89,7 @@ func allLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
+// parses locus from provided string.
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
 	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
@@ -114,6 +118,7 @@ func parseLocus(locusString string) Locus {
 	return locus
 }
 
+// really important helper function. It finds sublines of a feature and joins them.
 func joinSubLines(splitLine, subLines []string) string {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 
@@ -129,6 +134,7 @@ func joinSubLines(splitLine, subLines []string) string {
 	return base
 }
 
+// get organism name and source. Doesn't use joinSubLines.
 func getSourceOrganism(splitLine, subLines []string) (string, string) {
 	source := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 	var organism string
@@ -146,6 +152,7 @@ func getSourceOrganism(splitLine, subLines []string) (string, string) {
 	return source, organism
 }
 
+// gets a single reference. Parses headstring and the joins sub lines based on feature.
 func getReference(splitLine, subLines []string) Reference {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 	reference := Reference{}
@@ -199,6 +206,7 @@ func getFeatures(splitLine, subLines []string) []Feature {
 	return features
 }
 
+// takes every line after origin feature and removes anything that isn't in the alphabet. Returns sequence.
 func getSequence(subLines []string) Sequence {
 	sequence := Sequence{}
 	var sequenceBuffer bytes.Buffer
@@ -210,6 +218,5 @@ func getSequence(subLines []string) Sequence {
 		sequenceBuffer.WriteString(subLine)
 	}
 	sequence.Sequence = reg.ReplaceAllString(sequenceBuffer.String(), "")
-
 	return sequence
 }
