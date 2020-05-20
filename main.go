@@ -82,112 +82,8 @@ type AnnotatedSequence struct {
 	Sequence Sequence
 }
 
-// getReference loops through to get all references within genbank file
-func getReference(buf int, lines []string) (Reference, int) {
-
-	var Ref Reference
-
-	Ref.Index = strings.TrimSpace(string(lines[buf])[12:14])
-	for {
-		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "AUTHORS") == 0 {
-			break
-		}
-		buf++
-	}
-
-	Ref.Authors = strings.TrimSpace(string(lines[buf])[12:])
-	buf++
-	for {
-		if string(lines[buf][0:12]) == "            " {
-			Ref.Authors += strings.TrimSpace(string(lines[buf])[12:]) + " "
-		} else {
-			break
-		}
-		buf++
-	}
-
-	for {
-		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "TITLE") == 0 {
-			break
-		}
-		buf++
-	}
-
-	Ref.Title = strings.TrimSpace(string(lines[buf])[12:])
-	buf++
-	for {
-		if string(lines[buf][0:12]) == "            " {
-			Ref.Title += strings.TrimSpace(string(lines[buf])[12:]) + " "
-		} else {
-			break
-		}
-		buf++
-	}
-
-	for {
-		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "JOURNAL") == 0 {
-			break
-		}
-		buf++
-	}
-
-	Ref.Journal = strings.TrimSpace(string(lines[buf])[12:])
-	buf++
-	for {
-		if string(lines[buf][0:12]) == "            " {
-			Ref.Journal += strings.TrimSpace(string(lines[buf])[12:]) + " "
-		} else {
-			break
-		}
-		buf++
-	}
-
-	for {
-		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "PUBMED") == 0 {
-			break
-		}
-		buf++
-	}
-
-	Ref.PubMed = strings.TrimSpace(string(lines[buf])[12:])
-
-	for {
-		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "REMARK") == 0 {
-			break
-		} else if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "REFERENCE") == 0 || string(lines[buf][0]) != " " {
-			buf--
-			return Ref, buf
-		}
-		buf++
-	}
-
-	Ref.Remark = strings.TrimSpace(string(lines[buf])[12:])
-	buf++
-	for {
-		if string(lines[buf][0:12]) == "            " {
-			Ref.Remark += strings.TrimSpace(string(lines[buf])[12:]) + " "
-		} else {
-			break
-		}
-		buf++
-	}
-
-	buf--
-	return Ref, buf
-}
-
 func parseGbk(path string) {
 
-	/*
-	     // If missing filename, print usage
-	   	if len(os.Args) < 2 {
-	   		fmt.Println("Usage:")
-	   		fmt.Println("    go run main.go {location/filename}")
-	   		return ""
-	   	}
-	   	// Open file
-	   	filename := os.Args[1]
-	*/
 	f, err := os.Open(path)
 	if err != nil {
 		fmt.Println(err)
@@ -225,265 +121,39 @@ func parseGbk(path string) {
 	for numLine, line := range lines {
 		// fmt.Print / ln(numLine)
 		splitLine := strings.Split(line, " ")
+		subLines := lines[numLine+1:]
+
 		switch splitLine[0] {
-		//case should just be alphanumeric character.
+
 		case "":
 			continue
 		case "LOCUS":
 			meta.Locus = parseLocus(line)
 		case "DEFINITION":
-			subLines := lines[numLine+1:]
 			meta.Definition = joinSubLines(splitLine, subLines)
 		case "ACCESSION":
-			subLines := lines[numLine+1:]
 			meta.Accession = joinSubLines(splitLine, subLines)
 		case "VERSION":
-			subLines := lines[numLine+1:]
 			meta.Version = joinSubLines(splitLine, subLines)
 		case "KEYWORDS":
-			subLines := lines[numLine+1:]
 			meta.Keywords = joinSubLines(splitLine, subLines)
 		case "SOURCE":
-			subLines := lines[numLine+1:]
 			meta.Source, meta.Organism = getSourceOrganism(splitLine, subLines)
 		case "REFERENCE":
+			meta.References = append(meta.References, getReference(splitLine, subLines))
 			continue
 		case "FEATURES":
 			continue
 		case "ORIGIN":
 			continue
 		default:
-			fmt.Println(numLine)
-			if numLine == 1000000 {
-				continue
-			}
+			continue
 		}
 
 	}
 	file, _ := json.MarshalIndent(meta, "", " ")
 
 	_ = ioutil.WriteFile("test.json", file, 0644)
-
-	//definition parsing
-
-	// // Assign locus to meta struct
-
-	// buf := 0
-
-	// // Search for SOURCE
-	// for {
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "SOURCE") == 0 {
-	// 		break
-	// 	}
-	// 	buf++
-	// }
-
-	// // Populate Source
-	// meta.Name = strings.TrimSpace(string(lines[buf])[12:])
-	// buf++
-	// meta.Organism = strings.TrimSpace(string(lines[buf])[12:]) + " "
-	// buf++
-	// for {
-	// 	if string(lines[buf][0]) == " " {
-	// 		meta.Organism += strings.TrimSpace(string(lines[buf])[12:]) + " "
-	// 	} else {
-	// 		break
-	// 	}
-	// 	buf++
-	// }
-
-	// // Get all References
-	// for {
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "REFERENCE") == 0 {
-	// 		Ref, newBuf := getReference(buf, lines)
-	// 		buf = newBuf
-	// 		// Append Reference to References array in GenBank struct
-	// 		meta.References = append(meta.References, Ref)
-	// 	} else {
-	// 		break
-	// 	}
-	// 	// Once search reaches Comment, break from loop
-	// 	buf++
-	// }
-
-	// buf--
-
-	// // Search for PRIMARY
-	// for {
-	// 	if len(lines[buf]) >= 11 {
-	// 		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "PRIMARY") == 0 {
-	// 			break
-	// 		}
-	// 	}
-
-	// 	buf++
-	// }
-
-	// buf++
-
-	// // Search for Primaries
-	// for {
-	// 	if string(lines[buf][0:12]) == "            " {
-	// 		var P Primary
-	// 		P.RefSeq = strings.TrimSpace(string(lines[buf])[12:23])
-	// 		P.PrimaryIdentifier = strings.TrimSpace(string(lines[buf])[32:50])
-	// 		if len(lines[buf]) > 73 {
-	// 			P.Primary_Span = strings.TrimSpace(string(lines[buf])[51:66])
-	// 			P.Comp = strings.TrimSpace(string(lines[buf])[72:73])
-	// 		} else {
-	// 			P.Primary_Span = strings.TrimSpace(string(lines[buf])[51:])
-	// 		}
-	// 		// Append each Primary to Primaries array in GenBank Struct
-	// 		meta.Primaries = append(meta.Primaries, P)
-	// 	}
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "FEATURES") == 0 {
-	// 		break
-	// 	}
-	// 	buf++
-	// }
-
-	// // Search for Features
-	// for {
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "FEATURES") == 0 {
-	// 		feature := Feature{}
-	// 		attributes := make(map[string]string)
-	// 		if strings.Compare(strings.TrimSpace(string(lines[buf])[0:11]), "FEATURES") == 0 {
-	// 			buf++
-	// 		}
-	// 		for {
-	// 			if strings.Compare(strings.TrimSpace(string(lines[buf])[7:8]), "") != 0 {
-
-	// 				// Creating a new feature
-	// 				feature.Attributes = make(map[string]string)
-	// 				attributes = make(map[string]string)
-	// 				feature.Name = strings.TrimSpace(string(lines[buf])[5:21])
-	// 				feature.Location = strings.TrimSpace(string(lines[buf])[21:])
-	// 				buf++
-
-	// 				for {
-	// 					if strings.Compare(strings.TrimSpace(string(lines[buf])[21:22]), "/") == 0 { //parse qualifier
-	// 						// Found qualifier
-	// 						q := strings.TrimSpace(string(lines[buf])[22:])
-	// 						if strings.Contains(q, "=") {
-	// 							quarry := strings.Split(q, "=")
-	// 							// Add qualifier
-	// 							attributes[quarry[0]] = quarry[1]
-
-	// 							// Handle attributes that take up multiple lines
-	// 							for {
-	// 								if len(lines[buf+1]) > 22 {
-	// 									if strings.Compare(strings.TrimSpace(string(lines[buf+1])[21:22]), "/") != 0 && strings.Compare(strings.TrimSpace(string(lines[buf+1])[0:21]), "") == 0 {
-	// 										if strings.Compare(strings.TrimSpace(string(lines[buf+1])[0:7]), "ORIGIN") != 0 {
-	// 											if quarry[0] == "note" || quarry[0] == "experiment" {
-	// 												attributes[quarry[0]] += " " + strings.TrimSpace(string(lines[buf+1])[21:])
-	// 											} else {
-	// 												attributes[quarry[0]] += strings.TrimSpace(string(lines[buf+1])[21:])
-	// 											}
-	// 										}
-	// 									} else {
-	// 										break
-	// 									}
-
-	// 								}
-	// 								buf++
-	// 							}
-
-	// 						}
-	// 					} else {
-	// 						if attributes != nil {
-	// 							feature.Attributes = attributes
-	// 							buf--
-	// 						}
-	// 						break
-	// 					}
-	// 					buf++
-	// 				}
-	// 				// Assign each feature to features array in GenBank struct.
-	// 				features = append(features, feature)
-	// 				if strings.Compare(strings.TrimSpace(string(lines[buf])[0:7]), "ORIGIN") == 0 {
-	// 					break
-	// 				}
-
-	// 			}
-	// 			buf++
-	// 		}
-
-	// 	}
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:7]), "ORIGIN") == 0 {
-	// 		break
-	// 	}
-	// 	buf++
-	// }
-	// var Origin string
-	// // Extract Origin by appending all lines and removing spaces and line information.
-	// for {
-	// 	if strings.Compare(strings.TrimSpace(string(lines[buf])[0:2]), "//") == 0 {
-	// 		break
-	// 	} else {
-	// 		Origin += strings.TrimSpace(string(lines[buf])[10:])
-	// 	}
-	// 	buf++
-	// }
-	// Origin = strings.Replace(Origin, " ", "", -1)
-
-	// // Assign Origin to GenBank struct
-	// meta.Origin = Origin
-
-	// // Loop back through all features, grabbing the location information and setting the associated sequence.
-	// for i := range features {
-	// 	if strings.Contains(features[i].Location, "JOIN") {
-	// 		sublocation := strings.Replace(features[i].Location, "JOIN(", "", -1)
-	// 		sublocation = strings.Replace(features[i].Location, ")", "", -1)
-	// 		sublocations := strings.Split(sublocation, ",")
-	// 		Seq := ""
-	// 		for location := range sublocations {
-	// 			if strings.Contains(string(location), "..") {
-	// 				numbers := strings.Split(features[i].Location, "..")
-	// 				start, err := strconv.Atoi(numbers[0])
-	// 				start--
-	// 				end, err := strconv.Atoi(numbers[1])
-	// 				if err != nil {
-	// 					fmt.Println(err)
-	// 				}
-	// 				Seq += Origin[start:end]
-	// 			} else {
-	// 				Seq += string(Origin[location] - 1)
-	// 			}
-	// 		}
-	// 		// Assign associated sequence to GenBank's feature if a joined value
-	// 		features[i].Sequence = Seq
-	// 	} else if strings.Contains(features[i].Location, "..") {
-	// 		numbers := strings.Split(features[i].Location, "..")
-	// 		start, err := strconv.Atoi(numbers[0])
-	// 		start--
-	// 		end, err := strconv.Atoi(numbers[1])
-	// 		// Assign associated sequence to GenBank's feature if a range
-	// 		features[i].Sequence = Origin[start:end]
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 		}
-	// 	} else {
-	// 		k, err := strconv.Atoi(features[i].Location)
-	// 		k--
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 		}
-	// 		if k >= 0 {
-	// 			// Assign associated sequence to GenBank's feature if a single value
-	// 			features[i].Sequence = string(Origin[k])
-	// 		}
-
-	// 	}
-	// }
-
-	// annotatedSequence := AnnotatedSequence{Meta: meta, Features: features}
-
-	// // convert GenBank struct into JSON (indented) format
-	// out, err := json.MarshalIndent(annotatedSequence, "", "    ")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(out)
 
 }
 
