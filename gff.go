@@ -68,7 +68,7 @@ func parseGff(path string) AnnotatedSequence {
 
 	outFile, _ := json.MarshalIndent(annotatedSequence, "", " ")
 
-	_ = ioutil.WriteFile("testgff.json", outFile, 0644)
+	_ = ioutil.WriteFile("data/testgff.json", outFile, 0644)
 
 	return annotatedSequence
 }

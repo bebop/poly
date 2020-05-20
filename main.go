@@ -159,7 +159,7 @@ func parseGbk(path string) {
 	annotatedSequence.Sequence = sequence
 	file, _ := json.MarshalIndent(annotatedSequence, "", " ")
 
-	_ = ioutil.WriteFile("test.json", file, 0644)
+	_ = ioutil.WriteFile("data/test.json", file, 0644)
 
 }
 
