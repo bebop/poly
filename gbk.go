@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+//used in parseLocus function though it could be useful elsewhere.
 var genbankDivisions = []string{
 	"PRI", //primate sequences
 	"ROD", //rodent sequences
@@ -29,6 +30,7 @@ var genbankDivisions = []string{
 	"ENV", //environmental sampling sequences
 }
 
+//used in feature check functions.
 var genbankTopLevelFeatures = []string{
 	"LOCUS",
 	"DEFINITION",
@@ -41,6 +43,7 @@ var genbankTopLevelFeatures = []string{
 	"ORIGIN",
 }
 
+//used in feature check functions.
 var genbankSubLevelFeatures = []string{
 	"ORGANISM",
 	"AUTHORS",
@@ -48,6 +51,39 @@ var genbankSubLevelFeatures = []string{
 	"JOURNAL",
 	"PUBMED",
 	"REMARK",
+}
+
+func topLevelFeatureCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(featureString)
+	for _, feature := range genbankTopLevelFeatures {
+		if feature == cleanedFeatureString {
+			flag = true
+			break
+		}
+	}
+	return flag
+}
+
+func subLevelFeatureCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(featureString)
+	for _, feature := range genbankSubLevelFeatures {
+		if feature == cleanedFeatureString {
+			flag = true
+			break
+		}
+	}
+	return flag
+}
+
+func allLevelFeatureCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(featureString)
+	if subLevelFeatureCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
+		flag = true
+	}
+	return flag
 }
 
 func parseLocus(locusString string) Locus {
@@ -80,8 +116,11 @@ func parseLocus(locusString string) Locus {
 
 func joinSubLines(splitLine, subLines []string) string {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
+
 	for _, subLine := range subLines {
-		if string(subLine[0]) == " " {
+		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
+		headString := featureSplitLine[0]
+		if !allLevelFeatureCheck(headString) {
 			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
 		} else {
 			break
@@ -105,36 +144,6 @@ func getSourceOrganism(splitLine, subLines []string) (string, string) {
 		}
 	}
 	return source, organism
-}
-
-func joinReferenceSubLines(splitLine, subLines []string) string {
-	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-
-	for _, subLine := range subLines {
-		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-		headString := featureSplitLine[0]
-		breakFlag := false
-		//breaks if there's a sub level feature.
-		for _, subLevelFeature := range genbankSubLevelFeatures {
-			if headString == subLevelFeature {
-				breakFlag = true
-			}
-		}
-		//breaks if there's a top level feature.
-		for _, topLevelFeature := range genbankTopLevelFeatures {
-			if headString == topLevelFeature {
-				breakFlag = true
-			}
-		}
-		//if there's no need to break append this line to the last and trim.
-		if breakFlag != true {
-			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
-		} else {
-			break
-		}
-	}
-	return base
-
 }
 
 func getReference(splitLine, subLines []string) Reference {
@@ -164,15 +173,15 @@ func getReference(splitLine, subLines []string) Reference {
 		}
 		switch headString {
 		case "AUTHORS":
-			reference.Authors = joinReferenceSubLines(featureSplitLine, featureSubLines)
+			reference.Authors = joinSubLines(featureSplitLine, featureSubLines)
 		case "TITLE":
-			reference.Title = joinReferenceSubLines(featureSplitLine, featureSubLines)
+			reference.Title = joinSubLines(featureSplitLine, featureSubLines)
 		case "JOURNAL":
-			reference.Journal = joinReferenceSubLines(featureSplitLine, featureSubLines)
+			reference.Journal = joinSubLines(featureSplitLine, featureSubLines)
 		case "PUBMED":
-			reference.PubMed = joinReferenceSubLines(featureSplitLine, featureSubLines)
+			reference.PubMed = joinSubLines(featureSplitLine, featureSubLines)
 		case "REMARK":
-			reference.Remark = joinReferenceSubLines(featureSplitLine, featureSubLines)
+			reference.Remark = joinSubLines(featureSplitLine, featureSubLines)
 		default:
 			break
 		}
@@ -181,9 +190,22 @@ func getReference(splitLine, subLines []string) Reference {
 	return reference
 }
 
-// func getFeatures(splitLine, subLines []string) []Feature {
+// func getQualifiers(splitLine, subLines []string) []Feature {
 
 // }
+
+func getFeatures(splitLine, subLines []string) []Feature {
+	features := []Feature{}
+	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
+	for _, subLine := range subLines {
+		if string(subLine[0:4]) == "     " {
+			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
+		} else {
+			break
+		}
+	}
+	return features
+}
 
 func getSequence(subLines []string) Sequence {
 	sequence := Sequence{}
@@ -193,9 +215,9 @@ func getSequence(subLines []string) Sequence {
 		log.Fatal(err)
 	}
 	for _, subLine := range subLines {
-		sequenceBuffer.WriteString(reg.ReplaceAllString(subLine, ""))
+		sequenceBuffer.WriteString(subLine)
 	}
-	sequence.Sequence = sequenceBuffer.String()
+	sequence.Sequence = reg.ReplaceAllString(sequenceBuffer.String(), "")
 
 	return sequence
 }
