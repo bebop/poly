@@ -249,6 +249,40 @@ func allLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
+// will eventually refactor all checks into one function.
+func geneFeatureTypeCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(featureString)
+	for _, feature := range genbankGeneFeatureTypes {
+		if feature == cleanedFeatureString {
+			flag = true
+			break
+		}
+	}
+	return flag
+}
+
+func geneQualiferTypeCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(strings.SplitAfter(featureString, "=")[0])
+	for _, feature := range genbankGeneQualifierTypes {
+		if feature == cleanedFeatureString {
+			flag = true
+			break
+		}
+	}
+	return flag
+}
+
+func allGeneTypeCheck(featureString string) bool {
+	flag := false
+	cleanedFeatureString := strings.TrimSpace(featureString)
+	if geneQualiferTypeCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
+		flag = true
+	}
+	return flag
+}
+
 // parses locus from provided string.
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
@@ -349,16 +383,54 @@ func getReference(splitLine, subLines []string) Reference {
 	return reference
 }
 
-// func getQualifiers(splitLine, subLines []string) []Feature {
+func getFeature(splitLine, subLines []string) Feature {
+	feature := Feature{}
+	feature.Type = strings.TrimSpace(splitLine[0])
+	feature.Location = strings.TrimSpace(splitLine[1])
+	feature.Attributes = make(map[string]string)
+	for numSubLine, subLine := range subLines {
+		qualifierSubLines := subLines[numSubLine+1:]
+		qualifierSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
+		qualifierHeadString := qualifierSplitLine[0]
+		if geneQualiferTypeCheck(qualifierHeadString) {
+			qualifier := strings.TrimSpace(subLine)
+			for _, qualifierSubLine := range qualifierSubLines {
+				subQualifierHeadString := strings.Split(strings.TrimSpace(qualifierSubLine), " ")[0]
+				if geneQualiferTypeCheck(subQualifierHeadString) || subQualifierHeadString == "ORIGIN" {
+					attributeSplit := strings.Split(qualifier, "=")
+					attributeLabel := attributeSplit[0]
+					var attributeValue string
+					if len(attributeSplit) < 2 {
+						attributeValue = ""
+					} else {
+						attributeValue = attributeSplit[1]
+					}
+					feature.Attributes[attributeLabel] = attributeValue
+					break
+				} else {
+					qualifier = strings.TrimSpace(strings.TrimSpace(qualifier) + strings.TrimSpace(qualifier))
+				}
+			}
 
-// }
+		} else {
+			break
+		}
+
+	}
+	return feature
+}
 
 func getFeatures(splitLine, subLines []string) []Feature {
 	features := []Feature{}
-	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-	for _, subLine := range subLines {
-		if string(subLine[0:4]) == "     " {
-			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
+	for numSubLine, subLine := range subLines {
+		featureSubLines := subLines[numSubLine+1:]
+		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
+		headString := featureSplitLine[0]
+		if headString != "ORIGIN" {
+			if geneFeatureTypeCheck(headString) {
+				newFeature := getFeature(featureSplitLine, featureSubLines)
+				features = append(features, newFeature)
+			}
 		} else {
 			break
 		}

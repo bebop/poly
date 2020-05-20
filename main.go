@@ -114,7 +114,7 @@ func parseGbk(path string) {
 	meta := Meta{}
 
 	// Create features struct
-	// features := []Feature{}
+	features := []Feature{}
 
 	// Create sequence struct
 	sequence := Sequence{}
@@ -144,8 +144,7 @@ func parseGbk(path string) {
 			meta.References = append(meta.References, getReference(splitLine, subLines))
 			continue
 		case "FEATURES":
-			// features = getFeatures(splitLine, subLines)
-			continue
+			features = getFeatures(splitLine, subLines)
 		case "ORIGIN":
 			sequence = getSequence(subLines)
 			//break flag could go here.
@@ -156,6 +155,7 @@ func parseGbk(path string) {
 	}
 	var annotatedSequence AnnotatedSequence
 	annotatedSequence.Meta = meta
+	annotatedSequence.Features = features
 	annotatedSequence.Sequence = sequence
 	file, _ := json.MarshalIndent(annotatedSequence, "", " ")
 
@@ -169,4 +169,5 @@ func main() {
 	// parseGbk("data/addgene-plasmid-50005-sequence-74677.gbk")
 	// parseGff("data/ecoli-mg1655.gff")
 	parseGbk("data/test.gbk")
+	// parseQualifiersList()
 }
