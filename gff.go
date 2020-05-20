@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -64,6 +65,10 @@ func parseGff(path string) AnnotatedSequence {
 	annotatedSequence.Meta = meta
 	annotatedSequence.Features = records
 	annotatedSequence.Sequence = sequence
+
+	outFile, _ := json.MarshalIndent(annotatedSequence, "", " ")
+
+	_ = ioutil.WriteFile("testgff.json", outFile, 0644)
 
 	return annotatedSequence
 }
