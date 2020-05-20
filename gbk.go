@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -37,7 +38,14 @@ var genbankTopLevelFeatures = []string{
 	"ORIGIN",
 }
 
-var genbankSubFeatures = []string{}
+var genbankSubLevelFeatures = []string{
+	"ORGANISM",
+	"AUTHORS",
+	"TITLE",
+	"JOURNAL",
+	"PUBMED",
+	"REMARK",
+}
 
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
@@ -100,7 +108,20 @@ func joinReferenceSubLines(splitLine, subLines []string) string {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 
 	for _, subLine := range subLines {
-		if string(subLine[0]) == "  " && string(subLine[0]) != " " {
+		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
+		headString := featureSplitLine[0]
+		breakFlag := false
+		for _, subLevelFeature := range genbankSubLevelFeatures {
+			if headString == subLevelFeature {
+				breakFlag = true
+			}
+		}
+		for _, topLevelFeature := range genbankTopLevelFeatures {
+			if headString == topLevelFeature {
+				breakFlag = true
+			}
+		}
+		if breakFlag != true {
 			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
 		} else {
 			break
@@ -114,6 +135,11 @@ func getReference(splitLine, subLines []string) Reference {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 	reference := Reference{}
 	reference.Index = strings.Split(base, " ")[0]
+	start, _ := strconv.Atoi(strings.TrimSpace(strings.Split(base, " ")[3]))
+	reference.Start = start
+	end := strings.TrimSpace(strings.Split(base, " ")[5])
+	end = end[0 : len(end)-1]
+	reference.End, _ = strconv.Atoi(end)
 
 	for numSubLine, subLine := range subLines {
 		featureSubLines := subLines[numSubLine+1:]
@@ -121,9 +147,6 @@ func getReference(splitLine, subLines []string) Reference {
 		headString := featureSplitLine[0]
 		// fmt.Println(headString)
 
-		if headString == "REFERENCE" {
-			break
-		}
 		breakFlag := false
 		for _, topLevelFeature := range genbankTopLevelFeatures {
 			if headString == topLevelFeature {
@@ -151,3 +174,7 @@ func getReference(splitLine, subLines []string) Reference {
 	}
 	return reference
 }
+
+// func getFeatures(splitLine, subLines []string) []Feature {
+
+// }

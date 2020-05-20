@@ -47,6 +47,7 @@ type Primary struct {
 
 type Reference struct {
 	Index, Authors, Title, Journal, PubMed, Remark string
+	Start, End                                     int
 }
 
 type Locus struct {
@@ -143,6 +144,7 @@ func parseGbk(path string) {
 			meta.References = append(meta.References, getReference(splitLine, subLines))
 			continue
 		case "FEATURES":
+			// features = getFeatures(splitLine, subLines)
 			continue
 		case "ORIGIN":
 			continue
