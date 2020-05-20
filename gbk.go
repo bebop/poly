@@ -160,15 +160,7 @@ func getReference(splitLine, subLines []string) Reference {
 		featureSubLines := subLines[numSubLine+1:]
 		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
 		headString := featureSplitLine[0]
-		// fmt.Println(headString)
-
-		breakFlag := false
-		for _, topLevelFeature := range genbankTopLevelFeatures {
-			if headString == topLevelFeature {
-				breakFlag = true
-			}
-		}
-		if breakFlag {
+		if topLevelFeatureCheck(headString) {
 			break
 		}
 		switch headString {
