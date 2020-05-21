@@ -120,13 +120,14 @@ func parseGbk(path string) {
 	sequence := Sequence{}
 
 	for numLine, line := range lines {
-		// fmt.Print / ln(numLine)
 		splitLine := strings.Split(line, " ")
 		subLines := lines[numLine+1:]
 
-		// This is to keep the cursor from scrolling to the bottom twice after getSequence() is called.
-		breakFlag := false
-		if breakFlag == true {
+		// This is to keep the cursor from scrolling to the bottom another time after getSequence() is called.
+		// Break has to be in scope and can't be called within switch statement.
+		// Otherwise it will just break the switch which is redundant.
+		sequenceBreakFlag := false
+		if sequenceBreakFlag == true {
 			break
 		}
 
@@ -153,8 +154,7 @@ func parseGbk(path string) {
 			features = getFeatures(splitLine, subLines)
 		case "ORIGIN":
 			sequence = getSequence(subLines)
-			breakFlag = true
-			//break flag could go here.
+			sequenceBreakFlag = true
 		default:
 			continue
 		}
