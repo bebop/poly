@@ -213,6 +213,51 @@ var genbankGeneQualifierTypes = []string{
 	"/variety=",
 }
 
+func quickMetaCheck(line string) bool {
+	flag := false
+	if string(line[0]) != " " {
+		flag = true
+	}
+	return flag
+}
+
+func quickSubMetaCheck(line string) bool {
+	flag := false
+
+	if string(line[0]) == " " && string(line[6]) != " " {
+		flag = true
+	}
+	return flag
+}
+
+func quickFeatureCheck(line string) bool {
+	flag := false
+
+	if string(line[0]) == " " && string(line[6]) != " " {
+		flag = true
+	}
+	return flag
+}
+
+func quickQualifierCheck(line string) bool {
+	flag := false
+
+	if string(line[0]) == " " && string(line[6]) == " " && string(line[22]) == "/" {
+		flag = true
+	}
+	return flag
+
+}
+
+func quickQualifierSubLineCheck(line string) bool {
+	flag := false
+
+	if string(line[0]) == " " && string(line[6]) == " " && string(line[22]) != "/" && string(line[21]) == " " {
+		flag = true
+	}
+	return flag
+}
+
 // checks for only top level features in genbankTopLevelFeatures array
 func topLevelFeatureCheck(featureString string) bool {
 	flag := false
@@ -383,6 +428,22 @@ func getReference(splitLine, subLines []string) Reference {
 	return reference
 }
 
+// really important helper function. It finds sublines of a feature and joins them.
+func joinQualifierSubLines(splitLine, subLines []string) string {
+	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
+
+	for _, subLine := range subLines {
+		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
+		headString := featureSplitLine[0]
+		if !allLevelFeatureCheck(headString) || !geneFeatureTypeCheck(headString) {
+			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
+		} else {
+			break
+		}
+	}
+	return base
+}
+
 func getFeature(splitLine, subLines []string) Feature {
 	feature := Feature{}
 	feature.Type = strings.TrimSpace(splitLine[0])
@@ -412,7 +473,7 @@ func getFeature(splitLine, subLines []string) Feature {
 					feature.Attributes[attributeLabel] = attributeValue
 					break
 				} else {
-					qualifier = strings.TrimSpace(qualifier)
+					// qualifier = strings.TrimSpace(qualifier) + strings.TrimSpace(subQualifierHeadString))
 				}
 			}
 
