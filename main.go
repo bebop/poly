@@ -124,6 +124,12 @@ func parseGbk(path string) {
 		splitLine := strings.Split(line, " ")
 		subLines := lines[numLine+1:]
 
+		// This is to keep the cursor from scrolling to the bottom twice after getSequence() is called.
+		breakFlag := false
+		if breakFlag == true {
+			break
+		}
+
 		switch splitLine[0] {
 
 		case "":
@@ -147,6 +153,7 @@ func parseGbk(path string) {
 			features = getFeatures(splitLine, subLines)
 		case "ORIGIN":
 			sequence = getSequence(subLines)
+			breakFlag = true
 			//break flag could go here.
 		default:
 			continue
