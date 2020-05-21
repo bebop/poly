@@ -262,7 +262,7 @@ func geneFeatureTypeCheck(featureString string) bool {
 	return flag
 }
 
-func geneQualiferTypeCheck(featureString string) bool {
+func geneQualifierTypeCheck(featureString string) bool {
 	flag := false
 	cleanedFeatureString := strings.TrimSpace(strings.SplitAfter(featureString, "=")[0])
 	for _, feature := range genbankGeneQualifierTypes {
@@ -277,7 +277,7 @@ func geneQualiferTypeCheck(featureString string) bool {
 func allGeneTypeCheck(featureString string) bool {
 	flag := false
 	cleanedFeatureString := strings.TrimSpace(featureString)
-	if geneQualiferTypeCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
+	if geneQualifierTypeCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
 		flag = true
 	}
 	return flag
@@ -388,16 +388,20 @@ func getFeature(splitLine, subLines []string) Feature {
 	feature.Type = strings.TrimSpace(splitLine[0])
 	feature.Location = strings.TrimSpace(splitLine[1])
 	feature.Attributes = make(map[string]string)
+
 	for numSubLine, subLine := range subLines {
 		qualifierSubLines := subLines[numSubLine+1:]
 		qualifierSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
 		qualifierHeadString := qualifierSplitLine[0]
-		if geneQualiferTypeCheck(qualifierHeadString) {
+		reg, _ := regexp.Compile("[\"/]+")
+
+		if geneQualifierTypeCheck(qualifierHeadString) {
 			qualifier := strings.TrimSpace(subLine)
 			for _, qualifierSubLine := range qualifierSubLines {
 				subQualifierHeadString := strings.Split(strings.TrimSpace(qualifierSubLine), " ")[0]
-				if geneQualiferTypeCheck(subQualifierHeadString) || subQualifierHeadString == "ORIGIN" {
-					attributeSplit := strings.Split(qualifier, "=")
+				if geneQualifierTypeCheck(subQualifierHeadString) || subQualifierHeadString == "ORIGIN" {
+					attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
+					reg.ReplaceAllString(qualifier, "")
 					attributeLabel := attributeSplit[0]
 					var attributeValue string
 					if len(attributeSplit) < 2 {
@@ -408,7 +412,7 @@ func getFeature(splitLine, subLines []string) Feature {
 					feature.Attributes[attributeLabel] = attributeValue
 					break
 				} else {
-					qualifier = strings.TrimSpace(strings.TrimSpace(qualifier) + strings.TrimSpace(qualifier))
+					qualifier = strings.TrimSpace(qualifier)
 				}
 			}
 
