@@ -119,7 +119,8 @@ func parseGbk(path string) {
 	// Create sequence struct
 	sequence := Sequence{}
 
-	for numLine, line := range lines {
+	for numLine := 0; numLine < len(lines); numLine++ {
+		line := lines[numLine]
 		splitLine := strings.Split(line, " ")
 		subLines := lines[numLine+1:]
 
