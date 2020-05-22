@@ -433,7 +433,7 @@ func getReference(splitLine, subLines []string) Reference {
 	return reference
 }
 
-func getFeatures(splitLine, lines []string) []Feature {
+func getFeatures(lines []string) []Feature {
 	lineIndex := 0
 	features := []Feature{}
 
@@ -513,81 +513,6 @@ func getFeatures(splitLine, lines []string) []Feature {
 	}
 	return features
 }
-
-// really important helper function. It finds sublines of a feature and joins them.
-// func joinQualifierSubLines(splitLine, subLines []string) string {
-// 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-
-// 	for _, subLine := range subLines {
-// 		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-// 		headString := featureSplitLine[0]
-// 		if !allLevelFeatureCheck(headString) || !geneFeatureTypeCheck(headString) {
-// 			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
-// 		} else {
-// 			break
-// 		}
-// 	}
-// 	return base
-// }
-
-// func getFeature(splitLine, subLines []string) Feature {
-// 	feature := Feature{}
-// 	feature.Type = strings.TrimSpace(splitLine[0])
-// 	feature.Location = strings.TrimSpace(splitLine[1])
-// 	feature.Attributes = make(map[string]string)
-
-// 	for numSubLine, subLine := range subLines {
-// 		qualifierSubLines := subLines[numSubLine+1:]
-// 		qualifierSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-// 		qualifierHeadString := qualifierSplitLine[0]
-// 		reg, _ := regexp.Compile("[\"/]+")
-
-// 		if geneQualifierTypeCheck(qualifierHeadString) {
-// 			qualifier := strings.TrimSpace(subLine)
-// 			for _, qualifierSubLine := range qualifierSubLines {
-// 				subQualifierHeadString := strings.Split(strings.TrimSpace(qualifierSubLine), " ")[0]
-// 				if geneQualifierTypeCheck(subQualifierHeadString) || subQualifierHeadString == "ORIGIN" {
-// 					attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
-// 					reg.ReplaceAllString(qualifier, "")
-// 					attributeLabel := attributeSplit[0]
-// 					var attributeValue string
-// 					if len(attributeSplit) < 2 {
-// 						attributeValue = ""
-// 					} else {
-// 						attributeValue = attributeSplit[1]
-// 					}
-// 					feature.Attributes[attributeLabel] = attributeValue
-// 					break
-// 				} else {
-// 					// qualifier = strings.TrimSpace(qualifier) + strings.TrimSpace(subQualifierHeadString))
-// 				}
-// 			}
-
-// 		} else {
-// 			break
-// 		}
-
-// 	}
-// 	return feature
-// }
-
-// func getFeatures(splitLine, subLines []string) []Feature {
-// 	features := []Feature{}
-// 	for numSubLine, subLine := range subLines {
-// 		featureSubLines := subLines[numSubLine+1:]
-// 		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-// 		headString := featureSplitLine[0]
-// 		if headString != "ORIGIN" {
-// 			if geneFeatureTypeCheck(headString) {
-// 				newFeature := getFeature(featureSplitLine, featureSubLines)
-// 				features = append(features, newFeature)
-// 			}
-// 		} else {
-// 			break
-// 		}
-// 	}
-// 	return features
-// }
 
 // takes every line after origin feature and removes anything that isn't in the alphabet. Returns sequence.
 func getSequence(subLines []string) Sequence {

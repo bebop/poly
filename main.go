@@ -152,7 +152,7 @@ func parseGbk(path string) {
 			meta.References = append(meta.References, getReference(splitLine, subLines))
 			continue
 		case "FEATURES":
-			features = getFeatures(splitLine, subLines)
+			features = getFeatures(subLines)
 		case "ORIGIN":
 			sequence = getSequence(subLines)
 			sequenceBreakFlag = true
