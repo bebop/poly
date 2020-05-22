@@ -437,47 +437,80 @@ func getFeatures(splitLine, lines []string) []Feature {
 	lineIndex := 0
 	features := []Feature{}
 
+	// regex to remove quotes and slashes from qualifiers
+	reg, _ := regexp.Compile("[\"/\n]+")
+
 	// go through every line.
 	for lineIndex < len(lines) {
 		line := lines[lineIndex]
 		// This is a break to ensure that cursor doesn't go beyond ORIGIN which is the last top level feature.
 		// This could pick up random sequence strings that aren't helpful and will mess with parser.
 		// DO NOT MOVE/REMOVE WITHOUT CAUSE AND CONSIDERATION
-		if quickMetaCheck(line) {
+		if quickMetaCheck(line) || !quickFeatureCheck(line) {
 			break
 		}
 
-		// Make sure what we're parsing is a feature.
-		if quickFeatureCheck(line) {
+		feature := Feature{}
 
-			feature := Feature{}
+		// split the current line for feature type and location fields.
+		splitLine := strings.Split(strings.TrimSpace(line), " ")
 
-			// split the current line for feature type and location fields.
-			splitLine := strings.Split(strings.TrimSpace(line), " ")
+		// assign type and location to feature.
+		feature.Type = strings.TrimSpace(splitLine[0])
+		feature.Location = strings.TrimSpace(splitLine[len(splitLine)-1])
 
-			// assign type and location to feature.
-			feature.Type = strings.TrimSpace(splitLine[0])
-			feature.Location = strings.TrimSpace(splitLine[len(splitLine)-1])
+		// initialize attributes.
+		feature.Attributes = make(map[string]string)
 
-			// initialize attributes.
-			// feature.Attributes = make(map[string]string)
+		// end of feature declaration line. Bump to next line and begin looking for qualifiers.
+		lineIndex++
+		line = lines[lineIndex]
 
-			// for {
-			// }
+		// loop through potential qualifiers. Break if not a qualifier or sub line.
+		// Definition of qualifiers here: http://www.insdc.org/files/feature_table.html#3.3
+		for {
+			// make sure what we're parsing is a qualifier. Break if not.
+			// keeping out of normal if else pattern because of phantom brackets that are hard to trace.
+			if !quickQualifierCheck(line) {
+				break
+			}
+			qualifier := line
 
-			//append the parsed feature to the features list to be returned.
-			features = append(features, feature)
+			// end of qualifier declaration line. Bump to next line and begin looking for qualifier sublines.
+			lineIndex++
+			line = lines[lineIndex]
 
+			// loop through any potential continuing lines of qualifiers. Break if not.
+			for {
+				// keeping out of normal if else pattern because of phantom brackets that are hard to trace.
+				if !quickQualifierSubLineCheck(line) {
+					break
+				}
+				//append to current qualifier
+				qualifier += strings.TrimSpace(line)
+
+				lineIndex++
+				line = lines[lineIndex]
+			}
+			//add qualifier to feature.
+			attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
+			attributeLabel := strings.TrimSpace(attributeSplit[0])
+			var attributeValue string
+			if len(attributeSplit) < 2 {
+				attributeValue = ""
+			} else {
+				attributeValue = strings.TrimSpace(attributeSplit[1])
+			}
+			feature.Attributes[attributeLabel] = attributeValue
 		}
 
-		lineIndex++
-	}
-	// fmt.Println(splitLine)
-	// fmt.Println(subLines[0])
-	// fmt.Println(quickFeatureCheck(subLines[0]))
-	// fmt.Println(quickQualifierCheck(subLines[1]))
-	// fmt.Println(subLines[1])
+		//append the parsed feature to the features list to be returned.
+		features = append(features, feature)
 
+		// this technically should never happen.
+		// If cursor is correct then every feature should be on everyime.
+		// Maybe throw an error instead?
+	}
 	return features
 }
 
