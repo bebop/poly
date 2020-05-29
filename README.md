@@ -27,13 +27,3 @@ Poly is a Go library and command line utility for engineering organisms.
 * [MIT](LICENSE)
 
 * Copyright (c) 2020 Timothy Stiles
-
-### Contributors
-
-Example url : https://github.com/vuejs/vue/graphs/contributors
-
-## Supporting Poly
-
-Libera pay
-
-ledger wallet.
