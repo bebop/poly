@@ -75,9 +75,4 @@ type AnnotatedSequence struct {
 
 func main() {
 
-	// fmt.Println(parseGff("data/ecoli-mg1655.gff"))
-	// parseGbk("data/addgene-plasmid-50005-sequence-74677.gbk")
-	parseGff("data/ecoli-mg1655.gff")
-	// parseGbk("data/test.gbk")
-	// parseQualifiersList()
 }
