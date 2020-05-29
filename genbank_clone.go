@@ -14,7 +14,7 @@ import (
 
 const genbankURL = "https://ftp.ncbi.nlm.nih.gov/genbank/"
 
-func exampleScrape() {
+func genbankClone() {
 	// Request the HTML page.
 	genbankDataPath := "data/genbank/"
 	if _, err := os.Stat(genbankDataPath); os.IsNotExist(err) {
