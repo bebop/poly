@@ -1,4 +1,4 @@
-module genepool.me/genepool/poly
+module github.com/TimothyStiles/poly
 
 go 1.13
 
