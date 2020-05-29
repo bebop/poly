@@ -22,7 +22,7 @@ go get github.com/TimothyStiles/poly
 ## Contributing
 
 ### Code of Conduct
-Poly has adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.MD) so that you can understand what actions will and will not be tolerated.
+Poly has adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ### Contributing Guide
 
