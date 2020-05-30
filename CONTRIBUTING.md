@@ -1,6 +1,6 @@
 # Introduction
 
-Yo, what up! if you're reading this then I'm super psyched because that means that you're thinking about contributing to poly! Thanks so much for your time and consideration. It's rad people like you that make Poly such a cool computational synthetic biology tool.
+Yo, what up! if you're reading this then I'm super psyched because that means that you're thinking about contributing to Poly! Thanks so much for your time and consideration. It's rad people like you that make Poly such a cool computational synthetic biology tool.
 
 I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. I'll try to keep it brief so please read along so that we all know what to expect when expecting your most excellent pull request (or any other excellent contribution).
 
