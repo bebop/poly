@@ -17,16 +17,21 @@ go get github.com/TimothyStiles/poly
 
 ## Examples
 
+In progress...
+
 ## Documentation
+
+In progress...
 
 ## Contributing
 
 ### Code of Conduct
-Poly has adopted a Code of Conduct that we expect project participants to adhere to. Please read the [full text](CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+
+Poly has adopted a Code of Conduct! Please read the [full text](CODE_OF_CONDUCT.md) so you can understand what we're all about and please remember to be excellent to each other!
 
 ### Contributing Guide
 
-### Good First Issues
+Poly also has a [contributor's guide](CONTRIBUTING.md). Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
 ### License
 * [MIT](LICENSE)
