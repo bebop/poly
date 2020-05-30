@@ -6,24 +6,24 @@ I wrote this contributor's guide to help newcomers feel welcome. Getting started
 
 Currently any sincere pull request is a good request. Poly is still super alpha (as of writing it kinda parses genbank files) so there are so many way to contribute! Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
 
-* Feature requests - especially cool new algorithms with citations
-* Unit and integration tests
-* Writing and translating tutorials, documentation, or blog posts.
-* Auditing for accessibility
-* Bug reports
-* Bug triaging
-* Community management
+* Feature requests - especially cool new algorithms with citations.
+* Unit and integration tests.
+* Writing, editing, and translating tutorials, documentation, or blog posts.
+* Auditing for accessibility.
+* Bug reports.
+* Bug triaging.
+* Community management.
 * Art! Dreams! Your excellence!
 * Code that can be pulled into Poly itself.
 
 # What to expect when you're expecting to contribute to Poly
 ### Excellence, and the contributor's code of conduct
 
-First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forgot that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted.
+First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forget that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted.
 
->Bill: Be excellent, ... to each other, ...
+`Bill: Be excellent, ... to each other, ...`
 
->Ted: and party on, dudes! [sic]
+`Ted: and party on, dudes! [sic]`
 
 [bill&ted.gif]
 
@@ -38,7 +38,7 @@ Poly runs on do-ocracy. Do-ocracy is a simple concept. If you don't like somethi
 
 Part of what makes Poly so special is that we have standards. DNA is already spaghetti code on its own and we just don't need to add to that.
 
-All successfully merged pull requests must include the following: 
+All successfully merged pull requests must meet the following criteria: 
 
 * All current tests must pass.
  
@@ -48,13 +48,13 @@ All successfully merged pull requests must include the following:
   
 * Code must be clean, readable, and commented. How you do that is up to you!
 
-Don't worry if you submit a pull request and all the tests break and the codes not readable. We won't merge it just yet and then you can get some feedback about what needs to be changed before we do!
+Don't worry if you submit a pull request and all the tests break and the code is not readable. We won't merge it just yet and then you can get some feedback about what needs to be changed before we do!
 
-## Be diverse
+### Be diverse
 As one final guideline please be welcoming to newcomers and encourage diverse new contributors from all backgrounds. I want Poly to be for everyone and that includes you and people who don't look, sound, or act like you!
 
 
-# Your First Contribution
+# Your first contribution
 Help people who are new to your project understand where they can be most helpful. This is also a good time to let people know if you follow a label convention for flagging beginner issues.
 
 > Unsure where to begin contributing to Atom? You can start by looking through these beginner and help-wanted issues:
@@ -78,55 +78,23 @@ As a side note, it helps to use newcomer-friendly language throughout the rest o
 >If a maintainer asks you to "rebase" your PR, they're saying that a lot of code has changed, and that you need to update your branch so it's easier to merge.
 
 # Getting started
-### Give them a quick walkthrough of how to submit a contribution.
-How you write this is up to you, but some things you may want to include:
 
-* Let them know if they need to sign a CLA, agree to a DCO, or get any other legal stuff out of the way
-* If tests are required for contributions, let them know, and explain how to run the tests
-* If you use anything other than GitHub to manage issues (ex. JIRA or Trac), let them know which tools they’ll need to contribute
+For something that is bigger than a one or two line fix:
 
->For something that is bigger than a one or two line fix:
-
->1. Create your own fork of the code
->2. Do the changes in your fork
->3. If you like the change and think the project could use it:
-    * Be sure you have followed the code style for the project.
-    * Sign the Contributor License Agreement, CLA, with the jQuery Foundation.
-    * Note the jQuery Foundation Code of Conduct.
-    * Send a pull request indicating that you have a CLA on file.
-
-[source: [Requirejs](http://requirejs.org/docs/contributing.html)] **Need more inspiration?** [1] [Active Admin](https://github.com/activeadmin/activeadmin/blob/master/CONTRIBUTING.md#1-where-do-i-go-from-here) [2] [Node.js](https://github.com/nodejs/node/blob/master/CONTRIBUTING.md#code-contributions) [3] [Ember.js](https://github.com/emberjs/ember.js/blob/master/CONTRIBUTING.md#pull-requests)
-
-### If you have a different process for small or "obvious" fixes, let them know.
-
-> Small contributions such as fixing spelling errors, where the content is small enough to not be considered intellectual property, can be submitted by a contributor as a patch, without a CLA.
->
->As a rule of thumb, changes are obvious fixes if they do not introduce any new functionality or creative thinking. As long as the change does not affect functionality, some likely examples include the following:
->* Spelling / grammar fixes
->* Typo correction, white space and formatting changes
->* Comment clean up
->* Bug fixes that change default return values or error codes stored in constants
->* Adding logging messages or debugging output
->* Changes to ‘metadata’ files like Gemfile, .gitignore, build scripts, etc.
->* Moving source files from one directory or package to another
-
-[source: [Chef](https://github.com/chef/chef/blob/master/CONTRIBUTING.md#chef-obvious-fix-policy)] **Need more inspiration?** [1] [Puppet](https://github.com/puppetlabs/puppet/blob/master/CONTRIBUTING.md#making-trivial-changes)
+1. Create your own fork of the code.
+2. Do the changes in your fork.
+3. Send a pull request.
 
 # How to report a bug
-### Explain security disclosures first!
-At bare minimum, include this sentence:
-> If you find a security vulnerability, do NOT open an issue. Email XXXX instead.
+### Security disclosures
 
-If you don’t want to use your personal contact information, set up a “security@” email address. Larger projects might have more formal processes for disclosing security, including encrypted communication. (Disclosure: I am not a security expert.)
+If you find a security vulnerability, do NOT open an issue. I've yet to set up a security email for this so please in the interim DM me on twitter for my email [@timothystiles](https://twitter.com/TimothyStiles).
 
-> Any security issues should be submitted directly to security@travis-ci.org
-> In order to determine whether you are dealing with a security issue, ask yourself these two questions:
-> * Can I access something that's not mine, or something I shouldn't have access to?
-> * Can I disable something for other people?
->
-> If the answer to either of those two questions are "yes", then you're probably dealing with a security issue. Note that even if you answer "no" to both questions, you may still be dealing with a security issue, so if you're unsure, just email us at security@travis-ci.org.
-
-[source: [Travis CI](https://github.com/travis-ci/travis-ci/blob/master/CONTRIBUTING.md)] **Need more inspiration?** [1] [Celery](https://github.com/celery/celery/blob/master/CONTRIBUTING.rst#security) [2] [Express.js](https://github.com/expressjs/express/blob/master/Security.md)
+In order to determine whether you are dealing with a security issue, ask yourself these two questions:
+* Can I access something that's not mine, or something I shouldn't have access to?
+* Can I disable something for other people?
+  
+If the answer to either of those two questions are "yes", then you're probably dealing with a security issue. Note that even if you answer "no" to both questions, you may still be dealing with a security issue, so if you're unsure, just DM me [@timothystiles](https://twitter.com/TimothyStiles) for my personal email until I can set up a security related email.
 
 ### Tell your contributors how to file a bug report.
 You can even include a template so people can just copy-paste (again, less work for you).
@@ -138,9 +106,7 @@ You can even include a template so people can just copy-paste (again, less work 
 > 3. What did you do?
 > 4. What did you expect to see?
 > 5. What did you see instead?
-> General questions should go to the golang-nuts mailing list instead of the issue tracker. The gophers there will answer or ask you to file an issue if you've tripped over a bug.
-
-[source: [Go](https://github.com/golang/go/blob/master/CONTRIBUTING.md#filing-issues)] **Need more inspiration?** [1] [Celery](https://github.com/celery/celery/blob/master/CONTRIBUTING.rst#other-bugs ) [2] [Atom](https://github.com/atom/atom/blob/master/CONTRIBUTING.md#reporting-bugs) (includes template)
+> General questions should go to the Poly email list server (still needs to be set up).
 
 # How to suggest a feature or enhancement
 ### If you have a particular roadmap, goals, or philosophy for development, share it here.
