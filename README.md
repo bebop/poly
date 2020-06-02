@@ -27,7 +27,7 @@ In progress...
 
 ### Code of Conduct
 
-Poly has adopted a Code of Conduct. Please read the [full text](CODE_OF_CONDUCT.md) so you can understand what we're all about and please remember to be excellent to each other!
+Poly has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
 
 ### Contributing Guide
 
