@@ -531,7 +531,8 @@ func getSequence(subLines []string) Sequence {
 	return sequence
 }
 
-func parseGbk(path string) AnnotatedSequence {
+// ParseGbk takes in a filepath and parses a genbank .gb or .gbk file into an AnnotatedSequence object.
+func ParseGbk(path string) AnnotatedSequence {
 
 	f, err := os.Open(path)
 	if err != nil {

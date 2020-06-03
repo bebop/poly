@@ -4,7 +4,7 @@ import "testing"
 
 func BenchmarkParseGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseGff("data/ecoli-mg1655.gff")
+		ParseGff("data/ecoli-mg1655.gff")
 	}
 }
 

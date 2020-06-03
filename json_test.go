@@ -7,9 +7,9 @@ import (
 )
 
 func testJSONIO(t *testing.T) {
-	testSequence := parseGbk("data/test.gbk")
-	writeJSON(testSequence, "data/test.json")
-	readTestSequence := readJSON("data/test.json")
+	testSequence := ParseGbk("data/test.gbk")
+	WriteJSON(testSequence, "data/test.json")
+	readTestSequence := ReadJSON("data/test.json")
 	if diff := cmp.Diff(testSequence, readTestSequence); diff != "" {
 		t.Errorf("MakeGatewayInfo() mismatch (-want +got):\n%s", diff)
 	}

@@ -4,7 +4,7 @@ import "testing"
 
 func BenchmarkParseGbk(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		parseGbk("data/test.gbk")
+		ParseGbk("data/test.gbk")
 	}
 }
 

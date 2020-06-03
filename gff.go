@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-func parseGff(path string) AnnotatedSequence {
+// ParseGff Takes in a path string, parses and .gff v3 file into an AnnotatedSequence object.
+func ParseGff(path string) AnnotatedSequence {
 	file, _ := ioutil.ReadFile(path)
 	splitFile := strings.Split(string(file), "\n")
 	metaString := splitFile[0:2]

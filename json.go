@@ -5,12 +5,14 @@ import (
 	"io/ioutil"
 )
 
-func writeJSON(annotatedSequence AnnotatedSequence, path string) {
+// WriteJSON writes an AnnotatedSequence object out to json.
+func WriteJSON(annotatedSequence AnnotatedSequence, path string) {
 	file, _ := json.MarshalIndent(annotatedSequence, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
 }
 
-func readJSON(path string) AnnotatedSequence {
+// ReadJSON reads a AnnotatedSequence JSON file.
+func ReadJSON(path string) AnnotatedSequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
