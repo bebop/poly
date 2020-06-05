@@ -1,5 +1,12 @@
 package main
 
+import (
+	"log"
+	"os"
+
+	"github.com/urfave/cli/v2"
+)
+
 // Meta Holds all the meta information of an AnnotatedSequence struct.
 type Meta struct {
 	// shared
@@ -39,8 +46,7 @@ type Primary struct {
 
 // Reference holds information one reference in a Meta struct.
 type Reference struct {
-	Index, Authors, Title, Journal, PubMed, Remark string
-	Start, End                                     int
+	Index, Authors, Title, Journal, PubMed, Remark, Range string
 }
 
 // Locus holds Locus information in a Meta struct.
@@ -80,5 +86,27 @@ type AnnotatedSequence struct {
 }
 
 func main() {
+	app := &cli.App{
+		Name:  "poly",
+		Usage: "A command line utility for engineering organisms.",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "y",
+				Usage: "Answers yes for all prompts.",
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:    "convert",
+				Aliases: []string{"c"},
+				Usage:   "Convert a single file or set of files from one type to another. Genbank to Json, Gff to genbank, etc.",
+				Action: func(c *cli.Context) error {
+					return nil
+				}},
+		}}
 
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

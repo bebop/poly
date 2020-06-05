@@ -7,11 +7,10 @@ import (
 	"strings"
 )
 
-// ParseGff Takes in a path string, parses and .gff v3 file into an AnnotatedSequence object.
-func ParseGff(path string) AnnotatedSequence {
-	file, _ := ioutil.ReadFile(path)
-	splitFile := strings.Split(string(file), "\n")
-	metaString := splitFile[0:2]
+// ParseGff Takes in a string representing a gffv3 file and parses it into an AnnotatedSequence object.
+func ParseGff(gff string) AnnotatedSequence {
+	lines := strings.Split(gff, "\n")
+	metaString := lines[0:2]
 	versionString := metaString[0]
 	regionStringArray := strings.Split(metaString[1], " ")
 
@@ -26,7 +25,7 @@ func ParseGff(path string) AnnotatedSequence {
 	sequence := Sequence{}
 	var sequenceBuffer bytes.Buffer
 	fastaFlag := false
-	for _, line := range splitFile {
+	for _, line := range lines {
 		if line == "##FASTA" {
 			fastaFlag = true
 		} else if len(line) == 0 {
@@ -68,3 +67,28 @@ func ParseGff(path string) AnnotatedSequence {
 
 	return annotatedSequence
 }
+
+// BuildGff takes an Annotated sequence and returns a string representing a gff to be written out.
+// func BuildGff(AnnotatedSequence) string {
+// 	var Gff string
+
+// }
+
+// ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
+func ReadGff(path string) AnnotatedSequence {
+	file, err := ioutil.ReadFile(path)
+	var annotatedSequence AnnotatedSequence
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	} else {
+		annotatedSequence = ParseGff(string(file))
+	}
+	return annotatedSequence
+}
+
+// WriteGff takes an AnnotatedSequence struct and a path string and writes out a gff to that path.
+// func WriteGff(annotatedSequence AnnotatedSequence, path string) AnnotatedSequence {
+// 	file
+// 	_ = ioutil.WriteFile(path, file, 0644)
+
+// }
