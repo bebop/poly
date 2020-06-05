@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
-	"os"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -371,9 +367,7 @@ func joinSubLines(splitLine, subLines []string) string {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 
 	for _, subLine := range subLines {
-		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-		headString := featureSplitLine[0]
-		if !allLevelFeatureCheck(headString) {
+		if !quickMetaCheck(subLine) && !quickSubMetaCheck(subLine) {
 			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
 		} else {
 			break
@@ -405,11 +399,9 @@ func getReference(splitLine, subLines []string) Reference {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
 	reference := Reference{}
 	reference.Index = strings.Split(base, " ")[0]
-	start, _ := strconv.Atoi(strings.TrimSpace(strings.Split(base, " ")[3]))
-	reference.Start = start
-	end := strings.TrimSpace(strings.Split(base, " ")[5])
-	end = end[0 : len(end)-1]
-	reference.End, _ = strconv.Atoi(end)
+	if len(base) > 1 {
+		reference.Range = strings.TrimSpace(strings.Join(strings.Split(base, " ")[1:], " "))
+	}
 
 	for numSubLine, subLine := range subLines {
 		featureSubLines := subLines[numSubLine+1:]
@@ -531,33 +523,10 @@ func getSequence(subLines []string) Sequence {
 	return sequence
 }
 
-// ParseGbk takes in a filepath and parses a genbank .gb or .gbk file into an AnnotatedSequence object.
-func ParseGbk(path string) AnnotatedSequence {
+// ParseGbk takes in a string representing a bgk file and parses it into an AnnotatedSequence object.
+func ParseGbk(gbk string) AnnotatedSequence {
 
-	f, err := os.Open(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	bio := bufio.NewReader(f)
-
-	var lines []string
-	i := 0
-
-	// Read all lines of the file into buffer
-	for {
-		line, err := bio.ReadBytes('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			panic(err)
-		}
-		sline := strings.TrimRight(string(line), `\n`)
-		lines = append(lines, sline)
-		i++
-	}
-	// End read of file into buffer
+	lines := strings.Split(gbk, "\n")
 
 	// Create meta struct
 	meta := Meta{}
@@ -615,5 +584,19 @@ func ParseGbk(path string) AnnotatedSequence {
 	annotatedSequence.Features = features
 	annotatedSequence.Sequence = sequence
 
+	return annotatedSequence
+}
+
+// ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
+func ReadGbk(path string) AnnotatedSequence {
+	file, err := ioutil.ReadFile(path)
+	var annotatedSequence AnnotatedSequence
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	} else {
+		gbkString := string(file)
+		annotatedSequence = ParseGbk(gbkString)
+
+	}
 	return annotatedSequence
 }
