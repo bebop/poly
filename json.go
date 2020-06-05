@@ -5,13 +5,13 @@ import (
 	"io/ioutil"
 )
 
-// WriteJSON writes an AnnotatedSequence object out to json.
+// WriteJSON writes an AnnotatedSequence struct out to json.
 func WriteJSON(annotatedSequence AnnotatedSequence, path string) {
 	file, _ := json.MarshalIndent(annotatedSequence, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
 }
 
-// ReadJSON reads a AnnotatedSequence JSON file.
+// ReadJSON reads an AnnotatedSequence JSON file.
 func ReadJSON(path string) AnnotatedSequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
