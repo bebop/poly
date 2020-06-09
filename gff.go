@@ -62,11 +62,6 @@ func ParseGff(gff string) AnnotatedSequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			// for i := strings.Index(attributes, ";"); i > 0; i = strings.Index(attributes, ";") {
-			// 	eqIndex = strings.Index(attributes[:i], "=")
-			// 	record.Attributes[attributes[:i][:eqIndex]] = attributes[:i][eqIndex+1:]
-			// 	attributes = attributes[i+1:]
-			// }
 			records = append(records, record)
 		}
 	}
@@ -124,10 +119,6 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 		end = "1"
 	}
 
-	// why doesn't this work?
-	// } else if annotatedSequence.Sequence.Sequence != "" {
-	// 	end = len(annotatedSequence.Sequence.Sequence)
-
 	regionString = "##sequence-region " + name + " " + start + " " + end + "\n"
 	gffBuffer.WriteString(regionString)
 
@@ -174,11 +165,6 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 			attributeString := key + "=" + feature.Attributes[key] + ";"
 			featureAttributes += attributeString
 		}
-
-		// for key, element := range feature.Attributes {
-		// 	attributeString := key + "=" + element + ";"
-		// 	featureAttributes += attributeString
-		// }
 
 		if len(featureAttributes) > 0 {
 			featureAttributes = featureAttributes[0 : len(featureAttributes)-1]
