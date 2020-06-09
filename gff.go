@@ -188,15 +188,13 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 		gffBuffer.WriteString(featureString)
 	}
 
-	// gffBuffer.WriteString(line)
-
 	gffBuffer.WriteString("###\n")
 	gffBuffer.WriteString("##FASTA\n")
 	gffBuffer.WriteString(">" + annotatedSequence.Meta.Name + "\n")
 
-	for lIndex, letter := range annotatedSequence.Sequence.Sequence {
-		lIndex++
-		if lIndex%70 == 0 && lIndex != 0 {
+	for letterIndex, letter := range annotatedSequence.Sequence.Sequence {
+		letterIndex++
+		if letterIndex%70 == 0 && letterIndex != 0 {
 			gffBuffer.WriteRune(letter)
 			gffBuffer.WriteString("\n")
 		} else {
