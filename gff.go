@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -45,17 +48,25 @@ func ParseGff(gff string) AnnotatedSequence {
 			record.Type = fields[2]
 			record.Start, _ = strconv.Atoi(fields[3])
 			record.End, _ = strconv.Atoi(fields[4])
-			record.Score, _ = strconv.ParseFloat(fields[5], 64)
-			record.Strand = fields[6][0]
-			record.Phase, _ = strconv.Atoi(fields[7])
+			record.Score = fields[5]
+			record.Strand = fields[6]
+			record.Phase = fields[7]
 			record.Attributes = make(map[string]string)
 			attributes := fields[8]
-			var eqIndex int
-			for i := strings.Index(attributes, ";"); i > 0; i = strings.Index(attributes, ";") {
-				eqIndex = strings.Index(attributes[:i], "=")
-				record.Attributes[attributes[:i][:eqIndex]] = attributes[:i][eqIndex+1:]
-				attributes = attributes[i+1:]
+			// var eqIndex int
+			attributeSlice := strings.Split(attributes, ";")
+
+			for _, attribute := range attributeSlice {
+				attributeSplit := strings.Split(attribute, "=")
+				key := attributeSplit[0]
+				value := attributeSplit[1]
+				record.Attributes[key] = value
 			}
+			// for i := strings.Index(attributes, ";"); i > 0; i = strings.Index(attributes, ";") {
+			// 	eqIndex = strings.Index(attributes[:i], "=")
+			// 	record.Attributes[attributes[:i][:eqIndex]] = attributes[:i][eqIndex+1:]
+			// 	attributes = attributes[i+1:]
+			// }
 			records = append(records, record)
 		}
 	}
@@ -68,11 +79,132 @@ func ParseGff(gff string) AnnotatedSequence {
 	return annotatedSequence
 }
 
-// BuildGff takes an Annotated sequence and returns a string representing a gff to be written out.
-// func BuildGff(AnnotatedSequence) string {
-// 	var Gff string
+// BuildGff takes an Annotated sequence and returns a byte array representing a gff to be written out.
+func BuildGff(annotatedSequence AnnotatedSequence) []byte {
+	var gffBuffer bytes.Buffer
 
-// }
+	var versionString string
+	if annotatedSequence.Meta.GffVersion != "" {
+		versionString = "##gff-version " + annotatedSequence.Meta.GffVersion + "\n"
+	} else {
+		versionString = "##gff-version 3 \n"
+	}
+	gffBuffer.WriteString(versionString)
+
+	var regionString string
+	var name string
+	var start string
+	var end string
+
+	if annotatedSequence.Meta.Name != "" {
+		name = annotatedSequence.Meta.Name
+	} else if annotatedSequence.Meta.Locus.Name != "" {
+		name = annotatedSequence.Meta.Locus.Name
+	} else if annotatedSequence.Meta.Accession != "" {
+		name = annotatedSequence.Meta.Accession
+	} else {
+		name = "unknown"
+	}
+
+	if annotatedSequence.Meta.RegionStart != 0 {
+		start = strconv.Itoa(annotatedSequence.Meta.RegionStart)
+	} else {
+		start = "1"
+	}
+
+	if annotatedSequence.Meta.RegionEnd != 0 {
+		end = strconv.Itoa(annotatedSequence.Meta.RegionEnd)
+	} else if annotatedSequence.Meta.Locus.SequenceLength != "" {
+		reg, err := regexp.Compile("[^0-9]+")
+		if err != nil {
+			log.Fatal(err)
+		}
+		end = reg.ReplaceAllString(annotatedSequence.Meta.Locus.SequenceLength, "")
+	} else {
+		end = "1"
+	}
+
+	// why doesn't this work?
+	// } else if annotatedSequence.Sequence.Sequence != "" {
+	// 	end = len(annotatedSequence.Sequence.Sequence)
+
+	regionString = "##sequence-region " + name + " " + start + " " + end + "\n"
+	gffBuffer.WriteString(regionString)
+
+	for _, feature := range annotatedSequence.Features {
+		var featureString string
+
+		var featureName string
+		if feature.Name != "" {
+			featureName = feature.Name
+		} else {
+			featureName = annotatedSequence.Meta.Name
+		}
+
+		var featureSource string
+		if feature.Source != "" {
+			featureSource = feature.Source
+		} else {
+			featureSource = "feature"
+		}
+
+		var featureType string
+		if feature.Type != "" {
+			featureType = feature.Type
+		} else {
+			featureType = "unknown"
+		}
+
+		// really really really need to make a genbank parser util for getting start and stop of region.
+		featureStart := strconv.Itoa(feature.Start)
+
+		featureEnd := strconv.Itoa(feature.End)
+		featureScore := feature.Score
+		featureStrand := string(feature.Strand)
+		featurePhase := feature.Phase
+		var featureAttributes string
+
+		keys := make([]string, 0, len(feature.Attributes))
+		for key := range feature.Attributes {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			attributeString := key + "=" + feature.Attributes[key] + ";"
+			featureAttributes += attributeString
+		}
+
+		// for key, element := range feature.Attributes {
+		// 	attributeString := key + "=" + element + ";"
+		// 	featureAttributes += attributeString
+		// }
+
+		if len(featureAttributes) > 0 {
+			featureAttributes = featureAttributes[0 : len(featureAttributes)-1]
+		}
+		TAB := "\t"
+		featureString = featureName + TAB + featureSource + TAB + featureType + TAB + featureStart + TAB + featureEnd + TAB + featureScore + TAB + featureStrand + TAB + featurePhase + TAB + featureAttributes + "\n"
+		gffBuffer.WriteString(featureString)
+	}
+
+	// gffBuffer.WriteString(line)
+
+	gffBuffer.WriteString("###\n")
+	gffBuffer.WriteString("##FASTA\n")
+	gffBuffer.WriteString(">" + annotatedSequence.Meta.Name + "\n")
+
+	for lIndex, letter := range annotatedSequence.Sequence.Sequence {
+		lIndex++
+		if lIndex%70 == 0 && lIndex != 0 {
+			gffBuffer.WriteRune(letter)
+			gffBuffer.WriteString("\n")
+		} else {
+			gffBuffer.WriteRune(letter)
+		}
+	}
+	return gffBuffer.Bytes()
+}
 
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) AnnotatedSequence {
@@ -87,8 +219,7 @@ func ReadGff(path string) AnnotatedSequence {
 }
 
 // WriteGff takes an AnnotatedSequence struct and a path string and writes out a gff to that path.
-// func WriteGff(annotatedSequence AnnotatedSequence, path string) AnnotatedSequence {
-// 	file
-// 	_ = ioutil.WriteFile(path, file, 0644)
-
-// }
+func WriteGff(annotatedSequence AnnotatedSequence, path string) {
+	gff := BuildGff(annotatedSequence)
+	_ = ioutil.WriteFile(path, gff, 0644)
+}

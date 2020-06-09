@@ -63,9 +63,9 @@ type Feature struct {
 	Type       string
 	Start      int
 	End        int
-	Score      float64
-	Strand     byte
-	Phase      int
+	Score      string
+	Strand     string
+	Phase      string
 	Attributes map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
 	//gbk specific
 	Location string
