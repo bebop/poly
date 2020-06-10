@@ -847,7 +847,7 @@ func getSequence(subLines []string) Sequence {
 	return sequence
 }
 
-// ParseGbk takes in a string representing a bgk file and parses it into an AnnotatedSequence object.
+// ParseGbk takes in a string representing a gbk/gb/genbank file and parses it into an AnnotatedSequence object.
 func ParseGbk(gbk string) AnnotatedSequence {
 
 	lines := strings.Split(gbk, "\n")
