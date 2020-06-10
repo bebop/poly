@@ -99,7 +99,7 @@ func main() {
 			{
 				Name:    "convert",
 				Aliases: []string{"c"},
-				Usage:   "Convert a single file or set of files from one type to another. Genbank to Json, Gff to genbank, etc.",
+				Usage:   "Convert a single file or set of files from one type to another. Genbank to Json, Json to Gff, etc.",
 				Action: func(c *cli.Context) error {
 					return nil
 				}},

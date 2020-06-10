@@ -187,6 +187,7 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 			gffBuffer.WriteRune(letter)
 		}
 	}
+	gffBuffer.WriteString("\n")
 	return gffBuffer.Bytes()
 }
 
