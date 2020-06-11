@@ -79,8 +79,9 @@ At this point, you're ready to make your changes! Feel free to ask for help; eve
 For something that is bigger than a one or two line fix:
 
 1. Create your own fork of the code.
-2. Do the changes in your fork.
-3. Send a pull request.
+2. Make a branch in your fork
+3. Do the changes in your fork's branch.
+4. Send a pull request.
 
 # How to report a bug
 ### Security disclosures
