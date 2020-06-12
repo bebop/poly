@@ -28,7 +28,7 @@ Here's how you can pipe to standard input and then redirect to a new json file.
 cat bsub.gbk | poly c -i gbk -o json > bsub.json
 ```
 
-Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. -o default to json and can also be used to specify gff as output.
+Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
 
 ```bash
 poly c -o json *.gbk *.gb *.gff
