@@ -38,6 +38,8 @@ poly c -o json *.gbk *.gb *gff
 
 In progress, but most code is well commented.
 
+You can also learn more about poly or a sub command like convert using the -h flag which will provide more documentation.
+
 ## Contributing
 
 ### Code of Conduct
