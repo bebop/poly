@@ -36,7 +36,7 @@ poly c -o json *.gbk *.gb *gff
 
 ## Documentation
 
-In progress...
+In progress, but most code is well commented.
 
 ## Contributing
 
