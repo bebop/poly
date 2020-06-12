@@ -3,7 +3,7 @@ language: go
 go:
     - 1.13.8
 script:
-    - go test -v
+    - go test -v ./...
     - go build
 env:
     global:
