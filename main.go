@@ -30,8 +30,8 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:  "i",
-						Value: "json",
-						Usage: "Specify file input type. Options are Gff, gbk/gb, and json. Defaults to json.",
+						Value: "",
+						Usage: "Specify file input type. Options are Gff, gbk/gb, and json. Defaults to none.",
 					},
 				},
 				Action: func(c *cli.Context) error {
