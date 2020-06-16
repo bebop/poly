@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/urfave/cli/v2"
@@ -40,16 +42,7 @@ parse them, and then spit out a similiarly named file with the .json extension.
 func convert(c *cli.Context) error {
 	if isPipe() {
 
-		var annotatedSequence AnnotatedSequence
-
-		// logic for determining input format, then parses accordingly.
-		if c.String("i") == "json" {
-			json.Unmarshal([]byte(stdinToString(os.Stdin)), &annotatedSequence)
-		} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-			annotatedSequence = ParseGbk(stdinToString(os.Stdin))
-		} else if c.String("i") == "gff" {
-			annotatedSequence = ParseGff(stdinToString(os.Stdin))
-		}
+		annotatedSequence := parseStdin(c)
 
 		var output []byte
 
@@ -66,16 +59,8 @@ func convert(c *cli.Context) error {
 		//
 	} else {
 
-		var matches []string
-
-		//take all args and get their pattern matches.
-		for argIndex := 0; argIndex < c.Args().Len(); argIndex++ {
-			match, _ := filepath.Glob(c.Args().Get(argIndex))
-			matches = append(matches, match...)
-		}
-
-		//filtering pattern matches for duplicates.
-		matches = uniqueNonEmptyElementsOf(matches)
+		// gets glob pattern matches to determine which files to use.
+		matches := getMatches(c)
 
 		// TODO write basic check to see if input flag or all paths have accepted file extensions.
 
@@ -93,18 +78,7 @@ func convert(c *cli.Context) error {
 			// executing Go routine.
 			go func(match string) {
 				extension := filepath.Ext(match)
-				var annotatedSequence AnnotatedSequence
-
-				// determining which reader to use and parse into AnnotatedSequence struct.
-				if extension == ".gff" || c.String("i") == "gff" {
-					annotatedSequence = ReadGff(match)
-				} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-					annotatedSequence = ReadGbk(match)
-				} else if extension == ".json" || c.String("i") == "json" {
-					annotatedSequence = ReadJSON(match)
-				} else {
-					// TODO put default error handling here.
-				}
+				annotatedSequence := fileParser(c, match)
 
 				// determining output format and name, then writing out to name.
 				outputPath := match[0 : len(match)-len(extension)]
@@ -128,6 +102,91 @@ func convert(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+/******************************************************************************
+
+hash currently has three modes. Pipe, single file io, and multi fileio.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/bsub.gbk | poly c -i gbk -o json > test.json
+
+In this case the output goes directly to standard out and can be redirected
+into a file.
+
+If not from a pipe convert checks args for file patterns to find, then iterates
+over each matched file pattern to read in a file, then spit out the desired
+output.
+
+For example:
+
+	poly c -o json *.gbk *.gff
+
+will read all files in a directory with ".gbk" or ".gff" as their extension
+parse them, and then spit out a similiarly named file with the .json extension.
+
+******************************************************************************/
+func hash(c *cli.Context) {
+
+	if isPipe() {
+		annotatedSequence := parseStdin(c)
+		sequenceHash := flagSwitchHash(c, annotatedSequence)
+		if c.String("o") == "json" {
+			annotatedSequence.Sequence.Hash = sequenceHash
+			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
+			fmt.Print(string(output))
+		} else {
+			fmt.Print(sequenceHash)
+		}
+	} else {
+
+		// gets glob pattern matches to determine which files to use.
+		matches := getMatches(c)
+
+		// declaring wait group outside loop
+		var wg sync.WaitGroup
+
+		// concurrently iterate through each pattern match, read the file, output to new format.
+		for _, match := range matches {
+
+			// incrementing wait group for Go routine
+			wg.Add(1)
+
+			// executing Go routine.
+			go func(match string) {
+				extension := filepath.Ext(match)
+				annotatedSequence := fileParser(c, match)
+				sequenceHash := flagSwitchHash(c, annotatedSequence)
+				if c.String("o") == "json" {
+					annotatedSequence.Sequence.Hash = sequenceHash
+					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+
+					if c.Bool("stdout") == true {
+						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
+						fmt.Print(string(output))
+					} else {
+						outputPath := match[0 : len(match)-len(extension)]
+						WriteJSON(annotatedSequence, outputPath+".json")
+					}
+
+				} else {
+					fmt.Println(sequenceHash)
+				}
+
+				// decrementing wait group.
+				wg.Done()
+
+			}(match) // passing match to Go routine anonymous function.
+
+		}
+
+		// waiting outside for loop for Go routines so they can run concurrently.
+		wg.Wait()
+
+	}
+
 }
 
 // a simple helper function to convert an *os.File type into a string.
@@ -172,4 +231,101 @@ func isPipe() bool {
 		flag = true
 	}
 	return flag
+}
+
+// a simple helper function to take stdin from a pipe and parse it into an annotated sequence
+func parseStdin(c *cli.Context) AnnotatedSequence {
+	var annotatedSequence AnnotatedSequence
+
+	// logic for determining input format, then parses accordingly.
+	if c.String("i") == "json" {
+		json.Unmarshal([]byte(stdinToString(os.Stdin)), &annotatedSequence)
+	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
+		annotatedSequence = ParseGbk(stdinToString(os.Stdin))
+	} else if c.String("i") == "gff" {
+		annotatedSequence = ParseGff(stdinToString(os.Stdin))
+	}
+	return annotatedSequence
+}
+
+// helper function to hash sequence based on flag using generic hash.
+func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string {
+
+	var hashString string
+	switch strings.ToUpper(c.String("t")) {
+	case "MD5":
+		hashString = annotatedSequence.hash(crypto.MD5)
+	case "SHA1":
+		hashString = annotatedSequence.hash(crypto.SHA1)
+	case "SHA244":
+		hashString = annotatedSequence.hash(crypto.SHA224)
+	case "SHA256":
+		hashString = annotatedSequence.hash(crypto.SHA256)
+	case "SHA384":
+		hashString = annotatedSequence.hash(crypto.SHA384)
+	case "SHA512":
+		hashString = annotatedSequence.hash(crypto.SHA512)
+	case "RIPEMD160":
+		hashString = annotatedSequence.hash(crypto.RIPEMD160)
+	case "SHA3_224":
+		hashString = annotatedSequence.hash(crypto.SHA3_224)
+	case "SHA3_256":
+		hashString = annotatedSequence.hash(crypto.SHA3_256)
+	case "SHA3_384":
+		hashString = annotatedSequence.hash(crypto.SHA3_384)
+	case "SHA3_512":
+		hashString = annotatedSequence.hash(crypto.SHA3_512)
+	case "SHA512_224":
+		hashString = annotatedSequence.hash(crypto.SHA512_224)
+	case "SHA512_256":
+		hashString = annotatedSequence.hash(crypto.SHA512_256)
+	case "BLAKE2s_256":
+		hashString = annotatedSequence.hash(crypto.BLAKE2s_256)
+	case "BLAKE2b_256":
+		hashString = annotatedSequence.hash(crypto.BLAKE2b_256)
+	case "BLAKE2b_384":
+		hashString = annotatedSequence.hash(crypto.BLAKE2b_384)
+	case "BLAKE2b_512":
+		hashString = annotatedSequence.hash(crypto.BLAKE2b_512)
+	case "BLAKE3":
+		hashString = annotatedSequence.blake3Hash()
+	default:
+		break
+	}
+	return hashString
+}
+
+// helper function to get unique glob patterns from cli.context
+func getMatches(c *cli.Context) []string {
+	var matches []string
+
+	//take all args and get their pattern matches.
+	for argIndex := 0; argIndex < c.Args().Len(); argIndex++ {
+		match, _ := filepath.Glob(c.Args().Get(argIndex))
+		matches = append(matches, match...)
+	}
+
+	//filtering pattern matches for duplicates.
+	matches = uniqueNonEmptyElementsOf(matches)
+
+	return matches
+
+}
+
+// function to parse whatever file is at a matched path.
+func fileParser(c *cli.Context, match string) AnnotatedSequence {
+	extension := filepath.Ext(match)
+	var annotatedSequence AnnotatedSequence
+
+	// determining which reader to use and parse into AnnotatedSequence struct.
+	if extension == ".gff" || c.String("i") == "gff" {
+		annotatedSequence = ReadGff(match)
+	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
+		annotatedSequence = ReadGbk(match)
+	} else if extension == ".json" || c.String("i") == "json" {
+		annotatedSequence = ReadJSON(match)
+	} else {
+		// TODO put default error handling here.
+	}
+	return annotatedSequence
 }

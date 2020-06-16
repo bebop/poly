@@ -1,16 +1,45 @@
 package main
 
 import (
+	"crypto"
+	_ "crypto/md5"
+	_ "crypto/sha1"
+	_ "crypto/sha256"
+	_ "crypto/sha512"
 	"encoding/hex"
-	"strings"
+	"errors"
 
+	_ "golang.org/x/crypto/blake2b"
+	_ "golang.org/x/crypto/blake2s"
+	_ "golang.org/x/crypto/ripemd160"
+	_ "golang.org/x/crypto/sha3"
 	"lukechampine.com/blake3"
 )
 
-// boothLeastRotation gets the least rotation of a circular string.
+// Where each hash function comes from.
+// MD5                         // import crypto/md5
+// SHA1                        // import crypto/sha1
+// SHA224                      // import crypto/sha256
+// SHA256                      // import crypto/sha256
+// SHA384                      // import crypto/sha512
+// SHA512                      // import crypto/sha512
+// MD5SHA1                     // no implementation; MD5+SHA1 used for TLS RSA
+// RIPEMD160                   // import golang.org/x/crypto/ripemd160
+// SHA3_224                    // import golang.org/x/crypto/sha3
+// SHA3_256                    // import golang.org/x/crypto/sha3
+// SHA3_384                    // import golang.org/x/crypto/sha3
+// SHA3_512                    // import golang.org/x/crypto/sha3
+// SHA512_224                  // import crypto/sha512
+// SHA512_256                  // import crypto/sha512
+// BLAKE2s_256                 // import golang.org/x/crypto/blake2s
+// BLAKE2b_256                 // import golang.org/x/crypto/blake2b
+// BLAKE2b_384                 // import golang.org/x/crypto/blake2b
+// BLAKE2b_512                 // import golang.org/x/crypto/blake2b
+
+// BoothLeastRotation gets the least rotation of a circular string.
 // https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
 // this is generally over commented but I'm keeping it this way for now. - Tim
-func boothLeastRotation(sequence string) int {
+func BoothLeastRotation(sequence string) int {
 
 	// first concatenate the sequence to itself to avoid modular arithmateic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
@@ -58,13 +87,47 @@ func boothLeastRotation(sequence string) int {
 	return leastRotationIndex
 }
 
-func seqhash(sequence string, circular bool) string {
-	s := strings.ToUpper(sequence) // why to upper here?
-	if circular {
-		r := boothLeastRotation(s)
-		concatSeq := s + s
-		s = concatSeq[r : r+len(s)]
+//RotateSequence rotates circular sequences to deterministic point.
+func RotateSequence(sequence string) string {
+	rotationIndex := BoothLeastRotation(sequence)
+	concatenatedSequence := sequence + sequence
+	sequence = concatenatedSequence[rotationIndex : rotationIndex+len(sequence)]
+	return sequence
+}
+
+// GenericSequenceHash takes a byte slice and a hash function and hashes it.
+// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang
+func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) (string, error) {
+	if !hash.Available() {
+		return "", errors.New("hash unavailable")
 	}
-	b := blake3.Sum256([]byte(s))
+	if annotatedSequence.Meta.Locus.Circular {
+		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
+	}
+	h := hash.New()
+	return hex.EncodeToString(h.Sum([]byte(annotatedSequence.Sequence.Sequence))), nil
+}
+
+// method for hashing annotatedSequence structs.
+func (annotatedSequence AnnotatedSequence) hash(hash crypto.Hash) string {
+	seqHash, _ := GenericSequenceHash(annotatedSequence, hash)
+	return seqHash
+}
+
+// Blake3SequenceHash Blake3 function doesn't use standard golang hash interface
+// so we couldn't use it with the generic sequence hash.
+func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
+
+	if annotatedSequence.Meta.Locus.Circular {
+		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
+	}
+
+	b := blake3.Sum256([]byte(annotatedSequence.Sequence.Sequence))
 	return hex.EncodeToString(b[:])
+}
+
+// method wrapper for hashing annotatedSequence structs.
+func (annotatedSequence AnnotatedSequence) blake3Hash() string {
+	seqHash := Blake3SequenceHash(annotatedSequence)
+	return seqHash
 }
