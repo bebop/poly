@@ -20,9 +20,10 @@ go get github.com/TimothyStiles/poly
 ## Examples
 
 
-### cli
+### Command Line Interfacce (cli) 
 
-At the moment Poly can be used to batch convert annotated sequence files like gff and genbank into JSON. You can do this by either providing wild card paths as arguments or piping to stdin.
+Batch convert annotated sequence files like gff and genbank into JSON. 
+You can do this by either providing wild card paths as arguments or piping to stdin.
 
 Here's how you can pipe to standard input and then redirect to a new json file.
 
