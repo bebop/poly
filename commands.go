@@ -110,10 +110,14 @@ hash currently has three modes. Pipe, single file io, and multi fileio.
 
 The function isPipe() detects if input is coming from a pipe like:
 
-	cat data/bsub.gbk | poly c -i gbk -o json > test.json
+	cat data/bsub.gbk | poly hash -i gbk -o json > test.json
 
 In this case the output goes directly to standard out and can be redirected
 into a file.
+
+Without the "-o json" json flag only the hash is printed to stdout.
+
+to force all output to go to stdout use --stdout.
 
 If not from a pipe convert checks args for file patterns to find, then iterates
 over each matched file pattern to read in a file, then spit out the desired
@@ -121,10 +125,10 @@ output.
 
 For example:
 
-	poly c -o json *.gbk *.gff
+	poly hash -o json *.gbk *.gff
 
 will read all files in a directory with ".gbk" or ".gff" as their extension
-parse them, and then spit out a similiarly named file with the .json extension.
+parse them, and then spit out a similiarly named file with the .json extension along with their hashes.
 
 ******************************************************************************/
 func hash(c *cli.Context) {
