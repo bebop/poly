@@ -46,7 +46,7 @@ func main() {
 					&cli.StringFlag{
 						Name:  "t",
 						Value: "blake3",
-						Usage: "Specify hash function type. Options are blake3, md5, sha1.",
+						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
 					},
 					&cli.StringFlag{
 						Name:  "i",
