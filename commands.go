@@ -106,7 +106,7 @@ func convert(c *cli.Context) error {
 
 /******************************************************************************
 
-hash currently has three modes. Pipe, single file io, and multi fileio.
+hash currently has two modes. Pipe and fileio.
 
 The function isPipe() detects if input is coming from a pipe like:
 
