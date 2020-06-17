@@ -84,6 +84,15 @@ Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
 
+func TestLocusParseRegression(t *testing.T) {
+	gbk := ReadGbk("data/puc19.gbk").Meta.Locus
+	json := ReadJSON("data/puc19static.json").Meta.Locus
+
+	if diff := cmp.Diff(gbk, json); diff != "" {
+		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
+	}
+
+}
 func BenchmarkReadGbk(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ReadGbk("data/bsub.gbk")
