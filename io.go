@@ -75,8 +75,8 @@ type Reference struct {
 
 // Locus holds Locus information in a Meta struct.
 type Locus struct {
-	Name, SequenceLength, MoleculeType, GenBankDivision, ModDate string
-	Circular                                                     bool
+	Name, SequenceLength, MoleculeType, GenBankDivision, ModDate, SequenceCoding string
+	Circular                                                                     bool
 }
 
 // Feature holds a single annotation in a struct. from https://github.com/blachlylab/gff3/blob/master/gff3.go
@@ -352,6 +352,21 @@ var genbankDivisions = []string{
 	"HTG", //HTG sequences (high-throughput genomic sequences)
 	"HTC", //unfinished high-throughput cDNA sequencing
 	"ENV", //environmental sampling sequences
+}
+
+var genBankMoleculeTypes = []string{
+	"DNA",
+	"genomic DNA",
+	"genomic RNA",
+	"mRNA",
+	"tRNA",
+	"rRNA",
+	"other RNA",
+	"other DNA",
+	"transcribed RNA",
+	"viral cRNA",
+	"unassigned DNA",
+	"unassigned RNA",
 }
 
 //used in feature check functions.
@@ -660,29 +675,62 @@ func allGeneTypeCheck(featureString string) bool {
 // parses locus from provided string.
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
+
+	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
+	circularRegex, _ := regexp.Compile(` circular `)
+	modDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
+
 	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
+
 	var filteredLocusSplit []string
 	for i := range locusSplit {
 		if locusSplit[i] != "" {
 			filteredLocusSplit = append(filteredLocusSplit, locusSplit[i])
 		}
 	}
+
 	locus.Name = filteredLocusSplit[1]
-	locus.SequenceLength = strings.Join([]string{filteredLocusSplit[2], filteredLocusSplit[3]}, " ")
-	locus.MoleculeType = filteredLocusSplit[4]
-	if filteredLocusSplit[5] == "circular" || filteredLocusSplit[5] == "linear" {
-		if filteredLocusSplit[5] == "circular" {
-			locus.Circular = true
-		} else {
-			locus.Circular = false
+
+	// sequence length and coding
+	baseSequenceLength := string(basePairRegex.FindString(locusString))
+	if baseSequenceLength != "" {
+		splitBaseSequenceLength := strings.Split(strings.TrimSpace(baseSequenceLength), " ")
+		if len(splitBaseSequenceLength) == 2 {
+			locus.SequenceLength = splitBaseSequenceLength[0]
+			locus.SequenceCoding = splitBaseSequenceLength[1]
 		}
-		locus.GenBankDivision = filteredLocusSplit[6]
-		locus.ModDate = filteredLocusSplit[7]
+	}
+
+	// molecule type
+	for _, moleculeType := range genBankMoleculeTypes {
+		moleculeRegex, _ := regexp.Compile(moleculeType)
+		match := string(moleculeRegex.Find([]byte(locusString)))
+		if match != "" {
+			locus.MoleculeType = match
+			break
+		}
+	}
+
+	// circularity flag
+	if circularRegex.Match([]byte(locusString)) {
+		locus.Circular = true
 	} else {
 		locus.Circular = false
-		locus.GenBankDivision = filteredLocusSplit[5]
-		locus.ModDate = filteredLocusSplit[6]
 	}
+
+	// genbank division
+	for _, genbankDivision := range genbankDivisions {
+		genbankDivisionRegex, _ := regexp.Compile(genbankDivision)
+		match := string(genbankDivisionRegex.Find([]byte(locusString)))
+		if match != "" {
+			locus.GenBankDivision = match
+			break
+		}
+	}
+
+	// ModDate
+	locus.ModDate = modDateRegex.FindString(locusString)
+
 	return locus
 }
 
