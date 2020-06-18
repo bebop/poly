@@ -38,6 +38,37 @@ func main() {
 					convert(c)
 					return nil
 				}},
+			{
+				Name:    "hash",
+				Aliases: []string{"ha"},
+				Usage:   "Hash a sequence while accounting for circularity.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "t",
+						Value: "blake3",
+						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
+					},
+					&cli.StringFlag{
+						Name:  "i",
+						Value: "json",
+						Usage: "Specify file input type. Options are Gff, gbk/gb, and json.",
+					},
+					&cli.StringFlag{
+						Name:  "o",
+						Value: "string",
+						Usage: "Specify output type. Options are string and json. Defaults to string.",
+					},
+					&cli.BoolFlag{
+						Name:  "stdout",
+						Value: false,
+						Usage: "Will write to standard out whenever applicable. Defaults to false.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					hash(c)
+					return nil
+				},
+			},
 		}}
 
 	err := app.Run(os.Args)

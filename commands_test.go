@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -55,6 +56,40 @@ func TestConvert(t *testing.T) {
 	// compared input gbk from resulting output json. Fail test and print diff if error.
 	if diff := cmp.Diff(bsubInputTestSequence, bsubOutPutTestSequence); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
+	}
+
+}
+
+func TestHash(t *testing.T) {
+
+	puc19GbkBlake3Hash := "4031e1971acc8ff1bf0aa4ed623bc58beefc15e043075866a0854d592d80b28b"
+
+	// testing pipe input
+	command := "cat data/puc19.gbk | poly hash -i gbk"
+	hashOutput, _ := exec.Command("bash", "-c", command).Output()
+	hashOutputString := strings.TrimSpace(string(hashOutput))
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for piped input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+	// testing regular input
+	command = "poly hash data/puc19.gbk"
+	hashOutput, _ = exec.Command("bash", "-c", command).Output()
+	hashOutputString = strings.TrimSpace(string(hashOutput))
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for regular input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+	// testing json write output
+	command = "poly hash -o json data/puc19.gbk"
+	exec.Command("bash", "-c", command).Output()
+	hashOutputString = ReadJSON("data/puc19.json").Sequence.Hash
+	os.Remove("data/puc19.json")
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for json write output has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
 	}
 
 }

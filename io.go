@@ -98,8 +98,10 @@ type Feature struct {
 
 // Sequence holds raw sequence information in an AnnotatedSequence struct.
 type Sequence struct {
-	Description string
-	Sequence    string
+	Description  string
+	Hash         string
+	HashFunction string
+	Sequence     string
 }
 
 // AnnotatedSequence holds all sequence information in a single struct.
