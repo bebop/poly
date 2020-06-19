@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -134,10 +133,10 @@ var DefaultCodonTables = map[int]CodonTable{
 	31: generateCodonTable("FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------"),
 	33: generateCodonTable("FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------")}
 
-func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
-	codonTable := CodonTable{[]string{}, []string{}, []AminoAcid{{"M", []Codon{{"ATG", 1}}}, {"G", []Codon{{"GGA", 1}}}, {"*", []Codon{{"TAA", 1}, {"TGA", 1}}}}}
-	translation := Translate("ATGGGCTGA", DefaultCodonTables[1])
+// func main() {
+// 	rand.Seed(time.Now().UTC().UnixNano())
+// 	codonTable := CodonTable{[]string{}, []string{}, []AminoAcid{{"M", []Codon{{"ATG", 1}}}, {"G", []Codon{{"GGA", 1}}}, {"*", []Codon{{"TAA", 1}, {"TGA", 1}}}}}
+// 	translation := Translate("ATGGGCTGA", DefaultCodonTables[1])
 
-	fmt.Println(Optimize(translation, codonTable))
-}
+// 	fmt.Println(Optimize(translation, codonTable))
+// }
