@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -76,7 +77,7 @@ func Translate(nucleotides string, codonTable CodonTable) string {
 }
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-func generateCodonTable(aas, starts string) CodonTable {
+func generateCodonTable(aminoAcids, starts string) CodonTable {
 	base1 := "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
 	base2 := "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
 	base3 := "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
@@ -84,7 +85,7 @@ func generateCodonTable(aas, starts string) CodonTable {
 	var aminoAcidMap = make(map[rune][]Codon)
 	var startCodons []string
 	var stopCodons []string
-	for i, aminoAcid := range aas {
+	for i, aminoAcid := range aminoAcids {
 		if _, ok := aminoAcidMap[aminoAcid]; ok == false {
 			aminoAcidMap[aminoAcid] = []Codon{}
 		}
@@ -133,10 +134,10 @@ var DefaultCodonTables = map[int]CodonTable{
 	31: generateCodonTable("FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------"),
 	33: generateCodonTable("FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------")}
 
-//func main() {
-//	rand.Seed(time.Now().UTC().UnixNano())
-//	codonTable := CodonTable{[]string{},[]string{},[]aminoAcid{{"M",[]Codon{{"ATG", 1}}},{"G",[]Codon{{"GGA", 1}}},{"*",[]Codon{{"TAA",1},{"TGA",1}}}}}
-//	translation := Translate("ATGGGCTGA", DefaultCodonTables[1])
+func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+	codonTable := CodonTable{[]string{}, []string{}, []AminoAcid{{"M", []Codon{{"ATG", 1}}}, {"G", []Codon{{"GGA", 1}}}, {"*", []Codon{{"TAA", 1}, {"TGA", 1}}}}}
+	translation := Translate("ATGGGCTGA", DefaultCodonTables[1])
 
-//	fmt.Println(optimize(translation,codonTable))
-//}
+	fmt.Println(Optimize(translation, codonTable))
+}
