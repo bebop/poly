@@ -83,14 +83,17 @@ type Locus struct {
 type Feature struct {
 	Name string //Seqid in gff, name in gbk
 	//gff specific
-	Source     string
-	Type       string
-	Start      int
-	End        int
-	Score      string
-	Strand     string
-	Phase      string
-	Attributes map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
+	Source            string
+	Type              string
+	Start             int
+	End               int
+	Complement        bool
+	FivePrimePartial  bool
+	ThreePrimePartial bool
+	Score             string
+	Strand            string
+	Phase             string
+	Attributes        map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
 	//gbk specific
 	Location string
 	Sequence string
@@ -806,6 +809,10 @@ func getReference(splitLine, subLines []string) Reference {
 func getFeatures(lines []string) []Feature {
 	lineIndex := 0
 	features := []Feature{}
+	completeLocationClassificationRegex, _ := regexp.Compile(`^\d*..\d*$`)
+	// completeLocationExtractionRegex, _ := regexp.Compile(`\d*..\d*`)
+
+	complementLocationRegex, _ := regexp.Compile(`\((.*?)\)`)
 
 	// regex to remove quotes and slashes from qualifiers
 	reg, _ := regexp.Compile("[\"/\n]+")
@@ -827,7 +834,30 @@ func getFeatures(lines []string) []Feature {
 
 		// assign type and location to feature.
 		feature.Type = strings.TrimSpace(splitLine[0])
+		// feature.Location is the string used by GBK to denote location
 		feature.Location = strings.TrimSpace(splitLine[len(splitLine)-1])
+
+		// parsing numerical location and complement qualifier
+		if complementLocationRegex.MatchString(feature.Location) {
+			feature.Complement = true
+			// TODO this needs to be more general and less frail.
+			indeces := strings.Split(complementLocationRegex.FindStringSubmatch(feature.Location)[1], "..")
+			feature.Start, _ = strconv.Atoi(indeces[0])
+			feature.End, _ = strconv.Atoi(indeces[1])
+		} else if completeLocationClassificationRegex.MatchString(feature.Location) {
+			indeces := strings.Split(feature.Location, "..")
+			feature.Start, _ = strconv.Atoi(indeces[0])
+			feature.End, _ = strconv.Atoi(indeces[1])
+		}
+
+		// marking if location is partial and either 5' or 3' ends
+		if strings.Contains(feature.Location, "<") {
+			feature.FivePrimePartial = true
+		}
+
+		if strings.Contains(feature.Location, ">") {
+			feature.ThreePrimePartial = true
+		}
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
