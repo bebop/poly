@@ -809,9 +809,8 @@ func getReference(splitLine, subLines []string) Reference {
 func getFeatures(lines []string) []Feature {
 	lineIndex := 0
 	features := []Feature{}
-	completeLocationClassificationRegex, _ := regexp.Compile(`^\d*..\d*$`)
-	// completeLocationExtractionRegex, _ := regexp.Compile(`\d*..\d*`)
 
+	locationExtractionRegex, _ := regexp.Compile(`\d+..\d+`)
 	complementLocationRegex, _ := regexp.Compile(`\((.*?)\)`)
 
 	// regex to remove quotes and slashes from qualifiers
@@ -837,26 +836,23 @@ func getFeatures(lines []string) []Feature {
 		// feature.Location is the string used by GBK to denote location
 		feature.Location = strings.TrimSpace(splitLine[len(splitLine)-1])
 
-		// parsing numerical location and complement qualifier
-		if complementLocationRegex.MatchString(feature.Location) {
-			feature.Complement = true
-			// TODO this needs to be more general and less frail.
-			indeces := strings.Split(complementLocationRegex.FindStringSubmatch(feature.Location)[1], "..")
+		// getting usable coordinates with meta.
+		if locationExtractionRegex.MatchString(feature.Location) {
+			indeces := strings.Split(locationExtractionRegex.FindString(feature.Location), "..")
 			feature.Start, _ = strconv.Atoi(indeces[0])
 			feature.End, _ = strconv.Atoi(indeces[1])
-		} else if completeLocationClassificationRegex.MatchString(feature.Location) {
-			indeces := strings.Split(feature.Location, "..")
-			feature.Start, _ = strconv.Atoi(indeces[0])
-			feature.End, _ = strconv.Atoi(indeces[1])
-		}
 
-		// marking if location is partial and either 5' or 3' ends
-		if strings.Contains(feature.Location, "<") {
-			feature.FivePrimePartial = true
-		}
+			if complementLocationRegex.MatchString(feature.Location) {
+				feature.Complement = true
+			}
 
-		if strings.Contains(feature.Location, ">") {
-			feature.ThreePrimePartial = true
+			if strings.Contains(feature.Location, "<") {
+				feature.FivePrimePartial = true
+			}
+
+			if strings.Contains(feature.Location, ">") {
+				feature.ThreePrimePartial = true
+			}
 		}
 
 		// initialize attributes.
