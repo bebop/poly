@@ -1,8 +1,6 @@
 # (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)  [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/master/LICENSE) ![Build Status](https://travis-ci.org/TimothyStiles/poly.svg?branch=master) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg) 
 Poly is a Go library and command line utility for engineering organisms.
 
-Looking for an easy way to manage biological data from the command line? Try Poly!
-
 * **Fast:** Poly is fast and scalable.
 
 * **Modern:** Poly tackles issues that other libraries and utilities just don't. From general codon optimization and primer design to circular sequence hashing. All written in a language that was designed to be fast, scalable, and easy to develop in and maintain. Did we say it was fast?
