@@ -1,5 +1,5 @@
 # (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)  [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/master/LICENSE) ![Build Status](https://travis-ci.org/TimothyStiles/poly.svg?branch=master) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg) 
-Poly is a Go library and command line utility (CLI) for engineering organisms.
+Poly is a Go library and command line utility for engineering organisms.
 
 Looking for an easy way to manage biological data from the command line? Try Poly!
 
@@ -20,7 +20,7 @@ go get github.com/TimothyStiles/poly
 ## Examples
 
 
-### Command Line Interface (CLI) 
+### Command Line Interface
 
 Batch convert annotated sequence files like gff and genbank into JSON. 
 You can do this by either providing wild card paths as arguments or piping to stdin.
