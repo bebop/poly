@@ -59,3 +59,14 @@ release:
   # GitHub.
   # Defaults to false.
   # disable: true
+brews:
+  - github:
+      owner: timothystiles
+      name: homebrew-poly
+    folder: Formula
+    homepage: https://github.com/TimothyStiles/poly
+    description: A command line utility for engineering organisms.
+    test: |
+      system "#{bin}/poly -h"
+    dependencies:
+    - name: go
