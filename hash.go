@@ -97,7 +97,7 @@ func RotateSequence(sequence string) string {
 }
 
 // GenericSequenceHash takes a byte slice and a hash function and hashes it.
-// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang
+// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang <- this had a bug I had to fix! - Tim
 func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) (string, error) {
 	if !hash.Available() {
 		return "", errors.New("hash unavailable")
