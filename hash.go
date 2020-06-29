@@ -8,6 +8,7 @@ import (
 	_ "crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"io"
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
@@ -105,7 +106,8 @@ func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) 
 		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
 	}
 	h := hash.New()
-	return hex.EncodeToString(h.Sum([]byte(annotatedSequence.Sequence.Sequence))), nil
+	io.WriteString(h, annotatedSequence.Sequence.Sequence)
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // method wrapper for hashing annotatedSequence structs.
