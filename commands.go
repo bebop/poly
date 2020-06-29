@@ -138,7 +138,7 @@ func hash(c *cli.Context) {
 		sequenceHash := flagSwitchHash(c, annotatedSequence)
 		if c.String("o") == "json" {
 			annotatedSequence.Sequence.Hash = sequenceHash
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 			fmt.Print(string(output))
 		} else {
@@ -165,7 +165,7 @@ func hash(c *cli.Context) {
 				sequenceHash := flagSwitchHash(c, annotatedSequence)
 				if c.String("o") == "json" {
 					annotatedSequence.Sequence.Hash = sequenceHash
-					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 
 					if c.Bool("stdout") == true {
 						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
@@ -256,7 +256,7 @@ func parseStdin(c *cli.Context) AnnotatedSequence {
 func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string {
 
 	var hashString string
-	switch strings.ToUpper(c.String("t")) {
+	switch strings.ToUpper(c.String("f")) {
 	case "MD5":
 		hashString = annotatedSequence.hash(crypto.MD5)
 	case "SHA1":

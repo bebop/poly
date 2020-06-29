@@ -44,7 +44,7 @@ func main() {
 				Usage:   "Hash a sequence while accounting for circularity.",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "t",
+						Name:  "f",
 						Value: "blake3",
 						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
 					},
