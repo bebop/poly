@@ -177,7 +177,11 @@ func hash(c *cli.Context) {
 
 				} else {
 					// should this just be print?
-					fmt.Println(sequenceHash, " ", match)
+					if len(matches) == 1 {
+						fmt.Println(sequenceHash)
+					} else {
+						fmt.Println(sequenceHash, " ", match)
+					}
 				}
 
 				// decrementing wait group.
