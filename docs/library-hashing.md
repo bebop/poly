@@ -9,7 +9,7 @@ Hashes make incredibly powerful unique identifiers and with a wide array of hash
 
 ## Blake3 Hashing
 
-The golang team is currently figuring out the best way to implement blake3 into the standard lib but in the meantime `poly` provides this special function and method wrapper to hash sequences using blake3. This will eventually be deprecated in favor of only using the `GenericSequenceHash()` function and `.hash()` method wrapper.
+The golang team is currently figuring out the best way to implement blake3 into the standard library but in the meantime `poly` provides this special function and method wrapper to hash sequences using blake3. This will eventually be deprecated in favor of only using the `GenericSequenceHash()` function and `.hash()` method wrapper.
 
 ```go
   // getting our example AnnotatedSequence struct
@@ -30,7 +30,7 @@ Again, this will be deprecated in favor of using generic hashing with blake3 in 
 
 ## Generic Hashing
 
-`poly` also provides a generic hashing function and method wrapper for hashing sequences with arbitrary hashing functions that use the golang standard libraries' hash function interface. Check out this switch statement in the [hash command source code](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/commands.go#L261) to see all that `poly` provides in the command line utility alone.
+`poly` also provides a generic hashing function and method wrapper for hashing sequences with arbitrary hashing functions that use the golang standard library's hash function interface. Check out this switch statement in the [hash command source code](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/commands.go#L261) to see all that `poly` provides in the command line utility alone.
 
 ```go
   // getting our example AnnotatedSequence struct
