@@ -3,7 +3,7 @@ id: cli-hashing
 title: Hashing Sequences
 ---
 
-`poly` provides what is likely the only open source sequence hashing tool that handles circular sequences. By utilizing Booth's Algorithm we're able to determistically rotate circular sequences to a fixed point which makes it possible to hash them. [More info on Booth's Least Rotation here](#more-info).
+`poly` provides what is likely the only open source sequence hashing tool that handles circular sequences. By utilizing Booth's Least Rotation algorithm we're able to determistically rotate circular sequences to a fixed point which makes it possible to hash them. [More info on Booth's Least Rotation here](#more-info).
 
 Hashes make incredibly powerful unique identifiers and with `poly hash` defaulting to the superfast blake3 hashing algorithm you can create them faster than ever before.
 

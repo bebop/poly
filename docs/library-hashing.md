@@ -5,7 +5,7 @@ title: Hashing Sequences
 
 `poly` provides what are likely the only open source sequence hashing functions that handle circular sequences. By utilizing Booth's Least Rotation Algorithm we're able to determistically rotate circular sequences to a fixed point which makes it possible to hash them. [More info on Booth's Least Rotation here](#more-info).
 
-Hashes make incredibly powerful unique identifiers and with a wide array of hash function options including the superfast blake3 poly has all your hashing needs covered.
+Hashes make incredibly powerful unique identifiers and with a wide array of hash function options including the superfast blake3 `poly` has all your hashing needs covered.
 
 ## Blake3 Hashing
 
