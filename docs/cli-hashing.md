@@ -15,14 +15,14 @@ To hash a sequence from file all you have to do is this:
 poly hash bsub.gbk
 ```
 
-`Poly hash` will then parse the sequence string, rotate it to a deterministic point if it's circular, then hash it using the default blake3 algorithm returning something like this:
+`poly hash` will then parse the sequence string, rotate it to a deterministic point if it's circular, then hash it using the default blake3 algorithm returning something like this:
 ``` bash
 949b2e18461fc354d989b14f8d4a58f710f3f46968b6bbffdbdc59a28ad77e83
 ```
 
 ## Hashing a sequence from a stream
 
-`Poly hash` can also accept input from streams to create a hash:
+`poly hash` can also accept input from streams to create a hash:
 
 ```bash
 cat bsub.gbk | poly ha -i gbk
