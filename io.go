@@ -33,12 +33,10 @@ AnnotatedSequence related structs begin here.
 
 // Meta Holds all the meta information of an AnnotatedSequence struct.
 type Meta struct {
-	// shared
-	Name        string
-	GffVersion  string
-	RegionStart int
-	RegionEnd   int
-	// genbank specific
+	Name            string
+	GffVersion      string
+	RegionStart     int
+	RegionEnd       int
 	Size            int
 	Type            string
 	GenbankDivision string
