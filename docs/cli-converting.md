@@ -26,7 +26,7 @@ cat bsub.gbk | poly c -i gbk -o json > bsub.json
 
 Notice the `-i` flag that specifies `gbk` input and the `-o` flag that specifies `json` output.
 
-Convert output always defauts to `json` and can infer input from file paths but in the case of **piping input must always be specified using the `-i` flag**.
+`poly convert` output always defauts to `json` and can infer input from file paths but in the case of **piping input must always be specified using the `-i` flag**.
 
 ## More Info
-For more info about poly convert and its usage try running `poly help convert` or `poly help c` from your command line.
+For more info about `poly convert` and its usage try running `poly help convert` or `poly help c` from your command line.
