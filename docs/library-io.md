@@ -29,7 +29,7 @@ Like I just said these AnnotatedSequence structs contain all sorts of goodies bu
   * [AnnotatedSequence.Features](#annotatedsequencefeatures)
   * [AnnotatedSequence.Sequence](#annotatedsequencesequence)
 
-Here's how the AnnotatedSequence struct is actually implemented as of [commit f51ec1](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/io.go#L110).
+Here's how the AnnotatedSequence struct is actually implemented as of [commit c4fc7e](https://github.com/TimothyStiles/poly/blob/c4fc7e6f6cdbd9e5ed2d8ffdbeb206d1d5a8d720/io.go#L108).
 
 ```go
   // AnnotatedSequence holds all sequence information in a single struct.
@@ -40,7 +40,7 @@ Here's how the AnnotatedSequence struct is actually implemented as of [commit f5
   }
 ```
 
-> You can check out the original implementation [here](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/io.go#L110) but I warn you that this is a snapshot and likely has been updated since last writing.
+> You can check out the original implementation [here](https://github.com/TimothyStiles/poly/blob/c4fc7e6f6cdbd9e5ed2d8ffdbeb206d1d5a8d720/io.go#L108) but I warn you that this is a snapshot and likely has been updated since last writing.
 
 ### AnnotatedSequence.Meta
 
@@ -65,17 +65,15 @@ Same goes for a lot of other stuff:
   bsubGenbankOrganism := bsubAnnotatedSequence.Meta.Organism
 ```
 
-Here's how the Meta struct is actually implemented in [commit f51ec1](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/io.go#L35) which is the latest as of writing.
+Here's how the Meta struct is actually implemented in [commit c4fc7e](https://github.com/TimothyStiles/poly/blob/c4fc7e6f6cdbd9e5ed2d8ffdbeb206d1d5a8d720/io.go#L34) which is the latest as of writing.
 
 ```go
   // Meta Holds all the meta information of an AnnotatedSequence struct.
   type Meta struct {
-    // shared
-    Name        string
-    GffVersion  string
-    RegionStart int
-    RegionEnd   int
-    // genbank specific
+    Name            string
+    GffVersion      string
+    RegionStart     int
+    RegionEnd       int
     Size            int
     Type            string
     GenbankDivision string
@@ -90,7 +88,7 @@ Here's how the Meta struct is actually implemented in [commit f51ec1](https://gi
     Locus           Locus
     References      []Reference
     Primaries       []Primary
-  }
+}
 ```
 
 You'll notice that there are actually three more substructs towards the bottom. They hold extra genbank specific information that's handy to have grouped together. More about how genbank files are structered can be found [here](https://www.ncbi.nlm.nih.gov/Sitemap/samplerecord.html).
@@ -106,7 +104,7 @@ The `Features` substruct is actually a slice (golang term for what is essentiall
   }
 ```
 
-The `Feature` struct has about 10 or so fields which you can learn more about from this section in [commit f51ec1](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/io.go#L82).
+The `Feature` struct has about 10 or so fields which you can learn more about from this section in [commit c4fc7e](https://github.com/TimothyStiles/poly/blob/c4fc7e6f6cdbd9e5ed2d8ffdbeb206d1d5a8d720/io.go#L80).
 
 ### AnnotatedSequence.Sequence
 

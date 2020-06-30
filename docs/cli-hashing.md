@@ -37,11 +37,13 @@ cat bsub.gbk | poly ha -i gbk -o json > bsub.json
 ## Hashing multiple file inputs and writing strings to stdout
 
 `poly hash` can also take all files in a directory and spit out their hashes along with their original file paths.
+
 ```bash
 poly ha *.gbk *.gb *.gff
 ```
 
 Result:
+
 ```bash
 4031e1971acc8ff1bf0aa4ed623bc58beefc15e043075866a0854d592d80b28b   puc19.gbk
 e35849d7d9d5476e84468f8527c1c8b8a0d4b6a2cf88d4329246b1cbba0920bc   sample.gbk
