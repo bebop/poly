@@ -172,6 +172,7 @@ func hash(c *cli.Context) {
 						fmt.Print(string(output))
 					} else {
 						outputPath := match[0 : len(match)-len(extension)]
+						// should have way to support wildcard matches for varied output names.
 						WriteJSON(annotatedSequence, outputPath+".json")
 					}
 
