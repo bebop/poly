@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[19],{119:function(s){s.exports=JSON.parse('{"allTagsPath":"/polydocs/blog/tags","slug":"hackers","name":"hackers","count":1,"permalink":"/polydocs/blog/tags/hackers"}')}}]);
