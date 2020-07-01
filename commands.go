@@ -142,7 +142,11 @@ func hash(c *cli.Context) {
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 			fmt.Print(string(output))
 		} else {
-			fmt.Print(sequenceHash)
+			if strings.ToUpper(c.String("f")) == "NO" {
+				fmt.Print(sequenceHash)
+			} else {
+				fmt.Println(sequenceHash)
+			}
 		}
 	} else {
 
@@ -177,13 +181,20 @@ func hash(c *cli.Context) {
 					}
 
 				} else {
-
+					// should refactor before push
 					if len(matches) == 1 {
-						fmt.Println(sequenceHash)
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Print(sequenceHash)
+						} else {
+							fmt.Println(sequenceHash)
+						}
 					} else {
-						fmt.Println(sequenceHash, " ", match)
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Print(sequenceHash)
+						} else {
+							fmt.Println(sequenceHash, " ", match)
+						}
 					}
-
 				}
 
 				// decrementing wait group.
@@ -300,7 +311,10 @@ func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string 
 		hashString = annotatedSequence.hash(crypto.BLAKE2b_512)
 	case "BLAKE3":
 		hashString = annotatedSequence.blake3Hash()
+	case "NO":
+		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
+		hashString = annotatedSequence.blake3Hash()
 		break
 	}
 	return hashString
