@@ -1,8 +1,8 @@
 module.exports = {
   title: 'Poly',
   tagline: 'A Go library and command line utility for engineering organisms.',
-  url: 'https://your-docusaurus-test-site.com',
-  baseUrl: '/',
+  url: 'https://timothystiles.github.io',
+  baseUrl: '/polydocs',
   favicon: 'img/favicon.ico',
   organizationName: 'TimothyStiles', // Usually your GitHub org/user name.
   projectName: 'Poly', // Usually your repo name.
