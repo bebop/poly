@@ -34,10 +34,10 @@ module.exports = {
         {
           title: 'Docs',
           items: [
-            // {
-            //   label: 'Style Guide',
-            //   to: 'docs/',
-            // },
+            {
+              label: 'Get Started',
+              to: 'docs/',
+            },
           ],
         },
         {
@@ -63,6 +63,10 @@ module.exports = {
             {
               label: 'GitHub',
               href: 'https://github.com/timothystiles/poly',
+            },
+            {
+              label: 'Sponsor',
+              href: 'https://github.com/sponsors/timothystiles/',
             },
           ],
         },
