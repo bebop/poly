@@ -1,1 +1,0 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[12],{111:function(o){o.exports=JSON.parse('{"allTagsPath":"/polydocs/blog/tags","slug":"vision","name":"vision","count":1,"permalink":"/polydocs/blog/tags/vision"}')}}]);

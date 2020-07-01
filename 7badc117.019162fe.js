@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[20],{120:function(o){o.exports=JSON.parse('{"allTagsPath":"/poly/blog/tags","slug":"synbio","name":"synbio","count":1,"permalink":"/poly/blog/tags/synbio"}')}}]);
