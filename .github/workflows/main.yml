@@ -35,6 +35,15 @@ jobs:
 
     # Deploy to local repo
       - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.GH_PAGES_DEPLOY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat <<EOT >> ~/.ssh/config
+          Host github.com
+          HostName github.com
+          IdentityFile ~/.ssh/id_rsa
+          EOT
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
           cd target
           git branch -a
@@ -43,7 +52,10 @@ jobs:
           git checkout master docs blog
           ls -a . docs blog
           git commit -m"automated push to doc generator."
-          git push -u origin orphan-test
+          git config --global user.email "TimothyStiles@users.noreply.github.com"
+          git config --global user.name "Tim"
+          git push -u git@github.com:timothystiles/polydocs.git orphan-test
+          
           
   gh-release:
     if: github.event_name != 'pull_request'
