@@ -52,9 +52,6 @@ jobs:
           USE_SSH: true
           GIT_USER: git
 
-    # Deploy to local repo
-      - name: Release to GitHub orphan
-
         run: |
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
           cd target
