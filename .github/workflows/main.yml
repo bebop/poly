@@ -46,7 +46,7 @@ jobs:
           git config --global user.name "Tim"
           git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
           git commit -m"automated push to orphan-test."
-          git push -u gh-token orphan-test
+          git push -u --force gh-token orphan-test
           
           
   gh-release:
