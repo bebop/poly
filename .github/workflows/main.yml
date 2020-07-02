@@ -25,6 +25,20 @@ jobs:
           npm i
           fi
           npm run build
+      - name: DeployDocs
+        uses: s0/git-publish-subdir-action@develop
+        env:
+          REPO: self
+          BRANCH: orphan-test
+          FOLDER: docs
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: DeployBlog
+        uses: s0/git-publish-subdir-action@develop
+        env:
+          REPO: self
+          BRANCH: orphan-test
+          FOLDER: blog
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
   gh-release:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
