@@ -39,7 +39,7 @@ jobs:
           cd target
           git branch -a
           git checkout orphan-test
-          ls-a
+          ls -a
           git checkout master docs blog
           ls -a
           
