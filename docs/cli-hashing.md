@@ -77,8 +77,20 @@ poly hash -f sha1 bsub.gbk
 
 Will produce a sha1 hash. For a complete list of hashes and their flags check out the original source code [here](https://github.com/TimothyStiles/poly/blob/346e3eb58cdd74db14eba333ba428256f77c93b0/commands.go#L256). Hash flag values are case insensitive.
 
+## Hashing with a system call
+
+`poly hash` also provides the `no` argument to the function flag `-f`. What this does is it pipes an unhashed sequence string to stdout to be consumed by another application.
+
+```bash
+poly hash -f sha1 data/puc19.gbk
+# returns: e5066a52a8b91eb8949b813347931f80e409b7c2
+
+poly hash -f no data/puc19.gbk | shasum
+# returns: e5066a52a8b91eb8949b813347931f80e409b7c2  -
+```
 
 ## More Info
+
 For more info about `poly hash` and its usage try running `poly help hash` or `poly help ha` from your command line.
 
 For more info about circular sequence hashing and Booth's Least Rotation algorithm check out this [dev blog](https://www.ginkgobioworks.com/2020/04/20/fast-database-lookups-for-circular-dna-sequences/) by [Josh Hoffer](https://twitter.com/hofer) and this ridiculously hard to read [python implementation of Booth's Least Rotation on wikipedia](https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation#Booth's_Algorithm).
