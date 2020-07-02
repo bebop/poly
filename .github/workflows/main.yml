@@ -41,7 +41,9 @@ jobs:
           git checkout orphan-test
           ls -a
           git checkout master docs blog
-          ls -a docs blog
+          ls -a . docs blog
+          git commit -m"automated push to doc generator."
+          git push -u origin orphan-test
           
   gh-release:
     if: github.event_name != 'pull_request'
