@@ -61,10 +61,11 @@ jobs:
           ls -a
           git checkout master docs blog
           ls -a . docs blog
+          git add docs blog
           git commit -m"automated push to orphan-test."
           git config --global user.email "TimothyStiles@users.noreply.github.com"
           git config --global user.name "Tim"
-          git push -u origin orphan-test.
+          git push -u origin orphan-test
           
           
   gh-release:
