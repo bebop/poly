@@ -52,7 +52,7 @@ e35849d7d9d5476e84468f8527c1c8b8a0d4b6a2cf88d4329246b1cbba0920bc   sample.gbk
 
 ## Hashing multiple file inputs and writing out to JSON file
 
-This is pretty much the same as [`poly convert`](http://localhost:3000/docs/cli-converting#converting-files-to-json) but also hashes the sequence and stores the hash and meta info in the resulting jsons' Sequence object.
+This is pretty much the same as `poly convert` but also hashes the sequence and stores the hash and meta info in the resulting jsons' Sequence struct.
 
 ```bash
 poly ha -o json *.gbk *.gb *.gff
