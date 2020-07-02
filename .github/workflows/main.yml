@@ -31,32 +31,13 @@ jobs:
     runs-on: ubuntu-latest    
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-      - name: Add key to allow access to repository
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          echo "${{ secrets.GH_PAGES_DEPLOY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          cat <<EOT >> ~/.ssh/config
-          Host github.com
-          HostName github.com
-          IdentityFile ~/.ssh/id_rsa
-          EOT
       - name: Release to orphan-test
-        env:
-          USE_SSH: true
-          GIT_USER: git
-
         run: |
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
           cd target
           git branch -a
           git checkout orphan-test
+          rm -rf docs blog
           ls -a
           git checkout master docs blog
           ls -a . docs blog
