@@ -47,13 +47,15 @@ jobs:
           HostName github.com
           IdentityFile ~/.ssh/id_rsa
           EOT
-      - name: Release to GitHub Pages
+      - name: Release to orphan-test
         env:
           USE_SSH: true
           GIT_USER: git
 
     # Deploy to local repo
-      - run: |
+      - name: Release to GitHub orphan
+
+        run: |
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
           cd target
           git branch -a
