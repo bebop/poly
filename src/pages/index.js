@@ -21,7 +21,7 @@ const features = [
     imageUrl: 'img/undraw_docusaurus_tree.svg',
     description: (
       <>
-        Poly lets you focus more on engineering life than engineering algorithms. We do the heavy algorithmic lifting so you don't have to.
+        Poly lets you focus more on engineering life and less on engineering algorithms. We do the heavy algorithmic lifting so you don't have to.
       </>
     ),
   },
