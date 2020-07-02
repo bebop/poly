@@ -41,7 +41,7 @@ jobs:
           git checkout orphan-test
           ls -a
           git checkout master docs blog
-          ls -a
+          tree
           
   gh-release:
     if: github.event_name != 'pull_request'
