@@ -2,10 +2,10 @@ module.exports = {
   title: 'Poly',
   tagline: 'A Go library and command line utility for engineering organisms.',
   url: 'https://timothystiles.github.io',
-  baseUrl: '/polydocs',
+  baseUrl: '/poly/',
   favicon: 'img/favicon.ico',
   organizationName: 'TimothyStiles', // Usually your GitHub org/user name.
-  projectName: 'Poly', // Usually your repo name.
+  projectName: 'poly', // Usually your repo name.
   themeConfig: {
     navbar: {
       title: 'Poly',
@@ -15,12 +15,12 @@ module.exports = {
       },
       links: [
         {
-          to: 'docs/',
+          to: '/docs/',
           activeBasePath: 'docs',
           label: 'Docs',
           position: 'left',
         },
-        {to: 'blog', label: 'Blog', position: 'left'},
+        {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/TimothyStiles/poly',
           label: 'GitHub',
