@@ -38,7 +38,11 @@ jobs:
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
           cd target
           git branch -a
-
+          git checkout orphan-test
+          ls-a
+          git checkout master docs blog
+          ls -a
+          
   gh-release:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
