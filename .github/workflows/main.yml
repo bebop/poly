@@ -40,7 +40,7 @@ jobs:
           rm -rf docs blog
           ls -a
           git checkout master docs blog
-          git diff --name-only master orphan-test/master
+          git diff --name-only master origin/master
           ls -a . docs blog
           git add docs blog
           git config --global user.email "TimothyStiles@users.noreply.github.com"
