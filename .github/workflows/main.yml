@@ -67,10 +67,6 @@ jobs:
         run: |
           git config --global user.email "TimothyStiles@users.noreply.github.com"
           git config --global user.name "Tim"
-          git checkout orphan-test
-          git checkout master docs blog
-          git commit -m"added docs and blog to orphan test."
-          git checkout master
           if [ -e yarn.lock ]; then
           yarn install --frozen-lockfile
           elif [ -e package-lock.json ]; then
