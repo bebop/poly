@@ -3,7 +3,7 @@ id: library-io
 title: Sequence Input Output
 ---
 
-At the center of Poly's annotated sequence support is the `AnnotatedSequence` struct. Structs are kind of Go's answer to objects in other languages. They provide a way of making custom datatypes and methods for developers to use. More on that [here](https://tour.golang.org/moretypes/2), [here](https://gobyexample.com/methods), and [here](https://www.golang-book.com/books/intro/9).
+At the center of `poly`'s annotated sequence support is the `AnnotatedSequence` struct. Structs are kind of Go's answer to objects in other languages. They provide a way of making custom datatypes and methods for developers to use. More on that [here](https://tour.golang.org/moretypes/2), [here](https://gobyexample.com/methods), and [here](https://www.golang-book.com/books/intro/9).
 
 Anywho. `poly` centers around reading in various annotated sequence formats like genbank, or gff and parsing them into an `AnnotatedSequence` to do stuff with them. Whether that's being written out to JSON or being used by `poly` itself. Here are some examples.
 

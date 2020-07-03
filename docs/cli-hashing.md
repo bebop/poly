@@ -79,7 +79,7 @@ Will produce a sha1 hash. For a complete list of hashes and their flags check ou
 
 ## Hashing with a system call
 
-`poly hash` also provides the `no` argument to the function flag `-f`. What this does is it pipes an unhashed sequence string to stdout to be consumed by another application.
+`poly hash` also provides the `no` argument to the function flag `-f`. This prints a rotated, unhashed sequence string to stdout to be piped as input into your system's hashing utility.
 
 ```bash
 poly hash -f sha1 data/puc19.gbk
