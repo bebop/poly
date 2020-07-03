@@ -25,7 +25,7 @@ changelog:
   filters:
     exclude:
     - '^docs:'
-    - '^test:'
+    - '^blog:'
 
 release:
   # Repo in which the release will be created.
