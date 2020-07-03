@@ -40,14 +40,22 @@ jobs:
           rm -rf docs blog
           ls -a
           git checkout master docs blog
-          git diff --name-only orphan-test origin/orphan-test
-          ls -a . docs blog
-          git add docs blog
-          git config --global user.email "TimothyStiles@users.noreply.github.com"
-          git config --global user.name "Tim"
-          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
-          git commit -m"automated push to orphan-test."
-          git push -u --force gh-token orphan-test
+          
+          diffstring=git diff --name-only orphan-test origin/orphan-test
+          echo "diffstring: $diffstring"
+          if [ -z "$diffstring" ]
+          then
+            echo "\$var is empty"
+          else
+            ls -a . docs blog
+            git add docs blog
+            git config --global user.email "TimothyStiles@users.noreply.github.com"
+            git config --global user.name "Tim"
+            git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
+            git commit -m"automated push to orphan-test."
+            git push -u --force gh-token orphan-test
+          fi
+
           
           
   gh-release:
