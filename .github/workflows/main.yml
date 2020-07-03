@@ -41,12 +41,13 @@ jobs:
           ls -a
           git checkout master docs blog
           
-          diffstring=git diff --name-only orphan-test origin/orphan-test
+          diffstring=git diff orphan-test origin/orphan-test
           echo "diffstring: $diffstring"
           if [ -z "$diffstring" ]
           then
             echo "\$var is empty"
           else
+            echo "$diffstring"
             ls -a . docs blog
             git add docs blog
             git config --global user.email "TimothyStiles@users.noreply.github.com"
