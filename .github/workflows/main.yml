@@ -3,8 +3,15 @@ name: documentation
 on:
   pull_request:
     branches: [master]
+    paths:
+    - 'docs/**'
+    - 'blog/**'
   push:
     branches: [master]
+    paths:
+    - 'docs/**'
+    - 'blog/**'
+
 
 jobs:
   checks:
@@ -40,24 +47,13 @@ jobs:
           rm -rf docs blog
           ls -a
           git checkout master docs blog
-          
-          diffstring=git diff orphan-test origin/orphan-test
-          echo "diffstring: $diffstring"
-          if [ -z "$diffstring" ]
-          then
-            echo "\$var is empty"
-          else
-            echo "$diffstring"
-            ls -a . docs blog
-            git add docs blog
-            git config --global user.email "TimothyStiles@users.noreply.github.com"
-            git config --global user.name "Tim"
-            git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
-            git commit -m"automated push to orphan-test."
-            git push -u --force gh-token orphan-test
-          fi
-
-          
+          ls -a . docs blog
+          git add docs blog
+          git config --global user.email "TimothyStiles@users.noreply.github.com"
+          git config --global user.name "Tim"
+          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
+          git commit -m"automated push to orphan-test."
+          git push -u --force gh-token orphan-test
           
   gh-release:
     if: github.event_name != 'pull_request'
