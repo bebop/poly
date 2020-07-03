@@ -35,7 +35,10 @@ jobs:
           HostName github.com
           IdentityFile ~/.ssh/id_rsa
           EOT
-      - name: Push to docusaurus branch
+      - name: Release and push 
+        env:
+          USE_SSH: true
+          GIT_USER: git
         run: |
           git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/poly.git target
           cd target
@@ -49,11 +52,7 @@ jobs:
           git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/poly.git
           git commit -m"automated push to docusaurus branch."
           git push -u gh-token docusaurus
-      - name: Release to GitHub Pages
-        env:
-          USE_SSH: true
-          GIT_USER: git
-        run: |
+          
           if [ -e yarn.lock ]; then
           yarn install --frozen-lockfile
           elif [ -e package-lock.json ]; then
