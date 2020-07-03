@@ -94,7 +94,61 @@ type Feature struct {
 	Attributes        map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
 	//gbk specific
 	Location string
-	Sequence string
+}
+
+// Get Feature sequence. Mutates with AnnotatedSequence.
+func (f Feature) Sequence(as AnnotatedSequence) string {
+	return getSeq(f.Location, strings.ToUpper(as.Sequence.Sequence))
+}
+
+func reverseComplement(r rune) rune {
+	m := make(map[rune]rune)
+	m[[]rune("A")[0]] = []rune("T")[0]
+	m[[]rune("T")[0]] = []rune("A")[0]
+	m[[]rune("G")[0]] = []rune("C")[0]
+	m[[]rune("C")[0]] = []rune("G")[0]
+	return m[r]
+}
+
+func getSeq(s string, f string) string {
+	if !(strings.ContainsAny(s, "(")) {
+		a := strings.Split(s, "..")
+		prefix, _ := strconv.Atoi(a[0])
+		suffix, _ := strconv.Atoi(a[1])
+		return f[prefix:suffix]
+	} else {
+		i := strings.Index(s, "(")
+		x := s[i+1 : strings.LastIndex(s, ")")]
+		switch exp := s[0:i]; exp {
+		case "join":
+			if strings.ContainsAny(x, "(") {
+				si := strings.Index(x, "(")
+				p := 1
+				comma := 0
+				for xi := 1; p > 0; xi++ {
+					comma = xi
+					switch x[si+xi] {
+					case []byte("(")[0]:
+						p += 1
+					case []byte(")")[0]:
+						p -= 1
+					}
+				}
+				return getSeq(x[:si+comma+1], f) + getSeq(x[2+si+comma:], f)
+			} else {
+				joined := ""
+				for _, y := range strings.Split(x, ",") {
+					joined += getSeq(y, f)
+				}
+				return joined
+			}
+
+		case "complement":
+			b := strings.Map(reverseComplement, getSeq(x, f))
+			return b
+		}
+	}
+	return "failed"
 }
 
 // Sequence holds raw sequence information in an AnnotatedSequence struct.
