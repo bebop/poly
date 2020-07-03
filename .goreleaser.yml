@@ -94,5 +94,5 @@ snapcrafts:
       organisms. For more information checkout:
       https://github.com/TimothyStiles/poly
     grade: devel
-    confinement: classic
+    confinement: strict
     publish: true
