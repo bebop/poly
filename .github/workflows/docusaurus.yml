@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Release to docusaurus
         run: |
-          git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
+          git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/poly.git target
           cd target
           git branch -a
           git checkout docusaurus
@@ -29,6 +29,6 @@ jobs:
           git add docs blog
           git config --global user.email "TimothyStiles@users.noreply.github.com"
           git config --global user.name "Tim"
-          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
+          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/poly.git
           git commit -m"automated push to docusaurus branch."
           git push -u --force gh-token docusaurus
