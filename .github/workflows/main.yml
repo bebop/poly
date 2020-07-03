@@ -2,15 +2,10 @@ name: documentation
 
 on:
   pull_request:
-    branches: [master]
-    paths:
-    - 'docs/**'
-    - 'blog/**'
+    branches: [docusaurus]
+ 
   push:
-    branches: [master]
-    paths:
-    - 'docs/**'
-    - 'blog/**'
+    branches: [docusaurus]
 
 
 jobs:
@@ -32,28 +27,6 @@ jobs:
           npm i
           fi
           npm run build
-
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest    
-    steps:
-      - uses: actions/checkout@v1
-      - name: Release to orphan-test
-        run: |
-          git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
-          cd target
-          git branch -a
-          git checkout orphan-test
-          rm -rf docs blog
-          ls -a
-          git checkout master docs blog
-          ls -a . docs blog
-          git add docs blog
-          git config --global user.email "TimothyStiles@users.noreply.github.com"
-          git config --global user.name "Tim"
-          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
-          git commit -m"automated push to orphan-test."
-          git push -u --force gh-token orphan-test
           
   gh-release:
     if: github.event_name != 'pull_request'
