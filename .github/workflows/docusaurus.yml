@@ -1,0 +1,91 @@
+name: Integrate docs and blog into docusaurus
+
+on:
+  pull_request:
+    branches: [prime]
+    paths:
+    - 'docs/**'
+    - 'blog/**'
+  push:
+    branches: [prime]
+    paths:
+    - 'docs/**'
+    - 'blog/**'
+
+
+jobs:
+  checks:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Test Build
+        run: |
+          if [ -e yarn.lock ]; then
+          yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+          npm ci
+          else
+          npm i
+          fi
+          npm run build
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest    
+    steps:
+      - uses: actions/checkout@v1
+      - name: Release to docusaurus
+        run: |
+          git clone https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git target
+          cd target
+          git branch -a
+          git checkout docusaurus
+          rm -rf docs blog
+          git checkout prime docs blog
+          git add docs blog
+          git config --global user.email "TimothyStiles@users.noreply.github.com"
+          git config --global user.name "Tim"
+          git remote add gh-token https://.:${{ secrets.GITHUB_TOKEN }}@github.com/timothystiles/polydocs.git
+          git commit -m"automated push to docusaurus branch."
+          git push -u --force gh-token docusaurus
+          
+  gh-release:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Add key to allow access to repository
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.GH_PAGES_DEPLOY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat <<EOT >> ~/.ssh/config
+          Host github.com
+          HostName github.com
+          IdentityFile ~/.ssh/id_rsa
+          EOT
+      - name: Release to GitHub Pages
+        env:
+          USE_SSH: true
+          GIT_USER: git
+        run: |
+          git config --global user.email "TimothyStiles@users.noreply.github.com"
+          git config --global user.name "Tim"
+          if [ -e yarn.lock ]; then
+          yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+          npm ci
+          else
+          npm i
+          fi
+          npx docusaurus deploy
