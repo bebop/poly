@@ -16,6 +16,7 @@ poly hash bsub.gbk
 ```
 
 `poly hash` will then parse the sequence string, rotate it to a deterministic point if it's circular, then hash it using the default blake3 algorithm returning something like this:
+
 ``` bash
 949b2e18461fc354d989b14f8d4a58f710f3f46968b6bbffdbdc59a28ad77e83
 ```
@@ -63,9 +64,8 @@ poly ha -o json *.gbk *.gb *.gff
 I really woudn't recommend this but with the `--stdout` flag you can force all `json` output to be streamed to stdout. Useful if you want to start a bash process with hashes.
 
 ```bash
-poly ha -o json --stdout *.gbk 
+poly ha -o json --stdout *.gbk
 ```
-
 
 ## Hashing a sequence with a different hashing function
 
