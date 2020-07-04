@@ -86,14 +86,14 @@ nfpms:
     - git
     recommends:
     - golang
-snapcrafts:
-  - name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    summary: A command line utility for engineering organisms.
-    description: |
-      Poly is a Go library and command line utility for engineering 
-      organisms. For more information checkout:
-      https://github.com/TimothyStiles/poly
-    grade: devel
-    confinement: strict
-    license: MIT
-    publish: true
+# snapcrafts:
+#   - name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+#     summary: A command line utility for engineering organisms.
+#     description: |
+#       Poly is a Go library and command line utility for engineering 
+#       organisms. For more information checkout:
+#       https://github.com/TimothyStiles/poly
+#     grade: devel
+#     confinement: strict
+#     license: MIT
+#     publish: true
