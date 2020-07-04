@@ -31,7 +31,7 @@ brew install timothystiles/poly/poly
 ### Linux
 
 ```bash
-sudo snap install poly
+brew install timothystiles/poly/poly
 ```
 
 ### Windows
