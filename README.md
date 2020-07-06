@@ -12,6 +12,7 @@ Poly is a Go library and command line utility for engineering organisms.
 
 ## Installation
 
+### Installing Poly as a Go library and Command Line Utility
 This assumes you already have a working Go environment, if not please see
 [this page](https://golang.org/doc/install) first.
 
@@ -21,29 +22,69 @@ This assumes you already have a working Go environment, if not please see
 go get github.com/TimothyStiles/poly
 ```
 
+### Installing Poly as a Command Line Utility
+
+Poly ships many binaries for many different operating systems and package managers thanks to the wonderful work of the [go releaser](https://goreleaser.com/) team. You can check out our [releases page](https://github.com/TimothyStiles/poly/releases) on github or install via package manager for your OS with the instructions below.
+
+#### Mac OS
+
+```bash
+brew install timothystiles/poly/poly
+```
+
+#### Linux
+
+```bash
+brew install timothystiles/poly/poly
+```
+
+#### Windows
+
+[Coming soon...](https://github.com/TimothyStiles/poly/issues/16)
+
+#### Github Releases
+
+You can also download and install the binaries from Github releases yourself as we also distribute [.deb and .rpm packages](https://github.com/TimothyStiles/poly/releases).
+
+## Building Poly from Scratch
+
+This assumes you already have a working Go environment, if not please see
+[this page](https://golang.org/doc/install) first.
+
+```bash
+git clone https://github.com/TimothyStiles/poly.git && cd poly && go build && go install
+```
+
 ## Examples
 
 
 ### Command Line Interface
 
-Batch convert annotated sequence files like gff and genbank into JSON. 
-You can do this by either providing wild card paths as arguments or piping to stdin.
-
-Here's how you can pipe to standard input and then redirect to a new json file.
+> Converting a .gbk to .json using pipes. 
 
 ```bash
 cat bsub.gbk | poly c -i gbk -o json > bsub.json
 ```
 
-Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
+> Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
 
 ```bash
 poly c -o json *.gbk *.gb *.gff
 ```
 
+### Go Library
+
+Here's how you'd read in a file from it's path:
+
+```Go
+bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
+```
+
+
+
 ## Documentation
 
-In progress, but most code is well commented.
+If you want to see a ton of great examples of what poly can do you should check out our [docs site](https://timothystiles.github.io/poly/docs/).
 
 You can also learn more about poly or a sub command like convert using the -h flag which will provide more documentation.
 
