@@ -56,13 +56,13 @@ git clone https://github.com/TimothyStiles/poly.git && cd poly && go build && go
 
 ### Command Line Interface
 
-> Converting a .gbk to .json using pipes. 
+Converting a .gbk to .json using pipes. 
 
 ```bash
 cat bsub.gbk | poly c -i gbk -o json > bsub.json
 ```
 
-> Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
+Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
 
 ```bash
 poly c -o json *.gbk *.gb *.gff
