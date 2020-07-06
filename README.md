@@ -42,10 +42,6 @@ brew install timothystiles/poly/poly
 
 [Coming soon...](https://github.com/TimothyStiles/poly/issues/16)
 
-#### Github Releases
-
-You can also download and install the binaries from Github releases yourself as we also distribute [.deb and .rpm packages](https://github.com/TimothyStiles/poly/releases).
-
 ## Building Poly from Scratch
 
 This assumes you already have a working Go environment, if not please see
