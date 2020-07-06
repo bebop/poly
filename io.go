@@ -948,7 +948,7 @@ func ParseGbk(gbk string) AnnotatedSequence {
 			break
 		}
 
-		switch splitLine[0] {
+		switch strings.TrimSpace(splitLine[0]) {
 
 		case "":
 			continue
