@@ -9,7 +9,7 @@ import (
 )
 
 func TestBlake3HashRegression(t *testing.T) {
-	puc19GbkBlake3Hash := "4031e1971acc8ff1bf0aa4ed623bc58beefc15e043075866a0854d592d80b28b"
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 	puc19 := ReadGbk("data/puc19.gbk")
 	if got := puc19.blake3Hash(); got != puc19GbkBlake3Hash {
 		t.Errorf("TestBlake3HashRegression has failed. Blake3 has returned %q, want %q", got, puc19GbkBlake3Hash)
