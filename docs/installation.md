@@ -3,7 +3,7 @@ id: installation
 title: Installing Poly
 ---
 
-Poly can be used in two ways.
+Ready to get started with a command line utility for managing genetic data? Poly can be used in two ways:
 
 1. As a Go library where you have finer control and can make magical things happen.
 2. As a command line utility where you can bash script your way to greatness and make DNA go brrrrrrrr.
