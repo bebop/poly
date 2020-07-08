@@ -72,7 +72,7 @@ func TestHash(t *testing.T) {
 		fmt.Println("TestHash was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
 	} else {
 
-		puc19GbkBlake3Hash := "4031e1971acc8ff1bf0aa4ed623bc58beefc15e043075866a0854d592d80b28b"
+		puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 
 		// testing pipe input
 		command := "cat data/puc19.gbk | poly hash -i gbk"
