@@ -42,7 +42,7 @@ brew install timothystiles/poly/poly
 
 [Coming soon...](https://github.com/TimothyStiles/poly/issues/16)
 
-## Building Poly from Scratch
+### Building Poly from Scratch
 
 This assumes you already have a working Go environment, if not please see
 [this page](https://golang.org/doc/install) first.
