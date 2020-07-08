@@ -32,7 +32,7 @@ FEATURES             Location/Qualifiers
                      /protein_id="NP_049851.1"
                      /translation="MRLQRQSIKDSEVRGKWYFNIIGKDSELVEKAEHLLRDMGWEDEC
                      DGCPLYEDGESAGFWIYHSDVEQFKADWKIVKKSV"
-     gene            315..896
+     gene            join(complement(315..330),complement(339..896))
                      /gene="frd"
                      /locus_tag="T4p239"
                      /label=frd
@@ -51,7 +51,7 @@ FEATURES             Location/Qualifiers
                      GTIMIMGAKTFQSLPTLLPGRSHIVVCDLARDYPVTKDGDLAHFYITWEQYITYISGGE
                      IQVSSPNAPFETMLDQNSKVSVIGGPALLYAALPYADEVVVSRIVKRHRVNSTVQLDAS
                      FLDDISKREMVETHWYKIDEVTTLTESVYK"
-     gene            893..2770
+     gene            complement(join(893..1098,1101..2770))
                      /gene="td"
                      /locus_tag="T4p237"
                      /label=td
@@ -98,7 +98,7 @@ FEATURES             Location/Qualifiers
                      LKEEIIKKRSETVKAKMLKLGPDGRKALYSKPGSKNGRWNPETHKFCKCGVRIQTSAYT
                      CSKCRNRSGENNSFFNHKHSDITKSKISEKMKGKKPSNIKKISCDGVIFDCAADAARHF
                      KISSGLVTYRVKSDKWNWFYINA"
-     gene            2791..3054
+     gene            complement(2791..3054)
                      /gene="nrdA.2"
                      /locus_tag="T4p236"
                      /label=nrdA.2

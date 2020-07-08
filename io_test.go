@@ -126,16 +126,48 @@ func BenchmarkReadGbk100(b *testing.B)   { BenchmarkReadGbk(b) }
 func BenchmarkReadGbk1000(b *testing.B)  { BenchmarkReadGbk(b) }
 func BenchmarkReadGbk10000(b *testing.B) { BenchmarkReadGbk(b) }
 
-// Does not work due to bug https://github.com/TimothyStiles/poly/issues/24
-//func TestLocationParser(t *testing.T) {
-//	gbk := ReadGbk("data/t4_intron.gb")
-//	feature := gbk.Features[7]
-//	s := "ATGAAACAATACCAAGATTTAATTAAAGACATTTTTGAAAATGGTTATGAAACCGATGATCGTACAGGCACAGGAACAATTGCTCTGTTCGGATCTAAATTACGCTGGGATTTAACTAAAGGTTTTCCTGCGGTAACAACTAAGAAGCTCGCCTGGAAAGCTTGCATTGCTGAGCTAATATGGTTTTTATCAGGAAGCACAAATGTCAATGATTTACGATTAATTCAACACGATTCGTTAATCCAAGGCAAAACAGTCTGGGATGAAAATTACGAAAATCAAGCAAAAGATTTAGGATACCATAGCGGTGAACTTGGTCCAATTTATGGAAAACAGTGGCGTGATTTTGGTGGTGTAGACCAAATTATAGAAGTTATTGATCGTATTAAAAAACTGCCAAATGATAGGCGTCAAATTGTTTCTGCATGGAATCCAGCTGAACTTAAATATATGGCATTACCGCCTTGTCATATGTTCTATCAGTTTAATGTGCGTAATGGCTATTTGGATTTGCAGTGGTATCAACGCTCAGTAGATGTTTTCTTGGGTCTACCGTTTAATATTGCGTCATATGCTACGTTAGTTCATATTGTAGCTAAGATGTGTAATCTTATTCCAGGGGATTTGATATTTTCTGGTGGTAATACTCATATCTATATGAATCACGTAGAACAATGTAAAGAAATTTTGAGGCGTGAACCTAAAGAGCTTTGTGAGCTGGTAATAAGTGGTCTACCTTATAAATTCCGATATCTTTCTACTAAAGAACAATTAAAATATGTTCTTAAACTTAGGCCTAAAGATTTCGTTCTTAACAACTATGTATCACACCCTCCTATTAAAGGAAAGATGGCGGTGTAA"
-//	fmt.Println(gbk.Sequence.Sequence)
-//	if featureSeq := feature.Sequence(gbk); featureSeq != s {
-//		t.Errorf("Feature parser has changed behaviour. Got this:\n%s\n instead of \n%s", featureSeq, s)
-//	}
-//}
+func TestLocationParser(t *testing.T) {
+	gbk := ReadGbk("data/t4_intron.gb")
+
+	// Read 1..243
+	feature := gbk.Features[1].Sequence(gbk)
+	seq := "atgagattacaacgccagagcatcaaagattcagaagttagaggtaaatggtattttaatatcatcggtaaagattctgaacttgttgaaaaagctgaacatcttttacgtgatatgggatgggaagatgaatgcgatggatgtcctctttatgaagacggagaaagcgcaggattttggatttaccattctgacgtcgagcagtttaaagctgattggaaaattgtgaaaaagtctgtttga"
+	if feature != seq {
+		t.Errorf("Feature sequence parser has changed on test '1..243'. Got this:\n%s instead of \n%s", feature, seq)
+	}
+
+	// Read join(893..1441,2459..2770)
+	featureJoin := gbk.Features[6].Sequence(gbk)
+	seqJoin := "atgaaacaataccaagatttaattaaagacatttttgaaaatggttatgaaaccgatgatcgtacaggcacaggaacaattgctctgttcggatctaaattacgctgggatttaactaaaggttttcctgcggtaacaactaagaagctcgcctggaaagcttgcattgctgagctaatatggtttttatcaggaagcacaaatgtcaatgatttacgattaattcaacacgattcgttaatccaaggcaaaacagtctgggatgaaaattacgaaaatcaagcaaaagatttaggataccatagcggtgaacttggtccaatttatggaaaacagtggcgtgattttggtggtgtagaccaaattatagaagttattgatcgtattaaaaaactgccaaatgataggcgtcaaattgtttctgcatggaatccagctgaacttaaatatatggcattaccgccttgtcatatgttctatcagtttaatgtgcgtaatggctatttggatttgcagtggtatcaacgctcagtagatgttttcttgggtctaccgtttaatattgcgtcatatgctacgttagttcatattgtagctaagatgtgtaatcttattccaggggatttgatattttctggtggtaatactcatatctatatgaatcacgtagaacaatgtaaagaaattttgaggcgtgaacctaaagagctttgtgagctggtaataagtggtctaccttataaattccgatatctttctactaaagaacaattaaaatatgttcttaaacttaggcctaaagatttcgttcttaacaactatgtatcacaccctcctattaaaggaaagatggcggtgtaa"
+	if featureJoin != seqJoin {
+		t.Errorf("Feature sequence parser has changed on test 'join(893..1441,2459..2770)'. Got this:\n%s instead of \n%s", featureJoin, seqJoin)
+	}
+
+	// Read complement(2791..3054)
+	featureComplement := gbk.Features[10].Sequence(gbk)
+	seqComplement := "ttattcactacccggcatagacggcccacgctggaataattcgtcatattgtttttccgttaaaacagtaatatcgtagtaacagtcagaagaagttttaactgtggaaattttattatcaaaatactcacgagtcattttatgagtatagtattttttaccataaatggtaataggctgttctggtcctggaacttctaactcgcttgggttaggaagtgtaaaaagaactacaccagaagtatctttaaatcgtaaaatcat"
+	if featureComplement != seqComplement {
+		t.Errorf("Feature sequence parser has changed on test 'complement(2791..3054)'. Got this:\n%s instead of \n%s", featureComplement, seqComplement)
+	}
+
+	// Read join(complement(315..330),complement(339..896))
+	// Note: it is known that some software, like Snapgene, assumes that since both strands are in the reverse direction
+	// that the first sequence should be appended to the reverse sequence, instead of the second sequence
+	// getting appended to the first. Biopython appends the second sequence to the first, and that is logically
+	// the most obvious thing to do, so we are implementing it that way.
+	featureJoinComplement := gbk.Features[3].Sequence(gbk)
+	seqJoinComplement := "ataccaatttaatcattcatttatatactgattccgtaagggttgttacttcatctattttataccaatgcgtttcaaccatttcacgcttgcttatatcatcaagaaaacttgcgtctaattgaactgttgaattaacacgatgccttttaacgatgcgagaaacaactacttcatctgcataaggtaatgcagcatataacagagcaggcccgccaattacacttactttagaattctgatcaagcatagtttcgaatggtgcattagggcttgacacttgaatttcgccgccagaaatgtaagttatatattgctcccaagtaatatagaaatgtgctaaatcgccgtctttagttacaggataatcacgcgcaaggtcacacaccacaatatggctacgaccaggaagtaatgtaggcaatgactggaacgttttagcacccataatcataattgtgccttcagtacgagctttaaaattctggaggtcctttttaactcgtccccatggtaaaccatcacctaaaccgaatgctaattcattaaagccgtcgaccgttttagttggaga"
+	if featureJoinComplement != seqJoinComplement {
+		t.Errorf("Feature sequence parser has changed on test 'join(complement(315..330),complement(339..896))'. Got this:\n%s instead of \n%s", featureJoinComplement, seqJoinComplement)
+	}
+
+	// Read complement(join(893..1098,1101..2770))
+	featureComplementJoin := gbk.Features[5].Sequence(gbk)
+	seqComplementJoin := "ttacaccgccatctttcctttaataggagggtgtgatacatagttgttaagaacgaaatctttaggcctaagtttaagaacatattttaattgttctttagtagaaagatatcggaatttataaggtagaccacttattaccagctcacaaagctctttaggttcacgcctcaaaatttctttacattgttctacgtgattcatatagatatgagtattaccaccagaaaatatcaaatcccctggaataagattacacatcttagctacaatatgaactaacgtagcatatgacgcaatattaaacggtagcattatgttcagataaggtcgttaatcttaccccggaattatatccagctgcatgtcaccatgcagagcagactatatctccaacttgttaaagcaagttgtctatcgtttcgagtcacttgaccctactccccaaagggatagtcgttaggcatttatgtagaaccaattccatttatcagattttacacgataagtaactaatccagacgaaattttaaaatgtctagctgcatctgctgcacaatcaaaaataaccccatcacatgaaatctttttaatattactaggctttttacctttcatcttttctgatattttagatttagttatgtctgaatgcttatgattaaagaatgaattattttcacctgaacgatttctgcatttactacaagtataagcagaagtttgtatgcgaacaccgcacttacaaaacttatgggtttctggattccaacgcccgtttttacttccgggtttactgtaaagagctttccgaccatcaggtccaagtttaagcatcttagctttaacagtttcagaacgtttcttaataatttcttcttttaatggatgcgtagaacatgtatcaccaaacgttgcatcagcaatattgtatccattaattttagaattaagctctttaatccaaaaattttctcgttcaataatcaaatctttctcatatggaatttcttccaaaatagaacattcaaacacattaccatgtttgttaaaagacctctgaagttttatagaagaatggcatcctttttctaaatctttaaaatgcctcttccatctcttttcaaaatctttagcacttcctacatatactttattgtttaaagtatttttaatctgataaattccgcttttcataaatacctctttaaatatagaagtatttattaaagggcaagtcctacaatttagcacgggattgtctactagagaggttccccgtttagatagattacaagtataagtcaccttatactcaggcctcaattaacccaagaaaacatctactgagcgttgataccactgcaaatccaaatagccattacgcacattaaactgatagaacatatgacaaggcggtaatgccatatatttaagttcagctggattccatgcagaaacaatttgacgcctatcatttggcagttttttaatacgatcaataacttctataatttggtctacaccaccaaaatcacgccactgttttccataaattggaccaagttcaccgctatggtatcctaaatcttttgcttgattttcgtaattttcatcccagactgttttgccttggattaacgaatcgtgttgaattaatcgtaaatcatacatttgtgcttcctgataaaaaccatattagctcagcaatgcaagctttccaggcgagcttcttagttgttaccgcaggaaaacctttagttaaatcccagcgtaatttagatccgaacagagcaattgttcctgtgcctgtacgatcatcggtttcataaccattttcaaaaatgtctttaattaaatcttggtattgtttcat"
+	if featureComplementJoin != seqComplementJoin {
+		t.Errorf("Feature sequence parser has changed on test 'complement(join(893..1098,1101..2770))'. Got this:\n%s instead of \n%s", featureComplementJoin, seqComplementJoin)
+	}
+}
 
 /******************************************************************************
 

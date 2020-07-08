@@ -98,7 +98,7 @@ type Feature struct {
 
 // Get Feature sequence. Mutates with AnnotatedSequence.
 func (f Feature) Sequence(as AnnotatedSequence) string {
-	return getSeq(f.Location, strings.ToUpper(as.Sequence.Sequence))
+	return getSeq(f.Location, as.Sequence.Sequence)
 }
 
 func reverseComplement(r rune) rune {
@@ -107,6 +107,10 @@ func reverseComplement(r rune) rune {
 	m[[]rune("T")[0]] = []rune("A")[0]
 	m[[]rune("G")[0]] = []rune("C")[0]
 	m[[]rune("C")[0]] = []rune("G")[0]
+	m[[]rune("a")[0]] = []rune("t")[0]
+	m[[]rune("t")[0]] = []rune("a")[0]
+	m[[]rune("g")[0]] = []rune("c")[0]
+	m[[]rune("c")[0]] = []rune("g")[0]
 	return m[r]
 }
 
@@ -115,7 +119,7 @@ func getSeq(s string, f string) string {
 		a := strings.Split(s, "..")
 		prefix, _ := strconv.Atoi(a[0])
 		suffix, _ := strconv.Atoi(a[1])
-		return f[prefix:suffix]
+		return f[prefix-1 : suffix]
 	} else {
 		i := strings.Index(s, "(")
 		x := s[i+1 : strings.LastIndex(s, ")")]
@@ -145,7 +149,13 @@ func getSeq(s string, f string) string {
 
 		case "complement":
 			b := strings.Map(reverseComplement, getSeq(x, f))
-			return b
+			n := len(b)
+			r := make([]rune, n)
+			for _, y := range b {
+				n--
+				r[n] = y
+			}
+			return string(r)
 		}
 	}
 	return "failed"
