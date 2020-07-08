@@ -96,71 +96,75 @@ type Feature struct {
 	Location string
 }
 
-// Get Feature sequence. Mutates with AnnotatedSequence.
+// Method to get a Feature's sequence. Mutates with AnnotatedSequence.
 func (f Feature) Sequence(as AnnotatedSequence) string {
 	return getSeq(f.Location, as.Sequence.Sequence)
 }
 
-func ReverseComplement(s string) string {
-	complementString := strings.Map(reverseBase, s)
+// ReverseComplement takes the reverse complement of a sequence
+func ReverseComplement(sequence string) string {
+	complementString := strings.Map(complementBase, sequence)
 	n := len(complementString)
-	r := make([]rune, n)
+	newString := make([]rune, n)
 	for _, base := range complementString {
 		n--
-		r[n] = base
+		newString[n] = base
 	}
-	return string(r)
+	return string(newString)
 }
 
-func reverseBase(r rune) rune {
-	m := make(map[rune]rune)
+// complementBase accepts a base pair and returns its complement base pair
+func complementBase(basePair rune) rune {
+	complementMap := make(map[rune]rune)
 	bases := "ATUGCYRSWKMBDHVN"
-	reverseBases := "TAACGRYSWMKVHDBN"
+	complementBases := "TAACGRYSWMKVHDBN"
 	for i, base := range bases {
-		m[base] = rune(reverseBases[i])
+		complementMap[base] = rune(complementBases[i])
 	}
-	lowerReverseBases := strings.ToLower(reverseBases)
+	lowerComplementBases := strings.ToLower(complementBases)
 	for i, base := range strings.ToLower(bases) {
-		m[base] = rune(lowerReverseBases[i])
+		complementMap[base] = rune(lowerComplementBases[i])
 	}
-	return m[r]
+	return complementMap[basePair]
 }
 
-func getSeq(s string, f string) string {
-	if !(strings.ContainsAny(s, "(")) {
-		a := strings.Split(s, "..")
-		prefix, _ := strconv.Atoi(a[0])
-		suffix, _ := strconv.Atoi(a[1])
-		return f[prefix-1 : suffix]
+// getSeq is a recursive function to get the sequence of a feature, given that feature's Location and parent full sequence
+func getSeq(s string, fullSeq string) string {
+	if !(strings.ContainsAny(s, "(")) { // Case checks for simple expression of x..x
+		startEndList := strings.Split(s, "..")
+		start, _ := strconv.Atoi(startEndList[0])
+		end, _ := strconv.Atoi(startEndList[1])
+		return fullSeq[start-1 : end] // Sequences are indexed at 1, but inclusive of last element
 	} else {
-		i := strings.Index(s, "(")
-		x := s[i+1 : strings.LastIndex(s, ")")]
-		switch exp := s[0:i]; exp {
+		firstOuterParathesis := strings.Index(s, "(")
+		expression := s[firstOuterParathesis+1 : strings.LastIndex(s, ")")]
+		switch command := s[0:firstOuterParathesis]; command {
 		case "join":
-			if strings.ContainsAny(x, "(") {
-				si := strings.Index(x, "(")
-				p := 1
+			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
+			if strings.ContainsAny(expression, "(") {
+				firstInnerParathesis := strings.Index(expression, "(")
+				parathesisCount := 1
 				comma := 0
-				for xi := 1; p > 0; xi++ {
-					comma = xi
-					switch x[si+xi] {
+				for i := 1; parathesisCount > 0; i++ { // "(" is at 0, so we start at 1
+					comma = i
+					switch expression[firstInnerParathesis+i] {
 					case []byte("(")[0]:
-						p += 1
+						parathesisCount += 1
 					case []byte(")")[0]:
-						p -= 1
+						parathesisCount -= 1
 					}
 				}
-				return getSeq(x[:si+comma+1], f) + getSeq(x[2+si+comma:], f)
-			} else {
-				joined := ""
-				for _, y := range strings.Split(x, ",") {
-					joined += getSeq(y, f)
+				return getSeq(expression[:firstInnerParathesis+comma+1], fullSeq) + getSeq(expression[2+firstInnerParathesis+comma:], fullSeq)
+			} else { // This is the default join(x..x,x..x)
+				joinedSequence := ""
+				for _, numberRange := range strings.Split(expression, ",") {
+					joinedSequence += getSeq(numberRange, fullSeq)
 				}
-				return joined
+				return joinedSequence
 			}
 
 		case "complement":
-			return ReverseComplement(getSeq(x, f))
+			return ReverseComplement(getSeq(expression, fullSeq))
 		}
 	}
 	return "failed"
