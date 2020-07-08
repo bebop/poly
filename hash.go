@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"strings"
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
@@ -106,7 +107,7 @@ func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) 
 		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
 	}
 	h := hash.New()
-	io.WriteString(h, annotatedSequence.Sequence.Sequence)
+	io.WriteString(h, strings.ToUpper(annotatedSequence.Sequence.Sequence))
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
@@ -124,7 +125,7 @@ func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
 		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
 	}
 
-	b := blake3.Sum256([]byte(annotatedSequence.Sequence.Sequence))
+	b := blake3.Sum256([]byte(strings.ToUpper(annotatedSequence.Sequence.Sequence)))
 	return hex.EncodeToString(b[:])
 }
 
