@@ -101,7 +101,18 @@ func (f Feature) Sequence(as AnnotatedSequence) string {
 	return getSeq(f.Location, as.Sequence.Sequence)
 }
 
-func ReverseComplement(r rune) rune {
+func ReverseComplement(s string) string {
+	complementString := strings.Map(reverseBase, s)
+	n := len(complementString)
+	r := make([]rune, n)
+	for _, base := range complementString {
+		n--
+		r[n] = base
+	}
+	return string(r)
+}
+
+func reverseBase(r rune) rune {
 	m := make(map[rune]rune)
 	bases := "ATUGCYRSWKMBDHVN"
 	reverseBases := "TAACGRYSWMKVHDBN"
@@ -149,14 +160,7 @@ func getSeq(s string, f string) string {
 			}
 
 		case "complement":
-			b := strings.Map(ReverseComplement, getSeq(x, f))
-			n := len(b)
-			r := make([]rune, n)
-			for _, y := range b {
-				n--
-				r[n] = y
-			}
-			return string(r)
+			return ReverseComplement(getSeq(x, f))
 		}
 	}
 	return "failed"
