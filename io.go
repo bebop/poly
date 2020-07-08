@@ -922,7 +922,9 @@ func getFeatures(lines []string) []Feature {
 			if !quickQualifierCheck(line) {
 				break
 			}
+
 			qualifier := line
+			qualifierKey := strings.TrimSpace(strings.Split(line, "=")[0])
 
 			// end of qualifier declaration line. Bump to next line and begin looking for qualifier sublines.
 			lineIndex++
@@ -935,7 +937,12 @@ func getFeatures(lines []string) []Feature {
 					break
 				}
 				//append to current qualifier
-				qualifier += strings.TrimSpace(line)
+				// qualifier += strings.TrimSpace(line)
+				if qualifierKey != "/translation" {
+					qualifier += " " + strings.TrimSpace(line)
+				} else {
+					qualifier += strings.TrimSpace(line)
+				}
 
 				// nextline
 				lineIndex++
@@ -1002,7 +1009,7 @@ func ParseGbk(gbk string) AnnotatedSequence {
 			break
 		}
 
-		switch splitLine[0] {
+		switch strings.TrimSpace(splitLine[0]) {
 
 		case "":
 			continue

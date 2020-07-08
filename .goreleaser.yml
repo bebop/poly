@@ -73,9 +73,8 @@ brews:
     commit_author:
       name: Tim
       email: TimothyStiles@users.noreply.github.com
-    folder: Formula
 nfpms:
-  - file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  - file_name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
     homepage:  https://github.com/TimothyStiles/poly
     description: A command line utility for engineering organisms.
     maintainer: Timothy Stiles <TimothyStiles@users.noreply.github.com>
@@ -87,13 +86,14 @@ nfpms:
     - git
     recommends:
     - golang
-snapcrafts:
-  - name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    summary: A command line utility for engineering organisms.
-    description: |
-      Poly is a Go library and command line utility for engineering 
-      organisms. For more information checkout:
-      https://github.com/TimothyStiles/poly
-    grade: devel
-    confinement: classic
-    publish: true
+# snapcrafts:
+#   - name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+#     summary: A command line utility for engineering organisms.
+#     description: |
+#       Poly is a Go library and command line utility for engineering 
+#       organisms. For more information checkout:
+#       https://github.com/TimothyStiles/poly
+#     grade: devel
+#     confinement: strict
+#     license: MIT
+#     publish: true

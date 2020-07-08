@@ -91,8 +91,29 @@ func TestLocusParseRegression(t *testing.T) {
 	if diff := cmp.Diff(gbk, json); diff != "" {
 		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
 	}
-
 }
+
+func TestSnapgeneGenbankRegression(t *testing.T) {
+	snapgene := ReadGbk("data/puc19_snapgene.gb")
+
+	if snapgene.Sequence.Sequence == "" {
+		t.Errorf("Parsing snapgene returned an empty string")
+	}
+}
+
+func TestGenbankNewlineParsingRegression(t *testing.T) {
+	gbk := ReadGbk("data/bsub.gbk")
+
+	for _, feature := range gbk.Features {
+		if feature.Start == 410 && feature.End == 1750 && feature.Type == "CDS" {
+			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
+				t.Errorf("Newline parsing has failed.")
+			}
+			break
+		}
+	}
+}
+
 func BenchmarkReadGbk(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ReadGbk("data/bsub.gbk")

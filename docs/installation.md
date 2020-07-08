@@ -31,7 +31,7 @@ brew install timothystiles/poly/poly
 ### Linux
 
 ```bash
-sudo snap install --classic gopoly
+brew install timothystiles/poly/poly
 ```
 
 ### Windows
