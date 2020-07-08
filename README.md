@@ -12,6 +12,15 @@ Poly is a Go library and command line utility for engineering organisms.
 
 ## Installation
 
+### Building Poly from Scratch
+
+This assumes you already have a working Go environment, if not please see
+[this page](https://golang.org/doc/install) first.
+
+```bash
+git clone https://github.com/TimothyStiles/poly.git && cd poly && go build && go install
+```
+
 ### Installing Poly as a Go library and Command Line Utility
 This assumes you already have a working Go environment, if not please see
 [this page](https://golang.org/doc/install) first.
@@ -42,14 +51,7 @@ brew install timothystiles/poly/poly
 
 [Coming soon...](https://github.com/TimothyStiles/poly/issues/16)
 
-### Building Poly from Scratch
 
-This assumes you already have a working Go environment, if not please see
-[this page](https://golang.org/doc/install) first.
-
-```bash
-git clone https://github.com/TimothyStiles/poly.git && cd poly && go build && go install
-```
 
 ## Examples
 
