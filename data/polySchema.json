@@ -1,0 +1,72 @@
+{ 
+	"$schema": "http://json-schema.org/draft-07/schema",
+	"type": "object",
+	"title": "Poly Genbank JSON schema",
+	"description": "The root schema of the Genbank JSON document",
+	"required": ["Meta","Features","Sequence"],
+	"additionalProperties": false,
+	"properties": {
+		"Meta": {"type": "object", "properties": {
+			"Name": {"type": "string"},
+			"GffVersion": {"type": "string"},
+			"RegionStart": {"type": "number"},
+			"RegionEnd": {"type": "number"},
+			"Size": {"type": "number"},
+			"Type": {"type": "string"},
+			"GenbankDivision": {"type": "string"},
+			"Date": {"type": "string"},
+			"Definition": {"type": "string"},
+			"Accession": {"type": "string"},
+			"Version": {"type": "string"},
+			"Keywords": {"type": "string"},
+			"Organism": {"type": "string"},
+			"Source": {"type": "string"},
+			"Origin": {"type": "string"},
+			"Locus": {"type": "object", "properties": {
+				"Name": {"type": "string"},
+				"SequenceLength": {"type": "string"},
+				"MoleculeType": {"type": "string", "enum": ["DNA","RNA"]},
+				"GenBankDivision": {"type": "string"},
+				"ModDate": {"type": "string"},
+				"SequenceCoding": {"type": "string", "enum": ["bp","aa"]},
+				"Circular": {"type": "boolean"}
+			},
+			"References": {"type": "array", "items": {"type": "object", "properties": {
+				"Index": {"type": "string"},
+				"Authors": {"type": "string"},
+				"Title": {"type": "string"},
+				"Journal": {"type": "string"},
+				"PubMed": {"type": "string"},
+				"Remark": {"type": "string"},
+				"Range": {"type": "string"}
+			}}},
+			"Primaries": {"type": "string"}
+		}}},
+		"Features": {"type": "array", "items": {"type": "object", "properties": {
+			"Name": {"type": "string"},
+			"Source": {"type": "string"},
+			"Type": {"type": "string"},
+			"Start": {"type": "number"},
+			"End": {"type": "number"},
+			"Complement": {"type": "boolean"},
+			"FivePrimePartial": {"type": "boolean"},
+			"ThreePrimePartial": {"type": "boolean"},
+			"Score": {"type": "string"},
+			"Strand": {"type": "string"},
+			"Phase": {"type": "string"},
+			"Attributes": {"type": "object", "properties": {
+				"label": {"type": "string"},
+				"mol_type": {"type": "string"},
+				"organism": {"type": "string"}
+			},
+			"Location": {"type": "string"}
+			}
+		}}},
+		"Sequence": {
+			"Description": {"type": "string"},
+			"Hash": {"type": "string"},
+			"HashFunction": {"type": "string", "enum": ["MD5","SHA1","SHA224","SHA256","SHA384","SHA512","MD5SHA1","RIPEMD160","SHA3_224","SHA3_256","SHA3_512","SHA512_224","SHA512_256","BLAKE2s_256","BLAKE2b_256","BLAKE2b_384","BLAKE2b_512","BLAKE3"]},
+			"Sequence": {"type":"string"}
+		}
+	}
+		}
