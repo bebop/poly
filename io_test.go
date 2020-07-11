@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 /******************************************************************************
@@ -149,6 +150,26 @@ func TestJSONIO(t *testing.T) {
 	if diff := cmp.Diff(testSequence, readTestSequence); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestJSONSchema(t *testing.T) {
+	testSequence := ReadGbk("data/bsub.gbk")
+	WriteJSON(testSequence, "data/test.json")
+	schema := gojsonschema.NewReferenceLoader("file://data/polySchema.json")
+	document := gojsonschema.NewReferenceLoader("file://data/test.json")
+	result, err := gojsonschema.Validate(schema, document)
+
+	//Clean up test data
+	os.Remove("data/test.json")
+
+	if err != nil {
+		t.Errorf("Failed to parse schema or document")
+	}
+
+	if !(result.Valid()) {
+		t.Errorf("Document not valid : \n %s", result.Errors()[0].Description())
+	}
+
 }
 
 /******************************************************************************
