@@ -25,7 +25,7 @@
 			"Locus": {"type": "object", "properties": {
 				"Name": {"type": "string"},
 				"SequenceLength": {"type": "string"},
-				"MoleculeType": {"type": "string", "enum": ["DNA","RNA"]},
+				"MoleculeType": {"type": "string", "enum": ["DNA", "genomic DNA", "genomic RNA", "mRNA", "tRNA", "rRNA", "other RNA", "other DNA", "transcribed RNA", "viral cRNA", "unassigned DNA","unassigned RNA"]},
 				"GenBankDivision": {"type": "string"},
 				"ModDate": {"type": "string"},
 				"SequenceCoding": {"type": "string", "enum": ["bp","aa"]},
@@ -69,4 +69,4 @@
 			"Sequence": {"type":"string"}
 		}
 	}
-		}
+}
