@@ -6,8 +6,8 @@ import (
 )
 
 // getSequence is a method to get a Feature's sequence. Mutates with AnnotatedSequence.
-func (f Feature) getSequence(as AnnotatedSequence) string {
-	return getFeatureSequence(f.Location, as.Sequence.Sequence)
+func (feature Feature) getSequence() string {
+	return getFeatureSequence(feature.Location, feature.ParentAnnotatedSequence.Sequence.Sequence)
 }
 
 // ReverseComplement takes the reverse complement of a sequence
@@ -22,22 +22,45 @@ func ReverseComplement(sequence string) string {
 	return string(newString)
 }
 
+// ComplementBaseRunesMap provides 1:1 mapping between bases and their complements
+var ComplementBaseRuneMap = map[rune]rune{
+	65:  84,  // A -> T
+	66:  86,  // B -> V
+	67:  71,  // C -> G
+	68:  72,  // D -> H
+	71:  67,  // G -> C
+	72:  68,  // H -> D
+	75:  77,  // K -> M
+	77:  75,  // M -> K
+	78:  78,  // N -> N
+	82:  89,  // R -> Y
+	83:  83,  // S -> S
+	84:  65,  // T -> A
+	85:  65,  // U -> A
+	86:  66,  // V -> B
+	87:  87,  // W -> W
+	89:  82,  // Y -> R
+	97:  116, // a -> t
+	98:  118, // b -> v
+	99:  103, // c -> g
+	100: 104, // d -> h
+	103: 99,  // g -> a
+	104: 100, // h -> d
+	107: 109, // k -> m
+	109: 107, // m -> k
+	110: 110, // n -> n
+	114: 121, // r -> y
+	115: 115, // s -> s
+	116: 97,  // t -> a
+	117: 97,  // u -> a
+	118: 98,  // v -> b
+	119: 119, // w -> w
+	121: 114, // y -> r
+}
+
 // complementBase accepts a base pair and returns its complement base pair
 func complementBase(basePair rune) rune {
-	complementMap := make(map[rune]rune)
-	bases := "ATUGCYRSWKMBDHVN"
-	complementBases := "TAACGRYSWMKVHDBN"
-	lowerComplementBases := strings.ToLower(complementBases)
-
-	for i, base := range bases {
-		complementMap[base] = rune(complementBases[i])
-	}
-
-	for i, base := range strings.ToLower(bases) {
-		complementMap[base] = rune(lowerComplementBases[i])
-	}
-
-	return complementMap[basePair]
+	return ComplementBaseRuneMap[basePair]
 }
 
 // getFeatureSequence is a recursive function to get the sequence of a feature, given that feature's Location and parent full sequence
