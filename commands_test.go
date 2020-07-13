@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestConvert(t *testing.T) {
@@ -30,7 +31,7 @@ func TestConvert(t *testing.T) {
 
 		// diff original sequence and converted sequence reread back into
 		// AnnotatedSequence format. If there's an error fail test and print diff.
-		if diff := cmp.Diff(baseTestSequence, outPutTestSequence); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, outPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
 		}
 
@@ -49,7 +50,7 @@ func TestConvert(t *testing.T) {
 		os.Remove("data/ecoli-mg1655.json")
 
 		// compared input gff from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutPutTestSequence); diff != "" {
+		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from concurrent gff input test (-want +got):\n%s", diff)
 		}
 
@@ -60,7 +61,7 @@ func TestConvert(t *testing.T) {
 		os.Remove("data/bsub.json")
 
 		// compared input gbk from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(bsubInputTestSequence, bsubOutPutTestSequence); diff != "" {
+		if diff := cmp.Diff(bsubInputTestSequence, bsubOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 		}
 

@@ -93,81 +93,9 @@ type Feature struct {
 	Phase             string
 	Attributes        map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
 	//gbk specific
-	Location string
-}
-
-// Method to get a Feature's sequence. Mutates with AnnotatedSequence.
-func (f Feature) Sequence(as AnnotatedSequence) string {
-	return getSeq(f.Location, as.Sequence.Sequence)
-}
-
-// ReverseComplement takes the reverse complement of a sequence
-func ReverseComplement(sequence string) string {
-	complementString := strings.Map(complementBase, sequence)
-	n := len(complementString)
-	newString := make([]rune, n)
-	for _, base := range complementString {
-		n--
-		newString[n] = base
-	}
-	return string(newString)
-}
-
-// complementBase accepts a base pair and returns its complement base pair
-func complementBase(basePair rune) rune {
-	complementMap := make(map[rune]rune)
-	bases := "ATUGCYRSWKMBDHVN"
-	complementBases := "TAACGRYSWMKVHDBN"
-	for i, base := range bases {
-		complementMap[base] = rune(complementBases[i])
-	}
-	lowerComplementBases := strings.ToLower(complementBases)
-	for i, base := range strings.ToLower(bases) {
-		complementMap[base] = rune(lowerComplementBases[i])
-	}
-	return complementMap[basePair]
-}
-
-// getSeq is a recursive function to get the sequence of a feature, given that feature's Location and parent full sequence
-func getSeq(s string, fullSeq string) string {
-	if !(strings.ContainsAny(s, "(")) { // Case checks for simple expression of x..x
-		startEndList := strings.Split(s, "..")
-		start, _ := strconv.Atoi(startEndList[0])
-		end, _ := strconv.Atoi(startEndList[1])
-		return fullSeq[start-1 : end] // Sequences are indexed at 1, but inclusive of last element
-	} else {
-		firstOuterParathesis := strings.Index(s, "(")
-		expression := s[firstOuterParathesis+1 : strings.LastIndex(s, ")")]
-		switch command := s[0:firstOuterParathesis]; command {
-		case "join":
-			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
-			if strings.ContainsAny(expression, "(") {
-				firstInnerParathesis := strings.Index(expression, "(")
-				parathesisCount := 1
-				comma := 0
-				for i := 1; parathesisCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParathesis+i] {
-					case []byte("(")[0]:
-						parathesisCount += 1
-					case []byte(")")[0]:
-						parathesisCount -= 1
-					}
-				}
-				return getSeq(expression[:firstInnerParathesis+comma+1], fullSeq) + getSeq(expression[2+firstInnerParathesis+comma:], fullSeq)
-			} else { // This is the default join(x..x,x..x)
-				joinedSequence := ""
-				for _, numberRange := range strings.Split(expression, ",") {
-					joinedSequence += getSeq(numberRange, fullSeq)
-				}
-				return joinedSequence
-			}
-
-		case "complement":
-			return ReverseComplement(getSeq(expression, fullSeq))
-		}
-	}
-	return "failed"
+	Location                string
+	Sequence                string
+	ParentAnnotatedSequence *AnnotatedSequence `json:"-"`
 }
 
 // Sequence holds raw sequence information in an AnnotatedSequence struct.
@@ -176,6 +104,7 @@ type Sequence struct {
 	Hash         string
 	HashFunction string
 	Sequence     string
+	// ParentAnnotatedSequence *AnnotatedSequence
 }
 
 // AnnotatedSequence holds all sequence information in a single struct.
@@ -183,6 +112,17 @@ type AnnotatedSequence struct {
 	Meta     Meta
 	Features []Feature
 	Sequence Sequence
+}
+
+func (annotatedSequence *AnnotatedSequence) addFeature(feature Feature) []Feature {
+	feature.ParentAnnotatedSequence = annotatedSequence
+	annotatedSequence.Features = append(annotatedSequence.Features, feature)
+	return annotatedSequence.Features
+}
+
+// GetAnnotatedSequence get's the parent AnnotatedSequence of a feature
+func (feature Feature) GetAnnotatedSequence() AnnotatedSequence {
+	return *feature.ParentAnnotatedSequence
 }
 
 /******************************************************************************
@@ -199,6 +139,8 @@ GFF specific IO related things begin here.
 
 // ParseGff Takes in a string representing a gffv3 file and parses it into an AnnotatedSequence object.
 func ParseGff(gff string) AnnotatedSequence {
+	annotatedSequence := AnnotatedSequence{}
+
 	lines := strings.Split(gff, "\n")
 	metaString := lines[0:2]
 	versionString := metaString[0]
@@ -211,7 +153,7 @@ func ParseGff(gff string) AnnotatedSequence {
 	meta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
 	meta.Size = meta.RegionEnd - meta.RegionStart
 
-	records := []Feature{}
+	// records := []Feature{}
 	sequence := Sequence{}
 	var sequenceBuffer bytes.Buffer
 	fastaFlag := false
@@ -249,13 +191,11 @@ func ParseGff(gff string) AnnotatedSequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			records = append(records, record)
+			annotatedSequence.addFeature(record)
 		}
 	}
 	sequence.Sequence = sequenceBuffer.String()
-	annotatedSequence := AnnotatedSequence{}
 	annotatedSequence.Meta = meta
-	annotatedSequence.Features = records
 	annotatedSequence.Sequence = sequence
 
 	return annotatedSequence
@@ -1006,6 +946,9 @@ func ParseGbk(gbk string) AnnotatedSequence {
 
 	lines := strings.Split(gbk, "\n")
 
+	// create top level Annotated Sequence struct
+	var annotatedSequence AnnotatedSequence
+
 	// Create meta struct
 	meta := Meta{}
 
@@ -1057,9 +1000,16 @@ func ParseGbk(gbk string) AnnotatedSequence {
 		}
 
 	}
-	var annotatedSequence AnnotatedSequence
+
+	// add meta to annotated sequence
 	annotatedSequence.Meta = meta
-	annotatedSequence.Features = features
+
+	// add features to annotated sequence with pointer to annotated sequence in each feature
+	for _, feature := range features {
+		annotatedSequence.addFeature(feature)
+	}
+
+	// add sequence to annotated sequence
 	annotatedSequence.Sequence = sequence
 
 	return annotatedSequence
@@ -1097,14 +1047,26 @@ func WriteJSON(annotatedSequence AnnotatedSequence, path string) {
 	_ = ioutil.WriteFile(path, file, 0644)
 }
 
+// ParseJSON parses an AnnotatedSequence JSON file and adds appropriate pointers to struct.
+func ParseJSON(file []byte) AnnotatedSequence {
+	var annotatedSequence AnnotatedSequence
+	json.Unmarshal([]byte(file), &annotatedSequence)
+	legacyFeatures := annotatedSequence.Features
+	annotatedSequence.Features = []Feature{}
+
+	for _, feature := range legacyFeatures {
+		annotatedSequence.addFeature(feature)
+	}
+	return annotatedSequence
+}
+
 // ReadJSON reads an AnnotatedSequence JSON file.
 func ReadJSON(path string) AnnotatedSequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	}
-	var annotatedSequence AnnotatedSequence
-	json.Unmarshal([]byte(file), &annotatedSequence)
+	annotatedSequence := ParseJSON(file)
 	return annotatedSequence
 }
 
