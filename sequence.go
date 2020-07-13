@@ -22,7 +22,7 @@ func ReverseComplement(sequence string) string {
 	return string(newString)
 }
 
-// ComplementBaseRunesMap provides 1:1 mapping between bases and their complements
+// ComplementBaseRuneMap provides 1:1 mapping between bases and their complements
 var ComplementBaseRuneMap = map[rune]rune{
 	65:  84,  // A -> T
 	66:  86,  // B -> V
