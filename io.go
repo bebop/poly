@@ -76,24 +76,31 @@ type Locus struct {
 	Name, SequenceLength, MoleculeType, GenBankDivision, ModDate, SequenceCoding string
 	Circular                                                                     bool
 }
-
-// Feature holds a single annotation in a struct. from https://github.com/blachlylab/gff3/blob/master/gff3.go
-type Feature struct {
-	Name string //Seqid in gff, name in gbk
-	//gff specific
-	Source            string
-	Type              string
+type Location struct {
 	Start             int
 	End               int
 	Complement        bool
 	FivePrimePartial  bool
 	ThreePrimePartial bool
-	Score             string
-	Strand            string
-	Phase             string
-	Attributes        map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
-	//gbk specific
-	Location                string
+	SubLocations      []Location
+}
+
+// Feature holds a single annotation in a struct. from https://github.com/blachlylab/gff3/blob/master/gff3.go
+type Feature struct {
+	Name string //Seqid in gff, name in gbk
+	//gff specific
+	Source                  string
+	Type                    string
+	Start                   int
+	End                     int
+	Complement              bool
+	FivePrimePartial        bool
+	ThreePrimePartial       bool
+	Score                   string
+	Strand                  string
+	Phase                   string
+	Attributes              map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
+	GbkLocationString       string
 	Sequence                string
 	ParentAnnotatedSequence *AnnotatedSequence `json:"-"`
 }
@@ -844,24 +851,24 @@ func getFeatures(lines []string) []Feature {
 
 		// assign type and location to feature.
 		feature.Type = strings.TrimSpace(splitLine[0])
-		// feature.Location is the string used by GBK to denote location
-		feature.Location = strings.TrimSpace(splitLine[len(splitLine)-1])
+		// feature.GbkLocationString is the string used by GBK to denote location
+		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
 		// getting usable coordinates with meta.
-		if locationExtractionRegex.MatchString(feature.Location) {
-			indeces := strings.Split(locationExtractionRegex.FindString(feature.Location), "..")
+		if locationExtractionRegex.MatchString(feature.GbkLocationString) {
+			indeces := strings.Split(locationExtractionRegex.FindString(feature.GbkLocationString), "..")
 			feature.Start, _ = strconv.Atoi(indeces[0])
 			feature.End, _ = strconv.Atoi(indeces[1])
 
-			if complementLocationRegex.MatchString(feature.Location) {
+			if complementLocationRegex.MatchString(feature.GbkLocationString) {
 				feature.Complement = true
 			}
 
-			if strings.Contains(feature.Location, "<") {
+			if strings.Contains(feature.GbkLocationString, "<") {
 				feature.FivePrimePartial = true
 			}
 
-			if strings.Contains(feature.Location, ">") {
+			if strings.Contains(feature.GbkLocationString, ">") {
 				feature.ThreePrimePartial = true
 			}
 		}
