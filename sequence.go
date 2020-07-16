@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"strconv"
 	"strings"
 )
 
@@ -44,7 +43,7 @@ var ComplementBaseRuneMap = map[rune]rune{
 
 // getSequence is a method to get a Feature's sequence. Mutates with AnnotatedSequence.
 func (feature Feature) getSequence() string {
-	return getFeatureSequence(feature)
+	return getFeatureSequence(feature, feature.SequenceLocation)
 }
 
 // ReverseComplement takes the reverse complement of a sequence
@@ -64,60 +63,22 @@ func complementBase(basePair rune) rune {
 	return ComplementBaseRuneMap[basePair]
 }
 
-func parseGbkLocation(locationString string) Location {
-	var location Location
-	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		startEndSplit := strings.Split(locationString, "..")
-		start, _ := strconv.Atoi(startEndSplit[0])
-		end, _ := strconv.Atoi(startEndSplit[1])
-		location = Location{Start: start - 1, End: end}
-	} else {
-		firstOuterParentheses := strings.Index(locationString, "(")
-		expression := locationString[firstOuterParentheses+1 : strings.LastIndex(locationString, ")")]
-		switch command := locationString[0:firstOuterParentheses]; command {
-		case "join":
-			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
-			if strings.ContainsAny(expression, "(") {
-				firstInnerParentheses := strings.Index(expression, "(")
-				ParenthesesCount := 1
-				comma := 0
-				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParentheses+i] {
-					case []byte("(")[0]:
-						ParenthesesCount++
-					case []byte(")")[0]:
-						ParenthesesCount--
-					}
-				}
-				location.SubLocations = append(location.SubLocations, parseGbkLocation(expression[:firstInnerParentheses+comma+1]), parseGbkLocation(expression[2+firstInnerParentheses+comma:]))
-			} else { // This is the default join(x..x,x..x)
-				for _, numberRange := range strings.Split(expression, ",") {
-					location.SubLocations = append(location.SubLocations, parseGbkLocation(numberRange))
-				}
-			}
-
-		case "complement":
-			subLocation := parseGbkLocation(expression)
-			subLocation.Complement = true
-			location.SubLocations = append(location.SubLocations, subLocation)
-		}
-	}
-	return location
-}
-
-func getFeatureSequenceHelper(feature Feature, location Location) string {
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentAnnotatedSequence.Sequence.Sequence
+
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
+
 		for _, subLocation := range location.SubLocations {
-			sequenceBuffer.WriteString(getFeatureSequenceHelper(feature, subLocation))
+			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
 		}
 	}
 
+	// reverse complements resulting string if needed.
 	if location.Complement {
 		sequenceString = ReverseComplement(sequenceBuffer.String())
 	} else {
@@ -125,10 +86,4 @@ func getFeatureSequenceHelper(feature Feature, location Location) string {
 	}
 
 	return sequenceString
-}
-
-func getFeatureSequence(feature Feature) string {
-	location := parseGbkLocation(feature.GbkLocationString)
-
-	return getFeatureSequenceHelper(feature, location)
 }

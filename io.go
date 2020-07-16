@@ -91,17 +91,13 @@ type Feature struct {
 	//gff specific
 	Source                  string
 	Type                    string
-	Start                   int
-	End                     int
-	Complement              bool
-	FivePrimePartial        bool
-	ThreePrimePartial       bool
 	Score                   string
 	Strand                  string
 	Phase                   string
 	Attributes              map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
 	GbkLocationString       string
 	Sequence                string
+	SequenceLocation        Location
 	ParentAnnotatedSequence *AnnotatedSequence `json:"-"`
 }
 
@@ -182,8 +178,8 @@ func ParseGff(gff string) AnnotatedSequence {
 			record.Name = fields[0]
 			record.Source = fields[1]
 			record.Type = fields[2]
-			record.Start, _ = strconv.Atoi(fields[3])
-			record.End, _ = strconv.Atoi(fields[4])
+			record.SequenceLocation.Start, _ = strconv.Atoi(fields[3])
+			record.SequenceLocation.End, _ = strconv.Atoi(fields[4])
 			record.Score = fields[5]
 			record.Strand = fields[6]
 			record.Phase = fields[7]
@@ -280,10 +276,9 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 			featureType = "unknown"
 		}
 
-		// really really really need to make a genbank parser util for getting start and stop of region.
-		featureStart := strconv.Itoa(feature.Start)
+		featureStart := strconv.Itoa(feature.SequenceLocation.Start)
 
-		featureEnd := strconv.Itoa(feature.End)
+		featureEnd := strconv.Itoa(feature.SequenceLocation.End)
 		featureScore := feature.Score
 		featureStrand := string(feature.Strand)
 		featurePhase := feature.Phase
@@ -828,9 +823,6 @@ func getFeatures(lines []string) []Feature {
 	lineIndex := 0
 	features := []Feature{}
 
-	locationExtractionRegex, _ := regexp.Compile(`\d+..\d+`)
-	complementLocationRegex, _ := regexp.Compile(`\((.*?)\)`)
-
 	// regex to remove quotes and slashes from qualifiers
 	reg, _ := regexp.Compile("[\"/\n]+")
 
@@ -853,25 +845,7 @@ func getFeatures(lines []string) []Feature {
 		feature.Type = strings.TrimSpace(splitLine[0])
 		// feature.GbkLocationString is the string used by GBK to denote location
 		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-
-		// getting usable coordinates with meta.
-		if locationExtractionRegex.MatchString(feature.GbkLocationString) {
-			indeces := strings.Split(locationExtractionRegex.FindString(feature.GbkLocationString), "..")
-			feature.Start, _ = strconv.Atoi(indeces[0])
-			feature.End, _ = strconv.Atoi(indeces[1])
-
-			if complementLocationRegex.MatchString(feature.GbkLocationString) {
-				feature.Complement = true
-			}
-
-			if strings.Contains(feature.GbkLocationString, "<") {
-				feature.FivePrimePartial = true
-			}
-
-			if strings.Contains(feature.GbkLocationString, ">") {
-				feature.ThreePrimePartial = true
-			}
-		}
+		feature.SequenceLocation = parseGbkLocation(feature.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -946,6 +920,59 @@ func getSequence(subLines []string) Sequence {
 	}
 	sequence.Sequence = reg.ReplaceAllString(sequenceBuffer.String(), "")
 	return sequence
+}
+
+func parseGbkLocation(locationString string) Location {
+	var location Location
+	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
+		startEndSplit := strings.Split(locationString, "..")
+		start, _ := strconv.Atoi(startEndSplit[0])
+		end, _ := strconv.Atoi(startEndSplit[1])
+
+		location = Location{Start: start - 1, End: end}
+
+	} else {
+		firstOuterParentheses := strings.Index(locationString, "(")
+		expression := locationString[firstOuterParentheses+1 : strings.LastIndex(locationString, ")")]
+		switch command := locationString[0:firstOuterParentheses]; command {
+		case "join":
+			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
+			if strings.ContainsAny(expression, "(") {
+				firstInnerParentheses := strings.Index(expression, "(")
+				ParenthesesCount := 1
+				comma := 0
+				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
+					comma = i
+					switch expression[firstInnerParentheses+i] {
+					case []byte("(")[0]:
+						ParenthesesCount++
+					case []byte(")")[0]:
+						ParenthesesCount--
+					}
+				}
+				location.SubLocations = append(location.SubLocations, parseGbkLocation(expression[:firstInnerParentheses+comma+1]), parseGbkLocation(expression[2+firstInnerParentheses+comma:]))
+			} else { // This is the default join(x..x,x..x)
+				for _, numberRange := range strings.Split(expression, ",") {
+					location.SubLocations = append(location.SubLocations, parseGbkLocation(numberRange))
+				}
+			}
+
+		case "complement":
+			subLocation := parseGbkLocation(expression)
+			subLocation.Complement = true
+			location.SubLocations = append(location.SubLocations, subLocation)
+		}
+	}
+
+	if strings.Contains(locationString, "<") {
+		location.FivePrimePartial = true
+	}
+
+	if strings.Contains(locationString, ">") {
+		location.ThreePrimePartial = true
+	}
+
+	return location
 }
 
 // ParseGbk takes in a string representing a gbk/gb/genbank file and parses it into an AnnotatedSequence object.

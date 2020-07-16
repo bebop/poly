@@ -106,7 +106,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	gbk := ReadGbk("data/bsub.gbk")
 
 	for _, feature := range gbk.Features {
-		if feature.Start == 410 && feature.End == 1750 && feature.Type == "CDS" {
+		if feature.SequenceLocation.Start == 410 && feature.SequenceLocation.End == 1750 && feature.Type == "CDS" {
 			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}
