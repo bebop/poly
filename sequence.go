@@ -1,0 +1,89 @@
+package main
+
+import (
+	"bytes"
+	"strings"
+)
+
+// ComplementBaseRuneMap provides 1:1 mapping between bases and their complements
+var ComplementBaseRuneMap = map[rune]rune{
+	65:  84,  // A -> T
+	66:  86,  // B -> V
+	67:  71,  // C -> G
+	68:  72,  // D -> H
+	71:  67,  // G -> C
+	72:  68,  // H -> D
+	75:  77,  // K -> M
+	77:  75,  // M -> K
+	78:  78,  // N -> N
+	82:  89,  // R -> Y
+	83:  83,  // S -> S
+	84:  65,  // T -> A
+	85:  65,  // U -> A
+	86:  66,  // V -> B
+	87:  87,  // W -> W
+	89:  82,  // Y -> R
+	97:  116, // a -> t
+	98:  118, // b -> v
+	99:  103, // c -> g
+	100: 104, // d -> h
+	103: 99,  // g -> a
+	104: 100, // h -> d
+	107: 109, // k -> m
+	109: 107, // m -> k
+	110: 110, // n -> n
+	114: 121, // r -> y
+	115: 115, // s -> s
+	116: 97,  // t -> a
+	117: 97,  // u -> a
+	118: 98,  // v -> b
+	119: 119, // w -> w
+	121: 114, // y -> r
+}
+
+// getSequence is a method to get a Feature's sequence. Mutates with AnnotatedSequence.
+func (feature Feature) getSequence() string {
+	return getFeatureSequence(feature, feature.SequenceLocation)
+}
+
+// ReverseComplement takes the reverse complement of a sequence
+func ReverseComplement(sequence string) string {
+	complementString := strings.Map(complementBase, sequence)
+	n := len(complementString)
+	newString := make([]rune, n)
+	for _, base := range complementString {
+		n--
+		newString[n] = base
+	}
+	return string(newString)
+}
+
+// complementBase accepts a base pair and returns its complement base pair
+func complementBase(basePair rune) rune {
+	return ComplementBaseRuneMap[basePair]
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) string {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentAnnotatedSequence.Sequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString
+}

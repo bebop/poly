@@ -1,0 +1,196 @@
+LOCUS       Exported                3334 bp ds-DNA     linear   UNA 26-JUN-2020
+DEFINITION  natural linear DNA
+ACCESSION   .
+VERSION     .
+KEYWORDS    .
+SOURCE      natural DNA sequence
+  ORGANISM  unspecified
+REFERENCE   1  (bases 1 to 3334)
+  AUTHORS   Keoni Gandall
+  TITLE     Direct Submission
+  JOURNAL   Exported Friday, Jun 26, 2020 from SnapGene 5.0.7
+            https://www.snapgene.com
+FEATURES             Location/Qualifiers
+     source          1..3334
+                     /organism="Escherichia virus T4"
+                     /host="Escherichia coli"
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:10665"
+     gene            1..243
+                     /gene="frd.1"
+                     /locus_tag="T4p240"
+                     /label=frd.1
+                     /db_xref="GeneID:1258741"
+     CDS             1..243
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="frd.1"
+                     /locus_tag="T4p240"
+                     /product="Frd.1 conserved hypothetical protein"
+                     /label=frd.1
+                     /db_xref="GeneID:1258741"
+                     /protein_id="NP_049851.1"
+                     /translation="MRLQRQSIKDSEVRGKWYFNIIGKDSELVEKAEHLLRDMGWEDEC
+                     DGCPLYEDGESAGFWIYHSDVEQFKADWKIVKKSV"
+     gene            join(complement(315..330),complement(339..896))
+                     /gene="frd"
+                     /locus_tag="T4p239"
+                     /label=frd
+                     /db_xref="GeneID:1258671"
+     CDS             315..896
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="frd"
+                     /locus_tag="T4p239"
+                     /product="Frd dihydrofolate reductase"
+                     /label=frd
+                     /note="product is methyl donor used by dTMP synthase"
+                     /db_xref="GeneID:1258671"
+                     /protein_id="NP_049850.1"
+                     /translation="MIKLVFRYSPTKTVDGFNELAFGLGDGLPWGRVKKDLQNFKARTE
+                     GTIMIMGAKTFQSLPTLLPGRSHIVVCDLARDYPVTKDGDLAHFYITWEQYITYISGGE
+                     IQVSSPNAPFETMLDQNSKVSVIGGPALLYAALPYADEVVVSRIVKRHRVNSTVQLDAS
+                     FLDDISKREMVETHWYKIDEVTTLTESVYK"
+     gene            complement(join(893..1098,1101..2770))
+                     /gene="td"
+                     /locus_tag="T4p237"
+                     /label=td
+                     /db_xref="GeneID:1258770"
+     CDS             join(893..1441,2459..2770)
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="td"
+                     /locus_tag="T4p237"
+                     /product="dTMP (thymidylate) synthase"
+                     /label=td
+                     /db_xref="GeneID:1258770"
+                     /protein_id="NP_049848.1"
+                     /translation="MKQYQDLIKDIFENGYETDDRTGTGTIALFGSKLRWDLTKGFPAV
+                     TTKKLAWKACIAELIWFLSGSTNVNDLRLIQHDSLIQGKTVWDENYENQAKDLGYHSGE
+                     LGPIYGKQWRDFGGVDQIIEVIDRIKKLPNDRRQIVSAWNPAELKYMALPPCHMFYQFN
+                     VRNGYLDLQWYQRSVDVFLGLPFNIASYATLVHIVAKMCNLIPGDLIFSGGNTHIYMNH
+                     VEQCKEILRREPKELCELVISGLPYKFRYLSTKEQLKYVLKLRPKDFVLNNYVSHPPIK
+                     GKMAV"
+     intron          1442..2458
+                     /gene="td"
+                     /locus_tag="T4p237"
+                     /number=1
+                     /note="group IA2 self-splicing intron; contains I-TevI
+                     CDS"
+     gene            1574..2311
+                     /gene="I-TevI"
+                     /locus_tag="T4p238"
+                     /label=I-TevI
+                     /db_xref="GeneID:1258722"
+     CDS             1574..2311
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="I-TevI"
+                     /locus_tag="T4p238"
+                     /product="I-TevI homing endonuclease"
+                     /label=I-TevI
+                     /note="DNA endonuclease encoded by group 1A intron in td; 
+                     GIY-YIG family"
+                     /db_xref="GeneID:1258722"
+                     /protein_id="NP_049849.3"
+                     /translation="MKSGIYQIKNTLNNKVYVGSAKDFEKRWKRHFKDLEKGCHSSIKL
+                     QRSFNKHGNVFECSILEEIPYEKDLIIERENFWIKELNSKINGYNIADATFGDTCSTHP
+                     LKEEIIKKRSETVKAKMLKLGPDGRKALYSKPGSKNGRWNPETHKFCKCGVRIQTSAYT
+                     CSKCRNRSGENNSFFNHKHSDITKSKISEKMKGKKPSNIKKISCDGVIFDCAADAARHF
+                     KISSGLVTYRVKSDKWNWFYINA"
+     gene            complement(2791..3054)
+                     /gene="nrdA.2"
+                     /locus_tag="T4p236"
+                     /label=nrdA.2
+                     /db_xref="GeneID:1258679"
+     CDS             2791..3054
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="nrdA.2"
+                     /locus_tag="T4p236"
+                     /product="NrdA.2 conserved hypothetical protein"
+                     /label=nrdA.2
+                     /db_xref="GeneID:1258679"
+                     /protein_id="NP_049847.1"
+                     /translation="MILRFKDTSGVVLFTLPNPSELEVPGPEQPITIYGKKYYTHKMTR
+                     EYFDNKISTVKTSSDCYYDITVLTEKQYDELFQRGPSMPGSE"
+     gene            3008..3334
+                     /gene="nrdA.1"
+                     /locus_tag="T4p235"
+                     /label=nrdA.1
+                     /db_xref="GeneID:1258707"
+     CDS             3008..3334
+                     /codon_start=1
+                     /transl_table=11
+                     /gene="nrdA.1"
+                     /locus_tag="T4p235"
+                     /product="NrdA.1 conserved hypothetical protein"
+                     /label=nrdA.1
+                     /db_xref="GeneID:1258707"
+                     /protein_id="NP_049846.1"
+                     /translation="MTNYSSVGRLCRVVNKYKSDFDVNIHRGTFWGNYVGKDAGSREAA
+                     IELFKKDFIRRIKSGEITKAHLEPLRGMRLGCTCKPKPCHGDIIAHIVNRLFKDDFQVE
+                     DLCN"
+     gene            3325..3334
+                     /gene="nrdA"
+                     /locus_tag="T4p234"
+                     /label=nrdA
+                     /db_xref="GeneID:1258795"
+ORIGIN
+        1 atgagattac aacgccagag catcaaagat tcagaagtta gaggtaaatg gtattttaat
+       61 atcatcggta aagattctga acttgttgaa aaagctgaac atcttttacg tgatatggga
+      121 tgggaagatg aatgcgatgg atgtcctctt tatgaagacg gagaaagcgc aggattttgg
+      181 atttaccatt ctgacgtcga gcagtttaaa gctgattgga aaattgtgaa aaagtctgtt
+      241 tgaggaaaat attatgtatg tcattgaaat tatccaagta agcattcgtt ttcaattaaa
+      301 ataggattta cgtaatgatt aaattggtat tccgttattc tccaactaaa acggtcgacg
+      361 gctttaatga attagcattc ggtttaggtg atggtttacc atggggacga gttaaaaagg
+      421 acctccagaa ttttaaagct cgtactgaag gcacaattat gattatgggt gctaaaacgt
+      481 tccagtcatt gcctacatta cttcctggtc gtagccatat tgtggtgtgt gaccttgcgc
+      541 gtgattatcc tgtaactaaa gacggcgatt tagcacattt ctatattact tgggagcaat
+      601 atataactta catttctggc ggcgaaattc aagtgtcaag ccctaatgca ccattcgaaa
+      661 ctatgcttga tcagaattct aaagtaagtg taattggcgg gcctgctctg ttatatgctg
+      721 cattacctta tgcagatgaa gtagttgttt ctcgcatcgt taaaaggcat cgtgttaatt
+      781 caacagttca attagacgca agttttcttg atgatataag caagcgtgaa atggttgaaa
+      841 cgcattggta taaaatagat gaagtaacaa cccttacgga atcagtatat aaatgaaaca
+      901 ataccaagat ttaattaaag acatttttga aaatggttat gaaaccgatg atcgtacagg
+      961 cacaggaaca attgctctgt tcggatctaa attacgctgg gatttaacta aaggttttcc
+     1021 tgcggtaaca actaagaagc tcgcctggaa agcttgcatt gctgagctaa tatggttttt
+     1081 atcaggaagc acaaatgtca atgatttacg attaattcaa cacgattcgt taatccaagg
+     1141 caaaacagtc tgggatgaaa attacgaaaa tcaagcaaaa gatttaggat accatagcgg
+     1201 tgaacttggt ccaatttatg gaaaacagtg gcgtgatttt ggtggtgtag accaaattat
+     1261 agaagttatt gatcgtatta aaaaactgcc aaatgatagg cgtcaaattg tttctgcatg
+     1321 gaatccagct gaacttaaat atatggcatt accgccttgt catatgttct atcagtttaa
+     1381 tgtgcgtaat ggctatttgg atttgcagtg gtatcaacgc tcagtagatg ttttcttggg
+     1441 ttaattgagg cctgagtata aggtgactta tacttgtaat ctatctaaac ggggaacctc
+     1501 tctagtagac aatcccgtgc taaattgtag gacttgccct ttaataaata cttctatatt
+     1561 taaagaggta tttatgaaaa gcggaattta tcagattaaa aatactttaa acaataaagt
+     1621 atatgtagga agtgctaaag attttgaaaa gagatggaag aggcatttta aagatttaga
+     1681 aaaaggatgc cattcttcta taaaacttca gaggtctttt aacaaacatg gtaatgtgtt
+     1741 tgaatgttct attttggaag aaattccata tgagaaagat ttgattattg aacgagaaaa
+     1801 tttttggatt aaagagctta attctaaaat taatggatac aatattgctg atgcaacgtt
+     1861 tggtgataca tgttctacgc atccattaaa agaagaaatt attaagaaac gttctgaaac
+     1921 tgttaaagct aagatgctta aacttggacc tgatggtcgg aaagctcttt acagtaaacc
+     1981 cggaagtaaa aacgggcgtt ggaatccaga aacccataag ttttgtaagt gcggtgttcg
+     2041 catacaaact tctgcttata cttgtagtaa atgcagaaat cgttcaggtg aaaataattc
+     2101 attctttaat cataagcatt cagacataac taaatctaaa atatcagaaa agatgaaagg
+     2161 taaaaagcct agtaatatta aaaagatttc atgtgatggg gttatttttg attgtgcagc
+     2221 agatgcagct agacatttta aaatttcgtc tggattagtt acttatcgtg taaaatctga
+     2281 taaatggaat tggttctaca taaatgccta acgactatcc ctttggggag tagggtcaag
+     2341 tgactcgaaa cgatagacaa cttgctttaa caagttggag atatagtctg ctctgcatgg
+     2401 tgacatgcag ctggatataa ttccggggta agattaacga ccttatctga acataatgct
+     2461 accgtttaat attgcgtcat atgctacgtt agttcatatt gtagctaaga tgtgtaatct
+     2521 tattccaggg gatttgatat tttctggtgg taatactcat atctatatga atcacgtaga
+     2581 acaatgtaaa gaaattttga ggcgtgaacc taaagagctt tgtgagctgg taataagtgg
+     2641 tctaccttat aaattccgat atctttctac taaagaacaa ttaaaatatg ttcttaaact
+     2701 taggcctaaa gatttcgttc ttaacaacta tgtatcacac cctcctatta aaggaaagat
+     2761 ggcggtgtaa ttttattatt gcgaggatat atgattttac gatttaaaga tacttctggt
+     2821 gtagttcttt ttacacttcc taacccaagc gagttagaag ttccaggacc agaacagcct
+     2881 attaccattt atggtaaaaa atactatact cataaaatga ctcgtgagta ttttgataat
+     2941 aaaatttcca cagttaaaac ttcttctgac tgttactacg atattactgt tttaacggaa
+     3001 aaacaatatg acgaattatt ccagcgtggg ccgtctatgc cgggtagtga ataaatataa
+     3061 atccgacttt gatgttaata ttcaccgcgg tacattttgg ggaaattacg tcggtaaaga
+     3121 tgctggcagc cgggaggctg ccattgaatt attcaaaaaa gattttatac gtcgaattaa
+     3181 atccggagaa ataactaaag cacatttaga gcctttacgt ggaatgaggc taggatgcac
+     3241 atgtaaacca aagccgtgtc atggtgatat aatagctcat atagttaacc gattgtttaa
+     3301 agacgatttt caagttgagg acttatgcaa ttaa
+//

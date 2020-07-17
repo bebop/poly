@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pmezard/go-difflib/difflib"
 )
 
@@ -35,7 +36,7 @@ func TestGffIO(t *testing.T) {
 
 	readTestSequence := ReadGff(testOutputPath)
 
-	if diff := cmp.Diff(testSequence, readTestSequence); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
 
@@ -88,7 +89,7 @@ func TestLocusParseRegression(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk").Meta.Locus
 	json := ReadJSON("data/puc19static.json").Meta.Locus
 
-	if diff := cmp.Diff(gbk, json); diff != "" {
+	if diff := cmp.Diff(gbk, json, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
 	}
 }
@@ -105,7 +106,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	gbk := ReadGbk("data/bsub.gbk")
 
 	for _, feature := range gbk.Features {
-		if feature.Start == 410 && feature.End == 1750 && feature.Type == "CDS" {
+		if feature.SequenceLocation.Start == 410 && feature.SequenceLocation.End == 1750 && feature.Type == "CDS" {
 			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}
@@ -146,9 +147,21 @@ func TestJSONIO(t *testing.T) {
 	// cleaning up test data
 	os.Remove("data/test.json")
 
-	if diff := cmp.Diff(testSequence, readTestSequence); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
+
+	gffTestSequence := ReadGff("data/ecoli-mg1655.gff")
+	WriteJSON(gffTestSequence, "data/testGff.json")
+	gffReadTestSequence := ReadJSON("data/testGff.json")
+
+	// cleaning up test data
+	os.Remove("data/test.json")
+
+	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		// t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
 }
 
 /******************************************************************************
