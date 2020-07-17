@@ -186,7 +186,6 @@ func ParseGff(gff string) AnnotatedSequence {
 			record.SequenceLocation.Start, _ = strconv.Atoi(fields[3])
 			record.SequenceLocation.Start--
 			record.SequenceLocation.End, _ = strconv.Atoi(fields[4])
-			record.SequenceLocation.End--
 
 			record.Score = fields[5]
 			record.Strand = fields[6]
@@ -286,7 +285,7 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 
 		// Indexing starts at 1 for gff so we need to shift up from AnnotatedSequence 0 index.
 		featureStart := strconv.Itoa(feature.SequenceLocation.Start + 1)
-		featureEnd := strconv.Itoa(feature.SequenceLocation.End + 1)
+		featureEnd := strconv.Itoa(feature.SequenceLocation.End)
 
 		featureScore := feature.Score
 		featureStrand := string(feature.Strand)
