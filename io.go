@@ -76,10 +76,13 @@ type Locus struct {
 	Name, SequenceLength, MoleculeType, GenBankDivision, ModDate, SequenceCoding string
 	Circular                                                                     bool
 }
+
+// Location holds nested location info for sequence region.
 type Location struct {
 	Start             int
 	End               int
 	Complement        bool
+	Join              bool
 	FivePrimePartial  bool
 	ThreePrimePartial bool
 	SubLocations      []Location
@@ -178,8 +181,13 @@ func ParseGff(gff string) AnnotatedSequence {
 			record.Name = fields[0]
 			record.Source = fields[1]
 			record.Type = fields[2]
+
+			// Indexing starts at 1 for gff so we need to shift down for AnnotatedSequence 0 index.
 			record.SequenceLocation.Start, _ = strconv.Atoi(fields[3])
+			record.SequenceLocation.Start--
 			record.SequenceLocation.End, _ = strconv.Atoi(fields[4])
+			record.SequenceLocation.End--
+
 			record.Score = fields[5]
 			record.Strand = fields[6]
 			record.Phase = fields[7]
@@ -276,9 +284,10 @@ func BuildGff(annotatedSequence AnnotatedSequence) []byte {
 			featureType = "unknown"
 		}
 
-		featureStart := strconv.Itoa(feature.SequenceLocation.Start)
+		// Indexing starts at 1 for gff so we need to shift up from AnnotatedSequence 0 index.
+		featureStart := strconv.Itoa(feature.SequenceLocation.Start + 1)
+		featureEnd := strconv.Itoa(feature.SequenceLocation.End + 1)
 
-		featureEnd := strconv.Itoa(feature.SequenceLocation.End)
 		featureScore := feature.Score
 		featureStrand := string(feature.Strand)
 		featurePhase := feature.Phase
@@ -936,6 +945,7 @@ func parseGbkLocation(locationString string) Location {
 		expression := locationString[firstOuterParentheses+1 : strings.LastIndex(locationString, ")")]
 		switch command := locationString[0:firstOuterParentheses]; command {
 		case "join":
+			location.Join = true
 			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
 			if strings.ContainsAny(expression, "(") {
 				firstInnerParentheses := strings.Index(expression, "(")
@@ -970,6 +980,11 @@ func parseGbkLocation(locationString string) Location {
 
 	if strings.Contains(locationString, ">") {
 		location.ThreePrimePartial = true
+	}
+
+	// if excess root node then trim node. Maybe should just be handled with second arg?
+	if location.Start == 0 && location.End == 0 && location.Join == false && location.Complement == false {
+		location = location.SubLocations[0]
 	}
 
 	return location
