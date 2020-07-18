@@ -57,14 +57,6 @@ type Primary struct {
 	RefSeq, PrimaryIdentifier, Primary_Span, Comp string
 }
 
-// genbank specific
-// type Reference struct {
-// 	Authors []string
-// 	Title   string
-// 	Journal string
-// 	PubMed  string
-// }
-
 // Reference holds information one reference in a Meta struct.
 type Reference struct {
 	Index, Authors, Title, Journal, PubMed, Remark, Range string
