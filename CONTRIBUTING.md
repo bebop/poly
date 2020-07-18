@@ -19,20 +19,17 @@ Currently any sincere pull request is a good request. Poly is still super alpha 
 # What to expect when you're expecting to contribute to Poly
 ### Excellence, and the contributor's code of conduct
 
-First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forget that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted (and their friend Abraham Lincoln).
+First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forget that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted.
 
 `Bill: Be excellent, ... to each other, ...`
 
 `Ted: and party on, dudes! [sic]`
 
-![Abraham Licoln saying, "Be Excellent to each other and party on dudes!"](https://media.giphy.com/media/ef0zYcF7AKu4b0Sns6/giphy.gif)
+![Abraham Licoln saying, "Be Excellent to each other and party on dudes!". [sic]](https://media.giphy.com/media/ef0zYcF7AKu4b0Sns6/giphy-downsized-large.gif)
 
 ### Do-ocracy
 
 Poly runs on do-ocracy. Do-ocracy is a simple concept. If you don't like something you don't need permission to fix it, you can just go ahead and fix it! If you actually want to merge your fix, or contribute in someway that benefits everybody, it'd really, really, really help if you got some light consensus from the rest of the Poly development community but hey, if you really need to do something then you just gotta do it! Just don't expect me to merge it if it doesn't meet our technical criteria or isn't quite right for Poly.
-
-[more on doocracy.txt]
-
 
 ### Technical requirements
 
