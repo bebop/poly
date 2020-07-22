@@ -2,7 +2,7 @@
 
 Yo, what up! if you're reading this then I'm super psyched because that means that you're thinking about contributing to Poly! Thanks so much for your time and consideration. It's rad people like you that make Poly such a cool computational synthetic biology tool.
 
-I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. I'll try to keep it brief so please read along so that we all know what to expect when expecting your most excellent pull request (or any other excellent contribution).
+I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. 
 
 Currently any sincere pull request is a good request. Poly is still super alpha (as of writing it kinda parses genbank files) so there are so many way to contribute! Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
 
@@ -16,7 +16,7 @@ Currently any sincere pull request is a good request. Poly is still super alpha 
 * Art! Dreams! Your excellence!
 * Code that can be pulled into Poly itself.
 
-# What to expect when you're expecting to contribute to Poly
+# Contributor guidelines
 ### Excellence, and the contributor's code of conduct
 
 First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forget that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted.
