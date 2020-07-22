@@ -33,82 +33,87 @@ AnnotatedSequence related structs begin here.
 
 // Meta Holds all the meta information of an AnnotatedSequence struct.
 type Meta struct {
-	Name        string
-	GffVersion  string
-	RegionStart int
-	RegionEnd   int
-	Size        int
-	Type        string
-	Date        string
-	Definition  string
-	Accession   string
-	Version     string
-	Keywords    string
-	Organism    string
-	Source      string
-	Origin      string
-	Locus       Locus
-	References  []Reference
-	Primaries   []Primary
-}
-
-// Primary Holds all the Primary information of a Meta struct.
-type Primary struct {
-	RefSeq, PrimaryIdentifier, Primary_Span, Comp string
+	Name        string      `json:"name"`
+	GffVersion  string      `json:"gff_version"`
+	RegionStart int         `json:"region_start"`
+	RegionEnd   int         `json:"region_end"`
+	Size        int         `json:"size"`
+	Type        string      `json:"type"`
+	Date        string      `json:"date"`
+	Definition  string      `json:"definition"`
+	Accession   string      `json:"accession"`
+	Version     string      `json:"version"`
+	Keywords    string      `json:"keywords"`
+	Organism    string      `json:"organism"`
+	Source      string      `json:"source"`
+	Origin      string      `json:"origin"`
+	Locus       Locus       `json:"locus"`
+	References  []Reference `json:"references"`
 }
 
 // Reference holds information one reference in a Meta struct.
 type Reference struct {
-	Index, Authors, Title, Journal, PubMed, Remark, Range string
+	Index   string `json:"index"`
+	Authors string `json:"authors"`
+	Title   string `json:"title"`
+	Journal string `json:"journal"`
+	PubMed  string `json:"pub_med"`
+	Remark  string `json:"remark"`
+	Range   string `json:"range"`
 }
 
 // Locus holds Locus information in a Meta struct.
 type Locus struct {
-	Name, SequenceLength, MoleculeType, GenBankDivision, ModDate, SequenceCoding string
-	Circular                                                                     bool
+	Name             string `json:"name"`
+	SequenceLength   string `json:"sequence_length"`
+	MoleculeType     string `json:"molecule_type"`
+	GenbankDivision  string `json:"genbank_division"`
+	ModificationDate string `json:"modification_date"`
+	SequenceCoding   string `json:"sequence_coding"`
+	Circular         bool   `json:"circular"`
 }
 
 // Location holds nested location info for sequence region.
 type Location struct {
-	Start             int
-	End               int
-	Complement        bool
-	Join              bool
-	FivePrimePartial  bool
-	ThreePrimePartial bool
-	SubLocations      []Location
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	SubLocations      []Location `json:"sub_locations"`
 }
 
 // Feature holds a single annotation in a struct. from https://github.com/blachlylab/gff3/blob/master/gff3.go
 type Feature struct {
 	Name string //Seqid in gff, name in gbk
 	//gff specific
-	Source                  string
-	Type                    string
-	Score                   string
-	Strand                  string
-	Phase                   string
-	Attributes              map[string]string // Known as "qualifiers" for gbk, "attributes" for gff.
-	GbkLocationString       string
-	Sequence                string
-	SequenceLocation        Location
+	Source                  string             `json:"source"`
+	Type                    string             `json:"type"`
+	Score                   string             `json:"score"`
+	Strand                  string             `json:"strand"`
+	Phase                   string             `json:"phase"`
+	Attributes              map[string]string  `json:"attributes"`
+	GbkLocationString       string             `json:"gbk_location_string"`
+	Sequence                string             `json:"sequence"`
+	SequenceLocation        Location           `json:"sequence_location"`
 	ParentAnnotatedSequence *AnnotatedSequence `json:"-"`
 }
 
 // Sequence holds raw sequence information in an AnnotatedSequence struct.
 type Sequence struct {
-	Description  string
-	Hash         string
-	HashFunction string
-	Sequence     string
+	Description  string `json:"description"`
+	Hash         string `json:"hash"`
+	HashFunction string `json:"hash_function"`
+	Sequence     string `json:"sequence"`
 	// ParentAnnotatedSequence *AnnotatedSequence
 }
 
 // AnnotatedSequence holds all sequence information in a single struct.
 type AnnotatedSequence struct {
-	Meta     Meta
-	Features []Feature
-	Sequence Sequence
+	Meta     Meta      `json:"meta"`
+	Features []Feature `json:"features"`
+	Sequence Sequence  `json:"sequence"`
 }
 
 func (annotatedSequence *AnnotatedSequence) addFeature(feature Feature) []Feature {
@@ -695,7 +700,7 @@ func parseLocus(locusString string) Locus {
 
 	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
 	circularRegex, _ := regexp.Compile(` circular `)
-	modDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
+	ModificationDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
 
 	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
 
@@ -740,13 +745,13 @@ func parseLocus(locusString string) Locus {
 		genbankDivisionRegex, _ := regexp.Compile(genbankDivision)
 		match := string(genbankDivisionRegex.Find([]byte(locusString)))
 		if match != "" {
-			locus.GenBankDivision = match
+			locus.GenbankDivision = match
 			break
 		}
 	}
 
-	// ModDate
-	locus.ModDate = modDateRegex.FindString(locusString)
+	// ModificationDate
+	locus.ModificationDate = ModificationDateRegex.FindString(locusString)
 
 	return locus
 }
