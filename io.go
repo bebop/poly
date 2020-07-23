@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+const TAB = "\t"
+const FIVESPACE = "     "
+const TENSPACE = FIVESPACE + FIVESPACE
+
 /******************************************************************************
 
 File is structured as so:
@@ -72,6 +76,7 @@ type Locus struct {
 	ModificationDate string `json:"modification_date"`
 	SequenceCoding   string `json:"sequence_coding"`
 	Circular         bool   `json:"circular"`
+	Linear           bool   `json:"linear"`
 }
 
 // Location holds nested location info for sequence region.
@@ -701,6 +706,8 @@ func parseLocus(locusString string) Locus {
 
 	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
 	circularRegex, _ := regexp.Compile(` circular `)
+	linearRegex, _ := regexp.Compile(` linear `)
+
 	ModificationDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
 
 	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
@@ -737,8 +744,10 @@ func parseLocus(locusString string) Locus {
 	// circularity flag
 	if circularRegex.Match([]byte(locusString)) {
 		locus.Circular = true
-	} else {
-		locus.Circular = false
+	}
+
+	if linearRegex.Match([]byte(locusString)) {
+		locus.Linear = true
 	}
 
 	// genbank division
@@ -1076,6 +1085,101 @@ func ReadGbk(path string) AnnotatedSequence {
 
 	}
 	return annotatedSequence
+}
+
+// type Locus struct {
+// 	Name             string `json:"name"`
+// 	SequenceLength   string `json:"sequence_length"`
+// 	MoleculeType     string `json:"molecule_type"`
+// 	GenbankDivision  string `json:"genbank_division"`
+// 	ModificationDate string `json:"modification_date"`
+// 	SequenceCoding   string `json:"sequence_coding"`
+// 	Circular         bool   `json:"circular"`
+// }
+
+func buildMetaString(name string, data string) string {
+	metaString := name
+	keyWhitespaceTrailLength := 12 - len(name) // I wish I was kidding.
+	var keyWhitespaceTrail string
+	for i := 0; i < keyWhitespaceTrailLength; i++ {
+		keyWhitespaceTrail += " "
+	}
+	metaString += keyWhitespaceTrail
+
+	dataSplitSpace := strings.Split(data, " ")
+	lineLength := len(metaString)
+	for _, datum := range dataSplitSpace {
+		lineLength += len(datum)
+		if lineLength > 80 {
+			metaString += "\n" + TENSPACE + "  "
+			lineLength = 12
+		}
+		metaString += datum + " "
+	}
+	metaString = strings.TrimSuffix(metaString, " ")
+	metaString += "\n"
+	return metaString
+}
+
+// BuildGbk builds a GBK string to be written out to db or file.
+func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
+	var gbkString bytes.Buffer
+	locus := annotatedSequence.Meta.Locus
+	var shape string
+
+	if locus.Circular {
+		shape = "CIRCULAR"
+	} else if locus.Linear {
+		shape = "LINEAR"
+	}
+	locusData := locus.Name + FIVESPACE + locus.SequenceLength + " bp" + FIVESPACE + locus.MoleculeType + FIVESPACE + shape + FIVESPACE + locus.GenbankDivision + FIVESPACE + locus.ModificationDate
+	locusString := "LOCUS       " + locusData + "\n"
+	gbkString.WriteString(locusString)
+
+	definitionString := buildMetaString("DEFINITION", annotatedSequence.Meta.Definition)
+	gbkString.WriteString(definitionString)
+
+	accessionString := buildMetaString("ACCESSION", annotatedSequence.Meta.Accession)
+	gbkString.WriteString(accessionString)
+
+	versionString := buildMetaString("VERSION", annotatedSequence.Meta.Version)
+	gbkString.WriteString(versionString)
+
+	keywordsString := buildMetaString("KEYWORDS", annotatedSequence.Meta.Keywords)
+	gbkString.WriteString(keywordsString)
+
+	sourceString := buildMetaString("SOURCE", annotatedSequence.Meta.Source)
+	gbkString.WriteString(sourceString)
+
+	organismString := buildMetaString("  ORGANISM", annotatedSequence.Meta.Organism)
+	gbkString.WriteString(organismString)
+
+	// TODO: could use reflection to get keys and make more general.
+	for referenceIndex, reference := range annotatedSequence.Meta.References {
+		referenceData := strconv.Itoa(referenceIndex+1) + "  " + reference.Range
+		referenceString := buildMetaString("REFERENCE", referenceData)
+		gbkString.WriteString(referenceString)
+
+		authorsString := buildMetaString("  AUTHORS", reference.Authors)
+		gbkString.WriteString(authorsString)
+
+		titleString := buildMetaString("  TITLE", reference.Title)
+		gbkString.WriteString(titleString)
+
+		journalString := buildMetaString("  JOURNAL", reference.Journal)
+		gbkString.WriteString(journalString)
+
+		pubMedString := buildMetaString("  PUBMED", reference.PubMed)
+		gbkString.WriteString(pubMedString)
+	}
+
+	return gbkString.Bytes()
+}
+
+// WriteGbk takes an AnnotatedSequence struct and a path string and writes out a gff to that path.
+func WriteGbk(annotatedSequence AnnotatedSequence, path string) {
+	gbk := BuildGbk(annotatedSequence)
+	_ = ioutil.WriteFile(path, gbk, 0644)
 }
 
 /******************************************************************************
