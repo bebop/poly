@@ -33,22 +33,23 @@ AnnotatedSequence related structs begin here.
 
 // Meta Holds all the meta information of an AnnotatedSequence struct.
 type Meta struct {
-	Name        string      `json:"name"`
-	GffVersion  string      `json:"gff_version"`
-	RegionStart int         `json:"region_start"`
-	RegionEnd   int         `json:"region_end"`
-	Size        int         `json:"size"`
-	Type        string      `json:"type"`
-	Date        string      `json:"date"`
-	Definition  string      `json:"definition"`
-	Accession   string      `json:"accession"`
-	Version     string      `json:"version"`
-	Keywords    string      `json:"keywords"`
-	Organism    string      `json:"organism"`
-	Source      string      `json:"source"`
-	Origin      string      `json:"origin"`
-	Locus       Locus       `json:"locus"`
-	References  []Reference `json:"references"`
+	Name        string            `json:"name"`
+	GffVersion  string            `json:"gff_version"`
+	RegionStart int               `json:"region_start"`
+	RegionEnd   int               `json:"region_end"`
+	Size        int               `json:"size"`
+	Type        string            `json:"type"`
+	Date        string            `json:"date"`
+	Definition  string            `json:"definition"`
+	Accession   string            `json:"accession"`
+	Version     string            `json:"version"`
+	Keywords    string            `json:"keywords"`
+	Organism    string            `json:"organism"`
+	Source      string            `json:"source"`
+	Origin      string            `json:"origin"`
+	Locus       Locus             `json:"locus"`
+	References  []Reference       `json:"references"`
+	Other       map[string]string `json:"other"`
 }
 
 // Reference holds information one reference in a Meta struct.
@@ -581,7 +582,7 @@ const qualifierIndex = 21
 
 func quickMetaCheck(line string) bool {
 	flag := false
-	if string(line[metaIndex]) != " " {
+	if string(line[metaIndex]) != " " && string(line[0:2]) != "//" {
 		flag = true
 	}
 	return flag
@@ -995,6 +996,7 @@ func ParseGbk(gbk string) AnnotatedSequence {
 
 	// Create meta struct
 	meta := Meta{}
+	meta.Other = make(map[string]string)
 
 	// Create features struct
 	features := []Feature{}
@@ -1040,7 +1042,10 @@ func ParseGbk(gbk string) AnnotatedSequence {
 			sequence = getSequence(subLines)
 			sequenceBreakFlag = true
 		default:
-			continue
+			if quickMetaCheck(line) {
+				key := strings.TrimSpace(splitLine[0])
+				meta.Other[key] = joinSubLines(splitLine, subLines)
+			}
 		}
 
 	}
