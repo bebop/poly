@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/mitchellh/go-wordwrap"
 )
 
 const TAB = "\t"
@@ -1098,27 +1100,24 @@ func ReadGbk(path string) AnnotatedSequence {
 // }
 
 func buildMetaString(name string, data string) string {
-	metaString := name
 	keyWhitespaceTrailLength := 12 - len(name) // I wish I was kidding.
 	var keyWhitespaceTrail string
 	for i := 0; i < keyWhitespaceTrailLength; i++ {
 		keyWhitespaceTrail += " "
 	}
-	metaString += keyWhitespaceTrail
-
-	dataSplitSpace := strings.Split(data, " ")
-	lineLength := len(metaString)
-	for _, datum := range dataSplitSpace {
-		lineLength += len(datum)
-		if lineLength > 80 {
-			metaString += "\n" + TENSPACE + "  "
-			lineLength = 12
+	name += keyWhitespaceTrail
+	wrappedData := wordwrap.WrapString(data, 68)
+	splitData := strings.Split(wrappedData, "\n")
+	var returnData string
+	for index, datum := range splitData {
+		if index == 0 {
+			returnData = name + datum + "\n"
+		} else {
+			returnData += TENSPACE + "  " + datum + "\n"
 		}
-		metaString += datum + " "
 	}
-	metaString = strings.TrimSuffix(metaString, " ")
-	metaString += "\n"
-	return metaString
+
+	return returnData
 }
 
 // BuildGbk builds a GBK string to be written out to db or file.
@@ -1128,9 +1127,9 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 	var shape string
 
 	if locus.Circular {
-		shape = "CIRCULAR"
+		shape = "circular"
 	} else if locus.Linear {
-		shape = "LINEAR"
+		shape = "linear"
 	}
 	locusData := locus.Name + FIVESPACE + locus.SequenceLength + " bp" + FIVESPACE + locus.MoleculeType + FIVESPACE + shape + FIVESPACE + locus.GenbankDivision + FIVESPACE + locus.ModificationDate
 	locusString := "LOCUS       " + locusData + "\n"
