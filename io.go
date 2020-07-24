@@ -1215,6 +1215,30 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 		gbkString.WriteString(buildGbkFeatureString(feature))
 	}
 
+	gbkString.WriteString("ORIGIN\n")
+
+	for index, base := range annotatedSequence.Sequence.Sequence {
+		if index%60 == 0 {
+			if index != 0 {
+				gbkString.WriteString("\n")
+
+			}
+			lineNumberString := strconv.Itoa(index + 1)
+			leadingWhiteSpaceLength := len("        1") - len(lineNumberString)
+			for i := 0; i < leadingWhiteSpaceLength; i++ {
+				gbkString.WriteString(" ")
+			}
+			gbkString.WriteString(lineNumberString + " ")
+			gbkString.WriteRune(base)
+		} else if index%10 == 0 {
+			gbkString.WriteString(" ")
+			gbkString.WriteRune(base)
+		} else {
+			gbkString.WriteRune(base)
+		}
+	}
+	gbkString.WriteString("\n//")
+
 	return gbkString.Bytes()
 }
 
