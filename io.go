@@ -1132,7 +1132,7 @@ func buildGbkFeatureString(feature Feature) string {
 	}
 
 	for _, qualifier := range qualifierKeys {
-		returnString += "                     " + "\\" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
+		returnString += "                     " + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
 
 	}
 	return returnString
