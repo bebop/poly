@@ -85,6 +85,15 @@ Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
 
+func TestGbkIO(t *testing.T) {
+	gbk := ReadGbk("data/puc19.gbk")
+	WriteGbk(gbk, "data/puc19gbktest.gbk")
+	writeTestGbk := ReadGbk("data/puc19gbktest.gbk")
+	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
+	}
+}
+
 func TestLocusParseRegression(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk").Meta.Locus
 	json := ReadJSON("data/puc19static.json").Meta.Locus

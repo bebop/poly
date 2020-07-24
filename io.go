@@ -1089,16 +1089,6 @@ func ReadGbk(path string) AnnotatedSequence {
 	return annotatedSequence
 }
 
-// type Locus struct {
-// 	Name             string `json:"name"`
-// 	SequenceLength   string `json:"sequence_length"`
-// 	MoleculeType     string `json:"molecule_type"`
-// 	GenbankDivision  string `json:"genbank_division"`
-// 	ModificationDate string `json:"modification_date"`
-// 	SequenceCoding   string `json:"sequence_coding"`
-// 	Circular         bool   `json:"circular"`
-// }
-
 func buildMetaString(name string, data string) string {
 	keyWhitespaceTrailLength := 12 - len(name) // I wish I was kidding.
 	var keyWhitespaceTrail string
@@ -1118,6 +1108,34 @@ func buildMetaString(name string, data string) string {
 	}
 
 	return returnData
+}
+
+func buildGbkFeatureString(feature Feature) string {
+	whitespaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
+	var whitespaceTrail string
+	for i := 0; i < whitespaceTrailLength; i++ {
+		whitespaceTrail += " "
+	}
+	var location string
+
+	if feature.GbkLocationString != "" {
+		location = feature.GbkLocationString
+	} else {
+		// this is where build location would go.
+	}
+	featureHeader := FIVESPACE + feature.Type + whitespaceTrail + location + "\n"
+	returnString := featureHeader
+
+	qualifierKeys := make([]string, 0, len(feature.Attributes))
+	for key := range feature.Attributes {
+		qualifierKeys = append(qualifierKeys, key)
+	}
+
+	for _, qualifier := range qualifierKeys {
+		returnString += "                     " + "\\" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
+
+	}
+	return returnString
 }
 
 // BuildGbk builds a GBK string to be written out to db or file.
@@ -1159,17 +1177,42 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 		referenceString := buildMetaString("REFERENCE", referenceData)
 		gbkString.WriteString(referenceString)
 
-		authorsString := buildMetaString("  AUTHORS", reference.Authors)
-		gbkString.WriteString(authorsString)
+		if reference.Authors != "" {
+			authorsString := buildMetaString("  AUTHORS", reference.Authors)
+			gbkString.WriteString(authorsString)
+		}
 
-		titleString := buildMetaString("  TITLE", reference.Title)
-		gbkString.WriteString(titleString)
+		if reference.Title != "" {
+			titleString := buildMetaString("  TITLE", reference.Title)
+			gbkString.WriteString(titleString)
+		}
 
-		journalString := buildMetaString("  JOURNAL", reference.Journal)
-		gbkString.WriteString(journalString)
+		if reference.Journal != "" {
+			journalString := buildMetaString("  JOURNAL", reference.Journal)
+			gbkString.WriteString(journalString)
+		}
 
-		pubMedString := buildMetaString("  PUBMED", reference.PubMed)
-		gbkString.WriteString(pubMedString)
+		if reference.PubMed != "" {
+			pubMedString := buildMetaString("  PUBMED", reference.PubMed)
+			gbkString.WriteString(pubMedString)
+		}
+
+	}
+
+	otherKeys := make([]string, 0, len(annotatedSequence.Meta.Other))
+	for key := range annotatedSequence.Meta.Other {
+		otherKeys = append(otherKeys, key)
+	}
+
+	for _, otherKey := range otherKeys {
+		otherString := buildMetaString(otherKey, annotatedSequence.Meta.Other[otherKey])
+		gbkString.WriteString(otherString)
+	}
+
+	gbkString.WriteString("FEATURES             Location/Qualifiers\n")
+
+	for _, feature := range annotatedSequence.Features {
+		gbkString.WriteString(buildGbkFeatureString(feature))
 	}
 
 	return gbkString.Bytes()
