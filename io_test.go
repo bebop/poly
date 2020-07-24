@@ -89,6 +89,7 @@ func TestGbkIO(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk")
 	WriteGbk(gbk, "data/puc19gbktest.gbk")
 	writeTestGbk := ReadGbk("data/puc19gbktest.gbk")
+	os.Remove("data/puc19gbktest.gbk")
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
