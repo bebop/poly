@@ -1089,6 +1089,7 @@ func ReadGbk(path string) AnnotatedSequence {
 	return annotatedSequence
 }
 
+// buildMetaString is a helper function to build the meta section of genbank files.
 func buildMetaString(name string, data string) string {
 	keyWhitespaceTrailLength := 12 - len(name) // I wish I was kidding.
 	var keyWhitespaceTrail string
@@ -1110,6 +1111,7 @@ func buildMetaString(name string, data string) string {
 	return returnData
 }
 
+// buildGbkFeatureString is a helper function to build gbk feature strings for BuildGbk()
 func buildGbkFeatureString(feature Feature) string {
 	whitespaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
 	var whitespaceTrail string
@@ -1149,10 +1151,12 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 	} else if locus.Linear {
 		shape = "linear"
 	}
+	// building locus
 	locusData := locus.Name + FIVESPACE + locus.SequenceLength + " bp" + FIVESPACE + locus.MoleculeType + FIVESPACE + shape + FIVESPACE + locus.GenbankDivision + FIVESPACE + locus.ModificationDate
 	locusString := "LOCUS       " + locusData + "\n"
 	gbkString.WriteString(locusString)
 
+	// building other standard meta features
 	definitionString := buildMetaString("DEFINITION", annotatedSequence.Meta.Definition)
 	gbkString.WriteString(definitionString)
 
@@ -1171,6 +1175,7 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 	organismString := buildMetaString("  ORGANISM", annotatedSequence.Meta.Organism)
 	gbkString.WriteString(organismString)
 
+	// building references
 	// TODO: could use reflection to get keys and make more general.
 	for referenceIndex, reference := range annotatedSequence.Meta.References {
 		referenceData := strconv.Itoa(referenceIndex+1) + "  " + reference.Range
@@ -1199,6 +1204,7 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 
 	}
 
+	// building other meta fields that are catch all
 	otherKeys := make([]string, 0, len(annotatedSequence.Meta.Other))
 	for key := range annotatedSequence.Meta.Other {
 		otherKeys = append(otherKeys, key)
@@ -1209,34 +1215,39 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 		gbkString.WriteString(otherString)
 	}
 
+	// start writing features section.
 	gbkString.WriteString("FEATURES             Location/Qualifiers\n")
-
 	for _, feature := range annotatedSequence.Features {
 		gbkString.WriteString(buildGbkFeatureString(feature))
 	}
 
+	// start writing sequence section.
 	gbkString.WriteString("ORIGIN\n")
 
+	// iterate over every character in sequence range.
 	for index, base := range annotatedSequence.Sequence.Sequence {
+		// if 60th character add newline then whitespace and index number and space before adding next base.
 		if index%60 == 0 {
 			if index != 0 {
 				gbkString.WriteString("\n")
-
 			}
-			lineNumberString := strconv.Itoa(index + 1)
-			leadingWhiteSpaceLength := len("        1") - len(lineNumberString)
+			lineNumberString := strconv.Itoa(index + 1)          // genbank indexes at 1 for some reason
+			leadingWhiteSpaceLength := 9 - len(lineNumberString) // <- I wish I was kidding
 			for i := 0; i < leadingWhiteSpaceLength; i++ {
 				gbkString.WriteString(" ")
 			}
 			gbkString.WriteString(lineNumberString + " ")
 			gbkString.WriteRune(base)
+			// if base index is divisible by ten add a space (genbank convention)
 		} else if index%10 == 0 {
 			gbkString.WriteString(" ")
 			gbkString.WriteRune(base)
+			// else just add the base.
 		} else {
 			gbkString.WriteRune(base)
 		}
 	}
+	// finish genbank file with "//" on newline (again a genbank convention)
 	gbkString.WriteString("\n//")
 
 	return gbkString.Bytes()
