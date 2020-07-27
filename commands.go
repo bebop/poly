@@ -51,7 +51,7 @@ func convert(c *cli.Context) error {
 			output, _ = json.MarshalIndent(annotatedSequence, "", " ")
 		} else if c.String("o") == "gff" {
 			output = BuildGff(annotatedSequence)
-		} else if c.String("o") == "gbk" {
+		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 			output = BuildGbk(annotatedSequence)
 		}
 
@@ -88,7 +88,7 @@ func convert(c *cli.Context) error {
 					WriteJSON(annotatedSequence, outputPath+".json")
 				} else if c.String("o") == "gff" {
 					WriteGff(annotatedSequence, outputPath+".gff")
-				} else if c.String("o") == "gbk" {
+				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 					WriteGbk(annotatedSequence, outputPath+".gbk")
 				}
 
