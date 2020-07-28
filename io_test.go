@@ -91,7 +91,58 @@ func TestGbkIO(t *testing.T) {
 	writeTestGbk := ReadGbk("data/puc19gbktest.gbk")
 	os.Remove("data/puc19gbktest.gbk")
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
+		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+	}
+}
+
+func TestGbkLocationStringBuilder(t *testing.T) {
+	scrubbedGbk := ReadGbk("data/sample.gbk")
+
+	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
+	for featureIndex := range scrubbedGbk.Features {
+		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
+	}
+
+	WriteGbk(scrubbedGbk, "data/sample_test.gbk")
+
+	testInputGbk := ReadGbk("data/sample.gbk")
+	testOutputGbk := ReadGbk("data/sample_test.gbk")
+
+	os.Remove("data/sample_test.gbk")
+
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+	}
+
+	scrubbedGbk = ReadGbk("data/t4_intron.gb")
+
+	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
+	for featureIndex := range scrubbedGbk.Features {
+		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
+	}
+
+	WriteGbk(scrubbedGbk, "data/t4_intron_test.gb")
+
+	testInputGbk = ReadGbk("data/t4_intron.gbk")
+	testOutputGbk = ReadGbk("data/t4_intron_test.gbk")
+
+	os.Remove("data/t4_intron_test.gbk")
+
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+	}
+
+}
+
+func TestPartialLocationParseRegression(t *testing.T) {
+	gbk := ReadGbk("data/sample.gbk")
+
+	for _, feature := range gbk.Features {
+		if feature.GbkLocationString == "687..3158>" && (feature.SequenceLocation.Start != 686 || feature.SequenceLocation.End != 3158) {
+			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk()")
+		} else if feature.GbkLocationString == "<1..206" && (feature.SequenceLocation.Start != 0 || feature.SequenceLocation.End != 206) {
+			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk().")
+		}
 	}
 }
 
