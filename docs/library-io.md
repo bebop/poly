@@ -131,7 +131,7 @@ To get an AnnotatedSequence sequence you can address it like so:
 
 ## Writers
 
- `poly` tries to supply a writer for all supported file formats that have a reader. Currently we have two writers. One for `.json`, and the other `.gff` with genbank(`.gb` `.gbk`) [on the way](https://github.com/TimothyStiles/poly/issues/4).
+ `poly` tries to supply a writer for all supported file formats that have a reader.
 
  Writers take two arguments. The first is an AnnotatedSequence struct, the second is a path to write out to.
 
@@ -143,8 +143,14 @@ To get an AnnotatedSequence sequence you can address it like so:
   WriteJSON(bsubAnnotatedSequence, "data/bsub.json")
 
   // writing out gbk file input as gff.
-  WriteGff(bsubAnnotatedSequence, "data/bsub.json")
+  WriteGff(bsubAnnotatedSequence, "data/bsub.gff")
+
+  // writing out gbk file input as gff.
+  WriteGff(bsubAnnotatedSequence, "data/bsub.gbk")
+
  ```
+
+ Note that interop between file formats that aren't JSON<->* may be a little buggy. For example .gff doesn't contain a lot of sections that genbank has and genbank uses a system of sequence locations that isn't supported by the gff3 standard.
 
 ## Parsers
 
@@ -158,7 +164,7 @@ That's it. The reason we don't have a `ParseJSON()` is that golang, like almost 
 
 ## Builders
 
-`poly` builders take AnnotatedSequence structs and use them to build strings for different file formats. Currently `poly` only supports a `BuildGff()` We're working on a `BuildGbk()` and with golang's standard library there's no need for use to write a `BuildJSON`.
+`poly` builders take AnnotatedSequence structs and use them to build strings for different file formats. 
 
 ```go
   // generating an AnnotatedSequence struct from a gff file.
@@ -166,6 +172,9 @@ That's it. The reason we don't have a `ParseJSON()` is that golang, like almost 
 
   // generating a gff string that then can be piped to stdout or written to a database.
   ecoliGffString := BuildGff(ecoliAnnotatedSequence)
+
+  ecoliGbkString := BuildGbk(ecoliAnnotatedSequence)
+
 ```
 
 ## More Info
