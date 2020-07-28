@@ -26,7 +26,7 @@ func main() {
 					&cli.StringFlag{
 						Name:  "o",
 						Value: "json",
-						Usage: "Specify file output type. Options are Gff and json. Defaults to json.",
+						Usage: "Specify file output type. Options are Gff, gbk/gb, and json. Defaults to json.",
 					},
 					&cli.StringFlag{
 						Name:  "i",
