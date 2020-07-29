@@ -579,11 +579,11 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 			}
 			gbkString.WriteString(lineNumberString + " ")
 			gbkString.WriteRune(base)
-			// if base index is divisible by ten add a space (genbank convention)
+		// if base index is divisible by ten add a space (genbank convention)
 		} else if index%10 == 0 {
 			gbkString.WriteString(" ")
 			gbkString.WriteRune(base)
-			// else just add the base.
+		// else just add the base.
 		} else {
 			gbkString.WriteRune(base)
 		}
@@ -614,7 +614,7 @@ func WriteGbk(annotatedSequence AnnotatedSequence, path string) {
 	_ = ioutil.WriteFile(path, gbk, 0644)
 }
 
-//used in parseLocus function though it could be useful elsewhere.
+// used in parseLocus function though it could be useful elsewhere.
 var genbankDivisions = []string{
 	"PRI", //primate sequences
 	"ROD", //rodent sequences
@@ -651,7 +651,7 @@ var genBankMoleculeTypes = []string{
 	"unassigned RNA",
 }
 
-//used in feature check functions.
+// used in feature check functions.
 var genbankTopLevelFeatures = []string{
 	"LOCUS",
 	"DEFINITION",
@@ -664,7 +664,7 @@ var genbankTopLevelFeatures = []string{
 	"ORIGIN",
 }
 
-//used in feature check functions.
+// used in feature check functions.
 var genbankSubLevelFeatures = []string{
 	"ORGANISM",
 	"AUTHORS",
@@ -674,7 +674,7 @@ var genbankSubLevelFeatures = []string{
 	"REMARK",
 }
 
-//all gene feature types in genbank
+// all gene feature types in genbank
 var genbankGeneFeatureTypes = []string{
 	"assembly_gap",
 	"C_region",
