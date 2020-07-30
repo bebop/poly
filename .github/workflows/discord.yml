@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push, pull_request, issues, issue_comment]
 name: Notify Discord
 
 jobs:
