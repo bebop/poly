@@ -579,11 +579,11 @@ func BuildGbk(annotatedSequence AnnotatedSequence) []byte {
 			}
 			gbkString.WriteString(lineNumberString + " ")
 			gbkString.WriteRune(base)
-		// if base index is divisible by ten add a space (genbank convention)
+			// if base index is divisible by ten add a space (genbank convention)
 		} else if index%10 == 0 {
 			gbkString.WriteString(" ")
 			gbkString.WriteRune(base)
-		// else just add the base.
+			// else just add the base.
 		} else {
 			gbkString.WriteRune(base)
 		}

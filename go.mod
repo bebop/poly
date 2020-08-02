@@ -3,7 +3,6 @@ module github.com/TimothyStiles/poly
 go 1.13
 
 require (
-	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/google/go-cmp v0.4.1
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/pmezard/go-difflib v1.0.0
