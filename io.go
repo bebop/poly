@@ -24,10 +24,11 @@ File is structured as so:
 Structs:
 	AnnotatedSequence - main struct for sequence handling plus sub structs.
 
-File specific parsers, readers, writers, and builders:
-	Gff - parser, reader, writer, builder
-	Gbk/gb/genbank - parser, reader
-	JSON- reader, writer
+File specific parsers, builders readers, and writers:
+	Gff - parser, builder, reader, writer
+	JSON- parser, reader, writer
+	Gbk/gb/genbank - parser, builder, reader, writer
+
 
 ******************************************************************************/
 
