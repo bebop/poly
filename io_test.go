@@ -14,9 +14,22 @@ import (
 
 File is structured as so:
 
+SBOL - io tests.
 Gff - io tests, and benchmarks.
-Gbk/gb/genbank - benchmarks.
+Gbk/gb/genbank - io tests, and benchmarks.
 JSON - io tests.
+
+******************************************************************************/
+
+/******************************************************************************
+
+SBOL related tests and benchmarks begin here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+SBOL related tests and benchmarks end here.
 
 ******************************************************************************/
 

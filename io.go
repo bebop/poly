@@ -144,6 +144,55 @@ AnnotatedSequence related structs end here.
 
 /******************************************************************************
 
+SBOL specific IO related things begin here.
+
+******************************************************************************/
+
+// ParseSBOL Takes in a string representing a SBOL v3 file and parses it into an AnnotatedSequence object.
+func ParseSBOL(sbol string) AnnotatedSequence {
+	annotatedSequence := AnnotatedSequence{}
+
+	return annotatedSequence
+}
+
+// BuildSBOL takes an Annotated sequence and returns a byte array representing a SBOL to be written out.
+func BuildSBOL(annotatedSequence AnnotatedSequence) []byte {
+
+	return []byte{}
+}
+
+// ReadSBOL takes in a filepath for a SBOL v3 file and parses it into an Annotated Sequence struct. <- turn this into general function like hasher.
+func ReadSBOL(path string) AnnotatedSequence {
+	file, err := ioutil.ReadFile(path)
+	var annotatedSequence AnnotatedSequence
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	} else {
+		annotatedSequence = ParseSBOL(string(file))
+	}
+	return annotatedSequence
+}
+
+// WriteSBOL takes an AnnotatedSequence struct and a path string and writes out a SBOL to that path.
+func WriteSBOL(annotatedSequence AnnotatedSequence, path string) {
+	sbol := BuildSBOL(annotatedSequence)
+	_ = ioutil.WriteFile(path, sbol, 0644)
+}
+
+/******************************************************************************
+
+SBOL specific IO related things end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+SBOL specific IO related things end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
 GFF specific IO related things begin here.
 
 ******************************************************************************/
