@@ -75,7 +75,7 @@ poly ha -o json --stdout *.gbk
 poly hash -f sha1 bsub.gbk
 ```
 
-Will produce a sha1 hash. For a complete list of hashes and their flags check out the original source code [here](https://github.com/TimothyStiles/poly/blob/346e3eb58cdd74db14eba333ba428256f77c93b0/commands.go#L256). Hash flag values are case insensitive.
+Will produce a sha1 hash. For a complete list of hashes and their flags check out the original source code [here](https://github.com/TimothyStiles/poly/blob/346e3eb58cdd74db14eba333ba428256f77c93b0/commands.go#L256). Hash flag values are case insensitive and default to uppercase.
 
 ## Hashing with a system call
 

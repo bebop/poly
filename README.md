@@ -1,4 +1,4 @@
-# (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebook/react/blob/master/LICENSE) ![Test](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+# (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 Poly is a Go library and command line utility for engineering organisms.
 
@@ -72,7 +72,7 @@ poly c -o json *.gbk *.gb *.gff
 
 ### Go Library
 
-Here's how you'd read in a file from it's path:
+Here's how you'd read in a file from its path:
 
 ```Go
 bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
@@ -84,7 +84,7 @@ bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
 
 If you want to see a ton of great examples of what poly can do you should check out our [docs site](https://timothystiles.github.io/poly/docs/).
 
-You can also learn more about poly or a sub command like convert using the -h flag which will provide more documentation.
+You can also learn more about poly or a sub command like `convert` using the -h flag which will provide more documentation.
 
 ## Contributing
 
