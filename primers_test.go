@@ -27,7 +27,7 @@ func TestSantaLucia(t *testing.T) {
 func TestCalcTM(t *testing.T) {
 	testSeq := "GTAAAACGACGGCCAGT" // M13 fwd
 	expectedTM := 52.8
-	if calcTM := CalcTM(testSeq); math.Abs(expectedTM-calcTM)/expectedTM >= 0.02 {
-		t.Errorf("CalcTM has changed on test. Got %f instead of %f", calcTM, expectedTM)
+	if calcTM := MeltingTemp(testSeq); math.Abs(expectedTM-calcTM)/expectedTM >= 0.02 {
+		t.Errorf("MeltingTemp has changed on test. Got %f instead of %f", calcTM, expectedTM)
 	}
 }

@@ -44,7 +44,7 @@ End of melting temp penalties section for SantaLucia melting temp algorithm.
 ******************************************************************************/
 
 // SantaLucia calculates the melting point of a short DNA sequence (15-200 bp), using the Nearest Neighbors method [SantaLucia, J. (1998) PNAS, doi:10.1073/pnas.95.4.1460]
-func SantaLucia(sequence string, primerConcentration, saltConcentration, magnesiumConcentration float64) (Tm, dH, dS float64) {
+func SantaLucia(sequence string, primerConcentration, saltConcentration, magnesiumConcentration float64) (meltingTemp, dH, dS float64) {
 	sequence = strings.ToUpper(sequence)
 
 	const gasConstant = 1.9872 // gas constant (cal / mol - K)
@@ -77,8 +77,8 @@ func SantaLucia(sequence string, primerConcentration, saltConcentration, magnesi
 		dS += dT.S
 	}
 
-	Tm = dH*1000/(dS+gasConstant*math.Log(primerConcentration/symmetryFactor)) - 273.15
-	return Tm, dH, dS
+	meltingTemp = dH*1000/(dS+gasConstant*math.Log(primerConcentration/symmetryFactor)) - 273.15
+	return meltingTemp, dH, dS
 }
 
 // MarmurDoty calculates the melting point of an extremely short DNA sequence (<15 bp) using a modified Marmur Doty formula [Marmur J & Doty P (1962). Determination of the base composition of deoxyribonucleic acid from its thermal denaturation temperature. J Mol Biol, 5, 109-118.]
@@ -90,16 +90,16 @@ func MarmurDoty(sequence string) float64 {
 	cCount := float64(strings.Count(sequence, "C"))
 	gCount := float64(strings.Count(sequence, "G"))
 
-	Tm := 2*(aCount+tCount) + 4*(cCount+gCount) - 7.0
-	return Tm
+	meltingTemp := 2*(aCount+tCount) + 4*(cCount+gCount) - 7.0
+	return meltingTemp
 }
 
-// CalcTM calls SantaLucia with default inputs for primer and salt concentration.
-func CalcTM(sequence string) float64 {
+// MeltingTemp calls SantaLucia with default inputs for primer and salt concentration.
+func MeltingTemp(sequence string) float64 {
 	primerConcentration := 500e-9 // 500 nM (nanomolar) primer concentration
 	saltConcentration := 50e-3    // 50 mM (millimolar) sodium concentration
 	magnesiumConcentration := 0.0 // 0 mM (millimolar) magnesium concentration
 
-	Tm, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
-	return Tm
+	meltingTemp, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
+	return meltingTemp
 }
