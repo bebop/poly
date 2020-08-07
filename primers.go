@@ -16,7 +16,7 @@ temperature using the SantaLucia algorithm.
 ******************************************************************************/
 
 // penalties for nearest neighbor effects
-const nearestNeighborsThermodynamics = map[string]thermodynamics{
+var nearestNeighborsThermodynamics = map[string]thermodynamics{
 	"AA": {-7.6, -21.3},
 	"TT": {-7.6, -21.3},
 	"AT": {-7.2, -20.4},
