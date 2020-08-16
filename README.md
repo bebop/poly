@@ -41,11 +41,9 @@ Poly ships many binaries for many different operating systems and package manage
 brew install timothystiles/poly/poly
 ```
 
-#### Linux
+#### Linux - deb/rpm
 
-```bash
-brew install timothystiles/poly/poly
-```
+Download the .deb or .rpm from the [releases page](https://github.com/TimothyStiles/poly/releases) and install with `dpkg -i` and `rpm -i` respectively.
 
 #### Windows
 
