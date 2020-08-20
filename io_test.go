@@ -17,6 +17,7 @@ File is structured as so:
 Gff - io tests, and benchmarks.
 Gbk/gb/genbank - benchmarks.
 JSON - io tests.
+FASTA - fasta tests.
 
 ******************************************************************************/
 
@@ -228,5 +229,39 @@ func TestJSONIO(t *testing.T) {
 /******************************************************************************
 
 JSON related tests end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+FASTA related tests begin here.
+
+******************************************************************************/
+
+func TestFASTAIO(t *testing.T) {
+
+	inputFilename := "data/fasta/base.fq"
+	testOutputFilename := "data/fasta/test.fq"
+
+	// read FASTA file
+	testSequence := ReadFASTA(inputFilename)
+
+	// write FASTA file
+	WriteFASTA(testSequence, testOutputFilename)
+
+	// read back and diff
+	readTestSequence := ReadFASTA(testOutputFilename)
+
+	// cleanup
+	os.Remove(testOutputFilename)
+
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+}
+
+/******************************************************************************
+
+FASTA related tests end here.
 
 ******************************************************************************/

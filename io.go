@@ -1337,3 +1337,37 @@ func buildGbkFeatureString(feature Feature) string {
 GBK specific IO related things end here.
 
 ******************************************************************************/
+
+/******************************************************************************
+
+FASTA specific IO related things begin here.
+
+******************************************************************************/
+
+// ParseFASTA parses an AnnotatedSequence FASTA file and adds appropriate pointers to struct.
+func ParseFASTA(file []byte) AnnotatedSequence {
+	var annotatedSequence AnnotatedSequence
+	// todo: parse file
+	return annotatedSequence
+}
+
+// ReadFASTA reads an AnnotatedSequence FASTA file.
+func ReadFASTA(path string) AnnotatedSequence {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	}
+	annotatedSequence := ParseFASTA(file)
+	return annotatedSequence
+}
+
+// WriteFASTA writes an AnnotatedSequence struct out to FASTA.
+func WriteFASTA(annotatedSequence AnnotatedSequence, path string) {
+	// todo: write file
+}
+
+/******************************************************************************
+
+FASTA specific IO related things end here.
+
+******************************************************************************/
