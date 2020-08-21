@@ -239,9 +239,8 @@ FASTA related tests begin here.
 ******************************************************************************/
 
 func TestFASTAIO(t *testing.T) {
-
-	inputFilename := "data/fasta/base.fq"
-	testOutputFilename := "data/fasta/test.fq"
+	inputFilename := "data/base.fasta"
+	testOutputFilename := "data/test.fasta"
 
 	// read FASTA file
 	testSequence := ReadFASTA(inputFilename)
