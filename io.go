@@ -1345,16 +1345,11 @@ FASTA specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseFASTA parses an AnnotatedSequence FASTA file and adds appropriate pointers to struct.
-func ParseFASTA(fasta string) AnnotatedSequence {
+// ParseFASTA parses an array of AnnotatedSequence structs from a FASTA file and adds appropriate pointers to the structs.
+func ParseFASTA(fasta string) []AnnotatedSequence {
 
-	// todo (1): parse header lines?
-	// todo (2): validate sequences? Parse sequences themselves?
-
-	// This assumes there is a single sequence in a given file.
-	// It will break and return after the first sequence.
-	// todo: return an array of sequences from a single file.
-	annotatedSequence := AnnotatedSequence{}
+	annotatedSequenceArray := []AnnotatedSequence{}
+	currentAnnotatedSequence := AnnotatedSequence{}
 
 	lines := strings.Split(fasta, "\n")
 	meta := Meta{}
@@ -1363,49 +1358,64 @@ func ParseFASTA(fasta string) AnnotatedSequence {
 	var sequenceBuffer bytes.Buffer
 	for _, line := range lines {
 		if len(line) == 0 {
-			// ignore empty lines
-			// todo: when we handle multi seqs this should trigger the parser to begin a new sequence.
-			break
+			// save the current seq
+			sequence.Sequence = sequenceBuffer.String()
+			currentAnnotatedSequence.Meta = meta
+			currentAnnotatedSequence.Sequence = sequence
+			annotatedSequenceArray = append(annotatedSequenceArray, currentAnnotatedSequence)
+
+			// reset the seq
+			sequenceBuffer.Reset()
+			sequence = Sequence{}
+			meta = Meta{}
+			currentAnnotatedSequence = AnnotatedSequence{}
+
 		} else if line[0:1] == ">" {
 			sequence.Description = line[1:]
 		} else {
 			sequenceBuffer.WriteString(line)
 		}
 	}
-	sequence.Sequence = sequenceBuffer.String()
-	annotatedSequence.Meta = meta
-	annotatedSequence.Sequence = sequence
 
-	return annotatedSequence
+	if len(sequenceBuffer.Bytes()) > 0 {
+		sequence.Sequence = sequenceBuffer.String()
+		currentAnnotatedSequence.Meta = meta
+		currentAnnotatedSequence.Sequence = sequence
+		annotatedSequenceArray = append(annotatedSequenceArray, currentAnnotatedSequence)
+	}
+
+	return annotatedSequenceArray
 }
 
-// ReadFASTA reads an AnnotatedSequence FASTA file.
-func ReadFASTA(path string) AnnotatedSequence {
+// ReadFASTA reads an array of AnnotatedSequence structs from a FASTA file.
+func ReadFASTA(path string) []AnnotatedSequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	}
-	annotatedSequence := ParseFASTA(string(file))
-	return annotatedSequence
+	annotatedSequenceArray := ParseFASTA(string(file))
+	return annotatedSequenceArray
 }
 
-// WriteFASTA writes an AnnotatedSequence struct out to FASTA.
-func WriteFASTA(annotatedSequence AnnotatedSequence, path string) {
+// WriteFASTA writes an array of AnnotatedSequence structs out to FASTA.
+func WriteFASTA(annotatedSequenceArray []AnnotatedSequence, path string) {
 	var fastaBuffer bytes.Buffer
-	fastaBuffer.WriteString(">" + annotatedSequence.Sequence.Description + "\n")
-	maxLineLength := 70
-	for characterIndex, character := range annotatedSequence.Sequence.Sequence {
-		characterIndex++
-		if characterIndex%maxLineLength == 0 && characterIndex != 0 {
-			fastaBuffer.WriteRune(character)
-			fastaBuffer.WriteString("\n")
-		} else {
-			fastaBuffer.WriteRune(character)
+	const maxLineLength = 80
+	for _, annotatedSequence := range annotatedSequenceArray {
+		fastaBuffer.WriteString(">" + annotatedSequence.Sequence.Description + "\n")
+		for characterIndex, character := range annotatedSequence.Sequence.Sequence {
+			characterIndex++
+			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
+				fastaBuffer.WriteRune(character)
+				fastaBuffer.WriteString("\n")
+			} else {
+				fastaBuffer.WriteRune(character)
+			}
 		}
+		fastaBuffer.WriteString("\n\n")
 	}
-	fastaBuffer.WriteString("\n")
-	_ = ioutil.WriteFile(path, fastaBuffer.Bytes(), 0644)
 
+	_ = ioutil.WriteFile(path, fastaBuffer.Bytes(), 0644)
 }
 
 /******************************************************************************

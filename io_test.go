@@ -254,8 +254,10 @@ func TestFASTAIO(t *testing.T) {
 	// cleanup
 	os.Remove(testOutputFilename)
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	for index := range testSequence {
+		if diff := cmp.Diff(testSequence[index], readTestSequence[index], cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+			t.Errorf(" mismatch (-want +got):\n%s", diff)
+		}
 	}
 }
 
