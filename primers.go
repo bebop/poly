@@ -165,7 +165,7 @@ func checkRepeats(sequence string) bool {
 		if subSequenceFrequency > 1 {
 			flag = true
 			break
-			// check for complement repeats atg...tac"
+			// check for complement repeats "atg...tac"
 		} else if subSequenceHashMap[ReverseComplement(subSequence)] != 0 {
 			flag = true
 			break
