@@ -137,7 +137,7 @@ func GCClamp(sequence string) bool {
 	return flag
 }
 
-// checkSimpleRepeats
+// checkRepeats looks for repeated substrings or reverse complement substrings of 3 or greater and returns true if found.
 func checkRepeats(sequence string) bool {
 	flag := false
 	var subSequenceHashMap = map[string]int{}
@@ -165,7 +165,7 @@ func checkRepeats(sequence string) bool {
 		if subSequenceFrequency > 1 {
 			flag = true
 			break
-			// check for complement repeats
+			// check for complement repeats atg...tac"
 		} else if subSequenceHashMap[ReverseComplement(subSequence)] != 0 {
 			flag = true
 			break
