@@ -103,3 +103,100 @@ func MeltingTemp(sequence string) float64 {
 	meltingTemp, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
 	return meltingTemp
 }
+
+// CheckPrimers runs a suite of tests and returns
+func CheckPrimers(primers []Sequence) {
+
+}
+
+// GCPercentage takes a sequence and return percentage of nucleotides that are either G or C
+func GCPercentage(sequence string) float64 {
+	sequence = strings.ToUpper(sequence)
+	var nucleotideHashMap = map[string]int{
+		"A": 0,
+		"T": 0,
+		"C": 0,
+		"G": 0,
+	}
+
+	for _, nucleotide := range sequence {
+		nucleotideHashMap[string(nucleotide)]++
+	}
+
+	return float64(nucleotideHashMap["G"]+nucleotideHashMap["C"]) / float64(len(sequence))
+}
+
+// GCClamp returns true if last nucleotide in string is G or C
+// -- kind of unneccesary but thought it'd be good for defining terms to have it as a function.
+func GCClamp(sequence string) bool {
+	lastNucleotide := strings.ToUpper(string(sequence[len(sequence)-1]))
+	flag := false
+	if lastNucleotide == "G" || lastNucleotide == "C" {
+		flag = true
+	}
+	return flag
+}
+
+// checkSimpleRepeats
+func checkRepeats(sequence string) bool {
+	flag := false
+	var subSequenceHashMap = map[string]int{}
+	sequenceLength := len(sequence)
+
+	// generate hashmap containing frequency of substrings
+	for i := int(math.Floor(float64(sequenceLength) / 2)); i > 2; i-- {
+		for nucleotideIndex := range sequence {
+			if nucleotideIndex+i > sequenceLength {
+				break
+			} else {
+				subSequence := sequence[nucleotideIndex : nucleotideIndex+i]
+				if _, ok := subSequenceHashMap[string(subSequence)]; ok {
+					subSequenceHashMap[string(subSequence)]++
+				} else {
+					subSequenceHashMap[string(subSequence)] = 0
+				}
+			}
+		}
+	}
+
+	// check for simple repeats and reverse complement repeats. If subSequence frequency is above one fail check.
+	for subSequence, subSequenceFrequency := range subSequenceHashMap {
+		// check for simple repeats "abc...abc"
+		if subSequenceFrequency > 1 {
+			flag = true
+			break
+			// check for complement repeats
+		} else if subSequenceHashMap[ReverseComplement(subSequence)] != 0 {
+			flag = true
+			break
+		}
+	}
+
+	return flag
+}
+
+// checkHomopolymericRuns takes a sequence and checks for subsequence runs of nucleotides greater than or equal to 4 i.e "aaaa", "tttt", etc
+func checkHomopolymericRuns(sequence string) bool {
+	flag := false
+	runCount := 0
+	var runningNucleotide rune
+
+	// scan nucleotides in string
+	for _, nucleotide := range sequence {
+
+		// if running nucleotide isn't the same as one being checked restart count and check for runs of next nucleotide kind.
+		if runningNucleotide != nucleotide || runningNucleotide == 0 {
+			runningNucleotide = nucleotide
+			runCount = 1
+		} else {
+			runCount++
+		}
+
+		// if nucleotide run is greater than or equal to 4 switch flag and break loop
+		if runCount >= 4 {
+			flag = true
+			break
+		}
+	}
+	return flag
+}
