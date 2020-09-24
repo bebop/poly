@@ -1,0 +1,99 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod download
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+- env:
+  - CGO_ENABLED=0
+archives:
+- replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^blog:'
+
+release:
+  # Repo in which the release will be created.
+  # Default is extracted from the origin remote URL or empty if its private hosted.
+  # Note: it can only be one: either github or gitlab or gitea
+  github:
+    owner: timothystiles
+    name: poly
+
+  # IDs of the archives to use.
+  # Defaults to all.
+  # ids:
+  #   - foo
+  #   - bar
+
+  # If set to true, will not auto-publish the release.
+  # Default is false.
+  draft: true
+
+  # If set to auto, will mark the release as not ready for production
+  # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
+  # If set to true, will mark the release as not ready for production.
+  # Default is false.
+  prerelease: auto
+
+  # You can change the name of the GitHub release.
+  # Default is `{{.Tag}}`
+  name_template: "{{.ProjectName}}-v{{.Version}} {{.Env.USER}}"
+
+  # You can disable this pipe in order to not upload any artifacts to
+  # GitHub.
+  # Defaults to false.
+  # disable: true
+brews:
+  - github:
+      owner: timothystiles
+      name: homebrew-poly
+    folder: Formula
+    homepage: https://github.com/TimothyStiles/poly
+    description: A command line utility for engineering organisms.
+    test: |
+      system "#{bin}/poly -h"
+    dependencies:
+    - name: go
+    commit_author:
+      name: Tim
+      email: TimothyStiles@users.noreply.github.com
+nfpms:
+  - file_name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    homepage:  https://github.com/TimothyStiles/poly
+    description: A command line utility for engineering organisms.
+    maintainer: Timothy Stiles <TimothyStiles@users.noreply.github.com>
+    license: MIT
+    formats:
+    - deb
+    - rpm
+    dependencies:
+    - git
+    recommends:
+    - golang
+# snapcrafts:
+#   - name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+#     summary: A command line utility for engineering organisms.
+#     description: |
+#       Poly is a Go library and command line utility for engineering 
+#       organisms. For more information checkout:
+#       https://github.com/TimothyStiles/poly
+#     grade: devel
+#     confinement: strict
+#     license: MIT
+#     publish: true

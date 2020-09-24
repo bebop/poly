@@ -2,7 +2,7 @@
 
 Yo, what up! if you're reading this then I'm super psyched because that means that you're thinking about contributing to Poly! Thanks so much for your time and consideration. It's rad people like you that make Poly such a cool computational synthetic biology tool.
 
-I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. I'll try to keep it brief so please read along so that we all know what to expect when expecting your most excellent pull request (or any other excellent contribution).
+I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. 
 
 Currently any sincere pull request is a good request. Poly is still super alpha (as of writing it kinda parses genbank files) so there are so many way to contribute! Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
 
@@ -16,7 +16,7 @@ Currently any sincere pull request is a good request. Poly is still super alpha 
 * Art! Dreams! Your excellence!
 * Code that can be pulled into Poly itself.
 
-# What to expect when you're expecting to contribute to Poly
+# Contributor guidelines
 ### Excellence, and the contributor's code of conduct
 
 First up, most importantly we have a contributor's code of conduct. For some reason the internet is a dehumanizing experience and it's easy to forget that aside from the bots we're all humans on this thing. Approach each other with kindness. Please read our [contributor's code of conduct](CODE_OF_CONDUCT.md) and when in doubt just remember our one true rule as once spoken by the ever so wise duo of Bill and Ted.
@@ -25,14 +25,11 @@ First up, most importantly we have a contributor's code of conduct. For some rea
 
 `Ted: and party on, dudes! [sic]`
 
-[bill&ted.gif]
+![Abraham Licoln saying, "Be Excellent to each other and party on dudes!". [sic]](https://media.giphy.com/media/ef0zYcF7AKu4b0Sns6/giphy-downsized-large.gif)
 
 ### Do-ocracy
 
 Poly runs on do-ocracy. Do-ocracy is a simple concept. If you don't like something you don't need permission to fix it, you can just go ahead and fix it! If you actually want to merge your fix, or contribute in someway that benefits everybody, it'd really, really, really help if you got some light consensus from the rest of the Poly development community but hey, if you really need to do something then you just gotta do it! Just don't expect me to merge it if it doesn't meet our technical criteria or isn't quite right for Poly.
-
-[more on doocracy.txt]
-
 
 ### Technical requirements
 
@@ -50,8 +47,8 @@ All successfully merged pull requests must meet the following criteria:
 
 Don't worry if you submit a pull request and all the tests break and the code is not readable. We won't merge it just yet and then you can get some feedback about what needs to be changed before we do!
 
-### Be diverse
-As one final guideline please be welcoming to newcomers and encourage diverse new contributors from all backgrounds. I want Poly to be for everyone and that includes you and people who don't look, sound, or act like you!
+### Be welcoming
+As one final guideline please be welcoming to newcomers and encourage new contributors from all walks of life. I want Poly to be for everyone and that includes you and people who don't look, sound, or act like you!
 
 
 # Your first contribution

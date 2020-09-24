@@ -8,6 +8,8 @@ import (
 	_ "crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"io"
+	"strings"
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
@@ -96,7 +98,7 @@ func RotateSequence(sequence string) string {
 }
 
 // GenericSequenceHash takes a byte slice and a hash function and hashes it.
-// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang
+// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang <- this had a bug I had to fix! - Tim
 func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) (string, error) {
 	if !hash.Available() {
 		return "", errors.New("hash unavailable")
@@ -105,7 +107,8 @@ func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) 
 		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
 	}
 	h := hash.New()
-	return hex.EncodeToString(h.Sum([]byte(annotatedSequence.Sequence.Sequence))), nil
+	io.WriteString(h, strings.ToUpper(annotatedSequence.Sequence.Sequence))
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // method wrapper for hashing annotatedSequence structs.
@@ -122,7 +125,7 @@ func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
 		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
 	}
 
-	b := blake3.Sum256([]byte(annotatedSequence.Sequence.Sequence))
+	b := blake3.Sum256([]byte(strings.ToUpper(annotatedSequence.Sequence.Sequence)))
 	return hex.EncodeToString(b[:])
 }
 

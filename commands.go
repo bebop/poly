@@ -51,6 +51,8 @@ func convert(c *cli.Context) error {
 			output, _ = json.MarshalIndent(annotatedSequence, "", " ")
 		} else if c.String("o") == "gff" {
 			output = BuildGff(annotatedSequence)
+		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
+			output = BuildGbk(annotatedSequence)
 		}
 
 		// output to stdout
@@ -86,6 +88,8 @@ func convert(c *cli.Context) error {
 					WriteJSON(annotatedSequence, outputPath+".json")
 				} else if c.String("o") == "gff" {
 					WriteGff(annotatedSequence, outputPath+".gff")
+				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
+					WriteGbk(annotatedSequence, outputPath+".gbk")
 				}
 
 				// decrementing wait group.
@@ -138,11 +142,15 @@ func hash(c *cli.Context) {
 		sequenceHash := flagSwitchHash(c, annotatedSequence)
 		if c.String("o") == "json" {
 			annotatedSequence.Sequence.Hash = sequenceHash
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 			fmt.Print(string(output))
 		} else {
-			fmt.Print(sequenceHash)
+			if strings.ToUpper(c.String("f")) == "NO" {
+				fmt.Print(sequenceHash)
+			} else {
+				fmt.Println(sequenceHash)
+			}
 		}
 	} else {
 
@@ -165,18 +173,32 @@ func hash(c *cli.Context) {
 				sequenceHash := flagSwitchHash(c, annotatedSequence)
 				if c.String("o") == "json" {
 					annotatedSequence.Sequence.Hash = sequenceHash
-					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("t"))
+					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 
 					if c.Bool("stdout") == true {
 						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 						fmt.Print(string(output))
 					} else {
 						outputPath := match[0 : len(match)-len(extension)]
+						// should have way to support wildcard matches for varied output names.
 						WriteJSON(annotatedSequence, outputPath+".json")
 					}
 
 				} else {
-					fmt.Println(sequenceHash)
+					// should refactor before push
+					if len(matches) == 1 {
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Print(sequenceHash)
+						} else {
+							fmt.Println(sequenceHash)
+						}
+					} else {
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Print(sequenceHash)
+						} else {
+							fmt.Println(sequenceHash, " ", match)
+						}
+					}
 				}
 
 				// decrementing wait group.
@@ -256,7 +278,7 @@ func parseStdin(c *cli.Context) AnnotatedSequence {
 func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string {
 
 	var hashString string
-	switch strings.ToUpper(c.String("t")) {
+	switch strings.ToUpper(c.String("f")) {
 	case "MD5":
 		hashString = annotatedSequence.hash(crypto.MD5)
 	case "SHA1":
@@ -293,7 +315,10 @@ func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string 
 		hashString = annotatedSequence.hash(crypto.BLAKE2b_512)
 	case "BLAKE3":
 		hashString = annotatedSequence.blake3Hash()
+	case "NO":
+		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
+		hashString = annotatedSequence.blake3Hash()
 		break
 	}
 	return hashString
