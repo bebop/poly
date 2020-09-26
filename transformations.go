@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+// CodonTranslationMap contains a one to one relation between codons and their corresponding amino acid.
+// * represents stop codon
 var CodonTranslationMap = map[string]string{
 	"AAA": "K",
 	"AAC": "N",
@@ -71,6 +73,8 @@ var CodonTranslationMap = map[string]string{
 	"TTT": "F",
 }
 
+// AminoAcidMap contains a one to many mapping of AminoAcid single letter notations to their corresponding codons.
+// * represents the stop codon
 var AminoAcidMap = map[string]AminoAcid{
 	"*": {Letter: "*", Codons: []string{"TAA", "TAG", "TGA"}}, //stop
 	"A": {Letter: "A", Codons: []string{"GCA", "GCC", "GCG", "GCT"}},
@@ -95,20 +99,27 @@ var AminoAcidMap = map[string]AminoAcid{
 	"Y": {Letter: "Y", Codons: []string{"TAC", "TAT"}},
 }
 
-// getCodonFrequency takes a DNA sequence and returns a hashmap of it's codons and their frequencies.
-func getCodonFrequency(sequence string) map[string]int {
+// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
+func GetCodonFrequency(sequence string) map[string]int {
 
-	var codonFrequencyHashMap map[string]int
+	codonFrequencyHashMap := map[string]int{}
 	var currentCodon strings.Builder
 
-	for letterIndex, letter := range sequence {
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
-		if letterIndex+1%3 == 0 {
+
+		// if current nucleotide is the third in a codon add to hashmap
+		if currentCodon.Len() == 3 {
+			// if codon is already initalized in map increment
 			if _, ok := codonFrequencyHashMap[string(currentCodon.String())]; ok {
 				codonFrequencyHashMap[string(currentCodon.String())]++
+				// if codon is not already initalized in map initialize with value at 1
 			} else {
 				codonFrequencyHashMap[string(currentCodon.String())] = 1
 			}
+			// reset codon string builder for next codon.
 			currentCodon.Reset()
 		}
 	}
@@ -116,13 +127,23 @@ func getCodonFrequency(sequence string) map[string]int {
 }
 
 // Translate translates a codon sequence to an amino acid sequence
-func Translate(nucleotides string) string {
+func Translate(sequence string) string {
 	var aminoAcids strings.Builder
-	length := len(nucleotides) / 3 // Assumes input sequences are divisible by 3
-	for i := 0; length > i; i++ {
-		aminoAcids.WriteString(CodonTranslationMap[nucleotides[i*3:(i+1)*3]])
-	}
+	var currentCodon strings.Builder
 
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
+		currentCodon.WriteRune(letter)
+
+		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
+		if currentCodon.Len() == 3 {
+			aminoAcids.WriteString(CodonTranslationMap[currentCodon.String()])
+
+			// reset codon string builder for next codon.
+			currentCodon.Reset()
+		}
+	}
 	return aminoAcids.String()
 }
 
