@@ -1,7 +1,11 @@
 package main
 
 import (
+	"math/rand"
 	"strings"
+	"time"
+
+	"github.com/mroth/weightedrand"
 )
 
 // CodonTranslationMap contains a one to one relation between codons and their corresponding amino acid.
@@ -113,11 +117,11 @@ func GetCodonFrequency(sequence string) map[string]int {
 		// if current nucleotide is the third in a codon add to hashmap
 		if currentCodon.Len() == 3 {
 			// if codon is already initalized in map increment
-			if _, ok := codonFrequencyHashMap[string(currentCodon.String())]; ok {
-				codonFrequencyHashMap[string(currentCodon.String())]++
+			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
+				codonFrequencyHashMap[currentCodon.String()]++
 				// if codon is not already initalized in map initialize with value at 1
 			} else {
-				codonFrequencyHashMap[string(currentCodon.String())] = 1
+				codonFrequencyHashMap[currentCodon.String()] = 1
 			}
 			// reset codon string builder for next codon.
 			currentCodon.Reset()
@@ -147,24 +151,76 @@ func Translate(sequence string) string {
 	return aminoAcids.String()
 }
 
+func constructWeightMap(codonFrequencyHashMap map[string]int) map[string]weightedrand.Chooser {
+
+	var codonWeightMap map[string]weightedrand.Chooser
+
+	for _, aminoAcid := range AminoAcidMap {
+
+		codonChoices := make([]weightedrand.Choice, len(aminoAcid.Codons))
+
+		// get initial sum of aminoAcid in table
+		var aminoAcidSum int
+		for _, codon := range aminoAcid.Codons {
+			aminoAcidSum += codonFrequencyHashMap[codon]
+		}
+
+		// construct codon choices and omit codons that occur less than 10%
+		for _, codon := range aminoAcid.Codons {
+			if codonFrequencyHashMap[codon]/aminoAcidSum >= 10.0 {
+				codonChoices = append(codonChoices, weightedrand.Choice{Item: codon, Weight: uint(codonFrequencyHashMap[codon])})
+			}
+		}
+
+		codonWeightMap[aminoAcid.Letter] = weightedrand.NewChooser(codonChoices...)
+
+	}
+	return codonWeightMap
+}
+
 // ReverseTranslate takes an amino acid string and a table of codons and returns a codon optimized nucleic acid string
-// func ReverseTranslate(aminoAcids string, randSeed int, codonTable map[string]int) string {
-// 	var nucleotides strings.Builder
+func ReverseTranslate(aminoAcids string, randSeed int64, optimizationTable map[string]weightedrand.Chooser) string {
 
-// 	// normalize codon table into percentages.
+	var nucleotides strings.Builder
 
-// 	// filter codons with less than 10%
+	// set seed makes testing of "randomness" possible for regression tests?
+	rand.Seed(randSeed)
 
-// 	// renormalize codon table into percentages again.
+	// for each amino acid pick a random weighted codon and add to string builder
+	for _, aminoAcid := range aminoAcids {
+		nucleotides.WriteString(optimizationTable[string(aminoAcid)].Pick().(string))
+	}
 
-// 	//
-// 	for _, aminoAcid := range aminoAcids {
+	return nucleotides.String()
+}
 
-// 	}
+func getOrganismOptimizationTable(annotatedSequence AnnotatedSequence) map[string]weightedrand.Chooser {
 
-// }
+	// agglomerate all coding sequences into one big string buffer
+	var sequenceBuffer strings.Builder
+	for _, feature := range annotatedSequence.Features {
+		if feature.Type == "CDS" {
+			sequenceBuffer.WriteString(feature.getSequence())
+		}
+	}
 
-// func getOrganismCodonTable(annotatedSequence AnnotatedSequence)
+	// get codon frequency hashmap to pass to construct weight map and construct weights then
+	codonFrequencyHashMap := GetCodonFrequency(sequenceBuffer.String())
+	optimizationTable := constructWeightMap(codonFrequencyHashMap)
+
+	return optimizationTable
+}
+
+// CodonOptimizeForOrganism takes a sequence string and an AnnotatedSequence and return a codon optimized sequence for that AnnotatedSequence
+func CodonOptimizeForOrganism(sequence string, annotatedSequence AnnotatedSequence) string {
+	aminoAcids := Translate(sequence)
+	optimizationTable := getOrganismOptimizationTable(annotatedSequence)
+	randSeed := time.Now().UTC().UnixNano()
+
+	optimizedSequence := ReverseTranslate(aminoAcids, randSeed, optimizationTable)
+
+	return optimizedSequence
+}
 
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
@@ -177,55 +233,6 @@ type AminoAcid struct {
 	Letter string
 	Codons []string
 }
-
-// // CodonTable holds information for a codon table.
-// type CodonTable struct {
-// 	StartCodons []string
-// 	StopCodons  []string
-// 	AminoAcids  []AminoAcid
-// }
-
-// // Generate map of amino acid -> codon chooser
-// func (codonTable CodonTable) generateOptimizationTable() map[string]weightedRand.Chooser {
-// 	rand.Seed(time.Now().UTC().UnixNano())
-// 	var optimizationMap = make(map[string]weightedRand.Chooser)
-// 	for _, aminoAcid := range codonTable.AminoAcids {
-// 		// Get list of triplets and their weights
-// 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
-// 		totals := 0
-// 		for _, codon := range aminoAcid.Codons {
-// 			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Occurrence)})
-// 			totals += codon.Occurrence
-// 		}
-// 		optimizationMap[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
-// 	}
-// 	return optimizationMap
-// }
-
-// // Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
-// func Optimize(aminoAcids string, codonTable CodonTable) string {
-// 	var codons string
-// 	optimizationTable := codonTable.generateOptimizationTable()
-// 	for _, aminoAcid := range aminoAcids {
-// 		codons += optimizationTable[string(aminoAcid)].Pick().(string)
-// 	}
-// 	return codons
-// }
-
-// // Generate map of codons -> amino acid
-// func (codonTable CodonTable) generateTranslationTable() map[string]string {
-// 	var translationMap = make(map[string]string)
-// 	for _, aminoAcid := range codonTable.AminoAcids {
-// 		for _, codon := range aminoAcid.Codons {
-// 			translationMap[codon.Triplet] = aminoAcid.Letter
-// 		}
-// 	}
-// 	return translationMap
-// }
-
-// func reverseTranslate(aminoAcids string) {
-
-// }
 
 // // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 // func generateCodonTable(aminoAcids, starts string) CodonTable {
