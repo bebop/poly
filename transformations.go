@@ -130,28 +130,7 @@ func GetCodonFrequency(sequence string) map[string]int {
 	return codonFrequencyHashMap
 }
 
-// Translate translates a codon sequence to an amino acid sequence
-func Translate(sequence string) string {
-	var aminoAcids strings.Builder
-	var currentCodon strings.Builder
-
-	for _, letter := range sequence {
-
-		// add current nucleotide to currentCodon
-		currentCodon.WriteRune(letter)
-
-		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
-		if currentCodon.Len() == 3 {
-			aminoAcids.WriteString(CodonTranslationMap[currentCodon.String()])
-
-			// reset codon string builder for next codon.
-			currentCodon.Reset()
-		}
-	}
-	return aminoAcids.String()
-}
-
-func constructWeightMap(codonFrequencyHashMap map[string]int) map[string]weightedrand.Chooser {
+func getCodonWeightMap(codonFrequencyHashMap map[string]int) map[string]weightedrand.Chooser {
 
 	var codonWeightMap map[string]weightedrand.Chooser
 
@@ -176,6 +155,27 @@ func constructWeightMap(codonFrequencyHashMap map[string]int) map[string]weighte
 
 	}
 	return codonWeightMap
+}
+
+// Translate translates a codon sequence to an amino acid sequence
+func Translate(sequence string) string {
+	var aminoAcids strings.Builder
+	var currentCodon strings.Builder
+
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
+		currentCodon.WriteRune(letter)
+
+		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
+		if currentCodon.Len() == 3 {
+			aminoAcids.WriteString(CodonTranslationMap[currentCodon.String()])
+
+			// reset codon string builder for next codon.
+			currentCodon.Reset()
+		}
+	}
+	return aminoAcids.String()
 }
 
 // ReverseTranslate takes an amino acid string and a table of codons and returns a codon optimized nucleic acid string
@@ -206,7 +206,7 @@ func getOrganismOptimizationTable(annotatedSequence AnnotatedSequence) map[strin
 
 	// get codon frequency hashmap to pass to construct weight map and construct weights then
 	codonFrequencyHashMap := GetCodonFrequency(sequenceBuffer.String())
-	optimizationTable := constructWeightMap(codonFrequencyHashMap)
+	optimizationTable := getCodonWeightMap(codonFrequencyHashMap)
 
 	return optimizationTable
 }
