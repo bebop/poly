@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	weightedRand "github.com/mroth/weightedrand"
@@ -26,31 +27,107 @@ type CodonTable struct {
 	AminoAcids  []AminoAcid
 }
 
+// Translate translates a codon sequence to an amino acid sequence
+func Translate(sequence string, codonTable CodonTable) string {
+
+	var aminoAcids strings.Builder
+	var currentCodon strings.Builder
+	translationTable := codonTable.generateTranslationTable()
+
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
+		currentCodon.WriteRune(letter)
+
+		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
+		if currentCodon.Len() == 3 {
+			aminoAcids.WriteString(translationTable[currentCodon.String()])
+
+			// reset codon string builder for next codon.
+			currentCodon.Reset()
+		}
+	}
+	return aminoAcids.String()
+}
+
+// Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
+func Optimize(aminoAcids string, annotatedSequence AnnotatedSequence, codonTable CodonTable) string {
+	var codons strings.Builder
+	var sequenceBuffer strings.Builder
+	for _, feature := range annotatedSequence.Features {
+		if feature.Type == "CDS" {
+			sequenceBuffer.WriteString(feature.getSequence())
+		}
+	}
+	optimizationTable := codonTable.generateOptimizationTable(sequenceBuffer.String())
+	for _, aminoAcid := range aminoAcids {
+		codons.WriteString(optimizationTable[string(aminoAcid)].Pick().(string))
+	}
+	return codons.String()
+}
+
 // Generate map of amino acid -> codon chooser
-func (codonTable CodonTable) generateOptimizationTable() map[string]weightedRand.Chooser {
+func (codonTable CodonTable) generateOptimizationTable(sequence string) map[string]weightedRand.Chooser {
 	rand.Seed(time.Now().UTC().UnixNano())
+
+	sequence = strings.ToUpper(sequence)
 	var optimizationMap = make(map[string]weightedRand.Chooser)
+	codonFrequencyMap := GetCodonFrequency(sequence)
+
 	for _, aminoAcid := range codonTable.AminoAcids {
 		// Get list of triplets and their weights
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
-		totals := 0
+
+		// Get sum of codon occurences for particular amino acid
+		codonOccurenceSum := 0
 		for _, codon := range aminoAcid.Codons {
-			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Occurrence)})
-			totals += codon.Occurrence
+			triplet := codonFrequencyMap[codon.Triplet]
+			codonOccurenceSum += triplet
 		}
+
+		// Threshold codons that occur less than 10% for coding a particular amino acid
+		for _, codon := range aminoAcid.Codons {
+			if float64(codonFrequencyMap[codon.Triplet])/float64(codonOccurenceSum) < 0.10 {
+				codonFrequencyMap[codon.Triplet] = 0
+			}
+		}
+
+		// apply thresholded weights
+		for _, codon := range aminoAcid.Codons {
+			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codonFrequencyMap[codon.Triplet])})
+		}
+
 		optimizationMap[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
+
 	}
 	return optimizationMap
 }
 
-// Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
-func Optimize(aminoAcids string, codonTable CodonTable) string {
-	var codons string
-	optimizationTable := codonTable.generateOptimizationTable()
-	for _, aminoAcid := range aminoAcids {
-		codons += optimizationTable[string(aminoAcid)].Pick().(string)
+// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
+func GetCodonFrequency(sequence string) map[string]int {
+
+	codonFrequencyHashMap := map[string]int{}
+	var currentCodon strings.Builder
+
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
+		currentCodon.WriteRune(letter)
+
+		// if current nucleotide is the third in a codon add to hashmap
+		if currentCodon.Len() == 3 {
+			// if codon is already initalized in map increment
+			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
+				codonFrequencyHashMap[currentCodon.String()]++
+				// if codon is not already initalized in map initialize with value at 1
+			} else {
+				codonFrequencyHashMap[currentCodon.String()] = 1
+			}
+			// reset codon string builder for next codon.
+			currentCodon.Reset()
+		}
 	}
-	return codons
+	return codonFrequencyHashMap
 }
 
 // Generate map of codons -> amino acid
@@ -62,17 +139,6 @@ func (codonTable CodonTable) generateTranslationTable() map[string]string {
 		}
 	}
 	return translationMap
-}
-
-// Translate translates a codon sequence to an amino acid sequence
-func Translate(nucleotides string, codonTable CodonTable) string {
-	var aminoAcids string
-	translationTable := codonTable.generateTranslationTable()
-	length := len(nucleotides) / 3 // Assumes input sequences are divisible by 3
-	for i := 0; length > i; i++ {
-		aminoAcids += translationTable[nucleotides[i*3:(i+1)*3]]
-	}
-	return aminoAcids
 }
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
@@ -170,11 +236,3 @@ var DefaultCodonTablesByName = map[string]CodonTable{
 	"PeritrichNuclear":                 generateCodonTable("FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------"), // 30
 	"BlastocrithidiaNuclear":           generateCodonTable("FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------"), // 31
 	"CephalodiscidaeMitochondrial":     generateCodonTable("FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------")} // 33
-
-// func main() {
-// 	rand.Seed(time.Now().UTC().UnixNano())
-// 	codonTable := CodonTable{[]string{}, []string{}, []AminoAcid{{"M", []Codon{{"ATG", 1}}}, {"G", []Codon{{"GGA", 1}}}, {"*", []Codon{{"TAA", 1}, {"TGA", 1}}}}}
-// 	translation := Translate("ATGGGCTGA", DefaultCodonTablesByName["PeritrichNuclear"])
-
-// 	fmt.Println(Optimize(translation, codonTable))
-// }
