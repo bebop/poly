@@ -10,8 +10,8 @@ import (
 
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
-	Triplet    string
-	Occurrence int
+	Triplet string
+	Weight  int
 }
 
 // AminoAcid holds information for an amino acid and related codons in a struct in a struct
@@ -51,32 +51,26 @@ func Translate(sequence string, codonTable CodonTable) string {
 }
 
 // Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
-func Optimize(aminoAcids string, annotatedSequence AnnotatedSequence, codonTable CodonTable) string {
+func Optimize(aminoAcids string, codonTable CodonTable) string {
+
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	var codons strings.Builder
-	var sequenceBuffer strings.Builder
-	for _, feature := range annotatedSequence.Features {
-		if feature.Type == "CDS" {
-			sequenceBuffer.WriteString(feature.getSequence())
-		}
-	}
-	optimizationTable := codonTable.generateOptimizationTable(sequenceBuffer.String())
+	codonChooser := codonTable.chooser()
 	for _, aminoAcid := range aminoAcids {
-		codons.WriteString(optimizationTable[string(aminoAcid)].Pick().(string))
+		aminoAcidString := string(aminoAcid)
+		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
 	}
 	return codons.String()
 }
 
-// Generate map of amino acid -> codon chooser
-func (codonTable CodonTable) generateOptimizationTable(sequence string) map[string]weightedRand.Chooser {
-	rand.Seed(time.Now().UTC().UnixNano())
+// CreateWeight weights each codon in a codon table according to input string codon frequency
+func (codonTable CodonTable) CreateWeight(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
-	var optimizationMap = make(map[string]weightedRand.Chooser)
 	codonFrequencyMap := GetCodonFrequency(sequence)
 
-	for _, aminoAcid := range codonTable.AminoAcids {
-		// Get list of triplets and their weights
-		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
+	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
 
 		// Get sum of codon occurences for particular amino acid
 		codonOccurenceSum := 0
@@ -87,20 +81,54 @@ func (codonTable CodonTable) generateOptimizationTable(sequence string) map[stri
 
 		// Threshold codons that occur less than 10% for coding a particular amino acid
 		for _, codon := range aminoAcid.Codons {
-			if float64(codonFrequencyMap[codon.Triplet])/float64(codonOccurenceSum) < 0.10 {
+			codonPercentage := float64(codonFrequencyMap[codon.Triplet]) / float64(codonOccurenceSum)
+
+			if codonPercentage < 0.10 {
 				codonFrequencyMap[codon.Triplet] = 0
 			}
 		}
 
-		// apply thresholded weights
-		for _, codon := range aminoAcid.Codons {
-			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codonFrequencyMap[codon.Triplet])})
+		// apply thresholded weights to codonTable
+		for codonIndex, codon := range aminoAcid.Codons {
+			codonTable.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
 
-		optimizationMap[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
-
 	}
-	return optimizationMap
+	return codonTable
+}
+
+// chooser is a CodonTable method to convert a codon table to a chooser
+func (codonTable CodonTable) chooser() map[string]weightedRand.Chooser {
+
+	// This maps codon tables structure to weightRand.NewChooser structure
+	codonChooser := make(map[string]weightedRand.Chooser)
+
+	// iterate over every amino acid in the codonTable
+	for _, aminoAcid := range codonTable.AminoAcids {
+
+		// create a list of codon choices for this specific amino acid
+		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
+
+		// for every codon related to current amino acid append its Triplet and Weight to codonChoices
+		for _, codon := range aminoAcid.Codons {
+			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Weight)})
+		}
+
+		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
+		codonChooser[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
+	}
+	return codonChooser
+}
+
+// Generate map of codons -> amino acid
+func (codonTable CodonTable) generateTranslationTable() map[string]string {
+	var translationMap = make(map[string]string)
+	for _, aminoAcid := range codonTable.AminoAcids {
+		for _, codon := range aminoAcid.Codons {
+			translationMap[codon.Triplet] = aminoAcid.Letter
+		}
+	}
+	return translationMap
 }
 
 // GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
@@ -130,15 +158,18 @@ func GetCodonFrequency(sequence string) map[string]int {
 	return codonFrequencyHashMap
 }
 
-// Generate map of codons -> amino acid
-func (codonTable CodonTable) generateTranslationTable() map[string]string {
-	var translationMap = make(map[string]string)
-	for _, aminoAcid := range codonTable.AminoAcids {
-		for _, codon := range aminoAcid.Codons {
-			translationMap[codon.Triplet] = aminoAcid.Letter
+// helper function to pull coding regions out of an AnnotatedSequence
+func getCodingRegions(annotatedSequence AnnotatedSequence) string {
+	// pick out the each coding region in the AnnotatedSequence and add it to the sequence buffer
+	var sequenceBuffer strings.Builder
+
+	for _, feature := range annotatedSequence.Features {
+		if feature.Type == "CDS" {
+			sequenceBuffer.WriteString(feature.getSequence())
 		}
 	}
-	return translationMap
+
+	return sequenceBuffer.String()
 }
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi

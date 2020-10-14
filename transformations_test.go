@@ -18,7 +18,11 @@ func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	codonTable := DefaultCodonTablesByNumber[11]
 
-	optimizedSequence := Optimize(gfpTranslation, ReadGbk("data/bsub.gbk"), codonTable)
+	annotatedSequence := ReadGbk("data/bsub.gbk")
+	rawSequence := annotatedSequence.Sequence.Sequence
+	codonTable.CreateWeight(rawSequence)
+
+	optimizedSequence := Optimize(gfpTranslation, codonTable)
 	optimizedSequenceTranslation := Translate(optimizedSequence, codonTable)
 
 	if optimizedSequenceTranslation != gfpTranslation {
