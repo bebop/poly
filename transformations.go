@@ -160,17 +160,48 @@ func GetCodonFrequency(sequence string) map[string]int {
 
 // helper function to pull coding regions out of an AnnotatedSequence
 func getCodingRegions(annotatedSequence AnnotatedSequence) string {
-	// pick out the each coding region in the AnnotatedSequence and add it to the sequence buffer
-	var sequenceBuffer strings.Builder
+	// pick out the each coding region in the AnnotatedSequence and add it to the sequence Builder
+	var sequenceBuilder strings.Builder
 
 	for _, feature := range annotatedSequence.Features {
 		if feature.Type == "CDS" {
-			sequenceBuffer.WriteString(feature.getSequence())
+			sequenceBuilder.WriteString(feature.getSequence())
 		}
 	}
 
-	return sequenceBuffer.String()
+	return sequenceBuilder.String()
 }
+
+/******************************************************************************
+
+Codon table generation stuff begins here.
+
+Alright, I know it's ugly down below this comment block but there ain't much
+we can do until we can experimentally derive our own codon tables.
+
+The story is this. Different organisms use different codons to represent
+different things.
+
+The NCBI publishes this weird data format for developers to use for generating
+codon tables and mapping codons to amino acids for different organisms.
+
+All this stuff is experimentally derived and I'm not sure how it's done really.
+I won't really have a chance to find out for a while but there's some future
+work where I may want to do experiments like this and you'll see more about it.
+
+There are two tables. I got annoyed since the original only went by number so
+I made one that went by name too. Looking back on it this is probably useless
+but maybe someone will find a use for it so here it stays.
+
+Happy hacking,
+Tim
+
+P.S
+
+Maybe we should publish our JSON representations? Let me know if want you to
+organize that.
+
+******************************************************************************/
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 func generateCodonTable(aminoAcids, starts string) CodonTable {
