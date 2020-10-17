@@ -23,6 +23,8 @@ File is structured as so:
 	Top level commands:
 		Convert
 		Hash
+		Translate
+		Optimize
 
 	Helper functions
 
@@ -42,18 +44,6 @@ the top of commands_test.go itself.
 
 Happy hacking,
 Tim
-
-******************************************************************************/
-
-/******************************************************************************
-Oct, 15, 2020
-
-This section contains a commented template that you can copy and paste to get
-started building your own command.
-
-PLEASE DO NOT DELETE THIS TEMPLATE
-
-NOTE: I deleted the template and it will be added again before merge.
 
 ******************************************************************************/
 
@@ -180,20 +170,28 @@ parse them, and then spit out a similiarly named file with the .json extension a
 func hash(c *cli.Context) error {
 
 	if isPipe() {
-		annotatedSequence := parseStdin(c)
-		sequenceHash := flagSwitchHash(c, annotatedSequence)
+		annotatedSequence := parseStdin(c)                   // get sequence from stdin
+		sequenceHash := flagSwitchHash(c, annotatedSequence) // get hash include no-op which only rotates the sequence
+
+		// handler for outputting String to stdout <- Default for pipes
+		if c.String("o") == "string" {
+
+			if strings.ToUpper(c.String("f")) == "NO" {
+				fmt.Print(sequenceHash) // prints with no newline
+			} else {
+				fmt.Println(sequenceHash) // prints with newline
+			}
+
+		}
+
+		// handler for outputting JSON to stdout
 		if c.String("o") == "json" {
-			annotatedSequence.Sequence.Hash = sequenceHash
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
+			annotatedSequence.Sequence.Hash = sequenceHash                           // adding hash to JSON
+			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 			fmt.Print(string(output))
-		} else {
-			if strings.ToUpper(c.String("f")) == "NO" {
-				fmt.Print(sequenceHash)
-			} else {
-				fmt.Println(sequenceHash)
-			}
 		}
+
 	} else {
 
 		// gets glob pattern matches to determine which files to use.
@@ -213,6 +211,31 @@ func hash(c *cli.Context) error {
 				extension := filepath.Ext(match)
 				annotatedSequence := fileParser(c, match)
 				sequenceHash := flagSwitchHash(c, annotatedSequence)
+
+				// handler for outputting String <- Default
+				if c.String("o") == "string" {
+
+					// if there's only one match then
+					if len(matches) == 1 {
+
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Print(sequenceHash)
+						} else {
+							fmt.Println(sequenceHash)
+						}
+
+					} else { // if there's more than one match then print each hash
+
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Println(sequenceHash) // just prints list of rotated, unhashed sequences
+						} else {
+							fmt.Println(sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
+						}
+
+					}
+				}
+
+				// handler for outputting JSON.
 				if c.String("o") == "json" {
 					annotatedSequence.Sequence.Hash = sequenceHash
 					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
@@ -226,21 +249,6 @@ func hash(c *cli.Context) error {
 						WriteJSON(annotatedSequence, outputPath+".json")
 					}
 
-				} else {
-					// should refactor before push
-					if len(matches) == 1 {
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Print(sequenceHash)
-						} else {
-							fmt.Println(sequenceHash)
-						}
-					} else {
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Print(sequenceHash)
-						} else {
-							fmt.Println(sequenceHash, " ", match)
-						}
-					}
 				}
 
 				// decrementing wait group.
@@ -277,22 +285,6 @@ func template(c *cli.Context) error {
 	}
 
 	return nil
-}
-
-func buildStdOut(c *cli.Context, annotatedSequence AnnotatedSequence) []byte {
-
-	var output []byte
-
-	if c.String("o") == "json" {
-		output, _ = json.MarshalIndent(annotatedSequence, "", " ")
-	} else if c.String("o") == "gff" {
-		output = BuildGff(annotatedSequence)
-	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-		output = BuildGbk(annotatedSequence)
-	}
-
-	// converts output byte array to string.
-	return output
 }
 
 // a simple helper function to convert an *os.File type into a string.
