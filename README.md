@@ -19,7 +19,7 @@ You can also learn more about poly or a sub command like `convert` using the -h 
 
 ## Community
 
-If you want to hang out and play SuperTuxKart with us 6PM on Fridays you can introduce yourself over in our [discord server](https://discord.gg/Hc8Ncwt). 
+If you want to hang out and play SuperTuxKart with us 6PM PST on Fridays you can introduce yourself over in our [discord server](https://discord.gg/Hc8Ncwt). 
 
 It's also where we get together to casually discuss things that may be too small to put in an issue.
 
