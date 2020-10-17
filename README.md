@@ -8,7 +8,7 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **Reproducible:** Poly is well tested and designed to be used in industrial, academic, and hobbyist settings. No more copy and pasting strings into random websites to process the data you need.
 
-* **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, or open a pull request.
+* **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, open a pull request, or [sponsor the project](https://github.com/TimothyStiles).
 
 
 ## Documentation
@@ -31,6 +31,30 @@ Poly has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). Please read the full t
 
 Poly also has a [contributor's guide](CONTRIBUTING.md). Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
+## Examples
+
+
+### Command Line Interface
+
+Converting a .gbk to .json using pipes. 
+
+```bash
+cat bsub.gbk | poly c -i gbk -o json > bsub.json
+```
+
+Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
+
+```bash
+poly c -o json *.gbk *.gb *.gff
+```
+
+### Go Library
+
+Here's how you'd read in a file from its path:
+
+```Go
+bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
+```
 
 ## Installation
 
@@ -73,30 +97,7 @@ Download the .deb or .rpm from the [releases page](https://github.com/TimothySti
 
 
 
-## Examples
 
-
-### Command Line Interface
-
-Converting a .gbk to .json using pipes. 
-
-```bash
-cat bsub.gbk | poly c -i gbk -o json > bsub.json
-```
-
-Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
-
-```bash
-poly c -o json *.gbk *.gb *.gff
-```
-
-### Go Library
-
-Here's how you'd read in a file from its path:
-
-```Go
-bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
-```
 
 ## License
 * [MIT](LICENSE)
