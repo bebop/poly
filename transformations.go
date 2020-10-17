@@ -109,11 +109,11 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 	return codons.String()
 }
 
-// CreateWeight weights each codon in a codon table according to input string codon frequency
+// CreateWeights weights each codon in a codon table according to input string codon frequency
 // this function actually mutates the CodonTable struct itself and doesn't technically need to
 // return but is useful if you want to create a copy while mutating... Not sure if deep copy is
 // appropriate
-func (codonTable CodonTable) CreateWeight(sequence string) CodonTable {
+func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := GetCodonFrequency(sequence)

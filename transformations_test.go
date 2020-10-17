@@ -20,7 +20,7 @@ func TestOptimize(t *testing.T) {
 
 	annotatedSequence := ReadGbk("data/bsub.gbk")
 	rawSequence := annotatedSequence.Sequence.Sequence
-	codonTable.CreateWeight(rawSequence)
+	codonTable.CreateWeights(rawSequence)
 
 	optimizedSequence := Optimize(gfpTranslation, codonTable)
 	optimizedSequenceTranslation := Translate(optimizedSequence, codonTable)
