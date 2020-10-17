@@ -13,15 +13,24 @@ Poly is a Go library and command line utility for engineering organisms.
 
 ## Documentation
 
-If you want to see a ton of great examples of what poly can do you should check out our [docs site](https://timothystiles.github.io/poly/docs/).
+* **Check out our [docs site](https://timothystiles.github.io/poly/docs/)**: If you want to see a ton of great examples of what poly can do.
 
-You can also learn more about poly or a sub command like `convert` using the -h flag which will provide more documentation.
+* **From the command line**: You can also learn more about the `poly` cli or a sub command like `convert` using the -h flag which will provide more documentation.
 
 ## Community
 
-If you want to hang out and play SuperTuxKart with us 6PM PST on Fridays you can introduce yourself over in our [discord server](https://discord.gg/Hc8Ncwt). 
+* **Chat about Poly and join us for game nights on our [discord server](https://discord.gg/Hc8Ncwt)**. 
 
-It's also where we get together to casually discuss things that may be too small to put in an issue.
+## Contributing
+
+### Code of Conduct
+
+Poly has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
+
+### Contributing Guide
+
+Poly also has a [contributor's guide](CONTRIBUTING.md). Please read through it before you start hacking away and pushing contributions to this fine codebase.
+
 
 ## Installation
 
@@ -89,18 +98,8 @@ Here's how you'd read in a file from its path:
 bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
 ```
 
-
-## Contributing
-
-### Code of Conduct
-
-Poly has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
-
-### Contributing Guide
-
-Poly also has a [contributor's guide](CONTRIBUTING.md). Please read through it before you start hacking away and pushing contributions to this fine codebase.
-
-### License
+## License
 * [MIT](LICENSE)
 
 * Copyright (c) 2020 Timothy Stiles
+
