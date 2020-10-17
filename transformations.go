@@ -8,6 +8,49 @@ import (
 	weightedRand "github.com/mroth/weightedrand"
 )
 
+/******************************************************************************
+Oct, 15, 2020
+
+File is structured as so:
+
+	Structs:
+		CodonTable - holds all information mapping codons <-> aminoacids during transformations.
+		AnimoAcid - holds amino acide related info for CodonTable struct
+		Codon - holds codon related info for AminoAcid struct
+
+	Big functions that everything else is related to:
+
+		Translate - given a nucleic sequence string and codon table it translates sequences
+								to UPPERCASE amino acid sequences.
+
+		Optimize - given an amino acid sequence string and codon table it translates
+							 sequences to UPPERCASE nucleic acid sequences.
+
+This file contains almost everything you need to do standard codon optimization.
+
+Biological context: certain cells favor certain codons and will reject or under
+express sequences that don't use a similar ratio of codons.
+This is called codon bias: https://en.wikipedia.org/wiki/Codon_usage_bias
+
+Furthermore, different ribosomes in different organisms will interpret codons differently.
+What may be a start codon for one ribosome may be a stop in the other.
+Heck, apparently nucleomorphs contain 4 different kinds of ribosomes.
+https://en.wikipedia.org/wiki/Nucleomorph <- Thanks Keoni for mentioning this example!
+
+Anywho, most of this file and CodonTable's struct methods are meant to help overcome
+this codon bias. There's a default CodonTable generator near the bottom of this file
+with a whole section on how it works and why it's gotta be that way.
+
+Like most codebases, best usage examples come from tests. You can check out
+TestTranslate and TestOptimize in transformations_test.go for pretty solid
+examples of what you can do with this code. Will add more to docs site before merge
+into prime.
+
+TTFN,
+Tim
+
+******************************************************************************/
+
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string
@@ -53,10 +96,12 @@ func Translate(sequence string, codonTable CodonTable) string {
 // Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
 func Optimize(aminoAcids string, codonTable CodonTable) string {
 
+	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	var codons strings.Builder
 	codonChooser := codonTable.chooser()
+
 	for _, aminoAcid := range aminoAcids {
 		aminoAcidString := string(aminoAcid)
 		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
@@ -65,6 +110,9 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 }
 
 // CreateWeight weights each codon in a codon table according to input string codon frequency
+// this function actually mutates the CodonTable struct itself and doesn't technically need to
+// return but is useful if you want to create a copy while mutating... Not sure if deep copy is
+// appropriate
 func (codonTable CodonTable) CreateWeight(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
@@ -86,6 +134,7 @@ func (codonTable CodonTable) CreateWeight(sequence string) CodonTable {
 			if codonPercentage < 0.10 {
 				codonFrequencyMap[codon.Triplet] = 0
 			}
+
 		}
 
 		// apply thresholded weights to codonTable
@@ -173,6 +222,7 @@ func getCodingRegions(annotatedSequence AnnotatedSequence) string {
 }
 
 /******************************************************************************
+Oct, 15, 2020
 
 Codon table generation stuff begins here.
 

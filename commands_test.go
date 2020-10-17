@@ -12,6 +12,28 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+/******************************************************************************
+Oct, 15, 2020
+
+Testing command line utilities via subroutines can be annoying so
+if you're doing it from the commandline be sure to compile first.
+From the project's root directory often use:
+
+go build && go install && go test -v ./...
+
+To accurately test your commands you MUST make sure to rebuild and reinstall
+before you run your tests. Otherwise your system version will be out of
+date and will give you results using an older build.
+
+Happy hacking,
+Tim
+
+
+TODO:
+
+write subtest to check for empty output before merge
+******************************************************************************/
+
 func TestConvert(t *testing.T) {
 
 	if runtime.GOOS == "windows" {
@@ -24,14 +46,14 @@ func TestConvert(t *testing.T) {
 
 		// getting test sequence from non-pipe io to compare against redirected io
 		baseTestSequence := ReadGbk("data/bsub.gbk")
-		outPutTestSequence := ReadJSON("data/converttest.json")
+		outputTestSequence := ReadJSON("data/converttest.json")
 
 		// cleaning up test data
 		os.Remove("data/converttest.json")
 
 		// diff original sequence and converted sequence reread back into
 		// AnnotatedSequence format. If there's an error fail test and print diff.
-		if diff := cmp.Diff(baseTestSequence, outPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, outputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
 		}
 
@@ -44,24 +66,24 @@ func TestConvert(t *testing.T) {
 		exec.Command("bash", "-c", command).Output()
 
 		ecoliInputTestSequence := ReadGff("data/ecoli-mg1655.gff")
-		ecoliOutPutTestSequence := ReadJSON("data/ecoli-mg1655.json")
+		ecoliOutputTestSequence := ReadJSON("data/ecoli-mg1655.json")
 
 		//clearing test data.
 		os.Remove("data/ecoli-mg1655.json")
 
 		// compared input gff from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from concurrent gff input test (-want +got):\n%s", diff)
 		}
 
 		bsubInputTestSequence := ReadGbk("data/bsub.gbk")
-		bsubOutPutTestSequence := ReadJSON("data/bsub.json")
+		bsubOutputTestSequence := ReadJSON("data/bsub.json")
 
 		// clearing test data.
 		os.Remove("data/bsub.json")
 
 		// compared input gbk from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(bsubInputTestSequence, bsubOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		if diff := cmp.Diff(bsubInputTestSequence, bsubOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
 			t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 		}
 

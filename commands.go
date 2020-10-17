@@ -16,6 +16,48 @@ import (
 )
 
 /******************************************************************************
+Oct, 15, 2020
+
+File is structured as so:
+
+	Top level commands:
+		Convert
+		Hash
+
+	Helper functions
+
+
+This file contains a majority of the code that runs when command line routines
+are run. The one exception is that argument flags and helper text for each
+command are defined in main.go which then makes calls to their corresponding
+function in this file. This keeps main.go clean and readable.
+
+To ease development you'll notice there's a common command line template in
+the section below along with helper functions for parsing stdin, getting blob
+matches, etc which almost every command ends up using.
+
+Each command must also have a test in commands_test.go that demonstrates its
+correct usage by executing a bash subprocess. You can read more about that at
+the top of commands_test.go itself.
+
+Happy hacking,
+Tim
+
+******************************************************************************/
+
+/******************************************************************************
+Oct, 15, 2020
+
+This section contains a commented template that you can copy and paste to get
+started building your own command.
+
+PLEASE DO NOT DELETE THIS TEMPLATE
+
+NOTE: I deleted the template and it will be added again before merge.
+
+******************************************************************************/
+
+/******************************************************************************
 
 convert currently has two modes. Pipe and fileio.
 
@@ -135,7 +177,7 @@ will read all files in a directory with ".gbk" or ".gff" as their extension
 parse them, and then spit out a similiarly named file with the .json extension along with their hashes.
 
 ******************************************************************************/
-func hash(c *cli.Context) {
+func hash(c *cli.Context) error {
 
 	if isPipe() {
 		annotatedSequence := parseStdin(c)
@@ -212,7 +254,45 @@ func hash(c *cli.Context) {
 		wg.Wait()
 
 	}
+	return nil
+}
 
+func template(c *cli.Context) error {
+
+	if isPipe() {
+
+		// uncomment below to parse annotatedSequence from pipe
+		// annotatedSequence := parseStdin(c)
+
+		/* do something here with annotatedSequence */
+
+		/* parse flags to determine output format/write files*/
+
+	} else { // if is regular command with no pipe
+
+		// gets glob pattern matches to determine which files to use.
+		// delete this line and uncomment below.
+		// matches := getMatches(c)
+
+	}
+
+	return nil
+}
+
+func buildStdOut(c *cli.Context, annotatedSequence AnnotatedSequence) []byte {
+
+	var output []byte
+
+	if c.String("o") == "json" {
+		output, _ = json.MarshalIndent(annotatedSequence, "", " ")
+	} else if c.String("o") == "gff" {
+		output = BuildGff(annotatedSequence)
+	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
+		output = BuildGbk(annotatedSequence)
+	}
+
+	// converts output byte array to string.
+	return output
 }
 
 // a simple helper function to convert an *os.File type into a string.
