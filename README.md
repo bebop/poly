@@ -10,6 +10,19 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, or open a pull request.
 
+
+## Documentation
+
+If you want to see a ton of great examples of what poly can do you should check out our [docs site](https://timothystiles.github.io/poly/docs/).
+
+You can also learn more about poly or a sub command like `convert` using the -h flag which will provide more documentation.
+
+## Community
+
+If you want to hang out and play SuperTuxKart with us 6PM on Fridays you can introduce yourself over in our [discord server](https://discord.gg/Hc8Ncwt). 
+
+It's also where we get together to casually discuss things that may be too small to put in an issue.
+
 ## Installation
 
 ### Building Poly from Scratch
@@ -76,13 +89,6 @@ Here's how you'd read in a file from its path:
 bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
 ```
 
-
-
-## Documentation
-
-If you want to see a ton of great examples of what poly can do you should check out our [docs site](https://timothystiles.github.io/poly/docs/).
-
-You can also learn more about poly or a sub command like `convert` using the -h flag which will provide more documentation.
 
 ## Contributing
 
