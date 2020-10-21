@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -32,31 +32,15 @@ TODO:
 write subtest to check for empty output before merge
 ******************************************************************************/
 
-func TestPipe(t *testing.T) {
+// func TestPipe(t *testing.T) {
 
-	r, stdinWriter, err := os.Pipe()
-	if err != nil {
-	}
-	fmt.Println(isPipe())
+// 	testGbkBytes := BuildGbk(ReadGbk("data/puc19.gbk"))
 
-	origStdin := os.Stdin
-	_, err = stdinWriter.Write([]byte(BuildGbk(ReadGbk("data/puc19.gbk"))))
+// 	args := os.Args[0:1]                   // Name of the program.
+// 	args = append(args, "ha", "-i", "gbk") // Append a flag
 
-	if err != nil {
-		stdinWriter.Close()
-		os.Stdin = origStdin
-	}
-
-	os.Stdin = r
-	stdinWriter.Close()
-
-	args := os.Args[0:1]                   // Name of the program.
-	args = append(args, "ha", "-i", "gbk") // Append a flag
-	results := captureOutput(func() { run(args) })
-	fmt.Print(results)
-	r.Close()
-	os.Stdin = origStdin
-}
+// 	results := spoofPipe(testGbkBytes, func() { run(args) })
+// }
 
 // func TestConvert(t *testing.T) {
 
@@ -114,43 +98,48 @@ func TestPipe(t *testing.T) {
 // 	}
 // }
 
-// func TestHash(t *testing.T) {
-// 	if runtime.GOOS == "windows" {
-// 		fmt.Println("TestHash was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
-// 	} else {
+func TestHash(t *testing.T) {
 
-// 		puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 
-// 		// testing pipe input
-// 		command := "cat data/puc19.gbk | poly hash -i gbk"
-// 		hashOutput, _ := exec.Command("bash", "-c", command).Output()
-// 		hashOutputString := strings.TrimSpace(string(hashOutput))
+	// testing pipe input
+	testGbkBytes := BuildGbk(ReadGbk("data/puc19.gbk"))
 
-// 		if hashOutputString != puc19GbkBlake3Hash {
-// 			t.Errorf("TestHash for piped input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-// 		}
+	args := os.Args[0:1]                   // Name of the program.
+	args = append(args, "ha", "-i", "gbk") // Append a flag
 
-// 		// testing regular input
-// 		command = "poly hash data/puc19.gbk"
-// 		hashOutput, _ = exec.Command("bash", "-c", command).Output()
-// 		hashOutputString = strings.TrimSpace(string(hashOutput))
+	hashOutputString := strings.TrimSpace(spoofPipe(testGbkBytes, func() { run(args) }))
 
-// 		if hashOutputString != puc19GbkBlake3Hash {
-// 			t.Errorf("TestHash for regular input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-// 		}
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for piped input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
 
-// 		// testing json write output
-// 		command = "poly hash -o json data/puc19.gbk"
-// 		exec.Command("bash", "-c", command).Output()
-// 		hashOutputString = ReadJSON("data/puc19.json").Sequence.Hash
-// 		os.Remove("data/puc19.json")
+	// testing regular input
+	args = os.Args[0:1]                           // Name of the program.
+	args = append(args, "hash", "data/puc19.gbk") // Append a flag
+	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
 
-// 		if hashOutputString != puc19GbkBlake3Hash {
-// 			t.Errorf("TestHash for json write output has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-// 		}
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for regular input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
 
-// 	}
-// }
+	// testing json write output
+	args = os.Args[0:1]                                         // Name of the program.
+	args = append(args, "hash", "-o", "json", "data/puc19.gbk") // Append a flag
+	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHash for json write output has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+	// testing file matching hash
+	args = os.Args[0:1]                                                // Name of the program.
+	args = append(args, "hash", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
+	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
+
+	// TODO: find suitable test case for file matching hash. Golangs concurrency returns whatever finishes first. Makes it hard to test multiline files.
+
+}
 
 // func TestOptimizeCommand(t *testing.T) {
 // 	if runtime.GOOS == "windows" {
@@ -177,7 +166,6 @@ func spoofPipe(bytes []byte, function func()) string {
 	r, stdinWriter, err := os.Pipe()
 	if err != nil {
 	}
-	fmt.Println(isPipe())
 
 	origStdin := os.Stdin
 	_, err = stdinWriter.Write(bytes)
@@ -190,15 +178,14 @@ func spoofPipe(bytes []byte, function func()) string {
 	os.Stdin = r
 	stdinWriter.Close()
 
-	args := os.Args[0:1]                   // Name of the program.
-	args = append(args, "ha", "-i", "gbk") // Append a flag
 	results := captureOutput(func() { function() })
-	fmt.Print(results)
 	r.Close()
 	os.Stdin = origStdin
 
 	return results
 }
+
+// from https://medium.com/@hau12a1/golang-capturing-log-println-and-fmt-println-output-770209c791b4
 func captureOutput(f func()) string {
 	reader, writer, err := os.Pipe()
 	if err != nil {
