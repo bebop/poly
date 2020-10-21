@@ -41,11 +41,11 @@ func TestConvert(t *testing.T) {
 	} else {
 
 		// testing redirected pipe output
-		command := "cat data/bsub.gbk | poly c -i gbk -o json > data/converttest.json"
+		command := "cat data/puc19.gbk | poly c -i gbk -o json > data/converttest.json"
 		exec.Command("bash", "-c", command).Output()
 
 		// getting test sequence from non-pipe io to compare against redirected io
-		baseTestSequence := ReadGbk("data/bsub.gbk")
+		baseTestSequence := ReadGbk("data/puc19.gbk")
 		outputTestSequence := ReadJSON("data/converttest.json")
 
 		// cleaning up test data
@@ -59,10 +59,10 @@ func TestConvert(t *testing.T) {
 
 		//clearing possibly still existent prior test data.
 		os.Remove("data/ecoli-mg1655.json")
-		os.Remove("data/bsub.json")
+		os.Remove("data/puc19.json")
 
 		// testing multithreaded non piped output
-		command = "poly c -o json data/bsub.gbk data/ecoli-mg1655.gff"
+		command = "poly c -o json data/puc19.gbk data/ecoli-mg1655.gff"
 		exec.Command("bash", "-c", command).Output()
 
 		ecoliInputTestSequence := ReadGff("data/ecoli-mg1655.gff")
@@ -76,11 +76,11 @@ func TestConvert(t *testing.T) {
 			t.Errorf(" mismatch from concurrent gff input test (-want +got):\n%s", diff)
 		}
 
-		bsubInputTestSequence := ReadGbk("data/bsub.gbk")
-		bsubOutputTestSequence := ReadJSON("data/bsub.json")
+		bsubInputTestSequence := ReadGbk("data/puc19.gbk")
+		bsubOutputTestSequence := ReadJSON("data/puc19.json")
 
 		// clearing test data.
-		os.Remove("data/bsub.json")
+		os.Remove("data/puc19.json")
 
 		// compared input gbk from resulting output json. Fail test and print diff if error.
 		if diff := cmp.Diff(bsubInputTestSequence, bsubOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
@@ -126,4 +126,24 @@ func TestHash(t *testing.T) {
 		}
 
 	}
+}
+
+func TestOptimizeCommand(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		fmt.Println("TestOptimize was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
+	} else {
+
+		gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+		command := "echo " + gfpTranslation + " |" + "poly op -aa"
+		optimizeOutput, _ := exec.Command("bash", "-c", command).Output()
+		optimizeOutputString := strings.TrimSpace(string(optimizeOutput))
+		translation := Translate(optimizeOutputString, DefaultCodonTablesByName["Standard"])
+
+		if translation != gfpTranslation {
+			t.Errorf("TestOptimizeCommand for json write output has failed. Returned %q, want %q", translation, gfpTranslation)
+		}
+
+	}
+
 }
