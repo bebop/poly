@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
-	"io"
-	"log"
+	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 /******************************************************************************
@@ -32,112 +33,149 @@ TODO:
 write subtest to check for empty output before merge
 ******************************************************************************/
 
-// func TestPipe(t *testing.T) {
+func TestConvertPipe(t *testing.T) {
 
-// 	testGbkBytes := BuildGbk(ReadGbk("data/puc19.gbk"))
+	var writeBuffer bytes.Buffer
 
-// 	args := os.Args[0:1]                   // Name of the program.
-// 	args = append(args, "ha", "-i", "gbk") // Append a flag
+	app := Application()
+	app.Writer = &writeBuffer
 
-// 	results := spoofPipe(testGbkBytes, func() { run(args) })
-// }
+	args := os.Args[0:1]                                // Name of the program.
+	args = append(args, "c", "-i", "gbk", "-o", "json") // Append a flag
 
-// func TestConvert(t *testing.T) {
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	app.Reader = bytes.NewReader(file)
 
-// 	if runtime.GOOS == "windows" {
-// 		fmt.Println("TestConvert was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
-// 	} else {
+	err := app.Run(args)
 
-// 		// testing redirected pipe output
-// 		command := "cat data/puc19.gbk | poly c -i gbk -o json > data/converttest.json"
-// 		exec.Command("bash", "-c", command).Output()
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
 
-// 		// getting test sequence from non-pipe io to compare against redirected io
-// 		baseTestSequence := ReadGbk("data/puc19.gbk")
-// 		outputTestSequence := ReadJSON("data/converttest.json")
+	// getting test sequence from non-pipe io to compare against io to stdout
+	baseTestSequence := ReadGbk("data/puc19.gbk")
 
-// 		// cleaning up test data
-// 		os.Remove("data/converttest.json")
+	pipeOutputTestSequence := ParseJSON(writeBuffer.Bytes())
 
-// 		// diff original sequence and converted sequence reread back into
-// 		// AnnotatedSequence format. If there's an error fail test and print diff.
-// 		if diff := cmp.Diff(baseTestSequence, outputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-// 			t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
-// 		}
+	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
+	}
 
-// 		//clearing possibly still existent prior test data.
-// 		os.Remove("data/ecoli-mg1655.json")
-// 		os.Remove("data/puc19.json")
+}
 
-// 		// testing multithreaded non piped output
-// 		command = "poly c -o json data/puc19.gbk data/ecoli-mg1655.gff"
-// 		exec.Command("bash", "-c", command).Output()
+func TestConvertFile(t *testing.T) {
 
-// 		ecoliInputTestSequence := ReadGff("data/ecoli-mg1655.gff")
-// 		ecoliOutputTestSequence := ReadJSON("data/ecoli-mg1655.json")
+	app := Application()
 
-// 		//clearing test data.
-// 		os.Remove("data/ecoli-mg1655.json")
+	args := os.Args[0:1]                                                          // Name of the program.
+	args = append(args, "c", "-o", "json", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
 
-// 		// compared input gff from resulting output json. Fail test and print diff if error.
-// 		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-// 			t.Errorf(" mismatch from concurrent gff input test (-want +got):\n%s", diff)
-// 		}
+	err := app.Run(args)
 
-// 		bsubInputTestSequence := ReadGbk("data/puc19.gbk")
-// 		bsubOutputTestSequence := ReadJSON("data/puc19.json")
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
 
-// 		// clearing test data.
-// 		os.Remove("data/puc19.json")
+	puc19InputTestSequence := ReadGbk("data/puc19.gbk")
+	puc19OutputTestSequence := ReadJSON("data/puc19.json")
 
-// 		// compared input gbk from resulting output json. Fail test and print diff if error.
-// 		if diff := cmp.Diff(bsubInputTestSequence, bsubOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-// 			t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
-// 		}
+	//clearing test data.
+	os.Remove("data/puc19.json")
 
-// 	}
-// }
+	// compared input gff from resulting output json. Fail test and print diff if error.
+	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
+	}
 
-func TestHash(t *testing.T) {
+	t4InputTestSequence := ReadGbk("data/t4_intron.gb")
+	t4OutputTestSequence := ReadJSON("data/t4_intron.json")
+
+	// clearing test data.
+	os.Remove("data/t4_intron.json")
+
+	// compared input gbk from resulting output json. Fail test and print diff if error.
+	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
+	}
+}
+func TestHashFile(t *testing.T) {
+
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	var writeBuffer bytes.Buffer
+
+	app := Application()
+	app.Writer = &writeBuffer
+
+	// testing file matching hash
+	args := os.Args[0:1]                          // Name of the program.
+	args = append(args, "hash", "data/puc19.gbk") // Append a flag
+
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	if writeBuffer.Len() == 0 {
+		t.Error("TestHash did not write output to desired writer.")
+	}
+
+	hashOutputString := strings.TrimSpace(writeBuffer.String())
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashFile has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+}
+
+func TestHashPipe(t *testing.T) {
+
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	var writeBuffer bytes.Buffer
+
+	// create a mock application
+	app := Application()
+	app.Writer = &writeBuffer
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	app.Reader = bytes.NewReader(file)
+
+	args := os.Args[0:1]                     // Name of the program.
+	args = append(args, "hash", "-i", "gbk") // Append a flag
+
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	hashOutputString := strings.TrimSpace(writeBuffer.String())
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashPipe has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+}
+
+func TestHashJSON(t *testing.T) {
+	// testing json write output
 
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 
-	// testing pipe input
-	testGbkBytes := BuildGbk(ReadGbk("data/puc19.gbk"))
+	app := Application()
 
-	args := os.Args[0:1]                   // Name of the program.
-	args = append(args, "ha", "-i", "gbk") // Append a flag
-
-	hashOutputString := strings.TrimSpace(spoofPipe(testGbkBytes, func() { run(args) }))
-
-	if hashOutputString != puc19GbkBlake3Hash {
-		t.Errorf("TestHash for piped input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-	}
-
-	// testing regular input
-	args = os.Args[0:1]                           // Name of the program.
-	args = append(args, "hash", "data/puc19.gbk") // Append a flag
-	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
-
-	if hashOutputString != puc19GbkBlake3Hash {
-		t.Errorf("TestHash for regular input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-	}
-
-	// testing json write output
-	args = os.Args[0:1]                                         // Name of the program.
+	args := os.Args[0:1]                                        // Name of the program.
 	args = append(args, "hash", "-o", "json", "data/puc19.gbk") // Append a flag
-	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
+	err := app.Run(args)
 
-	if hashOutputString != puc19GbkBlake3Hash {
-		t.Errorf("TestHash for json write output has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
 	}
 
-	// testing file matching hash
-	args = os.Args[0:1]                                                // Name of the program.
-	args = append(args, "hash", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
-	hashOutputString = strings.TrimSpace(captureOutput(func() { run(args) }))
+	hashOutputString := ReadJSON("data/puc19.json").Sequence.Hash
+	os.Remove("data/puc19.json")
 
-	// TODO: find suitable test case for file matching hash. Golangs concurrency returns whatever finishes first. Makes it hard to test multiline files.
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashJSON has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
 
 }
 
@@ -160,58 +198,3 @@ func TestHash(t *testing.T) {
 // 	}
 
 // }
-
-// spoofPipe is a helper function to spoof stdin for testing pipe workflows without a bunch of cmd.exec calls
-func spoofPipe(bytes []byte, function func()) string {
-	r, stdinWriter, err := os.Pipe()
-	if err != nil {
-	}
-
-	origStdin := os.Stdin
-	_, err = stdinWriter.Write(bytes)
-
-	if err != nil {
-		stdinWriter.Close()
-		os.Stdin = origStdin
-	}
-
-	os.Stdin = r
-	stdinWriter.Close()
-
-	results := captureOutput(func() { function() })
-	r.Close()
-	os.Stdin = origStdin
-
-	return results
-}
-
-// from https://medium.com/@hau12a1/golang-capturing-log-println-and-fmt-println-output-770209c791b4
-func captureOutput(f func()) string {
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-	stdout := os.Stdout
-	stderr := os.Stderr
-	defer func() {
-		os.Stdout = stdout
-		os.Stderr = stderr
-		log.SetOutput(os.Stderr)
-	}()
-	os.Stdout = writer
-	os.Stderr = writer
-	log.SetOutput(writer)
-	out := make(chan string)
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
-		var buf bytes.Buffer
-		wg.Done()
-		io.Copy(&buf, reader)
-		out <- buf.String()
-	}()
-	wg.Wait()
-	f()
-	writer.Close()
-	return <-out
-}
