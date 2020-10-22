@@ -330,7 +330,7 @@ The function isPipe() detects if input is coming from a pipe like:
 
 	poly optimize can also have it's codon table specified
 
-	cat data/DNAsequence.txt | poly optimize --codon-table Standard > test.txt
+	cat data/DNAsequence.txt | poly translate --codon-table Standard > test.txt
 
 In the future there will be multi file support. Check our issues on github to see what's up.
 
