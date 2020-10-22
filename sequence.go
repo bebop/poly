@@ -43,7 +43,7 @@ var ComplementBaseRuneMap = map[rune]rune{
 
 // GetSequence is a method wrapper to get a Feature's sequence. Mutates with AnnotatedSequence.
 func (feature Feature) GetSequence() string {
-	return GetFeatureSequence(feature, feature.SequenceLocation)
+	return getFeatureSequence(feature, feature.SequenceLocation)
 }
 
 // ReverseComplement takes the reverse complement of a sequence
@@ -63,8 +63,8 @@ func ComplementBase(basePair rune) rune {
 	return ComplementBaseRuneMap[basePair]
 }
 
-// GetFeatureSequence takes a feature and location object and returns a sequence string.
-func GetFeatureSequence(feature Feature, location Location) string {
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentAnnotatedSequence.Sequence.Sequence
@@ -74,7 +74,7 @@ func GetFeatureSequence(feature Feature, location Location) string {
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequenceBuffer.WriteString(GetFeatureSequence(feature, subLocation))
+			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
 		}
 	}
 
