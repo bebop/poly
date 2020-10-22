@@ -32,7 +32,25 @@ Tim
 
 ******************************************************************************/
 
+// main is well... the main entry point for our command line app. We seperate it from the actual &cli.App to help with testing.
 func main() {
+	run(os.Args)
+}
+
+// run is seperated from main and Application for debugging's sake.
+func run(args []string) {
+
+	app := Application()
+	err := app.Run(os.Args) // run app and log errors
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+// Application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
+func Application() *cli.App {
+
 	app := &cli.App{
 		Name:  "poly",
 		Usage: "A command line utility for engineering organisms.",
@@ -56,7 +74,7 @@ func main() {
 			},
 
 			&cli.BoolFlag{
-				Name:  "-log",
+				Name:  "--log",
 				Value: false,
 				Usage: "Forces output to stdout.",
 			},
@@ -77,7 +95,7 @@ func main() {
 					&cli.StringFlag{
 						Name:  "o",
 						Value: "json",
-						Usage: "Specify file output type. Options are Gff, gbk/gb, and json. Defaults to json.",
+						Usage: "Specify file output type or path. Defaults to json.",
 					},
 
 					&cli.StringFlag{
@@ -109,19 +127,13 @@ func main() {
 					&cli.StringFlag{
 						Name:  "i",
 						Value: "json",
-						Usage: "Specify file input type. Options are Gff, gbk/gb, and json.",
+						Usage: "Specify file input type.",
 					},
 
 					&cli.StringFlag{
 						Name:  "o",
 						Value: "string",
-						Usage: "Specify output type. Options are string and json. Defaults to string.",
-					},
-
-					&cli.BoolFlag{
-						Name:  "stdout",
-						Value: false,
-						Usage: "Will write to standard out whenever applicable. Defaults to false.",
+						Usage: "Specify output type. Defaults to string.",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -129,11 +141,55 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:    "translate",
+				Aliases: []string{"tr"},
+				Usage:   "Translate a coding sequence into an amino acid string",
+
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "ct",
+						Aliases: []string{"--codon-table"},
+						Value:   "Standard",
+						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					// translateCommand(c)
+					return nil
+				},
+			},
+			{
+				Name:    "optimize",
+				Aliases: []string{"op"},
+				Usage:   "Optimize a sequence for a specific organism.",
+
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "i",
+						Value: "string",
+						Usage: "Specify file input type or input path.",
+					},
+					&cli.StringFlag{
+						Name:    "ct",
+						Aliases: []string{"--codon-table"},
+						Value:   "Standard",
+						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
+					},
+					&cli.BoolFlag{
+						Name:    "aa",
+						Aliases: []string{"--amino-sequence"},
+						Value:   false,
+						Usage:   "Specify that the input sequence is an amino acid sequence.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					optimizeCommand(c)
+					return nil
+				},
+			},
 		}, // subcommands list ends here
 	} // app definition ends here
 
-	err := app.Run(os.Args) // run app and log errors
-	if err != nil {
-		log.Fatal(err)
-	}
+	return app
 }
