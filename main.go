@@ -37,10 +37,10 @@ func main() {
 	run(os.Args)
 }
 
-// run is seperated from main and Application for debugging's sake.
+// run is seperated from main and application for debugging's sake.
 func run(args []string) {
 
-	app := Application()
+	app := application()
 	err := app.Run(os.Args) // run app and log errors
 	if err != nil {
 		log.Fatal(err)
@@ -48,8 +48,8 @@ func run(args []string) {
 
 }
 
-// Application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
-func Application() *cli.App {
+// application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
+func application() *cli.App {
 
 	app := &cli.App{
 		Name:  "poly",

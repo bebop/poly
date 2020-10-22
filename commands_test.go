@@ -37,7 +37,7 @@ func TestConvertPipe(t *testing.T) {
 
 	var writeBuffer bytes.Buffer
 
-	app := Application()
+	app := application()
 	app.Writer = &writeBuffer
 
 	args := os.Args[0:1]                                // Name of the program.
@@ -65,7 +65,7 @@ func TestConvertPipe(t *testing.T) {
 
 func TestConvertFile(t *testing.T) {
 
-	app := Application()
+	app := application()
 
 	args := os.Args[0:1]                                                          // Name of the program.
 	args = append(args, "c", "-o", "json", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
@@ -103,7 +103,7 @@ func TestHashFile(t *testing.T) {
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 	var writeBuffer bytes.Buffer
 
-	app := Application()
+	app := application()
 	app.Writer = &writeBuffer
 
 	// testing file matching hash
@@ -133,7 +133,7 @@ func TestHashPipe(t *testing.T) {
 	var writeBuffer bytes.Buffer
 
 	// create a mock application
-	app := Application()
+	app := application()
 	app.Writer = &writeBuffer
 	file, _ := ioutil.ReadFile("data/puc19.gbk")
 	app.Reader = bytes.NewReader(file)
@@ -160,7 +160,7 @@ func TestHashJSON(t *testing.T) {
 
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 
-	app := Application()
+	app := application()
 
 	args := os.Args[0:1]                                        // Name of the program.
 	args = append(args, "hash", "-o", "json", "data/puc19.gbk") // Append a flag
@@ -184,7 +184,7 @@ func TestOptimizeString(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var writeBuffer bytes.Buffer
 
-	app := Application()
+	app := application()
 	app.Writer = &writeBuffer
 	app.Reader = bytes.NewBufferString(gfpTranslation)
 
@@ -214,7 +214,7 @@ func TestTranslationString(t *testing.T) {
 
 	var writeBuffer bytes.Buffer
 
-	app := Application()
+	app := application()
 	app.Writer = &writeBuffer
 	app.Reader = bytes.NewBufferString(gfpDnaSequence)
 
