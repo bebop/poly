@@ -195,10 +195,12 @@ func GetCodonFrequency(sequence string) map[string]int {
 		if currentCodon.Len() == 3 {
 			// if codon is already initalized in map increment
 			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
-				codonFrequencyHashMap[currentCodon.String()]++
+				codonString := currentCodon.String()
+				codonFrequencyHashMap[codonString]++
 				// if codon is not already initalized in map initialize with value at 1
 			} else {
-				codonFrequencyHashMap[currentCodon.String()] = 1
+				codonString := currentCodon.String()
+				codonFrequencyHashMap[codonString] = 1
 			}
 			// reset codon string builder for next codon.
 			currentCodon.Reset()
