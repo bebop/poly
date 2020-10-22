@@ -54,7 +54,7 @@ Tim
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string
-	Weight  int
+	Weight  int // needs to be set to 1 for random chooser
 }
 
 // AminoAcid holds information for an amino acid and related codons in a struct in a struct
@@ -267,7 +267,7 @@ func generateCodonTable(aminoAcids, starts string) CodonTable {
 			aminoAcidMap[aminoAcid] = []Codon{}
 		}
 		triplet := string([]byte{base1[i], base2[i], base3[i]})
-		aminoAcidMap[aminoAcid] = append(aminoAcidMap[aminoAcid], Codon{triplet, 0})
+		aminoAcidMap[aminoAcid] = append(aminoAcidMap[aminoAcid], Codon{triplet, 1})
 		if starts[i] == 77 { // M rune
 			startCodons = append(startCodons, triplet)
 		}
