@@ -73,7 +73,7 @@ parse them, and then spit out a similiarly named file with the .json extension.
 
 ******************************************************************************/
 
-func convert(c *cli.Context) error {
+func convertCommand(c *cli.Context) error {
 	if isPipe(c) {
 
 		annotatedSequence := parseStdin(c)
@@ -168,7 +168,7 @@ will read all files in a directory with ".gbk" or ".gff" as their extension
 parse them, and then spit out a similiarly named file with the .json extension along with their hashes.
 
 ******************************************************************************/
-func hash(c *cli.Context) error {
+func hashCommand(c *cli.Context) error {
 
 	if isPipe(c) {
 		annotatedSequence := parseStdin(c)                   // get sequence from stdin

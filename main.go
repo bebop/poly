@@ -106,7 +106,7 @@ func application() *cli.App {
 				},
 				// where we provide the actual function that is called by the subcommand.
 				Action: func(c *cli.Context) error {
-					convert(c)
+					convertCommand(c)
 					return nil
 				},
 			},
@@ -137,7 +137,7 @@ func application() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					hash(c)
+					hashCommand(c)
 					return nil
 				},
 			},
