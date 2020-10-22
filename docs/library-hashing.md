@@ -9,7 +9,7 @@ Hashes make incredibly powerful unique identifiers and with a wide array of hash
 
 ## Blake3 Hashing
 
-The golang team is currently figuring out the best way to implement blake3 into the standard library but in the meantime `poly` provides this special function and method wrapper to hash sequences using blake3. This will eventually be deprecated in favor of only using the `GenericSequenceHash()` function and `.hash()` method wrapper.
+The golang team is currently figuring out the best way to implement blake3 into the standard library but in the meantime `poly` provides this special function and method wrapper to hash sequences using blake3. This will eventually be deprecated in favor of only using the `GenericSequenceHash()` function and `.Hash()` method wrapper.
 
 ```go
   // getting our example AnnotatedSequence struct
@@ -18,11 +18,11 @@ The golang team is currently figuring out the best way to implement blake3 into 
   // there are two ways to use the blake3 Least Rotation hasher.
 
   // the first is with the method wrapper.
-  puc19Blake3Hash := puc19AnnotatedSequence.blake3Hash()
+  puc19Blake3Hash := puc19AnnotatedSequence.Blake3Hash()
   fmt.Println(puc19Blake3Hash)
 
   // the second is with the Blake3SequenceHash(annotatedSequence AnnotatedSequence) function.
-  puc19Blake3Hash = puc19AnnotatedSequence.blake3Hash()
+  puc19Blake3Hash = puc19AnnotatedSequence.Blake3Hash()
   fmt.Println(puc19Blake3Hash)
 ```
 
@@ -39,7 +39,7 @@ Again, this will be deprecated in favor of using generic hashing with blake3 in 
   // there are two ways to use the Least Rotation generic hasher.
 
   // the first is with the method wrapper where you pass your hashing function as an argument.
-  puc19Sha1Hash := puc19AnnotatedSequence.hash(crypto.SHA1)
+  puc19Sha1Hash := puc19AnnotatedSequence.Hash(crypto.SHA1)
   fmt.Println(puc19Sha1Hash)
 
   // the second is with the GenericSequenceHash() function where you pass an AnnotatedSequence along with a hash function as arguments.

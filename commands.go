@@ -267,7 +267,22 @@ func hash(c *cli.Context) error {
 	return nil
 }
 
-// optimizeCommand
+/******************************************************************************
+
+poly optimize currently has one mode. Pipe io.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/DNAsequence.txt | poly optimize > test.txt
+
+	poly optimize can also have it's codon table specified
+	and files can be provided to add weight to the codon table
+
+	cat data/DNAsequence.txt | poly optimize -ct 11 -wt data/puc19.gbk > test.txt
+
+In the future there will be multi file support. Check our issues on github to see what's up.
+
+******************************************************************************/
 func optimizeCommand(c *cli.Context) error {
 
 	// get appropriate codon table from flag
@@ -304,6 +319,22 @@ func optimizeCommand(c *cli.Context) error {
 	}
 	return nil
 }
+
+/******************************************************************************
+
+poly translate currently has one mode. Pipe io.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/DNAsequence.txt | poly translate > test.txt
+
+	poly optimize can also have it's codon table specified
+
+	cat data/DNAsequence.txt | poly optimize --codon-table Standard > test.txt
+
+In the future there will be multi file support. Check our issues on github to see what's up.
+
+******************************************************************************/
 
 func translateCommand(c *cli.Context) error {
 
@@ -404,45 +435,45 @@ func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string 
 	var hashString string
 	switch strings.ToUpper(c.String("f")) {
 	case "MD5":
-		hashString = annotatedSequence.hash(crypto.MD5)
+		hashString = annotatedSequence.Hash(crypto.MD5)
 	case "SHA1":
-		hashString = annotatedSequence.hash(crypto.SHA1)
+		hashString = annotatedSequence.Hash(crypto.SHA1)
 	case "SHA244":
-		hashString = annotatedSequence.hash(crypto.SHA224)
+		hashString = annotatedSequence.Hash(crypto.SHA224)
 	case "SHA256":
-		hashString = annotatedSequence.hash(crypto.SHA256)
+		hashString = annotatedSequence.Hash(crypto.SHA256)
 	case "SHA384":
-		hashString = annotatedSequence.hash(crypto.SHA384)
+		hashString = annotatedSequence.Hash(crypto.SHA384)
 	case "SHA512":
-		hashString = annotatedSequence.hash(crypto.SHA512)
+		hashString = annotatedSequence.Hash(crypto.SHA512)
 	case "RIPEMD160":
-		hashString = annotatedSequence.hash(crypto.RIPEMD160)
+		hashString = annotatedSequence.Hash(crypto.RIPEMD160)
 	case "SHA3_224":
-		hashString = annotatedSequence.hash(crypto.SHA3_224)
+		hashString = annotatedSequence.Hash(crypto.SHA3_224)
 	case "SHA3_256":
-		hashString = annotatedSequence.hash(crypto.SHA3_256)
+		hashString = annotatedSequence.Hash(crypto.SHA3_256)
 	case "SHA3_384":
-		hashString = annotatedSequence.hash(crypto.SHA3_384)
+		hashString = annotatedSequence.Hash(crypto.SHA3_384)
 	case "SHA3_512":
-		hashString = annotatedSequence.hash(crypto.SHA3_512)
+		hashString = annotatedSequence.Hash(crypto.SHA3_512)
 	case "SHA512_224":
-		hashString = annotatedSequence.hash(crypto.SHA512_224)
+		hashString = annotatedSequence.Hash(crypto.SHA512_224)
 	case "SHA512_256":
-		hashString = annotatedSequence.hash(crypto.SHA512_256)
+		hashString = annotatedSequence.Hash(crypto.SHA512_256)
 	case "BLAKE2s_256":
-		hashString = annotatedSequence.hash(crypto.BLAKE2s_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2s_256)
 	case "BLAKE2b_256":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_256)
 	case "BLAKE2b_384":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_384)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_384)
 	case "BLAKE2b_512":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_512)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_512)
 	case "BLAKE3":
-		hashString = annotatedSequence.blake3Hash()
+		hashString = annotatedSequence.Blake3Hash()
 	case "NO":
 		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
-		hashString = annotatedSequence.blake3Hash()
+		hashString = annotatedSequence.Blake3Hash()
 		break
 	}
 	return hashString

@@ -146,6 +146,35 @@ func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 	return codonTable
 }
 
+// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
+func GetCodonFrequency(sequence string) map[string]int {
+
+	codonFrequencyHashMap := map[string]int{}
+	var currentCodon strings.Builder
+
+	for _, letter := range sequence {
+
+		// add current nucleotide to currentCodon
+		currentCodon.WriteRune(letter)
+
+		// if current nucleotide is the third in a codon add to hashmap
+		if currentCodon.Len() == 3 {
+			// if codon is already initalized in map increment
+			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
+				codonString := currentCodon.String()
+				codonFrequencyHashMap[codonString]++
+				// if codon is not already initalized in map initialize with value at 1
+			} else {
+				codonString := currentCodon.String()
+				codonFrequencyHashMap[codonString] = 1
+			}
+			// reset codon string builder for next codon.
+			currentCodon.Reset()
+		}
+	}
+	return codonFrequencyHashMap
+}
+
 // chooser is a CodonTable method to convert a codon table to a chooser
 func (codonTable CodonTable) chooser() map[string]weightedRand.Chooser {
 
@@ -180,35 +209,6 @@ func (codonTable CodonTable) generateTranslationTable() map[string]string {
 	return translationMap
 }
 
-// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
-func GetCodonFrequency(sequence string) map[string]int {
-
-	codonFrequencyHashMap := map[string]int{}
-	var currentCodon strings.Builder
-
-	for _, letter := range sequence {
-
-		// add current nucleotide to currentCodon
-		currentCodon.WriteRune(letter)
-
-		// if current nucleotide is the third in a codon add to hashmap
-		if currentCodon.Len() == 3 {
-			// if codon is already initalized in map increment
-			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
-				codonString := currentCodon.String()
-				codonFrequencyHashMap[codonString]++
-				// if codon is not already initalized in map initialize with value at 1
-			} else {
-				codonString := currentCodon.String()
-				codonFrequencyHashMap[codonString] = 1
-			}
-			// reset codon string builder for next codon.
-			currentCodon.Reset()
-		}
-	}
-	return codonFrequencyHashMap
-}
-
 // helper function to pull coding regions out of an AnnotatedSequence
 func getCodingRegions(annotatedSequence AnnotatedSequence) string {
 	// pick out the each coding region in the AnnotatedSequence and add it to the sequence Builder
@@ -216,7 +216,7 @@ func getCodingRegions(annotatedSequence AnnotatedSequence) string {
 
 	for _, feature := range annotatedSequence.Features {
 		if feature.Type == "CDS" {
-			sequenceBuilder.WriteString(feature.getSequence())
+			sequenceBuilder.WriteString(feature.GetSequence())
 		}
 	}
 

@@ -111,8 +111,8 @@ func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) 
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// method wrapper for hashing annotatedSequence structs.
-func (annotatedSequence AnnotatedSequence) hash(hash crypto.Hash) string {
+// Hash is a method wrapper for hashing annotatedSequence structs.
+func (annotatedSequence AnnotatedSequence) Hash(hash crypto.Hash) string {
 	seqHash, _ := GenericSequenceHash(annotatedSequence, hash)
 	return seqHash
 }
@@ -129,8 +129,8 @@ func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
 	return hex.EncodeToString(b[:])
 }
 
-// method wrapper for hashing annotatedSequence structs with Blake3.
-func (annotatedSequence AnnotatedSequence) blake3Hash() string {
+// Blake3Hash is a method wrapper for hashing annotatedSequence structs with Blake3.
+func (annotatedSequence AnnotatedSequence) Blake3Hash() string {
 	seqHash := Blake3SequenceHash(annotatedSequence)
 	return seqHash
 }

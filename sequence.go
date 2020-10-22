@@ -41,14 +41,14 @@ var ComplementBaseRuneMap = map[rune]rune{
 	121: 114, // y -> r
 }
 
-// getSequence is a method to get a Feature's sequence. Mutates with AnnotatedSequence.
-func (feature Feature) getSequence() string {
-	return getFeatureSequence(feature, feature.SequenceLocation)
+// GetSequence is a method wrapper to get a Feature's sequence. Mutates with AnnotatedSequence.
+func (feature Feature) GetSequence() string {
+	return GetFeatureSequence(feature, feature.SequenceLocation)
 }
 
 // ReverseComplement takes the reverse complement of a sequence
 func ReverseComplement(sequence string) string {
-	complementString := strings.Map(complementBase, sequence)
+	complementString := strings.Map(ComplementBase, sequence)
 	n := len(complementString)
 	newString := make([]rune, n)
 	for _, base := range complementString {
@@ -58,13 +58,13 @@ func ReverseComplement(sequence string) string {
 	return string(newString)
 }
 
-// complementBase accepts a base pair and returns its complement base pair
-func complementBase(basePair rune) rune {
+// ComplementBase accepts a base pair and returns its complement base pair
+func ComplementBase(basePair rune) rune {
 	return ComplementBaseRuneMap[basePair]
 }
 
-// getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) string {
+// GetFeatureSequence takes a feature and location object and returns a sequence string.
+func GetFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentAnnotatedSequence.Sequence.Sequence
@@ -74,7 +74,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
+			sequenceBuffer.WriteString(GetFeatureSequence(feature, subLocation))
 		}
 	}
 
