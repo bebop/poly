@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -45,6 +46,7 @@ the top of commands_test.go itself.
 Happy hacking,
 Tim
 
+https://github.com/urfave/cli/issues/731
 ******************************************************************************/
 
 /******************************************************************************
@@ -72,7 +74,7 @@ parse them, and then spit out a similiarly named file with the .json extension.
 ******************************************************************************/
 
 func convert(c *cli.Context) error {
-	if isPipe() {
+	if isPipe(c) {
 
 		annotatedSequence := parseStdin(c)
 
@@ -88,9 +90,8 @@ func convert(c *cli.Context) error {
 		}
 
 		// output to stdout
-		fmt.Print(string(output))
+		fmt.Fprint(c.App.Writer, string(output))
 
-		//
 	} else {
 
 		// gets glob pattern matches to determine which files to use.
@@ -169,7 +170,7 @@ parse them, and then spit out a similiarly named file with the .json extension a
 ******************************************************************************/
 func hash(c *cli.Context) error {
 
-	if isPipe() {
+	if isPipe(c) {
 		annotatedSequence := parseStdin(c)                   // get sequence from stdin
 		sequenceHash := flagSwitchHash(c, annotatedSequence) // get hash include no-op which only rotates the sequence
 
@@ -177,9 +178,9 @@ func hash(c *cli.Context) error {
 		if c.String("o") == "string" {
 
 			if strings.ToUpper(c.String("f")) == "NO" {
-				fmt.Print(sequenceHash) // prints with no newline
+				fmt.Fprint(c.App.Writer, sequenceHash) // prints with no newline
 			} else {
-				fmt.Println(sequenceHash) // prints with newline
+				fmt.Fprintln(c.App.Writer, sequenceHash) // prints with newline
 			}
 
 		}
@@ -189,7 +190,7 @@ func hash(c *cli.Context) error {
 			annotatedSequence.Sequence.Hash = sequenceHash                           // adding hash to JSON
 			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-			fmt.Print(string(output))
+			fmt.Fprint(c.App.Writer, string(output))
 		}
 
 	} else {
@@ -213,36 +214,37 @@ func hash(c *cli.Context) error {
 				sequenceHash := flagSwitchHash(c, annotatedSequence)
 
 				// handler for outputting String <- Default
-				if c.String("o") == "string" {
+				if strings.ToLower(c.String("o")) == "string" {
 
 					// if there's only one match then
 					if len(matches) == 1 {
 
 						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Print(sequenceHash)
+							fmt.Fprint(c.App.Writer, sequenceHash)
 						} else {
-							fmt.Println(sequenceHash)
+							// fmt.Println(sequenceHash)
+							fmt.Fprintln(c.App.Writer, sequenceHash)
 						}
 
 					} else { // if there's more than one match then print each hash
 
 						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Println(sequenceHash) // just prints list of rotated, unhashed sequences
+							fmt.Fprintln(c.App.Writer, sequenceHash) // just prints list of rotated, unhashed sequences
 						} else {
-							fmt.Println(sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
+							fmt.Fprintln(c.App.Writer, sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
 						}
 
 					}
 				}
 
 				// handler for outputting JSON.
-				if c.String("o") == "json" {
+				if strings.ToLower(c.String("o")) == "json" {
 					annotatedSequence.Sequence.Hash = sequenceHash
 					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 
-					if c.Bool("stdout") == true {
+					if c.Bool("--log") == true {
 						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-						fmt.Print(string(output))
+						fmt.Fprint(c.App.Writer, string(output))
 					} else {
 						outputPath := match[0 : len(match)-len(extension)]
 						// should have way to support wildcard matches for varied output names.
@@ -265,13 +267,35 @@ func hash(c *cli.Context) error {
 	return nil
 }
 
-func template(c *cli.Context) error {
+// optimizeCommand
+func optimizeCommand(c *cli.Context) error {
 
-	if isPipe() {
+	// get appropriate codon table from flag
+	var codonTable CodonTable
+
+	if isNumeric(c.String("ct")) {
+		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
+		codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+	} else {
+		codonTable = DefaultCodonTablesByName[c.String("ct")]
+	}
+
+	if isPipe(c) {
 
 		// uncomment below to parse annotatedSequence from pipe
-		// annotatedSequence := parseStdin(c)
+		annotatedSequence := parseStdin(c)
+		var aminoAcids string
 
+		fmt.Fprintln(c.App.Writer, annotatedSequence.Sequence.Sequence)
+
+		if c.Bool("aa") {
+			aminoAcids = annotatedSequence.Sequence.Sequence
+		} else {
+			aminoAcids = Translate(annotatedSequence.Sequence.Sequence, codonTable)
+		}
+
+		optimizedSequence := Optimize(aminoAcids, codonTable)
+		fmt.Fprintln(c.App.Writer, optimizedSequence)
 		/* do something here with annotatedSequence */
 
 		/* parse flags to determine output format/write files*/
@@ -282,13 +306,40 @@ func template(c *cli.Context) error {
 		// delete this line and uncomment below.
 		// matches := getMatches(c)
 
-	}
+		// 	// declaring wait group outside loop
+		// 	var wg sync.WaitGroup
 
+		// 	// concurrently iterate through each pattern match, read the file, output to new format.
+		// 	for _, match := range matches {
+
+		// 		// incrementing wait group for Go routine
+		// 		wg.Add(1)
+
+		// 		// executing Go routine.
+		// 		go func(match string) {
+		// 			extension := filepath.Ext(match)
+		// 			annotatedSequence := fileParser(c, match)
+
+		// 			}
+
+		// 			// decrementing wait group.
+		// 			wg.Done()
+
+		// 		}(match) // passing match to Go routine anonymous function.
+
+		// 	}
+
+		// 	// waiting outside for loop for Go routines so they can run concurrently.
+		// 	wg.Wait()
+
+		// }
+
+	}
 	return nil
 }
 
 // a simple helper function to convert an *os.File type into a string.
-func stdinToString(file *os.File) string {
+func stdinToString(file io.Reader) string {
 	var stringBuffer bytes.Buffer
 	reader := bufio.NewReader(file)
 	for {
@@ -321,27 +372,36 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 }
 
 // a simple helper function to determine if there is input coming from stdin pipe.
-func isPipe() bool {
+func isPipe(c *cli.Context) bool {
 	info, _ := os.Stdin.Stat()
 	flag := false
 	if info.Mode()&os.ModeNamedPipe != 0 {
 		// we have a pipe input
 		flag = true
 	}
+	if c.App.Reader != os.Stdin {
+		flag = true
+	}
 	return flag
+}
+
+func isNumeric(s string) bool {
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
 }
 
 // a simple helper function to take stdin from a pipe and parse it into an annotated sequence
 func parseStdin(c *cli.Context) AnnotatedSequence {
 	var annotatedSequence AnnotatedSequence
-
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToString(os.Stdin)), &annotatedSequence)
+		json.Unmarshal([]byte(stdinToString(c.App.Reader)), &annotatedSequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ParseGbk(stdinToString(os.Stdin))
+		annotatedSequence = ParseGbk(stdinToString(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		annotatedSequence = ParseGff(stdinToString(os.Stdin))
+		annotatedSequence = ParseGff(stdinToString(c.App.Reader))
+	} else if c.String("i") == "string" {
+		annotatedSequence.Sequence.Sequence = stdinToString(c.App.Reader)
 	}
 	return annotatedSequence
 }
