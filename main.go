@@ -153,9 +153,14 @@ func Application() *cli.App {
 						Value:   "Standard",
 						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
 					},
+					&cli.StringFlag{
+						Name:  "i",
+						Value: "string",
+						Usage: "Specify file input type.",
+					},
 				},
 				Action: func(c *cli.Context) error {
-					// translateCommand(c)
+					translateCommand(c)
 					return nil
 				},
 			},
@@ -168,7 +173,7 @@ func Application() *cli.App {
 					&cli.StringFlag{
 						Name:  "i",
 						Value: "string",
-						Usage: "Specify file input type or input path.",
+						Usage: "Specify file input type.",
 					},
 					&cli.StringFlag{
 						Name:    "ct",
@@ -178,9 +183,14 @@ func Application() *cli.App {
 					},
 					&cli.BoolFlag{
 						Name:    "aa",
-						Aliases: []string{"--amino-sequence"},
+						Aliases: []string{"--amino-acid"},
 						Value:   false,
 						Usage:   "Specify that the input sequence is an amino acid sequence.",
+					},
+					&cli.StringFlag{
+						Name:    "wt",
+						Aliases: []string{"--weight-table"},
+						Usage:   "Specify file to weigh table with",
 					},
 				},
 				Action: func(c *cli.Context) error {
