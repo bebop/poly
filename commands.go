@@ -280,13 +280,17 @@ func optimizeCommand(c *cli.Context) error {
 		codonTable = DefaultCodonTablesByName[c.String("ct")]
 	}
 
+	// if a file exists to weigh the table. Weigh it.
+	if fileExists(c.String("wt")) {
+		targetOrganism := fileParser(c, c.String("wt"))
+		codonTable.CreateWeights(targetOrganism.Sequence.Sequence)
+	}
+
 	if isPipe(c) {
 
 		// uncomment below to parse annotatedSequence from pipe
 		annotatedSequence := parseStdin(c)
 		var aminoAcids string
-
-		fmt.Fprintln(c.App.Writer, annotatedSequence.Sequence.Sequence)
 
 		if c.Bool("aa") {
 			aminoAcids = annotatedSequence.Sequence.Sequence
@@ -296,43 +300,31 @@ func optimizeCommand(c *cli.Context) error {
 
 		optimizedSequence := Optimize(aminoAcids, codonTable)
 		fmt.Fprintln(c.App.Writer, optimizedSequence)
-		/* do something here with annotatedSequence */
 
-		/* parse flags to determine output format/write files*/
+	}
+	return nil
+}
 
-	} else { // if is regular command with no pipe
+func translateCommand(c *cli.Context) error {
 
-		// gets glob pattern matches to determine which files to use.
-		// delete this line and uncomment below.
-		// matches := getMatches(c)
+	if isPipe(c) {
 
-		// 	// declaring wait group outside loop
-		// 	var wg sync.WaitGroup
+		// get appropriate codon table from flag
+		var codonTable CodonTable
 
-		// 	// concurrently iterate through each pattern match, read the file, output to new format.
-		// 	for _, match := range matches {
+		if isNumeric(c.String("ct")) {
+			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
+			codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+		} else {
+			codonTable = DefaultCodonTablesByName[c.String("ct")]
+		}
 
-		// 		// incrementing wait group for Go routine
-		// 		wg.Add(1)
+		// uncomment below to parse annotatedSequence from pipe
+		annotatedSequence := parseStdin(c)
 
-		// 		// executing Go routine.
-		// 		go func(match string) {
-		// 			extension := filepath.Ext(match)
-		// 			annotatedSequence := fileParser(c, match)
+		aminoAcids := Translate(annotatedSequence.Sequence.Sequence, codonTable)
 
-		// 			}
-
-		// 			// decrementing wait group.
-		// 			wg.Done()
-
-		// 		}(match) // passing match to Go routine anonymous function.
-
-		// 	}
-
-		// 	// waiting outside for loop for Go routines so they can run concurrently.
-		// 	wg.Wait()
-
-		// }
+		fmt.Fprintln(c.App.Writer, aminoAcids)
 
 	}
 	return nil
@@ -489,4 +481,16 @@ func fileParser(c *cli.Context, match string) AnnotatedSequence {
 		// TODO put default error handling here.
 	}
 	return annotatedSequence
+}
+
+// fileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+// from https://golangcode.com/check-if-a-file-exists/
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
