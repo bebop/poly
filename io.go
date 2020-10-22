@@ -518,7 +518,7 @@ func ParseGbk(gbk string) AnnotatedSequence {
 		splitLine := strings.Split(line, " ")
 		subLines := lines[numLine+1:]
 
-		// This is to keep the cursor from scrolling to the bottom another time after getSequence() is called.
+		// This is to keep the cursor from scrolling to the bottom another time after GetSequence() is called.
 		// Break has to be in scope and can't be called within switch statement.
 		// Otherwise it will just break the switch which is redundant.
 		sequenceBreakFlag := false

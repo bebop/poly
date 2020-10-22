@@ -9,11 +9,45 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/urfave/cli/v2"
 )
+
+/******************************************************************************
+Oct, 15, 2020
+
+File is structured as so:
+
+	Top level commands:
+		Convert
+		Hash
+		Translate
+		Optimize
+
+	Helper functions
+
+
+This file contains a majority of the code that runs when command line routines
+are run. The one exception is that argument flags and helper text for each
+command are defined in main.go which then makes calls to their corresponding
+function in this file. This keeps main.go clean and readable.
+
+To ease development you'll notice there's a common command line template in
+the section below along with helper functions for parsing stdin, getting blob
+matches, etc which almost every command ends up using.
+
+Each command must also have a test in commands_test.go that demonstrates its
+correct usage by executing a bash subprocess. You can read more about that at
+the top of commands_test.go itself.
+
+Happy hacking,
+Tim
+
+https://github.com/urfave/cli/issues/731
+******************************************************************************/
 
 /******************************************************************************
 
@@ -39,8 +73,8 @@ parse them, and then spit out a similiarly named file with the .json extension.
 
 ******************************************************************************/
 
-func convert(c *cli.Context) error {
-	if isPipe() {
+func convertCommand(c *cli.Context) error {
+	if isPipe(c) {
 
 		annotatedSequence := parseStdin(c)
 
@@ -56,9 +90,8 @@ func convert(c *cli.Context) error {
 		}
 
 		// output to stdout
-		fmt.Print(string(output))
+		fmt.Fprint(c.App.Writer, string(output))
 
-		//
 	} else {
 
 		// gets glob pattern matches to determine which files to use.
@@ -135,23 +168,31 @@ will read all files in a directory with ".gbk" or ".gff" as their extension
 parse them, and then spit out a similiarly named file with the .json extension along with their hashes.
 
 ******************************************************************************/
-func hash(c *cli.Context) {
+func hashCommand(c *cli.Context) error {
 
-	if isPipe() {
-		annotatedSequence := parseStdin(c)
-		sequenceHash := flagSwitchHash(c, annotatedSequence)
-		if c.String("o") == "json" {
-			annotatedSequence.Sequence.Hash = sequenceHash
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
-			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-			fmt.Print(string(output))
-		} else {
+	if isPipe(c) {
+		annotatedSequence := parseStdin(c)                   // get sequence from stdin
+		sequenceHash := flagSwitchHash(c, annotatedSequence) // get hash include no-op which only rotates the sequence
+
+		// handler for outputting String to stdout <- Default for pipes
+		if c.String("o") == "string" {
+
 			if strings.ToUpper(c.String("f")) == "NO" {
-				fmt.Print(sequenceHash)
+				fmt.Fprint(c.App.Writer, sequenceHash) // prints with no newline
 			} else {
-				fmt.Println(sequenceHash)
+				fmt.Fprintln(c.App.Writer, sequenceHash) // prints with newline
 			}
+
 		}
+
+		// handler for outputting JSON to stdout
+		if c.String("o") == "json" {
+			annotatedSequence.Sequence.Hash = sequenceHash                           // adding hash to JSON
+			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
+			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
+			fmt.Fprint(c.App.Writer, string(output))
+		}
+
 	} else {
 
 		// gets glob pattern matches to determine which files to use.
@@ -171,34 +212,45 @@ func hash(c *cli.Context) {
 				extension := filepath.Ext(match)
 				annotatedSequence := fileParser(c, match)
 				sequenceHash := flagSwitchHash(c, annotatedSequence)
-				if c.String("o") == "json" {
+
+				// handler for outputting String <- Default
+				if strings.ToLower(c.String("o")) == "string" {
+
+					// if there's only one match then
+					if len(matches) == 1 {
+
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Fprint(c.App.Writer, sequenceHash)
+						} else {
+							// fmt.Println(sequenceHash)
+							fmt.Fprintln(c.App.Writer, sequenceHash)
+						}
+
+					} else { // if there's more than one match then print each hash
+
+						if strings.ToUpper(c.String("f")) == "NO" {
+							fmt.Fprintln(c.App.Writer, sequenceHash) // just prints list of rotated, unhashed sequences
+						} else {
+							fmt.Fprintln(c.App.Writer, sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
+						}
+
+					}
+				}
+
+				// handler for outputting JSON.
+				if strings.ToLower(c.String("o")) == "json" {
 					annotatedSequence.Sequence.Hash = sequenceHash
 					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
 
-					if c.Bool("stdout") == true {
+					if c.Bool("--log") == true {
 						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-						fmt.Print(string(output))
+						fmt.Fprint(c.App.Writer, string(output))
 					} else {
 						outputPath := match[0 : len(match)-len(extension)]
 						// should have way to support wildcard matches for varied output names.
 						WriteJSON(annotatedSequence, outputPath+".json")
 					}
 
-				} else {
-					// should refactor before push
-					if len(matches) == 1 {
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Print(sequenceHash)
-						} else {
-							fmt.Println(sequenceHash)
-						}
-					} else {
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Print(sequenceHash)
-						} else {
-							fmt.Println(sequenceHash, " ", match)
-						}
-					}
 				}
 
 				// decrementing wait group.
@@ -212,11 +264,105 @@ func hash(c *cli.Context) {
 		wg.Wait()
 
 	}
+	return nil
+}
 
+/******************************************************************************
+
+poly optimize currently has one mode. Pipe io.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/DNAsequence.txt | poly optimize > test.txt
+
+	poly optimize can also have it's codon table specified
+	and files can be provided to add weight to the codon table
+
+	cat data/DNAsequence.txt | poly optimize -ct 11 -wt data/puc19.gbk > test.txt
+
+In the future there will be multi file support. Check our issues on github to see what's up.
+
+******************************************************************************/
+func optimizeCommand(c *cli.Context) error {
+
+	// get appropriate codon table from flag
+	var codonTable CodonTable
+
+	if isNumeric(c.String("ct")) {
+		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
+		codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+	} else {
+		codonTable = DefaultCodonTablesByName[c.String("ct")]
+	}
+
+	// if a file exists to weigh the table. Weigh it.
+	if fileExists(c.String("wt")) {
+		targetOrganism := fileParser(c, c.String("wt"))
+		codonTable.CreateWeights(targetOrganism.Sequence.Sequence)
+	}
+
+	if isPipe(c) {
+
+		// uncomment below to parse annotatedSequence from pipe
+		annotatedSequence := parseStdin(c)
+		var aminoAcids string
+
+		if c.Bool("aa") {
+			aminoAcids = annotatedSequence.Sequence.Sequence
+		} else {
+			aminoAcids = Translate(annotatedSequence.Sequence.Sequence, codonTable)
+		}
+
+		optimizedSequence := Optimize(aminoAcids, codonTable)
+		fmt.Fprintln(c.App.Writer, optimizedSequence)
+
+	}
+	return nil
+}
+
+/******************************************************************************
+
+poly translate currently has one mode. Pipe io.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/DNAsequence.txt | poly translate > test.txt
+
+	poly optimize can also have it's codon table specified
+
+	cat data/DNAsequence.txt | poly translate --codon-table Standard > test.txt
+
+In the future there will be multi file support. Check our issues on github to see what's up.
+
+******************************************************************************/
+
+func translateCommand(c *cli.Context) error {
+
+	if isPipe(c) {
+
+		// get appropriate codon table from flag
+		var codonTable CodonTable
+
+		if isNumeric(c.String("ct")) {
+			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
+			codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+		} else {
+			codonTable = DefaultCodonTablesByName[c.String("ct")]
+		}
+
+		// uncomment below to parse annotatedSequence from pipe
+		annotatedSequence := parseStdin(c)
+
+		aminoAcids := Translate(annotatedSequence.Sequence.Sequence, codonTable)
+
+		fmt.Fprintln(c.App.Writer, aminoAcids)
+
+	}
+	return nil
 }
 
 // a simple helper function to convert an *os.File type into a string.
-func stdinToString(file *os.File) string {
+func stdinToString(file io.Reader) string {
 	var stringBuffer bytes.Buffer
 	reader := bufio.NewReader(file)
 	for {
@@ -249,27 +395,36 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 }
 
 // a simple helper function to determine if there is input coming from stdin pipe.
-func isPipe() bool {
+func isPipe(c *cli.Context) bool {
 	info, _ := os.Stdin.Stat()
 	flag := false
 	if info.Mode()&os.ModeNamedPipe != 0 {
 		// we have a pipe input
 		flag = true
 	}
+	if c.App.Reader != os.Stdin {
+		flag = true
+	}
 	return flag
+}
+
+func isNumeric(s string) bool {
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
 }
 
 // a simple helper function to take stdin from a pipe and parse it into an annotated sequence
 func parseStdin(c *cli.Context) AnnotatedSequence {
 	var annotatedSequence AnnotatedSequence
-
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToString(os.Stdin)), &annotatedSequence)
+		json.Unmarshal([]byte(stdinToString(c.App.Reader)), &annotatedSequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ParseGbk(stdinToString(os.Stdin))
+		annotatedSequence = ParseGbk(stdinToString(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		annotatedSequence = ParseGff(stdinToString(os.Stdin))
+		annotatedSequence = ParseGff(stdinToString(c.App.Reader))
+	} else if c.String("i") == "string" {
+		annotatedSequence.Sequence.Sequence = stdinToString(c.App.Reader)
 	}
 	return annotatedSequence
 }
@@ -280,45 +435,45 @@ func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string 
 	var hashString string
 	switch strings.ToUpper(c.String("f")) {
 	case "MD5":
-		hashString = annotatedSequence.hash(crypto.MD5)
+		hashString = annotatedSequence.Hash(crypto.MD5)
 	case "SHA1":
-		hashString = annotatedSequence.hash(crypto.SHA1)
+		hashString = annotatedSequence.Hash(crypto.SHA1)
 	case "SHA244":
-		hashString = annotatedSequence.hash(crypto.SHA224)
+		hashString = annotatedSequence.Hash(crypto.SHA224)
 	case "SHA256":
-		hashString = annotatedSequence.hash(crypto.SHA256)
+		hashString = annotatedSequence.Hash(crypto.SHA256)
 	case "SHA384":
-		hashString = annotatedSequence.hash(crypto.SHA384)
+		hashString = annotatedSequence.Hash(crypto.SHA384)
 	case "SHA512":
-		hashString = annotatedSequence.hash(crypto.SHA512)
+		hashString = annotatedSequence.Hash(crypto.SHA512)
 	case "RIPEMD160":
-		hashString = annotatedSequence.hash(crypto.RIPEMD160)
+		hashString = annotatedSequence.Hash(crypto.RIPEMD160)
 	case "SHA3_224":
-		hashString = annotatedSequence.hash(crypto.SHA3_224)
+		hashString = annotatedSequence.Hash(crypto.SHA3_224)
 	case "SHA3_256":
-		hashString = annotatedSequence.hash(crypto.SHA3_256)
+		hashString = annotatedSequence.Hash(crypto.SHA3_256)
 	case "SHA3_384":
-		hashString = annotatedSequence.hash(crypto.SHA3_384)
+		hashString = annotatedSequence.Hash(crypto.SHA3_384)
 	case "SHA3_512":
-		hashString = annotatedSequence.hash(crypto.SHA3_512)
+		hashString = annotatedSequence.Hash(crypto.SHA3_512)
 	case "SHA512_224":
-		hashString = annotatedSequence.hash(crypto.SHA512_224)
+		hashString = annotatedSequence.Hash(crypto.SHA512_224)
 	case "SHA512_256":
-		hashString = annotatedSequence.hash(crypto.SHA512_256)
+		hashString = annotatedSequence.Hash(crypto.SHA512_256)
 	case "BLAKE2s_256":
-		hashString = annotatedSequence.hash(crypto.BLAKE2s_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2s_256)
 	case "BLAKE2b_256":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_256)
 	case "BLAKE2b_384":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_384)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_384)
 	case "BLAKE2b_512":
-		hashString = annotatedSequence.hash(crypto.BLAKE2b_512)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_512)
 	case "BLAKE3":
-		hashString = annotatedSequence.blake3Hash()
+		hashString = annotatedSequence.Blake3Hash()
 	case "NO":
 		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
-		hashString = annotatedSequence.blake3Hash()
+		hashString = annotatedSequence.Blake3Hash()
 		break
 	}
 	return hashString
@@ -357,4 +512,16 @@ func fileParser(c *cli.Context, match string) AnnotatedSequence {
 		// TODO put default error handling here.
 	}
 	return annotatedSequence
+}
+
+// fileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+// from https://golangcode.com/check-if-a-file-exists/
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

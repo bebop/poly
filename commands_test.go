@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"io/ioutil"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -12,96 +11,226 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestConvert(t *testing.T) {
+/******************************************************************************
+Oct, 15, 2020
 
-	if runtime.GOOS == "windows" {
-		fmt.Println("TestConvert was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
-	} else {
+Testing command line utilities via subroutines can be annoying so
+if you're doing it from the commandline be sure to compile first.
+From the project's root directory often use:
 
-		// testing redirected pipe output
-		command := "cat data/bsub.gbk | poly c -i gbk -o json > data/converttest.json"
-		exec.Command("bash", "-c", command).Output()
+go build && go install && go test -v ./...
 
-		// getting test sequence from non-pipe io to compare against redirected io
-		baseTestSequence := ReadGbk("data/bsub.gbk")
-		outPutTestSequence := ReadJSON("data/converttest.json")
+To accurately test your commands you MUST make sure to rebuild and reinstall
+before you run your tests. Otherwise your system version will be out of
+date and will give you results using an older build.
 
-		// cleaning up test data
-		os.Remove("data/converttest.json")
+Happy hacking,
+Tim
 
-		// diff original sequence and converted sequence reread back into
-		// AnnotatedSequence format. If there's an error fail test and print diff.
-		if diff := cmp.Diff(baseTestSequence, outPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-			t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
-		}
 
-		//clearing possibly still existent prior test data.
-		os.Remove("data/ecoli-mg1655.json")
-		os.Remove("data/bsub.json")
+TODO:
 
-		// testing multithreaded non piped output
-		command = "poly c -o json data/bsub.gbk data/ecoli-mg1655.gff"
-		exec.Command("bash", "-c", command).Output()
+write subtest to check for empty output before merge
+******************************************************************************/
 
-		ecoliInputTestSequence := ReadGff("data/ecoli-mg1655.gff")
-		ecoliOutPutTestSequence := ReadJSON("data/ecoli-mg1655.json")
+func TestConvertPipe(t *testing.T) {
 
-		//clearing test data.
-		os.Remove("data/ecoli-mg1655.json")
+	var writeBuffer bytes.Buffer
 
-		// compared input gff from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(ecoliInputTestSequence, ecoliOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-			t.Errorf(" mismatch from concurrent gff input test (-want +got):\n%s", diff)
-		}
+	app := application()
+	app.Writer = &writeBuffer
 
-		bsubInputTestSequence := ReadGbk("data/bsub.gbk")
-		bsubOutPutTestSequence := ReadJSON("data/bsub.json")
+	args := os.Args[0:1]                                // Name of the program.
+	args = append(args, "c", "-i", "gbk", "-o", "json") // Append a flag
 
-		// clearing test data.
-		os.Remove("data/bsub.json")
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	app.Reader = bytes.NewReader(file)
 
-		// compared input gbk from resulting output json. Fail test and print diff if error.
-		if diff := cmp.Diff(bsubInputTestSequence, bsubOutPutTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-			t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
-		}
+	err := app.Run(args)
 
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
 	}
+
+	// getting test sequence from non-pipe io to compare against io to stdout
+	baseTestSequence := ReadGbk("data/puc19.gbk")
+
+	pipeOutputTestSequence := ParseJSON(writeBuffer.Bytes())
+
+	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
+	}
+
 }
 
-func TestHash(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		fmt.Println("TestHash was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
-	} else {
+func TestConvertFile(t *testing.T) {
 
-		puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	app := application()
 
-		// testing pipe input
-		command := "cat data/puc19.gbk | poly hash -i gbk"
-		hashOutput, _ := exec.Command("bash", "-c", command).Output()
-		hashOutputString := strings.TrimSpace(string(hashOutput))
+	args := os.Args[0:1]                                                          // Name of the program.
+	args = append(args, "c", "-o", "json", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
 
-		if hashOutputString != puc19GbkBlake3Hash {
-			t.Errorf("TestHash for piped input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-		}
+	err := app.Run(args)
 
-		// testing regular input
-		command = "poly hash data/puc19.gbk"
-		hashOutput, _ = exec.Command("bash", "-c", command).Output()
-		hashOutputString = strings.TrimSpace(string(hashOutput))
-
-		if hashOutputString != puc19GbkBlake3Hash {
-			t.Errorf("TestHash for regular input has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-		}
-
-		// testing json write output
-		command = "poly hash -o json data/puc19.gbk"
-		exec.Command("bash", "-c", command).Output()
-		hashOutputString = ReadJSON("data/puc19.json").Sequence.Hash
-		os.Remove("data/puc19.json")
-
-		if hashOutputString != puc19GbkBlake3Hash {
-			t.Errorf("TestHash for json write output has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-		}
-
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
 	}
+
+	puc19InputTestSequence := ReadGbk("data/puc19.gbk")
+	puc19OutputTestSequence := ReadJSON("data/puc19.json")
+
+	//clearing test data.
+	os.Remove("data/puc19.json")
+
+	// compared input gff from resulting output json. Fail test and print diff if error.
+	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
+	}
+
+	t4InputTestSequence := ReadGbk("data/t4_intron.gb")
+	t4OutputTestSequence := ReadJSON("data/t4_intron.json")
+
+	// clearing test data.
+	os.Remove("data/t4_intron.json")
+
+	// compared input gbk from resulting output json. Fail test and print diff if error.
+	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
+	}
+}
+func TestHashFile(t *testing.T) {
+
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	var writeBuffer bytes.Buffer
+
+	app := application()
+	app.Writer = &writeBuffer
+
+	// testing file matching hash
+	args := os.Args[0:1]                          // Name of the program.
+	args = append(args, "hash", "data/puc19.gbk") // Append a flag
+
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	if writeBuffer.Len() == 0 {
+		t.Error("TestHash did not write output to desired writer.")
+	}
+
+	hashOutputString := strings.TrimSpace(writeBuffer.String())
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashFile has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+}
+
+func TestHashPipe(t *testing.T) {
+
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	var writeBuffer bytes.Buffer
+
+	// create a mock application
+	app := application()
+	app.Writer = &writeBuffer
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	app.Reader = bytes.NewReader(file)
+
+	args := os.Args[0:1]                     // Name of the program.
+	args = append(args, "hash", "-i", "gbk") // Append a flag
+
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	hashOutputString := strings.TrimSpace(writeBuffer.String())
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashPipe has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+}
+
+func TestHashJSON(t *testing.T) {
+	// testing json write output
+
+	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+
+	app := application()
+
+	args := os.Args[0:1]                                        // Name of the program.
+	args = append(args, "hash", "-o", "json", "data/puc19.gbk") // Append a flag
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	hashOutputString := ReadJSON("data/puc19.json").Sequence.Hash
+	os.Remove("data/puc19.json")
+
+	if hashOutputString != puc19GbkBlake3Hash {
+		t.Errorf("TestHashJSON has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
+	}
+
+}
+
+func TestOptimizeString(t *testing.T) {
+
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	var writeBuffer bytes.Buffer
+
+	app := application()
+	app.Writer = &writeBuffer
+	app.Reader = bytes.NewBufferString(gfpTranslation)
+
+	args := os.Args[0:1]                                      // Name of the program.
+	args = append(args, "op", "-aa", "-wt", "data/puc19.gbk") // Append a flag
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+	app.Reader = os.Stdin
+
+	// should return codon optimized sequence
+	optimizeOutputString := strings.TrimSpace(writeBuffer.String())
+
+	translation := Translate(optimizeOutputString, DefaultCodonTablesByNumber[1])
+
+	if translation != gfpTranslation {
+		t.Errorf("TestOptimizeCommand for string output has failed. Returned %q, want %q", translation, gfpTranslation)
+	}
+
+}
+
+func TestTranslationString(t *testing.T) {
+	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	var writeBuffer bytes.Buffer
+
+	app := application()
+	app.Writer = &writeBuffer
+	app.Reader = bytes.NewBufferString(gfpDnaSequence)
+
+	args := os.Args[0:1]                   // Name of the program.
+	args = append(args, "tr", "-ct", "11") // Append a flag
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+	app.Reader = os.Stdin
+
+	translation := strings.TrimSpace(writeBuffer.String())
+
+	if translation != gfpTranslation {
+		t.Errorf("TestTranslationString for string output has failed. Returned %q, want %q", translation, gfpTranslation)
+	}
+
 }
