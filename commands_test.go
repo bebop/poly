@@ -179,22 +179,58 @@ func TestHashJSON(t *testing.T) {
 
 }
 
-// func TestOptimizeCommand(t *testing.T) {
-// 	if runtime.GOOS == "windows" {
-// 		fmt.Println("TestOptimize was not run and autopassed. Currently Poly command line support is not available for windows. See https://github.com/TimothyStiles/poly/issues/16.")
-// 	} else {
+func TestOptimizeString(t *testing.T) {
 
-// 		gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	var writeBuffer bytes.Buffer
 
-// 		command := "echo " + gfpTranslation + " |" + "poly op -aa"
-// 		optimizeOutput, _ := exec.Command("bash", "-c", command).Output()
-// 		optimizeOutputString := strings.TrimSpace(string(optimizeOutput))
-// 		translation := Translate(optimizeOutputString, DefaultCodonTablesByName["Standard"])
+	app := Application()
+	app.Writer = &writeBuffer
+	app.Reader = bytes.NewBufferString(gfpTranslation)
 
-// 		if translation != gfpTranslation {
-// 			t.Errorf("TestOptimizeCommand for json write output has failed. Returned %q, want %q", translation, gfpTranslation)
-// 		}
+	args := os.Args[0:1]                                      // Name of the program.
+	args = append(args, "op", "-aa", "-wt", "data/puc19.gbk") // Append a flag
+	err := app.Run(args)
 
-// 	}
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+	app.Reader = os.Stdin
 
-// }
+	// should return codon optimized sequence
+	optimizeOutputString := strings.TrimSpace(writeBuffer.String())
+
+	translation := Translate(optimizeOutputString, DefaultCodonTablesByNumber[1])
+
+	if translation != gfpTranslation {
+		t.Errorf("TestOptimizeCommand for string output has failed. Returned %q, want %q", translation, gfpTranslation)
+	}
+
+}
+
+func TestTranslationString(t *testing.T) {
+	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	var writeBuffer bytes.Buffer
+
+	app := Application()
+	app.Writer = &writeBuffer
+	app.Reader = bytes.NewBufferString(gfpDnaSequence)
+
+	args := os.Args[0:1]                   // Name of the program.
+	args = append(args, "tr", "-ct", "11") // Append a flag
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+	app.Reader = os.Stdin
+
+	translation := strings.TrimSpace(writeBuffer.String())
+
+	if translation != gfpTranslation {
+		t.Errorf("TestTranslationString for string output has failed. Returned %q, want %q", translation, gfpTranslation)
+	}
+
+}
