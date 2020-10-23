@@ -25,7 +25,7 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **[Code of conduct](CODE_OF_CONDUCT.md):** Please read the full text so you can understand what we're all about and remember to be excellent to each other!
 
-* **[Contributor's guide](CONTRIBUTING.md):**. Please read through it before you start hacking away and pushing contributions to this fine codebase.
+* **[Contributor's guide](CONTRIBUTING.md):** Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
 ## License
 * [MIT](LICENSE)
