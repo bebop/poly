@@ -27,6 +27,10 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **[Contributor's guide](CONTRIBUTING.md):** Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
+## Sponsor
+
+* **[Sponsor the project](https://github.com/sponsors/TimothyStiles)**
+
 ## License
 * [MIT](LICENSE)
 
