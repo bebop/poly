@@ -13,7 +13,7 @@ Poly is a Go library and command line utility for engineering organisms.
 
 ## Documentation
 
-* **[Installation](https://timothystiles.github.io/poly/docs):**
+* **[Installation](https://timothystiles.github.io/poly/docs)**
 * **[CLI usage examples](https://timothystiles.github.io/poly/docs/cli-converting)**
 * **[Library usage examples](https://timothystiles.github.io/poly/docs/library-io)**
 
@@ -23,9 +23,9 @@ Poly is a Go library and command line utility for engineering organisms.
 
 ## Contributing
 
-* **[code of conduct](CODE_OF_CONDUCT.md):** Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
+* **[Code of conduct](CODE_OF_CONDUCT.md):** Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
 
-* **[contributor's guide](CONTRIBUTING.md):**. Please read through it before you start hacking away and pushing contributions to this fine codebase.
+* **[Contributor's guide](CONTRIBUTING.md):**. Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
 ## License
 * [MIT](LICENSE)
