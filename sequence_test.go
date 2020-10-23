@@ -4,6 +4,29 @@ import (
 	"testing"
 )
 
+func TestGetSequenceMethods(t *testing.T) {
+
+	gbk := ReadGbk("data/t4_intron.gb")
+
+	// Check to see if GetSequence method works on Annotated struct
+	if gbk.GetSequence() != gbk.Sequence.Sequence {
+		t.Errorf(" AnnotatedSequence GetSequence method has failed'. Got this:\n%s instead of \n%s", gbk.GetSequence(), gbk.Sequence.Sequence)
+	}
+
+	// Check to see if GetSequence method works on Features struct
+	feature := gbk.Features[1].GetSequence()
+	seq := "atgagattacaacgccagagcatcaaagattcagaagttagaggtaaatggtattttaatatcatcggtaaagattctgaacttgttgaaaaagctgaacatcttttacgtgatatgggatgggaagatgaatgcgatggatgtcctctttatgaagacggagaaagcgcaggattttggatttaccattctgacgtcgagcagtttaaagctgattggaaaattgtgaaaaagtctgtttga"
+	if feature != seq {
+		t.Errorf("Feature GetSequence method has failed. Got this:\n%s instead of \n%s", feature, seq)
+	}
+
+	// Check to see if GetSequence method works on Sequence struct
+	if gbk.Sequence.GetSequence() != gbk.Sequence.Sequence {
+		t.Errorf("Sequence GetSequence method has failed.. Got this:\n%s instead of \n%s", gbk.Sequence.GetSequence(), gbk.Sequence.Sequence)
+	}
+
+}
+
 func TestLocationParser(t *testing.T) {
 	gbk := ReadGbk("data/t4_intron.gb")
 

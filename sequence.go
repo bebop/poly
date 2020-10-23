@@ -41,9 +41,20 @@ var ComplementBaseRuneMap = map[rune]rune{
 	121: 114, // y -> r
 }
 
+// GetSequence is a method to get the full sequence of an annotated sequence
+func (annotatedSequence AnnotatedSequence) GetSequence() string {
+	return annotatedSequence.Sequence.Sequence
+}
+
 // GetSequence is a method wrapper to get a Feature's sequence. Mutates with AnnotatedSequence.
 func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.SequenceLocation)
+}
+
+// GetSequence is a method to get the full sequence of an unannotated sequence
+// you could also just use sequence.sequence but I thought it was funny to include this.
+func (sequence Sequence) GetSequence() string {
+	return sequence.Sequence
 }
 
 // ReverseComplement takes the reverse complement of a sequence
