@@ -1,0 +1,7 @@
+# configuration related to pull request comments
+comment: no # do not comment PR with the result
+
+coverage:
+  status:
+    project: off
+    patch: off
