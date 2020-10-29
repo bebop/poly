@@ -991,63 +991,6 @@ func topLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
-// checks for only sub level features in genbankSubLevelFeatures array
-func subLevelFeatureCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(featureString)
-	for _, feature := range genbankSubLevelFeatures {
-		if feature == cleanedFeatureString {
-			flag = true
-			break
-		}
-	}
-	return flag
-}
-
-// checks for both sub and top level features in genbankSubLevelFeatures and genbankTopLevelFeatures array
-func allLevelFeatureCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(featureString)
-	if subLevelFeatureCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
-		flag = true
-	}
-	return flag
-}
-
-// will eventually refactor all checks into one function.
-func geneFeatureTypeCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(featureString)
-	for _, feature := range genbankGeneFeatureTypes {
-		if feature == cleanedFeatureString {
-			flag = true
-			break
-		}
-	}
-	return flag
-}
-
-func geneQualifierTypeCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(strings.SplitAfter(featureString, "=")[0])
-	for _, feature := range genbankGeneQualifierTypes {
-		if feature == cleanedFeatureString {
-			flag = true
-			break
-		}
-	}
-	return flag
-}
-
-func allGeneTypeCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(featureString)
-	if geneQualifierTypeCheck(cleanedFeatureString) || topLevelFeatureCheck(cleanedFeatureString) {
-		flag = true
-	}
-	return flag
-}
-
 // parses locus from provided string.
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
