@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TimothyStiles/poly"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -36,14 +37,13 @@ write subtest to check for empty output before merge
 func TestConvertPipe(t *testing.T) {
 
 	var writeBuffer bytes.Buffer
-
 	app := application()
 	app.Writer = &writeBuffer
 
 	args := os.Args[0:1]                                // Name of the program.
 	args = append(args, "c", "-i", "gbk", "-o", "json") // Append a flag
 
-	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	file, _ := ioutil.ReadFile("../data/puc19.gbk")
 	app.Reader = bytes.NewReader(file)
 
 	err := app.Run(args)
@@ -53,11 +53,11 @@ func TestConvertPipe(t *testing.T) {
 	}
 
 	// getting test sequence from non-pipe io to compare against io to stdout
-	baseTestSequence := ReadGbk("data/puc19.gbk")
+	baseTestSequence := poly.ReadGbk("../data/puc19.gbk")
 
-	pipeOutputTestSequence := ParseJSON(writeBuffer.Bytes())
+	pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
 
-	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
 	}
 
@@ -67,8 +67,8 @@ func TestConvertFile(t *testing.T) {
 
 	app := application()
 
-	args := os.Args[0:1]                                                          // Name of the program.
-	args = append(args, "c", "-o", "json", "data/puc19.gbk", "data/t4_intron.gb") // Append a flag
+	args := os.Args[0:1]                                                                // Name of the program.
+	args = append(args, "c", "-o", "json", "../data/puc19.gbk", "../data/t4_intron.gb") // Append a flag
 
 	err := app.Run(args)
 
@@ -76,25 +76,25 @@ func TestConvertFile(t *testing.T) {
 		t.Fatalf("Run error: %s", err)
 	}
 
-	puc19InputTestSequence := ReadGbk("data/puc19.gbk")
-	puc19OutputTestSequence := ReadJSON("data/puc19.json")
+	puc19InputTestSequence := poly.ReadGbk("../data/puc19.gbk")
+	puc19OutputTestSequence := poly.ReadJSON("../data/puc19.json")
 
 	//clearing test data.
-	os.Remove("data/puc19.json")
+	os.Remove("../data/puc19.json")
 
 	// compared input gff from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 
-	t4InputTestSequence := ReadGbk("data/t4_intron.gb")
-	t4OutputTestSequence := ReadJSON("data/t4_intron.json")
+	t4InputTestSequence := poly.ReadGbk("../data/t4_intron.gb")
+	t4OutputTestSequence := poly.ReadJSON("../data/t4_intron.json")
 
 	// clearing test data.
-	os.Remove("data/t4_intron.json")
+	os.Remove("../data/t4_intron.json")
 
 	// compared input gbk from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 }
@@ -107,8 +107,8 @@ func TestHashFile(t *testing.T) {
 	app.Writer = &writeBuffer
 
 	// testing file matching hash
-	args := os.Args[0:1]                          // Name of the program.
-	args = append(args, "hash", "data/puc19.gbk") // Append a flag
+	args := os.Args[0:1]                             // Name of the program.
+	args = append(args, "hash", "../data/puc19.gbk") // Append a flag
 
 	err := app.Run(args)
 
@@ -135,7 +135,7 @@ func TestHashPipe(t *testing.T) {
 	// create a mock application
 	app := application()
 	app.Writer = &writeBuffer
-	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	file, _ := ioutil.ReadFile("../data/puc19.gbk")
 	app.Reader = bytes.NewReader(file)
 
 	args := os.Args[0:1]                     // Name of the program.
@@ -162,16 +162,16 @@ func TestHashJSON(t *testing.T) {
 
 	app := application()
 
-	args := os.Args[0:1]                                        // Name of the program.
-	args = append(args, "hash", "-o", "json", "data/puc19.gbk") // Append a flag
+	args := os.Args[0:1]                                           // Name of the program.
+	args = append(args, "hash", "-o", "json", "../data/puc19.gbk") // Append a flag
 	err := app.Run(args)
 
 	if err != nil {
 		t.Fatalf("Run error: %s", err)
 	}
 
-	hashOutputString := ReadJSON("data/puc19.json").Sequence.Hash
-	os.Remove("data/puc19.json")
+	hashOutputString := poly.ReadJSON("../data/puc19.json").Sequence.Hash
+	os.Remove("../data/puc19.json")
 
 	if hashOutputString != puc19GbkBlake3Hash {
 		t.Errorf("TestHashJSON has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
@@ -200,7 +200,7 @@ func TestOptimizeString(t *testing.T) {
 	// should return codon optimized sequence
 	optimizeOutputString := strings.TrimSpace(writeBuffer.String())
 
-	translation := Translate(optimizeOutputString, DefaultCodonTablesByNumber[1])
+	translation := poly.Translate(optimizeOutputString, poly.DefaultCodonTablesByNumber[1])
 
 	if translation != gfpTranslation {
 		t.Errorf("TestOptimizeCommand for string output has failed. Returned %q, want %q", translation, gfpTranslation)

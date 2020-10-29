@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/TimothyStiles/poly"
 	"github.com/urfave/cli/v2"
 )
 
@@ -84,9 +85,9 @@ func convertCommand(c *cli.Context) error {
 		if c.String("o") == "json" {
 			output, _ = json.MarshalIndent(annotatedSequence, "", " ")
 		} else if c.String("o") == "gff" {
-			output = BuildGff(annotatedSequence)
+			output = poly.BuildGff(annotatedSequence)
 		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-			output = BuildGbk(annotatedSequence)
+			output = poly.BuildGbk(annotatedSequence)
 		}
 
 		// output to stdout
@@ -118,11 +119,11 @@ func convertCommand(c *cli.Context) error {
 				// determining output format and name, then writing out to name.
 				outputPath := match[0 : len(match)-len(extension)]
 				if c.String("o") == "json" {
-					WriteJSON(annotatedSequence, outputPath+".json")
+					poly.WriteJSON(annotatedSequence, outputPath+".json")
 				} else if c.String("o") == "gff" {
-					WriteGff(annotatedSequence, outputPath+".gff")
+					poly.WriteGff(annotatedSequence, outputPath+".gff")
 				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-					WriteGbk(annotatedSequence, outputPath+".gbk")
+					poly.WriteGbk(annotatedSequence, outputPath+".gbk")
 				}
 
 				// decrementing wait group.
@@ -248,7 +249,7 @@ func hashCommand(c *cli.Context) error {
 					} else {
 						outputPath := match[0 : len(match)-len(extension)]
 						// should have way to support wildcard matches for varied output names.
-						WriteJSON(annotatedSequence, outputPath+".json")
+						poly.WriteJSON(annotatedSequence, outputPath+".json")
 					}
 
 				}
@@ -286,13 +287,13 @@ In the future there will be multi file support. Check our issues on github to se
 func optimizeCommand(c *cli.Context) error {
 
 	// get appropriate codon table from flag
-	var codonTable CodonTable
+	var codonTable poly.CodonTable
 
 	if isNumeric(c.String("ct")) {
 		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-		codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+		codonTable = poly.DefaultCodonTablesByNumber[codonTableNumber]
 	} else {
-		codonTable = DefaultCodonTablesByName[c.String("ct")]
+		codonTable = poly.DefaultCodonTablesByName[c.String("ct")]
 	}
 
 	// if a file exists to weigh the table. Weigh it.
@@ -310,10 +311,10 @@ func optimizeCommand(c *cli.Context) error {
 		if c.Bool("aa") {
 			aminoAcids = annotatedSequence.Sequence.Sequence
 		} else {
-			aminoAcids = Translate(annotatedSequence.Sequence.Sequence, codonTable)
+			aminoAcids = poly.Translate(annotatedSequence.Sequence.Sequence, codonTable)
 		}
 
-		optimizedSequence := Optimize(aminoAcids, codonTable)
+		optimizedSequence := poly.Optimize(aminoAcids, codonTable)
 		fmt.Fprintln(c.App.Writer, optimizedSequence)
 
 	}
@@ -341,19 +342,19 @@ func translateCommand(c *cli.Context) error {
 	if isPipe(c) {
 
 		// get appropriate codon table from flag
-		var codonTable CodonTable
+		var codonTable poly.CodonTable
 
 		if isNumeric(c.String("ct")) {
 			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-			codonTable = DefaultCodonTablesByNumber[codonTableNumber]
+			codonTable = poly.DefaultCodonTablesByNumber[codonTableNumber]
 		} else {
-			codonTable = DefaultCodonTablesByName[c.String("ct")]
+			codonTable = poly.DefaultCodonTablesByName[c.String("ct")]
 		}
 
 		// uncomment below to parse annotatedSequence from pipe
 		annotatedSequence := parseStdin(c)
 
-		aminoAcids := Translate(annotatedSequence.Sequence.Sequence, codonTable)
+		aminoAcids := poly.Translate(annotatedSequence.Sequence.Sequence, codonTable)
 
 		fmt.Fprintln(c.App.Writer, aminoAcids)
 
@@ -414,15 +415,15 @@ func isNumeric(s string) bool {
 }
 
 // a simple helper function to take stdin from a pipe and parse it into an annotated sequence
-func parseStdin(c *cli.Context) AnnotatedSequence {
-	var annotatedSequence AnnotatedSequence
+func parseStdin(c *cli.Context) poly.AnnotatedSequence {
+	var annotatedSequence poly.AnnotatedSequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
 		json.Unmarshal([]byte(stdinToString(c.App.Reader)), &annotatedSequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ParseGbk(stdinToString(c.App.Reader))
+		annotatedSequence = poly.ParseGbk(stdinToString(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		annotatedSequence = ParseGff(stdinToString(c.App.Reader))
+		annotatedSequence = poly.ParseGff(stdinToString(c.App.Reader))
 	} else if c.String("i") == "string" {
 		annotatedSequence.Sequence.Sequence = stdinToString(c.App.Reader)
 	}
@@ -430,7 +431,7 @@ func parseStdin(c *cli.Context) AnnotatedSequence {
 }
 
 // helper function to hash sequence based on flag using generic hash.
-func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string {
+func flagSwitchHash(c *cli.Context, annotatedSequence poly.AnnotatedSequence) string {
 
 	var hashString string
 	switch strings.ToUpper(c.String("f")) {
@@ -471,7 +472,7 @@ func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string 
 	case "BLAKE3":
 		hashString = annotatedSequence.Blake3Hash()
 	case "NO":
-		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
+		hashString = poly.RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
 		hashString = annotatedSequence.Blake3Hash()
 		break
@@ -497,17 +498,17 @@ func getMatches(c *cli.Context) []string {
 }
 
 // function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) AnnotatedSequence {
+func fileParser(c *cli.Context, match string) poly.AnnotatedSequence {
 	extension := filepath.Ext(match)
-	var annotatedSequence AnnotatedSequence
+	var annotatedSequence poly.AnnotatedSequence
 
 	// determining which reader to use and parse into AnnotatedSequence struct.
 	if extension == ".gff" || c.String("i") == "gff" {
-		annotatedSequence = ReadGff(match)
+		annotatedSequence = poly.ReadGff(match)
 	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ReadGbk(match)
+		annotatedSequence = poly.ReadGbk(match)
 	} else if extension == ".json" || c.String("i") == "json" {
-		annotatedSequence = ReadJSON(match)
+		annotatedSequence = poly.ReadJSON(match)
 	} else {
 		// TODO put default error handling here.
 	}
