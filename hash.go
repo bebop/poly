@@ -95,12 +95,12 @@ func RotateSequence(sequence string) string {
 	return sequence
 }
 
-// Hash is a method wrapper for hashing AnnotatedSequence structs.
-func (annotatedSequence AnnotatedSequence) Hash(hash hash.Hash) string {
-	if annotatedSequence.Meta.Locus.Circular {
-		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
+// Hash is a method wrapper for hashing Sequence structs.
+func (sequence Sequence) Hash(hash hash.Hash) string {
+	if sequence.Meta.Locus.Circular {
+		sequence.Sequence = RotateSequence(sequence.Sequence)
 	}
-	seqHash, _ := hashSequence(annotatedSequence.Sequence.Sequence, hash)
+	seqHash, _ := hashSequence(sequence.Sequence, hash)
 	return seqHash
 }
 

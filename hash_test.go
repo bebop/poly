@@ -29,10 +29,10 @@ func TestHashRegression(t *testing.T) {
 }
 
 func TestLeastRotation(t *testing.T) {
-	annotatedSequence := ReadGbk("data/puc19.gbk")
+	sequence := ReadGbk("data/puc19.gbk")
 	var sequenceBuffer bytes.Buffer
 
-	sequenceBuffer.WriteString(annotatedSequence.Sequence.Sequence)
+	sequenceBuffer.WriteString(sequence.Sequence)
 	bufferLength := sequenceBuffer.Len()
 
 	var rotatedSequence string
