@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -26,6 +27,25 @@ FASTA - fasta tests.
 Gff related tests and benchmarks begin here.
 
 ******************************************************************************/
+
+func ExampleReadGff() {
+
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	fmt.Println(sequence.Meta.Name)
+	// Output: U00096.3
+}
+
+func ExampleParseGff() {
+
+}
+
+func ExampleBuildGff() {
+
+}
+
+func ExampleWriteGff() {
+
+}
 
 // TODO should delete output files.
 func TestGffIO(t *testing.T) {
