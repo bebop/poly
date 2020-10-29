@@ -1,4 +1,4 @@
-package main
+package poly
 
 import (
 	"bytes"
@@ -13,8 +13,13 @@ import (
 	"github.com/mitchellh/go-wordwrap"
 )
 
+// TAB just represents "\t" used in GBK IO.
 const TAB = "\t"
+
+// FIVESPACE just represents 5 space characters. Used in GBK IO
 const FIVESPACE = "     "
+
+// TENSPACE just represents 10 space characters. Used in GBK IO
 const TENSPACE = FIVESPACE + FIVESPACE
 
 /******************************************************************************
@@ -130,11 +135,6 @@ func (annotatedSequence *AnnotatedSequence) addFeature(feature Feature) []Featur
 	feature.ParentAnnotatedSequence = annotatedSequence
 	annotatedSequence.Features = append(annotatedSequence.Features, feature)
 	return annotatedSequence.Features
-}
-
-// GetAnnotatedSequence get's the parent AnnotatedSequence of a feature
-func (feature Feature) GetAnnotatedSequence() AnnotatedSequence {
-	return *feature.ParentAnnotatedSequence
 }
 
 /******************************************************************************

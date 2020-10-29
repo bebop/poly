@@ -48,7 +48,7 @@ func run(args []string) {
 
 }
 
-// application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
+// Application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
 func application() *cli.App {
 
 	app := &cli.App{
