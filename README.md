@@ -1,4 +1,4 @@
-# (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) [![codecov](https://codecov.io/gh/TimothyStiles/poly/branch/prime/graph/badge.svg?token=7YJFOSJG3E)](undefined) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+# (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) [![codecov](https://codecov.io/gh/TimothyStiles/poly/branch/prime/graph/badge.svg?token=7YJFOSJG3E)](https://codecov.io/gh/TimothyStiles/poly) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 Poly is a Go library and command line utility for engineering organisms.
 
