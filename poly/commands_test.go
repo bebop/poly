@@ -170,7 +170,7 @@ func TestHashJSON(t *testing.T) {
 		t.Fatalf("Run error: %s", err)
 	}
 
-	hashOutputString := poly.ReadJSON("../data/puc19.json").Sequence.Hash
+	hashOutputString := poly.ReadJSON("../data/puc19.json").Sequence.SequenceHash
 	os.Remove("../data/puc19.json")
 
 	if hashOutputString != puc19GbkBlake3Hash {

@@ -112,15 +112,17 @@ type Feature struct {
 	GbkLocationString       string             `json:"gbk_location_string"`
 	Sequence                string             `json:"sequence"`
 	SequenceLocation        Location           `json:"sequence_location"`
+	SequenceHash            string             `json:"sequence_hash"`
+	SequenceHashFunction    string             `json:"hash_function"`
 	ParentAnnotatedSequence *AnnotatedSequence `json:"-"`
 }
 
 // Sequence holds raw sequence information in an AnnotatedSequence struct.
 type Sequence struct {
-	Description  string `json:"description"`
-	Hash         string `json:"hash"`
-	HashFunction string `json:"hash_function"`
-	Sequence     string `json:"sequence"`
+	Description          string `json:"description"`
+	SequenceHash         string `json:"sequence_hash"`
+	SequenceHashFunction string `json:"hash_function"`
+	Sequence             string `json:"sequence"`
 	// ParentAnnotatedSequence *AnnotatedSequence
 }
 

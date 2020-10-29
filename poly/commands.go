@@ -15,6 +15,7 @@ import (
 
 	"github.com/TimothyStiles/poly"
 	"github.com/urfave/cli/v2"
+	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -188,8 +189,8 @@ func hashCommand(c *cli.Context) error {
 
 		// handler for outputting JSON to stdout
 		if c.String("o") == "json" {
-			annotatedSequence.Sequence.Hash = sequenceHash                           // adding hash to JSON
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
+			annotatedSequence.Sequence.SequenceHash = sequenceHash                           // adding hash to JSON
+			annotatedSequence.Sequence.SequenceHashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
 			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
 			fmt.Fprint(c.App.Writer, string(output))
 		}
@@ -240,8 +241,8 @@ func hashCommand(c *cli.Context) error {
 
 				// handler for outputting JSON.
 				if strings.ToLower(c.String("o")) == "json" {
-					annotatedSequence.Sequence.Hash = sequenceHash
-					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
+					annotatedSequence.Sequence.SequenceHash = sequenceHash
+					annotatedSequence.Sequence.SequenceHashFunction = strings.ToUpper(c.String("f"))
 
 					if c.Bool("--log") == true {
 						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
@@ -436,45 +437,46 @@ func flagSwitchHash(c *cli.Context, annotatedSequence poly.AnnotatedSequence) st
 	var hashString string
 	switch strings.ToUpper(c.String("f")) {
 	case "MD5":
-		hashString = annotatedSequence.Hash(crypto.MD5)
+		hashString = annotatedSequence.Hash(crypto.MD5.New())
 	case "SHA1":
-		hashString = annotatedSequence.Hash(crypto.SHA1)
+		hashString = annotatedSequence.Hash(crypto.SHA1.New())
 	case "SHA244":
-		hashString = annotatedSequence.Hash(crypto.SHA224)
+		hashString = annotatedSequence.Hash(crypto.SHA224.New())
 	case "SHA256":
-		hashString = annotatedSequence.Hash(crypto.SHA256)
+		hashString = annotatedSequence.Hash(crypto.SHA256.New())
 	case "SHA384":
-		hashString = annotatedSequence.Hash(crypto.SHA384)
+		hashString = annotatedSequence.Hash(crypto.SHA384.New())
 	case "SHA512":
-		hashString = annotatedSequence.Hash(crypto.SHA512)
+		hashString = annotatedSequence.Hash(crypto.SHA512.New())
 	case "RIPEMD160":
-		hashString = annotatedSequence.Hash(crypto.RIPEMD160)
+		hashString = annotatedSequence.Hash(crypto.RIPEMD160.New())
 	case "SHA3_224":
-		hashString = annotatedSequence.Hash(crypto.SHA3_224)
+		hashString = annotatedSequence.Hash(crypto.SHA3_224.New())
 	case "SHA3_256":
-		hashString = annotatedSequence.Hash(crypto.SHA3_256)
+		hashString = annotatedSequence.Hash(crypto.SHA3_256.New())
 	case "SHA3_384":
-		hashString = annotatedSequence.Hash(crypto.SHA3_384)
+		hashString = annotatedSequence.Hash(crypto.SHA3_384.New())
 	case "SHA3_512":
-		hashString = annotatedSequence.Hash(crypto.SHA3_512)
+		hashString = annotatedSequence.Hash(crypto.SHA3_512.New())
 	case "SHA512_224":
-		hashString = annotatedSequence.Hash(crypto.SHA512_224)
+		hashString = annotatedSequence.Hash(crypto.SHA512_224.New())
 	case "SHA512_256":
-		hashString = annotatedSequence.Hash(crypto.SHA512_256)
+		hashString = annotatedSequence.Hash(crypto.SHA512_256.New())
 	case "BLAKE2s_256":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2s_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2s_256.New())
 	case "BLAKE2b_256":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_256)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_256.New())
 	case "BLAKE2b_384":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_384)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_384.New())
 	case "BLAKE2b_512":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_512)
+		hashString = annotatedSequence.Hash(crypto.BLAKE2b_512.New())
 	case "BLAKE3":
-		hashString = annotatedSequence.Blake3Hash()
+		hashString = annotatedSequence.Hash(blake3.New(32, nil))
+		// hashString = annotatedSequence.Blake3Hash()
 	case "NO":
 		hashString = poly.RotateSequence(annotatedSequence.Sequence.Sequence)
 	default:
-		hashString = annotatedSequence.Blake3Hash()
+		hashString = annotatedSequence.Hash(blake3.New(32, nil))
 		break
 	}
 	return hashString
