@@ -119,6 +119,7 @@ type Sequence struct {
 	Features             []Feature `json:"features"`
 }
 
+// AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
 func (sequence *Sequence) AddFeature(feature Feature) []Feature {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, feature)
