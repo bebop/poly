@@ -9,8 +9,8 @@ func TestGetSequenceMethods(t *testing.T) {
 	gbk := ReadGbk("data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Annotated struct
-	if gbk.GetSequence() != gbk.Sequence.Sequence {
-		t.Errorf(" AnnotatedSequence GetSequence method has failed'. Got this:\n%s instead of \n%s", gbk.GetSequence(), gbk.Sequence.Sequence)
+	if gbk.GetSequence() != gbk.Sequence {
+		t.Errorf(" Sequence GetSequence method has failed'. Got this:\n%s instead of \n%s", gbk.GetSequence(), gbk.Sequence)
 	}
 
 	// Check to see if GetSequence method works on Features struct
@@ -21,8 +21,8 @@ func TestGetSequenceMethods(t *testing.T) {
 	}
 
 	// Check to see if GetSequence method works on Sequence struct
-	if gbk.Sequence.GetSequence() != gbk.Sequence.Sequence {
-		t.Errorf("Sequence GetSequence method has failed.. Got this:\n%s instead of \n%s", gbk.Sequence.GetSequence(), gbk.Sequence.Sequence)
+	if gbk.GetSequence() != gbk.Sequence {
+		t.Errorf("Sequence GetSequence method has failed.. Got this:\n%s instead of \n%s", gbk.GetSequence(), gbk.Sequence)
 	}
 
 }

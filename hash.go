@@ -1,13 +1,12 @@
 package poly
 
 import (
-	"crypto"
 	_ "crypto/md5"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/hex"
-	"errors"
+	"hash"
 	"io"
 	"strings"
 
@@ -15,7 +14,6 @@ import (
 	_ "golang.org/x/crypto/blake2s"
 	_ "golang.org/x/crypto/ripemd160"
 	_ "golang.org/x/crypto/sha3"
-	"lukechampine.com/blake3"
 )
 
 // Where each hash function comes from.
@@ -89,7 +87,7 @@ func BoothLeastRotation(sequence string) int {
 	return leastRotationIndex
 }
 
-//RotateSequence rotates circular sequences to deterministic point.
+// RotateSequence rotates circular sequences to deterministic point.
 func RotateSequence(sequence string) string {
 	rotationIndex := BoothLeastRotation(sequence)
 	concatenatedSequence := sequence + sequence
@@ -97,40 +95,23 @@ func RotateSequence(sequence string) string {
 	return sequence
 }
 
-// GenericSequenceHash takes an AnnotatedSequence and a hash function and hashes it.
-// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang <- this had a bug I had to fix! - Tim
-func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) (string, error) {
-	if !hash.Available() {
-		return "", errors.New("hash unavailable")
+// Hash is a method wrapper for hashing Sequence structs.
+func (sequence Sequence) Hash(hash hash.Hash) string {
+	if sequence.Meta.Locus.Circular {
+		sequence.Sequence = RotateSequence(sequence.Sequence)
 	}
-	if annotatedSequence.Meta.Locus.Circular {
-		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
-	}
-	h := hash.New()
-	io.WriteString(h, strings.ToUpper(annotatedSequence.Sequence.Sequence))
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-// Hash is a method wrapper for hashing annotatedSequence structs.
-func (annotatedSequence AnnotatedSequence) Hash(hash crypto.Hash) string {
-	seqHash, _ := GenericSequenceHash(annotatedSequence, hash)
+	seqHash, _ := hashSequence(sequence.Sequence, hash)
 	return seqHash
 }
 
-// Blake3SequenceHash Blake3 function doesn't use standard golang hash interface
-// so we couldn't use it with the generic sequence hash.
-func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
-
-	if annotatedSequence.Meta.Locus.Circular {
-		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
-	}
-
-	b := blake3.Sum256([]byte(strings.ToUpper(annotatedSequence.Sequence.Sequence)))
-	return hex.EncodeToString(b[:])
+// Hash is a method wrapper for hashing sequences contained in Feature structs.
+func (feature Feature) Hash(hash hash.Hash) string {
+	seqHash, _ := hashSequence(feature.GetSequence(), hash)
+	return seqHash
 }
 
-// Blake3Hash is a method wrapper for hashing annotatedSequence structs with Blake3.
-func (annotatedSequence AnnotatedSequence) Blake3Hash() string {
-	seqHash := Blake3SequenceHash(annotatedSequence)
-	return seqHash
+// hashSequence takes a string and a hashing function and returns a hashed string.
+func hashSequence(sequence string, hash hash.Hash) (string, error) {
+	io.WriteString(hash, strings.ToUpper(sequence))
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
