@@ -391,7 +391,7 @@ FASTA specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseFASTA parses an array of Sequence structs from a FASTA file and adds appropriate pointers to the structs.
+// ParseFASTA parses a Sequence struct from a FASTA file and adds appropriate pointers to the structs.
 func ParseFASTA(fasta string) Sequence {
 
 	var sequence Sequence
@@ -460,13 +460,21 @@ func ParseFASTA(fasta string) Sequence {
 	return sequence
 }
 
-// BuildFASTA builds a FASTA string from an array of Sequence structs.
+// BuildFASTA builds a FASTA string from a Sequence struct.
 func BuildFASTA(sequence Sequence) []byte {
 	var fastaBuffer bytes.Buffer
 	const maxLineLength = 70
 
 	for featureIndex, feature := range sequence.Features {
+
+		// if there isn't a descriptive comment don't write out feature to fasta file.
+		if feature.Description == "" {
+			continue
+		}
+		// write feature comment
 		fastaBuffer.WriteString(">" + feature.Description + "\n")
+
+		// range over sequence and add spacing
 		for characterIndex, character := range feature.GetSequence() {
 			characterIndex++
 			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
@@ -476,6 +484,8 @@ func BuildFASTA(sequence Sequence) []byte {
 				fastaBuffer.WriteRune(character)
 			}
 		}
+
+		// if it's the end write new line.
 		if featureIndex != len(sequence.Features)-1 {
 			fastaBuffer.WriteString("\n\n")
 		}
@@ -484,7 +494,7 @@ func BuildFASTA(sequence Sequence) []byte {
 	return fastaBuffer.Bytes()
 }
 
-// ReadFASTA reads an array of Sequence structs from a FASTA file.
+// ReadFASTA reads a Sequence struct from a FASTA file.
 func ReadFASTA(path string) Sequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -494,7 +504,7 @@ func ReadFASTA(path string) Sequence {
 	return annotatedSequenceArray
 }
 
-// WriteFASTA writes an array of Sequence structs out to FASTA.
+// WriteFASTA writes a Sequence struct out to FASTA.
 func WriteFASTA(sequence Sequence, path string) {
 	_ = ioutil.WriteFile(path, BuildFASTA(sequence), 0644)
 }
