@@ -12,7 +12,7 @@ Hashes make incredibly powerful unique identifiers and with a wide array of hash
 The golang team is currently figuring out the best way to implement blake3 into the standard library but in the meantime `poly` provides this special function and method wrapper to hash sequences using blake3. This will eventually be deprecated in favor of only using the `GenericSequenceHash()` function and `.Hash()` method wrapper.
 
 ```go
-  // getting our example AnnotatedSequence struct
+  // getting our example Sequence struct
   puc19AnnotatedSequence := ReadJSON("data/puc19static.json")
 
   // there are two ways to use the blake3 Least Rotation hasher.
@@ -21,7 +21,7 @@ The golang team is currently figuring out the best way to implement blake3 into 
   puc19Blake3Hash := puc19AnnotatedSequence.Blake3Hash()
   fmt.Println(puc19Blake3Hash)
 
-  // the second is with the Blake3SequenceHash(annotatedSequence AnnotatedSequence) function.
+  // the second is with the Blake3SequenceHash(sequence Sequence) function.
   puc19Blake3Hash = puc19AnnotatedSequence.Blake3Hash()
   fmt.Println(puc19Blake3Hash)
 ```
@@ -33,7 +33,7 @@ Again, this will be deprecated in favor of using generic hashing with blake3 in 
 `poly` also provides a generic hashing function and method wrapper for hashing sequences with arbitrary hashing functions that use the golang standard library's hash function interface. Check out this switch statement in the [hash command source code](https://github.com/TimothyStiles/poly/blob/f51ec1c08820394d7cab89a5a4af92d9b803f0a4/commands.go#L261) to see all that `poly` provides in the command line utility alone.
 
 ```go
-  // getting our example AnnotatedSequence struct
+  // getting our example Sequence struct
   puc19AnnotatedSequence := ReadJSON("data/puc19static.json")
 
   // there are two ways to use the Least Rotation generic hasher.
@@ -42,7 +42,7 @@ Again, this will be deprecated in favor of using generic hashing with blake3 in 
   puc19Sha1Hash := puc19AnnotatedSequence.Hash(crypto.SHA1)
   fmt.Println(puc19Sha1Hash)
 
-  // the second is with the GenericSequenceHash() function where you pass an AnnotatedSequence along with a hash function as arguments.
+  // the second is with the GenericSequenceHash() function where you pass an Sequence along with a hash function as arguments.
   puc19Sha1Hash = GenericSequenceHash(puc19AnnotatedSequence, crypto.SHA1)
   fmt.Println(puc19Sha1Hash)
 ```

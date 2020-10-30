@@ -209,12 +209,12 @@ func (codonTable CodonTable) generateTranslationTable() map[string]string {
 	return translationMap
 }
 
-// helper function to pull coding regions out of an AnnotatedSequence
-func getCodingRegions(annotatedSequence AnnotatedSequence) string {
-	// pick out the each coding region in the AnnotatedSequence and add it to the sequence Builder
+// helper function to pull coding regions out of an Sequence
+func getCodingRegions(sequence Sequence) string {
+	// pick out the each coding region in the Sequence and add it to the sequence Builder
 	var sequenceBuilder strings.Builder
 
-	for _, feature := range annotatedSequence.Features {
+	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
 			sequenceBuilder.WriteString(feature.GetSequence())
 		}
