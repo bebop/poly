@@ -103,19 +103,19 @@ type Location struct {
 type Feature struct {
 	Name string //Seqid in gff, name in gbk
 	//gff specific
-	Source                  string            `json:"source"`
-	Type                    string            `json:"type"`
-	Score                   string            `json:"score"`
-	Strand                  string            `json:"strand"`
-	Phase                   string            `json:"phase"`
-	Attributes              map[string]string `json:"attributes"`
-	GbkLocationString       string            `json:"gbk_location_string"`
-	Sequence                string            `json:"sequence"`
-	SequenceLocation        Location          `json:"sequence_location"`
-	SequenceHash            string            `json:"sequence_hash"`
-	Description             string            `json:"description"`
-	SequenceHashFunction    string            `json:"hash_function"`
-	ParentAnnotatedSequence *Sequence         `json:"-"`
+	Source               string            `json:"source"`
+	Type                 string            `json:"type"`
+	Score                string            `json:"score"`
+	Strand               string            `json:"strand"`
+	Phase                string            `json:"phase"`
+	Attributes           map[string]string `json:"attributes"`
+	GbkLocationString    string            `json:"gbk_location_string"`
+	Sequence             string            `json:"sequence"`
+	SequenceLocation     Location          `json:"sequence_location"`
+	SequenceHash         string            `json:"sequence_hash"`
+	Description          string            `json:"description"`
+	SequenceHashFunction string            `json:"hash_function"`
+	ParentSequence       *Sequence         `json:"-"`
 }
 
 // Sequence holds all sequence information in a single struct.
@@ -129,7 +129,7 @@ type Sequence struct {
 }
 
 func (sequence *Sequence) addFeature(feature Feature) []Feature {
-	feature.ParentAnnotatedSequence = sequence
+	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, feature)
 	return sequence.Features
 }

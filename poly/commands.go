@@ -472,7 +472,6 @@ func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 		hashString = sequence.Hash(crypto.BLAKE2b_512.New())
 	case "BLAKE3":
 		hashString = sequence.Hash(blake3.New(32, nil))
-		// hashString = sequence.Blake3Hash()
 	case "NO":
 		hashString = poly.RotateSequence(sequence.Sequence)
 	default:

@@ -57,7 +57,7 @@ func TestConvertPipe(t *testing.T) {
 
 	pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
 
-	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
 	}
 
@@ -83,7 +83,7 @@ func TestConvertFile(t *testing.T) {
 	os.Remove("../data/puc19.json")
 
 	// compared input gff from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 
@@ -94,7 +94,7 @@ func TestConvertFile(t *testing.T) {
 	os.Remove("../data/t4_intron.json")
 
 	// compared input gbk from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 }

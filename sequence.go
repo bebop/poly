@@ -72,7 +72,7 @@ func ComplementBase(basePair rune) rune {
 func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
-	parentSequence := feature.ParentAnnotatedSequence.Sequence
+	parentSequence := feature.ParentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])

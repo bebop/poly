@@ -36,7 +36,7 @@ func TestGffIO(t *testing.T) {
 
 	readTestSequence := ReadGff(testOutputPath)
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
 
@@ -90,7 +90,7 @@ func TestGbkIO(t *testing.T) {
 	WriteGbk(gbk, "data/puc19gbktest.gbk")
 	writeTestGbk := ReadGbk("data/puc19gbktest.gbk")
 	os.Remove("data/puc19gbktest.gbk")
-	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
 }
@@ -110,7 +110,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 
 	os.Remove("data/sample_test.gbk")
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
 
@@ -128,7 +128,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 
 	os.Remove("data/t4_intron_test.gbk")
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
 
@@ -150,7 +150,7 @@ func TestLocusParseRegression(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk").Meta.Locus
 	json := ReadJSON("data/puc19static.json").Meta.Locus
 
-	if diff := cmp.Diff(gbk, json, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(gbk, json, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
 	}
 }
@@ -208,7 +208,7 @@ func TestJSONIO(t *testing.T) {
 	// cleaning up test data
 	os.Remove("data/test.json")
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 
@@ -219,7 +219,7 @@ func TestJSONIO(t *testing.T) {
 	// cleaning up test data
 	os.Remove("data/test.json")
 
-	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		// t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 
@@ -253,7 +253,7 @@ func TestFASTAIO(t *testing.T) {
 	// cleanup
 	os.Remove(testOutputFilename)
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 }
