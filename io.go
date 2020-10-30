@@ -119,7 +119,7 @@ type Sequence struct {
 	Features             []Feature `json:"features"`
 }
 
-func (sequence *Sequence) addFeature(feature Feature) []Feature {
+func (sequence *Sequence) AddFeature(feature Feature) []Feature {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, feature)
 	return sequence.Features
@@ -193,7 +193,7 @@ func ParseGff(gff string) Sequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			sequence.addFeature(record)
+			sequence.AddFeature(record)
 		}
 	}
 	sequence.Sequence = sequenceBuffer.String()
@@ -357,7 +357,7 @@ func ParseJSON(file []byte) Sequence {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		sequence.addFeature(feature)
+		sequence.AddFeature(feature)
 	}
 	return sequence
 }
@@ -453,7 +453,7 @@ func ParseFASTA(fasta string) Sequence {
 
 	// add features last so that internal pointer to parent sequence is accurate
 	for _, feature := range features {
-		sequence.addFeature(feature)
+		sequence.AddFeature(feature)
 	}
 
 	return sequence
@@ -576,7 +576,7 @@ func ParseGbk(gbk string) Sequence {
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
 	for _, feature := range features {
-		sequence.addFeature(feature)
+		sequence.AddFeature(feature)
 	}
 
 	return sequence
