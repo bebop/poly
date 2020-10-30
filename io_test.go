@@ -1,10 +1,7 @@
 package poly
 
 import (
-<<<<<<< HEAD
-=======
 	"bytes"
->>>>>>> 67bc453e3db06ce93201176b5145c491633d0a18
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -40,15 +37,31 @@ func ExampleReadGff() {
 }
 
 func ExampleParseGff() {
+	file, _ := ioutil.ReadFile("data/ecoli-mg1655.gff")
+	sequence := ParseGff(string(file))
 
+	fmt.Println(sequence.Meta.Name)
+	// Output: U00096.3
 }
 
 func ExampleBuildGff() {
 
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	gffString := BuildGff(sequence)
+	reparsedSequence := ParseGff(string(gffString))
+
+	fmt.Println(reparsedSequence.Meta.Name)
+	// Output: U00096.3
+
 }
 
 func ExampleWriteGff() {
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	WriteGff(sequence, "data/test.gff")
+	testSequence := ReadGff("data/test.gff")
 
+	fmt.Println(testSequence.Meta.Name)
+	// Output: U00096.3
 }
 
 // TODO should delete output files.
