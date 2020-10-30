@@ -13,15 +13,6 @@ import (
 	"github.com/mitchellh/go-wordwrap"
 )
 
-// TAB just represents "\t" used in GBK IO.
-const TAB = "\t"
-
-// FIVESPACE just represents 5 space characters. Used in GBK IO
-const FIVESPACE = "     "
-
-// TENSPACE just represents 10 space characters. Used in GBK IO
-const TENSPACE = FIVESPACE + FIVESPACE
-
 /******************************************************************************
 
 File is structured as so:
@@ -602,8 +593,11 @@ func BuildGbk(sequence Sequence) []byte {
 	} else if locus.Linear {
 		shape = "linear"
 	}
+
+	fivespace := generateWhiteSpace(subMetaIndex)
+
 	// building locus
-	locusData := locus.Name + FIVESPACE + locus.SequenceLength + " bp" + FIVESPACE + locus.MoleculeType + FIVESPACE + shape + FIVESPACE + locus.GenbankDivision + FIVESPACE + locus.ModificationDate
+	locusData := locus.Name + fivespace + locus.SequenceLength + " bp" + fivespace + locus.MoleculeType + fivespace + shape + fivespace + locus.GenbankDivision + fivespace + locus.ModificationDate
 	locusString := "LOCUS       " + locusData + "\n"
 	gbkString.WriteString(locusString)
 
@@ -1318,7 +1312,7 @@ func buildMetaString(name string, data string) string {
 		if index == 0 {
 			returnData = name + datum + "\n"
 		} else {
-			returnData += TENSPACE + "  " + datum + "\n"
+			returnData += generateWhiteSpace(11) + datum + "\n"
 		}
 	}
 
@@ -1356,11 +1350,8 @@ func buildGbkLocationString(location Location) string {
 
 // buildGbkFeatureString is a helper function to build gbk feature strings for BuildGbk()
 func buildGbkFeatureString(feature Feature) string {
-	whitespaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
-	var whitespaceTrail string
-	for i := 0; i < whitespaceTrailLength; i++ {
-		whitespaceTrail += " "
-	}
+	whiteSpaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
+	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
 
 	if feature.GbkLocationString != "" {
@@ -1368,7 +1359,7 @@ func buildGbkFeatureString(feature Feature) string {
 	} else {
 		location = buildGbkLocationString(feature.SequenceLocation)
 	}
-	featureHeader := FIVESPACE + feature.Type + whitespaceTrail + location + "\n"
+	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
 
 	qualifierKeys := make([]string, 0, len(feature.Attributes))
@@ -1377,10 +1368,20 @@ func buildGbkFeatureString(feature Feature) string {
 	}
 
 	for _, qualifier := range qualifierKeys {
-		returnString += "                     " + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
+		returnString += generateWhiteSpace(qualifierIndex) + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
 
 	}
 	return returnString
+}
+
+func generateWhiteSpace(length int) string {
+	var spaceBuilder strings.Builder
+
+	for i := 0; i < length; i++ {
+		spaceBuilder.WriteString(" ")
+	}
+
+	return spaceBuilder.String()
 }
 
 /******************************************************************************
