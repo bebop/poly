@@ -3,7 +3,6 @@ package poly
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -411,14 +410,31 @@ func ParseFASTA(fasta string) Sequence {
 	var end int
 
 	lines := strings.Split(fasta, "\n")
+	linesLength := len(lines) - 1
 
 	for lineIndex, line := range lines {
-		if len(line) == 0 || lineIndex == len(lines)-1 {
 
-			if lineIndex == len(lines)-1 {
+		// if there's nothing on this line skip this iteration of the loop
+		if len(line) == 0 {
+			continue
+		}
+
+		// if it's a comment skip this line
+		if line[0:1] == ";" {
+			continue
+		}
+
+		if line[0:1] == ">" && lineIndex == 0 { // if it's the first description
+			feature.Description = line[1:]
+
+		} else if line[0:1] == ">" || lineIndex == linesLength { // if it's a description or the last line
+
+			// if end of file write line to buffer
+			if lineIndex == linesLength {
 				sequenceBuffer.WriteString(line)
 			}
 
+			// setting sequence location
 			feature.SequenceLocation.Start = start
 			end = len(sequenceBuffer.String())
 			feature.SequenceLocation.End = end
@@ -426,25 +442,29 @@ func ParseFASTA(fasta string) Sequence {
 			// setting start to end after assigning to location in feature.
 			start = end
 
+			// adding new feature to features slice
 			features = append(features, feature)
+
+			// resetting feature
 			feature = Feature{}
 
-		} else if line[0:1] == ">" {
-			feature.Description = line[1:]
+			// if it's the last line
+			if lineIndex != linesLength {
+				feature.Description = line[1:]
+			}
+
 		} else {
 			sequenceBuffer.WriteString(line)
 		}
 	}
 
-	if len(sequenceBuffer.Bytes()) > 0 {
-		sequence.Sequence = sequenceBuffer.String()
-	}
-
 	sequence.Sequence = sequenceBuffer.String()
 
+	// add features last so that internal pointer to parent sequence is accurate
 	for _, feature := range features {
 		sequence.addFeature(feature)
 	}
+
 	return sequence
 }
 
@@ -455,8 +475,6 @@ func BuildFASTA(sequence Sequence) []byte {
 
 	for featureIndex, feature := range sequence.Features {
 		fastaBuffer.WriteString(">" + feature.Description + "\n")
-		fmt.Println(feature.GetSequence())
-		fmt.Println(feature.GetSequence())
 		for characterIndex, character := range feature.GetSequence() {
 			characterIndex++
 			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
