@@ -27,7 +27,6 @@ Gff related tests and benchmarks begin here.
 
 ******************************************************************************/
 
-// TODO should delete output files.
 func TestGffIO(t *testing.T) {
 	testInputPath := "data/ecoli-mg1655.gff"
 	testOutputPath := "data/test.gff"
@@ -238,28 +237,26 @@ FASTA related tests begin here.
 
 ******************************************************************************/
 
-// func TestFASTAIO(t *testing.T) {
-// 	inputFilename := "data/base.fasta"
-// 	testOutputFilename := "data/test.fasta"
+func TestFASTAIO(t *testing.T) {
+	inputFilename := "data/base.fasta"
+	testOutputFilename := "data/test.fasta"
 
-// 	// read FASTA file
-// 	testSequence := ReadFASTA(inputFilename)
+	// read FASTA file
+	testSequence := ReadFASTA(inputFilename)
 
-// 	// write FASTA file
-// 	WriteFASTA(testSequence, testOutputFilename)
+	// write FASTA file
+	WriteFASTA(testSequence, testOutputFilename)
 
-// 	// read back and diff
-// 	readTestSequence := ReadFASTA(testOutputFilename)
+	// read back and diff
+	readTestSequence := ReadFASTA(testOutputFilename)
 
-// 	// cleanup
-// 	os.Remove(testOutputFilename)
+	// cleanup
+	os.Remove(testOutputFilename)
 
-// 	for index := range testSequence {
-// 		if diff := cmp.Diff(testSequence[index], readTestSequence[index], cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
-// 			t.Errorf(" mismatch (-want +got):\n%s", diff)
-// 		}
-// 	}
-// }
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentAnnotatedSequence")); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+}
 
 /******************************************************************************
 

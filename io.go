@@ -3,6 +3,7 @@ package poly
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -113,6 +114,7 @@ type Feature struct {
 	Sequence                string            `json:"sequence"`
 	SequenceLocation        Location          `json:"sequence_location"`
 	SequenceHash            string            `json:"sequence_hash"`
+	Description             string            `json:"description"`
 	SequenceHashFunction    string            `json:"hash_function"`
 	ParentAnnotatedSequence *Sequence         `json:"-"`
 }
@@ -398,83 +400,94 @@ FASTA specific IO related things begin here.
 
 ******************************************************************************/
 
-// // ParseFASTA parses an array of Sequence structs from a FASTA file and adds appropriate pointers to the structs.
-// func ParseFASTA(fasta string) []Sequence {
+// ParseFASTA parses an array of Sequence structs from a FASTA file and adds appropriate pointers to the structs.
+func ParseFASTA(fasta string) Sequence {
 
-// 	annotatedSequenceArray := []Sequence{}
-// 	currentAnnotatedSequence := Sequence{}
+	var sequence Sequence
+	var feature Feature
+	var features []Feature
+	var sequenceBuffer bytes.Buffer
+	var start int
+	var end int
 
-// 	lines := strings.Split(fasta, "\n")
-// 	meta := Meta{}
+	lines := strings.Split(fasta, "\n")
 
-// 	sequence := Sequence{}
-// 	var sequenceBuffer bytes.Buffer
-// 	for _, line := range lines {
-// 		if len(line) == 0 {
-// 			// save the current seq
-// 			sequence.Sequence = sequenceBuffer.String()
-// 			currentAnnotatedSequence.Meta = meta
-// 			currentAnnotatedSequence.Sequence = sequence
-// 			annotatedSequenceArray = append(annotatedSequenceArray, currentAnnotatedSequence)
+	for lineIndex, line := range lines {
+		if len(line) == 0 || lineIndex == len(lines)-1 {
 
-// 			// reset the seq
-// 			sequenceBuffer.Reset()
-// 			sequence = Sequence{}
-// 			meta = Meta{}
-// 			currentAnnotatedSequence = Sequence{}
+			if lineIndex == len(lines)-1 {
+				sequenceBuffer.WriteString(line)
+			}
 
-// 		} else if line[0:1] == ">" {
-// 			sequence.Description = line[1:]
-// 		} else {
-// 			sequenceBuffer.WriteString(line)
-// 		}
-// 	}
+			feature.SequenceLocation.Start = start
+			end = len(sequenceBuffer.String())
+			feature.SequenceLocation.End = end
 
-// 	if len(sequenceBuffer.Bytes()) > 0 {
-// 		sequence.Sequence = sequenceBuffer.String()
-// 		currentAnnotatedSequence.Meta = meta
-// 		currentAnnotatedSequence.Sequence = sequence
-// 		annotatedSequenceArray = append(annotatedSequenceArray, currentAnnotatedSequence)
-// 	}
+			// setting start to end after assigning to location in feature.
+			start = end
 
-// 	return annotatedSequenceArray
-// }
+			features = append(features, feature)
+			feature = Feature{}
 
-// // BuildFASTA builds a FASTA string from an array of Sequence structs.
-// func BuildFASTA(annotatedSequenceArray []Sequence) []byte {
-// 	var fastaBuffer bytes.Buffer
-// 	const maxLineLength = 80
-// 	for _, sequence := range annotatedSequenceArray {
-// 		fastaBuffer.WriteString(">" + sequence.Description + "\n")
-// 		for characterIndex, character := range sequence.Sequence {
-// 			characterIndex++
-// 			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
-// 				fastaBuffer.WriteRune(character)
-// 				fastaBuffer.WriteString("\n")
-// 			} else {
-// 				fastaBuffer.WriteRune(character)
-// 			}
-// 		}
-// 		fastaBuffer.WriteString("\n\n")
-// 	}
+		} else if line[0:1] == ">" {
+			feature.Description = line[1:]
+		} else {
+			sequenceBuffer.WriteString(line)
+		}
+	}
 
-// 	return fastaBuffer.Bytes()
-// }
+	if len(sequenceBuffer.Bytes()) > 0 {
+		sequence.Sequence = sequenceBuffer.String()
+	}
 
-// // ReadFASTA reads an array of Sequence structs from a FASTA file.
-// func ReadFASTA(path string) []Sequence {
-// 	file, err := ioutil.ReadFile(path)
-// 	if err != nil {
-// 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-// 	}
-// 	annotatedSequenceArray := ParseFASTA(string(file))
-// 	return annotatedSequenceArray
-// }
+	sequence.Sequence = sequenceBuffer.String()
 
-// // WriteFASTA writes an array of Sequence structs out to FASTA.
-// func WriteFASTA(annotatedSequenceArray []Sequence, path string) {
-// 	_ = ioutil.WriteFile(path, BuildFASTA(annotatedSequenceArray), 0644)
-// }
+	for _, feature := range features {
+		sequence.addFeature(feature)
+	}
+	return sequence
+}
+
+// BuildFASTA builds a FASTA string from an array of Sequence structs.
+func BuildFASTA(sequence Sequence) []byte {
+	var fastaBuffer bytes.Buffer
+	const maxLineLength = 70
+
+	for featureIndex, feature := range sequence.Features {
+		fastaBuffer.WriteString(">" + feature.Description + "\n")
+		fmt.Println(feature.GetSequence())
+		fmt.Println(feature.GetSequence())
+		for characterIndex, character := range feature.GetSequence() {
+			characterIndex++
+			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
+				fastaBuffer.WriteRune(character)
+				fastaBuffer.WriteString("\n")
+			} else {
+				fastaBuffer.WriteRune(character)
+			}
+		}
+		if featureIndex != len(sequence.Features)-1 {
+			fastaBuffer.WriteString("\n\n")
+		}
+	}
+
+	return fastaBuffer.Bytes()
+}
+
+// ReadFASTA reads an array of Sequence structs from a FASTA file.
+func ReadFASTA(path string) Sequence {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	}
+	annotatedSequenceArray := ParseFASTA(string(file))
+	return annotatedSequenceArray
+}
+
+// WriteFASTA writes an array of Sequence structs out to FASTA.
+func WriteFASTA(sequence Sequence, path string) {
+	_ = ioutil.WriteFile(path, BuildFASTA(sequence), 0644)
+}
 
 /******************************************************************************
 
