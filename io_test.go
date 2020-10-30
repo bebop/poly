@@ -1,6 +1,8 @@
 package poly
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -236,6 +238,41 @@ JSON related tests end here.
 FASTA related tests begin here.
 
 ******************************************************************************/
+
+// ExampleReadFASTA shows basic usage for ReadFASTA
+func ExampleReadFASTA() {
+	sequence := ReadFASTA("data/base.fasta")
+	fmt.Println(sequence.Features[0].Description)
+	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+}
+
+func ExampleParseFASTA() {
+	file, _ := ioutil.ReadFile("data/base.fasta")
+	sequence := ParseFASTA(string(file))
+
+	fmt.Println(sequence.Features[0].Description)
+	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+}
+
+func ExampleBuildFASTA() {
+	sequence := ReadFASTA("data/base.fasta") // get example data
+	fasta := BuildFASTA(sequence)            // build a fasta byte array
+	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
+
+	fmt.Println(firstLine)
+	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+}
+
+func ExampleWriteFASTA() {
+	sequence := ReadFASTA("data/base.fasta")     // get example data
+	WriteFASTA(sequence, "data/test.fasta")      // write it out again
+	testSequence := ReadFASTA("data/test.fasta") // read it in again
+
+	os.Remove("data/test.fasta") // getting rid of test file
+
+	fmt.Println(testSequence.Features[0].Description)
+	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+}
 
 func TestFASTAIO(t *testing.T) {
 	inputFilename := "data/base.fasta"
