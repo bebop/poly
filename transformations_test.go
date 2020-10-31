@@ -51,7 +51,7 @@ func TestGetCodonFrequency(t *testing.T) {
 		t.Errorf("TestGetCodonFrequency has failed. aggregrated codon string is not the correct length.")
 	}
 
-	codonFrequencyHashMap := GetCodonFrequency(codonString)
+	codonFrequencyHashMap := getCodonFrequency(codonString)
 
 	if len(codonFrequencyHashMap) != 64 {
 		t.Errorf("TestGetCodonFrequency has failed. codonFrequencyHashMap does not contain every codon.")
@@ -63,7 +63,7 @@ func TestGetCodonFrequency(t *testing.T) {
 		}
 	}
 
-	doubleCodonFrequencyHashMap := GetCodonFrequency(codonString + codonString)
+	doubleCodonFrequencyHashMap := getCodonFrequency(codonString + codonString)
 
 	if len(doubleCodonFrequencyHashMap) != 64 {
 		t.Errorf("TestGetCodonFrequency has failed. doubleCodonFrequencyHashMap does not contain every codon.")

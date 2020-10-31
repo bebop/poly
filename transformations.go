@@ -116,7 +116,7 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
-	codonFrequencyMap := GetCodonFrequency(sequence)
+	codonFrequencyMap := getCodonFrequency(sequence)
 
 	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
 
@@ -146,8 +146,8 @@ func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 	return codonTable
 }
 
-// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
-func GetCodonFrequency(sequence string) map[string]int {
+// getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
+func getCodonFrequency(sequence string) map[string]int {
 
 	codonFrequencyHashMap := map[string]int{}
 	var currentCodon strings.Builder
