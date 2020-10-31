@@ -60,6 +60,8 @@ func ExampleWriteGff() {
 	WriteGff(sequence, "data/test.gff")
 	testSequence := ReadGff("data/test.gff")
 
+	os.Remove("data/test.gff")
+
 	fmt.Println(testSequence.Meta.Name)
 	// Output: U00096.3
 }
@@ -151,6 +153,8 @@ func ExampleWriteGbk() {
 	sequence := ReadGbk("data/puc19.gbk")
 	WriteGbk(sequence, "data/test.gbk")
 	testSequence := ReadGbk("data/test.gbk")
+
+	os.Remove("data/test.gbk")
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -270,6 +274,32 @@ Gbk/gb/genbank related benchmarks end here.
 JSON related tests begin here.
 
 ******************************************************************************/
+
+func ExampleReadJSON() {
+	sequence := ReadJSON("data/sample.json")
+
+	fmt.Println(sequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
+
+func ExampleParseJSON() {
+	file, _ := ioutil.ReadFile("data/sample.json")
+	sequence := ParseJSON(file)
+
+	fmt.Println(sequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
+
+func ExampleWriteJSON() {
+	sequence := ReadJSON("data/sample.json")
+	WriteJSON(sequence, "data/test.json")
+	testSequence := ReadJSON("data/test.json")
+
+	os.Remove("data/test.json")
+
+	fmt.Println(testSequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
 
 func TestJSONIO(t *testing.T) {
 	testSequence := ReadGbk("data/bsub.gbk")
