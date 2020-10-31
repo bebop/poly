@@ -29,6 +29,45 @@ Gff related tests and benchmarks begin here.
 
 ******************************************************************************/
 
+func ExampleReadGff() {
+
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	fmt.Println(sequence.Meta.Name)
+	// Output: U00096.3
+}
+
+func ExampleParseGff() {
+	file, _ := ioutil.ReadFile("data/ecoli-mg1655.gff")
+	sequence := ParseGff(file)
+
+	fmt.Println(sequence.Meta.Name)
+	// Output: U00096.3
+}
+
+func ExampleBuildGff() {
+
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	gffBytes := BuildGff(sequence)
+	reparsedSequence := ParseGff(gffBytes)
+
+	fmt.Println(reparsedSequence.Meta.Name)
+	// Output: U00096.3
+
+}
+
+func ExampleWriteGff() {
+	sequence := ReadGff("data/ecoli-mg1655.gff")
+	WriteGff(sequence, "data/test.gff")
+	testSequence := ReadGff("data/test.gff")
+
+	os.Remove("data/test.gff")
+
+	fmt.Println(testSequence.Meta.Name)
+	// Output: U00096.3
+}
+
+// TODO should delete output files.
+
 func TestGffIO(t *testing.T) {
 	testInputPath := "data/ecoli-mg1655.gff"
 	testOutputPath := "data/test.gff"
@@ -65,7 +104,7 @@ func TestGffIO(t *testing.T) {
 
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseGff("data/ecoli-mg1655.gff")
+		ReadGff("data/ecoli-mg1655.gff")
 	}
 }
 
@@ -86,6 +125,40 @@ Gff related tests and benchmarks end here.
 Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
+
+func ExampleReadGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	fmt.Println(sequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleParseGbk() {
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	sequence := ParseGbk(file)
+
+	fmt.Println(sequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleBuildGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	gbkBytes := BuildGbk(sequence)
+	testSequence := ParseGbk(gbkBytes)
+
+	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleWriteGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	WriteGbk(sequence, "data/test.gbk")
+	testSequence := ReadGbk("data/test.gbk")
+
+	os.Remove("data/test.gbk")
+
+	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
 
 func TestGbkIO(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk")
@@ -202,6 +275,32 @@ JSON related tests begin here.
 
 ******************************************************************************/
 
+func ExampleReadJSON() {
+	sequence := ReadJSON("data/sample.json")
+
+	fmt.Println(sequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
+
+func ExampleParseJSON() {
+	file, _ := ioutil.ReadFile("data/sample.json")
+	sequence := ParseJSON(file)
+
+	fmt.Println(sequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
+
+func ExampleWriteJSON() {
+	sequence := ReadJSON("data/sample.json")
+	WriteJSON(sequence, "data/test.json")
+	testSequence := ReadJSON("data/test.json")
+
+	os.Remove("data/test.json")
+
+	fmt.Println(testSequence.Meta.Source)
+	//output: Saccharomyces cerevisiae (baker's yeast)
+}
+
 func TestJSONIO(t *testing.T) {
 	testSequence := ReadGbk("data/bsub.gbk")
 	WriteJSON(testSequence, "data/test.json")
@@ -248,7 +347,7 @@ func ExampleReadFASTA() {
 
 func ExampleParseFASTA() {
 	file, _ := ioutil.ReadFile("data/base.fasta")
-	sequence := ParseFASTA(string(file))
+	sequence := ParseFASTA(file)
 
 	fmt.Println(sequence.Features[0].Description)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]

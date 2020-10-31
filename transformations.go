@@ -116,7 +116,7 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
-	codonFrequencyMap := GetCodonFrequency(sequence)
+	codonFrequencyMap := getCodonFrequency(sequence)
 
 	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
 
@@ -146,8 +146,8 @@ func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 	return codonTable
 }
 
-// GetCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
-func GetCodonFrequency(sequence string) map[string]int {
+// getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
+func getCodonFrequency(sequence string) map[string]int {
 
 	codonFrequencyHashMap := map[string]int{}
 	var currentCodon strings.Builder
@@ -285,8 +285,13 @@ func generateCodonTable(aminoAcids, starts string) CodonTable {
 	return CodonTable{startCodons, stopCodons, aminoAcidSlice}
 }
 
-// DefaultCodonTablesByNumber stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using numbered indeces.
-var DefaultCodonTablesByNumber = map[int]CodonTable{
+// GetCodonTable takes the index of desired NCBI codon table and returns it.
+func GetCodonTable(index int) CodonTable {
+	return defaultCodonTablesByNumber[index]
+}
+
+// defaultCodonTablesByNumber stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using numbered indeces.
+var defaultCodonTablesByNumber = map[int]CodonTable{
 	1:  generateCodonTable("FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------"),
 	2:  generateCodonTable("FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------"),
 	3:  generateCodonTable("FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------"),
@@ -314,7 +319,7 @@ var DefaultCodonTablesByNumber = map[int]CodonTable{
 	33: generateCodonTable("FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------")}
 
 // DefaultCodonTablesByName stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using named indeces.
-var DefaultCodonTablesByName = map[string]CodonTable{
+var defaultCodonTablesByName = map[string]CodonTable{
 	"Standard":                         generateCodonTable("FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------"), // 1
 	"VertebrateMitochondrial":          generateCodonTable("FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------"), // 2
 	"YeastMitochondrial":               generateCodonTable("FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------"), // 3

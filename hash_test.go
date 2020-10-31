@@ -9,6 +9,13 @@ import (
 	"lukechampine.com/blake3"
 )
 
+func ExampleHash() {
+	puc19 := ReadGbk("data/puc19.gbk")
+	fmt.Println(puc19.Hash(blake3.New(32, nil))) // passing new hash.Hash struct to Hasher
+
+	// output: 4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
+}
+
 func TestHashRegression(t *testing.T) {
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 	puc19 := ReadGbk("data/puc19.gbk")
@@ -26,6 +33,15 @@ func TestHashRegression(t *testing.T) {
 			}
 		}
 	}
+}
+
+func ExampleRotateSequence() {
+	sequence := ReadGbk("data/puc19.gbk")
+	sequenceLength := len(sequence.Sequence)
+	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
+
+	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
+	// output: true
 }
 
 func TestLeastRotation(t *testing.T) {

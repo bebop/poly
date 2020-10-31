@@ -36,10 +36,11 @@ import (
 // BLAKE2b_384                 // import golang.org/x/crypto/blake2b
 // BLAKE2b_512                 // import golang.org/x/crypto/blake2b
 
-// BoothLeastRotation gets the least rotation of a circular string.
-// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
-// this is generally over commented but I'm keeping it this way for now. - Tim
-func BoothLeastRotation(sequence string) int {
+// boothLeastRotation gets the least rotation of a circular string.
+func boothLeastRotation(sequence string) int {
+
+	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
+	// this is generally over commented but I'm keeping it this way for now. - Tim
 
 	// first concatenate the sequence to itself to avoid modular arithmateic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
@@ -89,8 +90,14 @@ func BoothLeastRotation(sequence string) int {
 
 // RotateSequence rotates circular sequences to deterministic point.
 func RotateSequence(sequence string) string {
-	rotationIndex := BoothLeastRotation(sequence)
-	concatenatedSequence := sequence + sequence
+	rotationIndex := boothLeastRotation(sequence)
+	var sequenceBuilder strings.Builder
+
+	// writing the same sequence twice. using build incase of very long circular genome.
+	sequenceBuilder.WriteString(sequence)
+	sequenceBuilder.WriteString(sequence)
+
+	concatenatedSequence := sequenceBuilder.String()
 	sequence = concatenatedSequence[rotationIndex : rotationIndex+len(sequence)]
 	return sequence
 }

@@ -200,7 +200,7 @@ func TestOptimizeString(t *testing.T) {
 	// should return codon optimized sequence
 	optimizeOutputString := strings.TrimSpace(writeBuffer.String())
 
-	translation := poly.Translate(optimizeOutputString, poly.DefaultCodonTablesByNumber[1])
+	translation := poly.Translate(optimizeOutputString, poly.GetCodonTable(1))
 
 	if translation != gfpTranslation {
 		t.Errorf("TestOptimizeCommand for string output has failed. Returned %q, want %q", translation, gfpTranslation)
