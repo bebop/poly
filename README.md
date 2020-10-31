@@ -1,6 +1,6 @@
 # (Poly)merase
 
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/TimothyStiles/poly)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
