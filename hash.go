@@ -37,9 +37,10 @@ import (
 // BLAKE2b_512                 // import golang.org/x/crypto/blake2b
 
 // BoothLeastRotation gets the least rotation of a circular string.
-// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
-// this is generally over commented but I'm keeping it this way for now. - Tim
 func BoothLeastRotation(sequence string) int {
+
+	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
+	// this is generally over commented but I'm keeping it this way for now. - Tim
 
 	// first concatenate the sequence to itself to avoid modular arithmateic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
