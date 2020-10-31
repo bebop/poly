@@ -139,7 +139,9 @@ GFF specific IO related things begin here.
 ******************************************************************************/
 
 // ParseGff Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func ParseGff(gff string) Sequence {
+func ParseGff(gffBytes []byte) Sequence {
+
+	gff := string(gffBytes)
 	sequence := Sequence{}
 
 	lines := strings.Split(gff, "\n")
@@ -327,7 +329,7 @@ func ReadGff(path string) Sequence {
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	} else {
-		sequence = ParseGff(string(file))
+		sequence = ParseGff(file)
 	}
 	return sequence
 }
@@ -392,8 +394,8 @@ FASTA specific IO related things begin here.
 ******************************************************************************/
 
 // ParseFASTA parses a Sequence struct from a FASTA file and adds appropriate pointers to the structs.
-func ParseFASTA(fasta string) Sequence {
-
+func ParseFASTA(fastaBytes []byte) Sequence {
+	fasta := string(fastaBytes)
 	var sequence Sequence
 	var feature Feature
 	var features []Feature
@@ -500,8 +502,8 @@ func ReadFASTA(path string) Sequence {
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	}
-	annotatedSequenceArray := ParseFASTA(string(file))
-	return annotatedSequenceArray
+	sequence := ParseFASTA(file)
+	return sequence
 }
 
 // WriteFASTA writes a Sequence struct out to FASTA.
@@ -522,8 +524,9 @@ GBK specific IO related things begin here.
 ******************************************************************************/
 
 // ParseGbk takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func ParseGbk(gbk string) Sequence {
+func ParseGbk(gbkBytes []byte) Sequence {
 
+	gbk := string(gbkBytes)
 	lines := strings.Split(gbk, "\n")
 
 	// Create meta struct
@@ -716,8 +719,7 @@ func ReadGbk(path string) Sequence {
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	} else {
-		gbkString := string(file)
-		sequence = ParseGbk(gbkString)
+		sequence = ParseGbk(file)
 
 	}
 	return sequence
