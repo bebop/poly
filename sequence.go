@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// ComplementBaseRuneMap provides 1:1 mapping between bases and their complements
-var ComplementBaseRuneMap = map[rune]rune{
+// complementBaseRuneMap provides 1:1 mapping between bases and their complements
+var complementBaseRuneMap = map[rune]rune{
 	65:  84,  // A -> T
 	66:  86,  // B -> V
 	67:  71,  // C -> G
@@ -65,7 +65,7 @@ func ReverseComplement(sequence string) string {
 
 // ComplementBase accepts a base pair and returns its complement base pair
 func ComplementBase(basePair rune) rune {
-	return ComplementBaseRuneMap[basePair]
+	return complementBaseRuneMap[basePair]
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
