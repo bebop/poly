@@ -1,4 +1,4 @@
-# (Poly)merase &middot; 
+# (Poly)merase
 
 [![](https://godoc.org/github.com/TimothyStiles/poly?status.svg)](https://pkg.go.dev/github.com/TimothyStiles/poly) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg) ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) [![codecov](https://codecov.io/gh/TimothyStiles/poly/branch/prime/graph/badge.svg?token=7YJFOSJG3E)](https://codecov.io/gh/TimothyStiles/poly) 
 
