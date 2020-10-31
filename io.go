@@ -139,9 +139,9 @@ GFF specific IO related things begin here.
 ******************************************************************************/
 
 // ParseGff Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func ParseGff(gffBytes []byte) Sequence {
+func ParseGff(file []byte) Sequence {
 
-	gff := string(gffBytes)
+	gff := string(file)
 	sequence := Sequence{}
 
 	lines := strings.Split(gff, "\n")
@@ -394,8 +394,8 @@ FASTA specific IO related things begin here.
 ******************************************************************************/
 
 // ParseFASTA parses a Sequence struct from a FASTA file and adds appropriate pointers to the structs.
-func ParseFASTA(fastaBytes []byte) Sequence {
-	fasta := string(fastaBytes)
+func ParseFASTA(file []byte) Sequence {
+	fasta := string(file)
 	var sequence Sequence
 	var feature Feature
 	var features []Feature
@@ -524,9 +524,9 @@ GBK specific IO related things begin here.
 ******************************************************************************/
 
 // ParseGbk takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func ParseGbk(gbkBytes []byte) Sequence {
+func ParseGbk(file []byte) Sequence {
 
-	gbk := string(gbkBytes)
+	gbk := string(file)
 	lines := strings.Split(gbk, "\n")
 
 	// Create meta struct
