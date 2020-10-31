@@ -364,7 +364,7 @@ func translateCommand(c *cli.Context) error {
 }
 
 // a simple helper function to convert an *os.File type into a string.
-func stdinToString(file io.Reader) string {
+func stdinToBytes(file io.Reader) []byte {
 	var stringBuffer bytes.Buffer
 	reader := bufio.NewReader(file)
 	for {
@@ -374,7 +374,7 @@ func stdinToString(file io.Reader) string {
 		}
 		stringBuffer.WriteRune(input)
 	}
-	return stringBuffer.String()
+	return stringBuffer.Bytes()
 }
 
 // a simple helper function to remove duplicates from a list of strings.
@@ -420,13 +420,13 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToString(c.App.Reader)), &sequence)
+		json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		sequence = poly.ParseGbk(stdinToString(c.App.Reader))
+		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		sequence = poly.ParseGff(stdinToString(c.App.Reader))
+		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "string" {
-		sequence.Sequence = stdinToString(c.App.Reader)
+		sequence.Sequence = string(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }

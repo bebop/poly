@@ -38,7 +38,7 @@ func ExampleReadGff() {
 
 func ExampleParseGff() {
 	file, _ := ioutil.ReadFile("data/ecoli-mg1655.gff")
-	sequence := ParseGff(string(file))
+	sequence := ParseGff(file)
 
 	fmt.Println(sequence.Meta.Name)
 	// Output: U00096.3
@@ -47,8 +47,8 @@ func ExampleParseGff() {
 func ExampleBuildGff() {
 
 	sequence := ReadGff("data/ecoli-mg1655.gff")
-	gffString := BuildGff(sequence)
-	reparsedSequence := ParseGff(string(gffString))
+	gffBytes := BuildGff(sequence)
+	reparsedSequence := ParseGff(gffBytes)
 
 	fmt.Println(reparsedSequence.Meta.Name)
 	// Output: U00096.3
@@ -104,7 +104,7 @@ func TestGffIO(t *testing.T) {
 
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseGff("data/ecoli-mg1655.gff")
+		ReadGff("data/ecoli-mg1655.gff")
 	}
 }
 
@@ -134,7 +134,7 @@ func ExampleReadGbk() {
 
 func ExampleParseGbk() {
 	file, _ := ioutil.ReadFile("data/puc19.gbk")
-	sequence := ParseGbk(string(file))
+	sequence := ParseGbk(file)
 
 	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -143,7 +143,7 @@ func ExampleParseGbk() {
 func ExampleBuildGbk() {
 	sequence := ReadGbk("data/puc19.gbk")
 	gbkBytes := BuildGbk(sequence)
-	testSequence := ParseGbk(string(gbkBytes))
+	testSequence := ParseGbk(gbkBytes)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -347,7 +347,7 @@ func ExampleReadFASTA() {
 
 func ExampleParseFASTA() {
 	file, _ := ioutil.ReadFile("data/base.fasta")
-	sequence := ParseFASTA(string(file))
+	sequence := ParseFASTA(file)
 
 	fmt.Println(sequence.Features[0].Description)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
