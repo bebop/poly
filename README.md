@@ -1,8 +1,9 @@
 # (Poly)merase
 
-[![](https://godoc.org/github.com/TimothyStiles/poly?status.svg)](https://pkg.go.dev/github.com/TimothyStiles/poly) 
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/TimothyStiles/poly)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
-![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) 
+![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
 [![codecov](https://codecov.io/gh/TimothyStiles/poly/branch/prime/graph/badge.svg?token=7YJFOSJG3E)](https://codecov.io/gh/TimothyStiles/poly) 
 
 Poly is a Go library and command line utility for engineering organisms.
