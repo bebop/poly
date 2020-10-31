@@ -124,6 +124,38 @@ Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
 
+func ExampleReadGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	fmt.Println(sequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleParseGbk() {
+	file, _ := ioutil.ReadFile("data/puc19.gbk")
+	sequence := ParseGbk(string(file))
+
+	fmt.Println(sequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleBuildGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	gbkBytes := BuildGbk(sequence)
+	testSequence := ParseGbk(string(gbkBytes))
+
+	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleWriteGbk() {
+	sequence := ReadGbk("data/puc19.gbk")
+	WriteGbk(sequence, "data/test.gbk")
+	testSequence := ReadGbk("data/test.gbk")
+
+	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
 func TestGbkIO(t *testing.T) {
 	gbk := ReadGbk("data/puc19.gbk")
 	WriteGbk(gbk, "data/puc19gbktest.gbk")
