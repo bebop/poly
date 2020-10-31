@@ -236,7 +236,7 @@ func TestHashFunctions(t *testing.T) {
 		}
 
 		hashOutputString := strings.TrimSpace(writeBuffer.String())
-		// fmt.Println("\""+key+"\"", ": ", "\""+hashOutputString+"\",")
+		// fmt.Println("\""+key+"\"", ": ", "\""+hashOutputString+"\",") // <- prints out every
 		if hashOutputString != hashfunctionsTestMap[key] {
 			t.Errorf("TestHashFunctions for function %q has failed. Returned %q, want %q", key, hashOutputString, hashfunctionsTestMap[key])
 		}
