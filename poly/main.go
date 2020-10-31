@@ -178,7 +178,7 @@ func application() *cli.App {
 					&cli.StringFlag{
 						Name:    "ct",
 						Aliases: []string{"--codon-table"},
-						Value:   "Standard",
+						Value:   "1",
 						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
 					},
 					&cli.BoolFlag{

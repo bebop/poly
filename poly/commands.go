@@ -292,9 +292,7 @@ func optimizeCommand(c *cli.Context) error {
 
 	if isNumeric(c.String("ct")) {
 		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-		codonTable = poly.DefaultCodonTablesByNumber[codonTableNumber]
-	} else {
-		codonTable = poly.DefaultCodonTablesByName[c.String("ct")]
+		codonTable = poly.GetCodonTable(codonTableNumber)
 	}
 
 	// if a file exists to weigh the table. Weigh it.
@@ -347,9 +345,7 @@ func translateCommand(c *cli.Context) error {
 
 		if isNumeric(c.String("ct")) {
 			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-			codonTable = poly.DefaultCodonTablesByNumber[codonTableNumber]
-		} else {
-			codonTable = poly.DefaultCodonTablesByName[c.String("ct")]
+			codonTable = poly.GetCodonTable(codonTableNumber)
 		}
 
 		// uncomment below to parse sequence from pipe
