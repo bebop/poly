@@ -31,13 +31,13 @@ Gff related tests and benchmarks begin here.
 
 func ExampleReadGff() {
 
-	sequence := ReadGff("data/ecoli-mg1655.gff")
+	sequence := ReadGff("data/ecoli-mg1655-short.gff")
 	fmt.Println(sequence.Meta.Name)
 	// Output: U00096.3
 }
 
 func ExampleParseGff() {
-	file, _ := ioutil.ReadFile("data/ecoli-mg1655.gff")
+	file, _ := ioutil.ReadFile("data/ecoli-mg1655-short.gff")
 	sequence := ParseGff(file)
 
 	fmt.Println(sequence.Meta.Name)
@@ -46,7 +46,7 @@ func ExampleParseGff() {
 
 func ExampleBuildGff() {
 
-	sequence := ReadGff("data/ecoli-mg1655.gff")
+	sequence := ReadGff("data/ecoli-mg1655-short.gff")
 	gffBytes := BuildGff(sequence)
 	reparsedSequence := ParseGff(gffBytes)
 
@@ -56,7 +56,7 @@ func ExampleBuildGff() {
 }
 
 func ExampleWriteGff() {
-	sequence := ReadGff("data/ecoli-mg1655.gff")
+	sequence := ReadGff("data/ecoli-mg1655-short.gff")
 	WriteGff(sequence, "data/test.gff")
 	testSequence := ReadGff("data/test.gff")
 
@@ -69,7 +69,7 @@ func ExampleWriteGff() {
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
-	testInputPath := "data/ecoli-mg1655.gff"
+	testInputPath := "data/ecoli-mg1655-short.gff"
 	testOutputPath := "data/test.gff"
 
 	testSequence := ReadGff(testInputPath)
@@ -104,7 +104,7 @@ func TestGffIO(t *testing.T) {
 
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ReadGff("data/ecoli-mg1655.gff")
+		ReadGff("data/ecoli-mg1655-short.gff")
 	}
 }
 
@@ -313,7 +313,7 @@ func TestJSONIO(t *testing.T) {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 
-	gffTestSequence := ReadGff("data/ecoli-mg1655.gff")
+	gffTestSequence := ReadGff("data/ecoli-mg1655-short.gff")
 	WriteJSON(gffTestSequence, "data/testGff.json")
 	gffReadTestSequence := ReadJSON("data/testGff.json")
 

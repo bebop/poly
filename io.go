@@ -260,7 +260,7 @@ func BuildGff(sequence Sequence) []byte {
 		if feature.Name != "" {
 			featureName = feature.Name
 		} else {
-			featureName = sequence.Meta.Name
+			featureName = sequence.Meta.Locus.Name
 		}
 
 		var featureSource string
@@ -311,7 +311,7 @@ func BuildGff(sequence Sequence) []byte {
 
 	for letterIndex, letter := range sequence.Sequence {
 		letterIndex++
-		if letterIndex%70 == 0 && letterIndex != 0 {
+		if letterIndex%70 == 0 && letterIndex != 0 && letterIndex != sequence.Meta.RegionEnd {
 			gffBuffer.WriteRune(letter)
 			gffBuffer.WriteString("\n")
 		} else {
