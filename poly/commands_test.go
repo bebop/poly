@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -35,16 +36,77 @@ TODO:
 write subtest to check for empty output before merge
 ******************************************************************************/
 
+var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655.gff", "../data/sample.json", "../data/base.fasta"}
+
 func TestConvertPipe(t *testing.T) {
+
+	for _, match := range testFilePaths {
+		extension := filepath.Ext(match)[1:]
+		var writeBuffer bytes.Buffer
+		app := application()
+		app.Writer = &writeBuffer
+
+		args := os.Args[0:1]                                    // Name of the program.
+		args = append(args, "c", "-i", extension, "-o", "json") // Append a flag
+
+		file, _ := ioutil.ReadFile(match)
+		app.Reader = bytes.NewReader(file)
+
+		err := app.Run(args)
+
+		if err != nil {
+			t.Fatalf("Run error: %s", err)
+		}
+
+		// getting test sequence from non-pipe io to compare against io to stdout
+		baseTestSequence := parseExt(match)
+		pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
+
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+			t.Errorf(" mismatch converting from %q to json (-want +got):\n%s", extension, diff)
+		}
+	}
+
+}
+
+func TestConvertIO(t *testing.T) {
+	for _, match := range testFilePaths {
+		extension := filepath.Ext(match)[1:]
+		var writeBuffer bytes.Buffer
+		app := application()
+		app.Writer = &writeBuffer
+
+		args := os.Args[0:1] // Name of the program.
+		args = append(args, "c", "-i", extension, "-o", extension)
+		file, _ := ioutil.ReadFile(match)
+		app.Reader = bytes.NewReader(file)
+
+		err := app.Run(args)
+
+		if err != nil {
+			t.Fatalf("Run error: %s", err)
+		}
+
+		// getting test sequence from non-pipe io to compare against io to stdout
+		baseTestSequence := parseExt(match)
+
+		pipeOutputTestSequence := parseFlag(writeBuffer.Bytes(), extension)
+
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
+		}
+	}
+}
+
+func TestConvertPipeString(t *testing.T) {
 
 	var writeBuffer bytes.Buffer
 	app := application()
 	app.Writer = &writeBuffer
 
-	args := os.Args[0:1]                                // Name of the program.
-	args = append(args, "c", "-i", "gbk", "-o", "json") // Append a flag
-
-	file, _ := ioutil.ReadFile("../data/puc19.gbk")
+	args := os.Args[0:1] // Name of the program.
+	args = append(args, "c", "-i", "string", "-o", "string")
+	file := []byte("ACTGATCGATCAGCTACGACTAGCATCAGCATCAGCATCAGCTACGACTAG")
 	app.Reader = bytes.NewReader(file)
 
 	err := app.Run(args)
@@ -54,12 +116,10 @@ func TestConvertPipe(t *testing.T) {
 	}
 
 	// getting test sequence from non-pipe io to compare against io to stdout
-	baseTestSequence := poly.ReadGbk("../data/puc19.gbk")
+	pipeOutputTestSequence := parseFlag(writeBuffer.Bytes(), "string")
 
-	pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
-
-	if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch from convert pipe input test (-want +got):\n%s", diff)
+	if string(file) != pipeOutputTestSequence.Sequence {
+		t.Errorf(" mismatch reading and writing strings from stdin to stdout.")
 	}
 
 }
@@ -99,6 +159,7 @@ func TestConvertFile(t *testing.T) {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 }
+
 func TestHashFile(t *testing.T) {
 
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
