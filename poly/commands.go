@@ -129,6 +129,8 @@ func convertCommand(c *cli.Context) error {
 					poly.WriteGff(sequence, outputPath+".gff")
 				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 					poly.WriteGbk(sequence, outputPath+".gbk")
+				} else if c.String("o") == "fasta" {
+					poly.WriteFASTA(sequence, outputPath+".fasta")
 				}
 
 				// decrementing wait group.
