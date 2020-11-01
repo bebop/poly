@@ -89,6 +89,10 @@ func convertCommand(c *cli.Context) error {
 			output = poly.BuildGff(sequence)
 		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 			output = poly.BuildGbk(sequence)
+		} else if c.String("o") == "fasta" {
+			output = poly.BuildFASTA(sequence)
+		} else if c.String("o") == "string" || c.String("o") == "txt" {
+			output = []byte(sequence.Sequence)
 		}
 
 		// output to stdout
@@ -373,25 +377,6 @@ func stdinToBytes(file io.Reader) []byte {
 	return stringBuffer.Bytes()
 }
 
-// a simple helper function to remove duplicates from a list of strings.
-// Used to reduce reduncy in filepath pattern matching.
-// from https://gist.github.com/johnwesonga/6301924
-func uniqueNonEmptyElementsOf(s []string) []string {
-	unique := make(map[string]bool, len(s))
-	us := make([]string, len(unique))
-	for _, elem := range s {
-		if len(elem) != 0 {
-			if !unique[elem] {
-				us = append(us, elem)
-				unique[elem] = true
-			}
-		}
-	}
-
-	return us
-
-}
-
 // a simple helper function to determine if there is input coming from stdin pipe.
 func isPipe(c *cli.Context) bool {
 	info, _ := os.Stdin.Stat()
@@ -421,8 +406,28 @@ func parseStdin(c *cli.Context) poly.Sequence {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
 		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
+	} else if c.String("i") == "fasta" {
+		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "string" {
 		sequence.Sequence = string(stdinToBytes(c.App.Reader))
+	}
+	return sequence
+}
+
+// a simple helper function to take stdin from a pipe and parse it into an Sequence
+func parseFlag(file []byte, flag string) poly.Sequence {
+	var sequence poly.Sequence
+	// logic for determining input format, then parses accordingly.
+	if flag == "json" {
+		json.Unmarshal(file, &sequence)
+	} else if flag == "gbk" || flag == "gb" {
+		sequence = poly.ParseGbk(file)
+	} else if flag == "gff" {
+		sequence = poly.ParseGff(file)
+	} else if flag == "fasta" {
+		sequence = poly.ParseFASTA(file)
+	} else if flag == "string" {
+		sequence.Sequence = string(file)
 	}
 	return sequence
 }
@@ -495,6 +500,25 @@ func getMatches(c *cli.Context) []string {
 
 }
 
+// a simple helper function to remove duplicates from a list of strings.
+// Used to reduce reduncy in filepath pattern matching.
+// from https://gist.github.com/johnwesonga/6301924
+func uniqueNonEmptyElementsOf(s []string) []string {
+	unique := make(map[string]bool, len(s))
+	us := make([]string, len(unique))
+	for _, elem := range s {
+		if len(elem) != 0 {
+			if !unique[elem] {
+				us = append(us, elem)
+				unique[elem] = true
+			}
+		}
+	}
+
+	return us
+
+}
+
 // function to parse whatever file is at a matched path.
 func fileParser(c *cli.Context, match string) poly.Sequence {
 	extension := filepath.Ext(match)
@@ -507,8 +531,26 @@ func fileParser(c *cli.Context, match string) poly.Sequence {
 		sequence = poly.ReadGbk(match)
 	} else if extension == ".json" || c.String("i") == "json" {
 		sequence = poly.ReadJSON(match)
-	} else {
-		// TODO put default error handling here.
+	} else if extension == ".fasta" || c.String("i") == "fasta" {
+		sequence = poly.ReadFASTA(match)
+	}
+	// TODO put default error handling here.
+	return sequence
+}
+
+func parseExt(match string) poly.Sequence {
+	extension := filepath.Ext(match)
+	var sequence poly.Sequence
+
+	// determining which reader to use and parse into Sequence struct.
+	if extension == ".gff" {
+		sequence = poly.ReadGff(match)
+	} else if extension == ".gbk" || extension == ".gb" {
+		sequence = poly.ReadGbk(match)
+	} else if extension == ".json" {
+		sequence = poly.ReadJSON(match)
+	} else if extension == ".fasta" {
+		sequence = poly.ReadFASTA(match)
 	}
 	return sequence
 }
