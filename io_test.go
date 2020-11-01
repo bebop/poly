@@ -239,7 +239,7 @@ func TestSnapgeneGenbankRegression(t *testing.T) {
 }
 
 func TestGenbankNewlineParsingRegression(t *testing.T) {
-	gbk := ReadGbk("data/bsub.gbk")
+	gbk := ReadGbk("data/puc19.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.SequenceLocation.Start == 410 && feature.SequenceLocation.End == 1750 && feature.Type == "CDS" {
@@ -302,7 +302,7 @@ func ExampleWriteJSON() {
 }
 
 func TestJSONIO(t *testing.T) {
-	testSequence := ReadGbk("data/bsub.gbk")
+	testSequence := ReadGbk("data/puc19.gbk")
 	WriteJSON(testSequence, "data/test.json")
 	readTestSequence := ReadJSON("data/test.json")
 
