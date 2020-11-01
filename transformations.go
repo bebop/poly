@@ -57,7 +57,7 @@ type Codon struct {
 	Weight  int // needs to be set to 1 for random chooser
 }
 
-// AminoAcid holds information for an amino acid and related codons in a struct in a struct
+// AminoAcid holds information for an amino acid and related codons in a struct
 type AminoAcid struct {
 	Letter string
 	Codons []Codon
@@ -109,10 +109,8 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 	return codons.String()
 }
 
-// CreateWeights weights each codon in a codon table according to input string codon frequency
-// this function actually mutates the CodonTable struct itself and doesn't technically need to
-// return but is useful if you want to create a copy while mutating... Not sure if deep copy is
-// appropriate
+// CreateWeights weights each codon in a codon table according to input string codon frequency.
+// This function actually mutates the CodonTable struct itself.
 func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)

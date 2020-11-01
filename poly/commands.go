@@ -411,7 +411,7 @@ func isNumeric(s string) bool {
 	return err == nil
 }
 
-// a simple helper function to take stdin from a pipe and parse it into an annotated sequence
+// a simple helper function to take stdin from a pipe and parse it into an Sequence
 func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
@@ -431,7 +431,8 @@ func parseStdin(c *cli.Context) poly.Sequence {
 func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 
 	var hashString string
-	switch strings.ToUpper(c.String("f")) {
+	hashFunctionName := strings.ToUpper(c.String("f"))
+	switch hashFunctionName {
 	case "MD5":
 		hashString = sequence.Hash(crypto.MD5.New())
 	case "SHA1":
@@ -458,13 +459,13 @@ func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 		hashString = sequence.Hash(crypto.SHA512_224.New())
 	case "SHA512_256":
 		hashString = sequence.Hash(crypto.SHA512_256.New())
-	case "BLAKE2s_256":
+	case "BLAKE2S_256":
 		hashString = sequence.Hash(crypto.BLAKE2s_256.New())
-	case "BLAKE2b_256":
+	case "BLAKE2B_256":
 		hashString = sequence.Hash(crypto.BLAKE2b_256.New())
-	case "BLAKE2b_384":
+	case "BLAKE2B_384":
 		hashString = sequence.Hash(crypto.BLAKE2b_384.New())
-	case "BLAKE2b_512":
+	case "BLAKE2B_512":
 		hashString = sequence.Hash(crypto.BLAKE2b_512.New())
 	case "BLAKE3":
 		hashString = sequence.Hash(blake3.New(32, nil))
