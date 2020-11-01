@@ -36,7 +36,7 @@ TODO:
 write subtest to check for empty output before merge
 ******************************************************************************/
 
-var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655.gff", "../data/testGff.json", "../data/base.fasta"}
+var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655.gff", "../data/sample.json", "../data/base.fasta"}
 
 func TestConvertPipe(t *testing.T) {
 
