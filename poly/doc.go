@@ -11,5 +11,9 @@ Linux - deb/rpm
 
 Windows
 	Coming soon...
+
+
+Usage
+	Please make good use of our `-h` help flag. Everything is up to date there and well tested. 
 */
 package main
