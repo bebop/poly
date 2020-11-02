@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,20 +82,9 @@ func convertCommand(c *cli.Context) error {
 
 		sequence := parseStdin(c)
 
-		var output []byte
+		output := buildStdOut(c, sequence)
 
 		// logic for chosing output format, then builds string to be output.
-		if c.String("o") == "json" {
-			output, _ = json.MarshalIndent(sequence, "", " ")
-		} else if c.String("o") == "gff" {
-			output = poly.BuildGff(sequence)
-		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-			output = poly.BuildGbk(sequence)
-		} else if c.String("o") == "fasta" {
-			output = poly.BuildFASTA(sequence)
-		} else if c.String("o") == "string" || c.String("o") == "txt" {
-			output = []byte(sequence.Sequence)
-		}
 
 		// output to stdout
 		fmt.Fprint(c.App.Writer, string(output))
@@ -118,21 +109,8 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				extension := filepath.Ext(match)
 				sequence := fileParser(c, match)
-
-				// determining output format and name, then writing out to name.
-				outputPath := match[0 : len(match)-len(extension)]
-				if c.String("o") == "json" {
-					poly.WriteJSON(sequence, outputPath+".json")
-				} else if c.String("o") == "gff" {
-					poly.WriteGff(sequence, outputPath+".gff")
-				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-					poly.WriteGbk(sequence, outputPath+".gbk")
-				} else if c.String("o") == "fasta" {
-					poly.WriteFASTA(sequence, outputPath+".fasta")
-				}
-
+				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
 
@@ -181,25 +159,7 @@ func hashCommand(c *cli.Context) error {
 	if isPipe(c) {
 		sequence := parseStdin(c)                   // get sequence from stdin
 		sequenceHash := flagSwitchHash(c, sequence) // get hash include no-op which only rotates the sequence
-
-		// handler for outputting String to stdout <- Default for pipes
-		if c.String("o") == "string" {
-
-			if strings.ToUpper(c.String("f")) == "NO" {
-				fmt.Fprint(c.App.Writer, sequenceHash) // prints with no newline
-			} else {
-				fmt.Fprintln(c.App.Writer, sequenceHash) // prints with newline
-			}
-
-		}
-
-		// handler for outputting JSON to stdout
-		if c.String("o") == "json" {
-			sequence.SequenceHash = sequenceHash                           // adding hash to JSON
-			sequence.SequenceHashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
-			output, _ := json.MarshalIndent(sequence, "", " ")
-			fmt.Fprint(c.App.Writer, string(output))
-		}
+		printHash(c, sequenceHash, "-")
 
 	} else {
 
@@ -217,49 +177,9 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				extension := filepath.Ext(match)
 				sequence := fileParser(c, match)
 				sequenceHash := flagSwitchHash(c, sequence)
-
-				// handler for outputting String <- Default
-				if strings.ToLower(c.String("o")) == "string" {
-
-					// if there's only one match then
-					if len(matches) == 1 {
-
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Fprint(c.App.Writer, sequenceHash)
-						} else {
-							// fmt.Println(sequenceHash)
-							fmt.Fprintln(c.App.Writer, sequenceHash)
-						}
-
-					} else { // if there's more than one match then print each hash
-
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Fprintln(c.App.Writer, sequenceHash) // just prints list of rotated, unhashed sequences
-						} else {
-							fmt.Fprintln(c.App.Writer, sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
-						}
-
-					}
-				}
-
-				// handler for outputting JSON.
-				if strings.ToLower(c.String("o")) == "json" {
-					sequence.SequenceHash = sequenceHash
-					sequence.SequenceHashFunction = strings.ToUpper(c.String("f"))
-
-					if c.Bool("--log") == true {
-						output, _ := json.MarshalIndent(sequence, "", " ")
-						fmt.Fprint(c.App.Writer, string(output))
-					} else {
-						outputPath := match[0 : len(match)-len(extension)]
-						// should have way to support wildcard matches for varied output names.
-						poly.WriteJSON(sequence, outputPath+".json")
-					}
-
-				}
+				printHash(c, sequenceHash, match)
 
 				// decrementing wait group.
 				wg.Done()
@@ -354,7 +274,6 @@ func translateCommand(c *cli.Context) error {
 			codonTable = poly.GetCodonTable(codonTableNumber)
 		}
 
-		// uncomment below to parse sequence from pipe
 		sequence := parseStdin(c)
 
 		aminoAcids := poly.Translate(sequence.Sequence, codonTable)
@@ -411,7 +330,7 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	} else if c.String("i") == "fasta" {
 		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "string" {
-		sequence.Sequence = string(stdinToBytes(c.App.Reader))
+		sequence.Sequence = parseText(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -540,6 +459,59 @@ func fileParser(c *cli.Context, match string) poly.Sequence {
 	return sequence
 }
 
+func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
+	var output []byte
+	if c.String("o") == "json" {
+		output, _ = json.MarshalIndent(sequence, "", " ")
+	} else if c.String("o") == "gff" {
+		output = poly.BuildGff(sequence)
+	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
+		output = poly.BuildGbk(sequence)
+	} else if c.String("o") == "fasta" {
+		output = poly.BuildFASTA(sequence)
+	} else if c.String("o") == "string" || c.String("o") == "txt" {
+		output = []byte(sequence.Sequence)
+	}
+	return output
+}
+
+func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
+	// determining output format and name, then writing out to name.
+	inputExtension := filepath.Ext(match)
+
+	var outputPath string
+	var outputExtension string
+	if filepath.Ext(c.String("o")) == "" {
+		outputExtension = c.String("o")
+		outputPath = match[0:len(match)-len(inputExtension)] + "." + outputExtension
+	} else {
+		outputPath = c.String("o")
+		outputExtension = filepath.Ext(c.String("o"))[1:]
+	}
+
+	if match == outputPath {
+		fmt.Fprintln(c.App.Writer, "WARNING: "+"input path and output path match. File: "+match+". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.")
+	} else if outputExtension == "json" {
+		poly.WriteJSON(sequence, outputPath)
+	} else if outputExtension == "gff" {
+		poly.WriteGff(sequence, outputPath)
+	} else if outputExtension == "gbk" || c.String("o") == "gb" {
+		poly.WriteGbk(sequence, outputPath)
+	} else if outputExtension == "fasta" {
+		poly.WriteFASTA(sequence, outputPath)
+	}
+
+}
+
+func printHash(c *cli.Context, hash string, path string) {
+	output := formatHashOutput(hash, path)
+	fmt.Fprint(c.App.Writer, output)
+}
+
+func formatHashOutput(hash string, path string) string {
+	return hash + "  " + path + "\n"
+}
+
 func parseExt(match string) poly.Sequence {
 	extension := filepath.Ext(match)
 	var sequence poly.Sequence
@@ -567,4 +539,14 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func parseText(file []byte) string {
+	fileString := string(file)
+	reg, err := regexp.Compile("\\*[^a-zA-Z]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	processedString := reg.ReplaceAllString(fileString, "")
+	return processedString
 }

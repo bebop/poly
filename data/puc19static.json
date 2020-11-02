@@ -21,7 +21,8 @@
    "genbank_division": "",
    "modification_date": "22-OCT-2019",
    "sequence_coding": "bp",
-   "circular": true
+   "circular": true,
+   "linear": false
   },
   "references": [
    {
@@ -42,8 +43,15 @@
     "remark": "",
     "range": "(bases 1 to 2686)"
    }
-  ]
+  ],
+  "other": {
+   "COMMENT": "description: pUC cloning vector."
+  }
  },
+ "description": "",
+ "sequence_hash": "",
+ "hash_function": "",
+ "sequence": "gagatacctacagcgtgagctatgagaaagcgccacgcttcccgaagggagaaaggcggacaggtatccggtaagcggcagggtcggaacaggagagcgcacgagggagcttccagggggaaacgcctggtatctttatagtcctgtcgggtttcgccacctctgacttgagcgtcgatttttgtgatgctcgtcaggggggcggagcctatggaaaaacgccagcaacgcggcctttttacggttcctggccttttgctggccttttgctcacatgttctttcctgcgttatcccctgattctgtggataaccgtattaccgcctttgagtgagctgataccgctcgccgcagccgaacgaccgagcgcagcgagtcagtgagcgaggaagcggaagagcgcccaatacgcaaaccgcctctccccgcgcgttggccgattcattaatgcagctggcacgacaggtttcccgactggaaagcgggcagtgagcgcaacgcaattaatgtgagttagctcactcattaggcaccccaggctttacactttatgcttccggctcgtatgttgtgtggaattgtgagcggataacaatttcacacaggaaacagctatgaccatgattacgccaagcttgcatgcctgcaggtcgactctagaggatccccgggtaccgagctcgaattcactggccgtcgttttacaacgtcgtgactgggaaaaccctggcgttacccaacttaatcgccttgcagcacatccccctttcgccagctggcgtaatagcgaagaggcccgcaccgatcgcccttcccaacagttgcgcagcctgaatggcgaatggcgcctgatgcggtattttctccttacgcatctgtgcggtatttcacaccgcatatggtgcactctcagtacaatctgctctgatgccgcatagttaagccagccccgacacccgccaacacccgctgacgcgccctgacgggcttgtctgctcccggcatccgcttacagacaagctgtgaccgtctccgggagctgcatgtgtcagaggttttcaccgtcatcaccgaaacgcgcgagacgaaagggcctcgtgatacgcctatttttataggttaatgtcatgataataatggtttcttagacgtcaggtggcacttttcggggaaatgtgcgcggaacccctatttgtttatttttctaaatacattcaaatatgtatccgctcatgagacaataaccctgataaatgcttcaataatattgaaaaaggaagagtatgagtattcaacatttccgtgtcgcccttattcccttttttgcggcattttgccttcctgtttttgctcacccagaaacgctggtgaaagtaaaagatgctgaagatcagttgggtgcacgagtgggttacatcgaactggatctcaacagcggtaagatccttgagagttttcgccccgaagaacgttttccaatgatgagcacttttaaagttctgctatgtggcgcggtattatcccgtattgacgccgggcaagagcaactcggtcgccgcatacactattctcagaatgacttggttgagtactcaccagtcacagaaaagcatcttacggatggcatgacagtaagagaattatgcagtgctgccataaccatgagtgataacactgcggccaacttacttctgacaacgatcggaggaccgaaggagctaaccgcttttttgcacaacatgggggatcatgtaactcgccttgatcgttgggaaccggagctgaatgaagccataccaaacgacgagcgtgacaccacgatgcctgtagcaatggcaacaacgttgcgcaaactattaactggcgaactacttactctagcttcccggcaacaattaatagactggatggaggcggataaagttgcaggaccacttctgcgctcggcccttccggctggctggtttattgctgataaatctggagccggtgagcgtgggtctcgcggtatcattgcagcactggggccagatggtaagccctcccgtatcgtagttatctacacgacggggagtcaggcaactatggatgaacgaaatagacagatcgctgagataggtgcctcactgattaagcattggtaactgtcagaccaagtttactcatatatactttagattgatttaaaacttcatttttaatttaaaaggatctaggtgaagatcctttttgataatctcatgaccaaaatcccttaacgtgagttttcgttccactgagcgtcagaccccgtagaaaagatcaaaggatcttcttgagatcctttttttctgcgcgtaatctgctgcttgcaaacaaaaaaaccaccgctaccagcggtggtttgtttgccggatcaagagctaccaactctttttccgaaggtaactggcttcagcagagcgcagataccaaatactgttcttctagtgtagccgtagttaggccaccacttcaagaactctgtagcaccgcctacatacctcgctctgctaatcctgttaccagtggctgctgccagtggcgataagtcgtgtcttaccgggttggactcaagacgatagttaccggataaggcgcagcggtcgggctgaacggggggttcgtgcacacagcccagcttggagcgaacgacctacaccgaact",
  "features": [
   {
    "Name": "",
@@ -67,7 +75,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -90,7 +101,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -113,7 +127,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -137,7 +154,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -160,7 +180,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -184,7 +207,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -207,7 +233,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -230,7 +259,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -253,7 +285,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -279,7 +314,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -302,7 +340,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -325,7 +366,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -348,7 +392,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -371,7 +418,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -394,7 +444,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -417,7 +470,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -440,7 +496,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -463,7 +522,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -490,7 +552,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -513,7 +578,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   },
   {
    "Name": "",
@@ -537,13 +605,10 @@
     "five_prime_partial": false,
     "three_prime_partial": false,
     "sub_locations": null
-   }
+   },
+   "sequence_hash": "",
+   "description": "",
+   "hash_function": ""
   }
- ],
- "sequence": {
-  "description": "",
-  "hash": "",
-  "hash_function": "",
-  "sequence": "gagatacctacagcgtgagctatgagaaagcgccacgcttcccgaagggagaaaggcggacaggtatccggtaagcggcagggtcggaacaggagagcgcacgagggagcttccagggggaaacgcctggtatctttatagtcctgtcgggtttcgccacctctgacttgagcgtcgatttttgtgatgctcgtcaggggggcggagcctatggaaaaacgccagcaacgcggcctttttacggttcctggccttttgctggccttttgctcacatgttctttcctgcgttatcccctgattctgtggataaccgtattaccgcctttgagtgagctgataccgctcgccgcagccgaacgaccgagcgcagcgagtcagtgagcgaggaagcggaagagcgcccaatacgcaaaccgcctctccccgcgcgttggccgattcattaatgcagctggcacgacaggtttcccgactggaaagcgggcagtgagcgcaacgcaattaatgtgagttagctcactcattaggcaccccaggctttacactttatgcttccggctcgtatgttgtgtggaattgtgagcggataacaatttcacacaggaaacagctatgaccatgattacgccaagcttgcatgcctgcaggtcgactctagaggatccccgggtaccgagctcgaattcactggccgtcgttttacaacgtcgtgactgggaaaaccctggcgttacccaacttaatcgccttgcagcacatccccctttcgccagctggcgtaatagcgaagaggcccgcaccgatcgcccttcccaacagttgcgcagcctgaatggcgaatggcgcctgatgcggtattttctccttacgcatctgtgcggtatttcacaccgcatatggtgcactctcagtacaatctgctctgatgccgcatagttaagccagccccgacacccgccaacacccgctgacgcgccctgacgggcttgtctgctcccggcatccgcttacagacaagctgtgaccgtctccgggagctgcatgtgtcagaggttttcaccgtcatcaccgaaacgcgcgagacgaaagggcctcgtgatacgcctatttttataggttaatgtcatgataataatggtttcttagacgtcaggtggcacttttcggggaaatgtgcgcggaacccctatttgtttatttttctaaatacattcaaatatgtatccgctcatgagacaataaccctgataaatgcttcaataatattgaaaaaggaagagtatgagtattcaacatttccgtgtcgcccttattcccttttttgcggcattttgccttcctgtttttgctcacccagaaacgctggtgaaagtaaaagatgctgaagatcagttgggtgcacgagtgggttacatcgaactggatctcaacagcggtaagatccttgagagttttcgccccgaagaacgttttccaatgatgagcacttttaaagttctgctatgtggcgcggtattatcccgtattgacgccgggcaagagcaactcggtcgccgcatacactattctcagaatgacttggttgagtactcaccagtcacagaaaagcatcttacggatggcatgacagtaagagaattatgcagtgctgccataaccatgagtgataacactgcggccaacttacttctgacaacgatcggaggaccgaaggagctaaccgcttttttgcacaacatgggggatcatgtaactcgccttgatcgttgggaaccggagctgaatgaagccataccaaacgacgagcgtgacaccacgatgcctgtagcaatggcaacaacgttgcgcaaactattaactggcgaactacttactctagcttcccggcaacaattaatagactggatggaggcggataaagttgcaggaccacttctgcgctcggcccttccggctggctggtttattgctgataaatctggagccggtgagcgtgggtctcgcggtatcattgcagcactggggccagatggtaagccctcccgtatcgtagttatctacacgacggggagtcaggcaactatggatgaacgaaatagacagatcgctgagataggtgcctcactgattaagcattggtaactgtcagaccaagtttactcatatatactttagattgatttaaaacttcatttttaatttaaaaggatctaggtgaagatcctttttgataatctcatgaccaaaatcccttaacgtgagttttcgttccactgagcgtcagaccccgtagaaaagatcaaaggatcttcttgagatcctttttttctgcgcgtaatctgctgcttgcaaacaaaaaaaccaccgctaccagcggtggtttgtttgccggatcaagagctaccaactctttttccgaaggtaactggcttcagcagagcgcagataccaaatactgttcttctagtgtagccgtagttaggccaccacttcaagaactctgtagcaccgcctacatacctcgctctgctaatcctgttaccagtggctgctgccagtggcgataagtcgtgtcttaccgggttggactcaagacgatagttaccggataaggcgcagcggtcgggctgaacggggggttcgtgcacacagcccagcttggagcgaacgacctacaccgaact"
- }
+ ]
 }
