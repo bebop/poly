@@ -17,23 +17,11 @@ import (
 /******************************************************************************
 Oct, 15, 2020
 
-Testing command line utilities via subroutines can be annoying so
-if you're doing it from the commandline be sure to compile first.
-From the project's root directory often use:
+Testing command line utilities can be annoying.
 
-go build && go install && go test -v ./...
-
-To accurately test your commands you MUST make sure to rebuild and reinstall
-before you run your tests. Otherwise your system version will be out of
-date and will give you results using an older build.
-
-Happy hacking,
-Tim
-
-
-TODO:
-
-write subtest to check for empty output before merge
+The way poly does it is by using the cli.app  object to spoof input and output
+via cli.app.reader and cli.app.writer. This is the only way to get true stack
+traceable coverage.
 ******************************************************************************/
 
 var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655-short.gff", "../data/sample.json", "../data/base.fasta"}
@@ -140,35 +128,35 @@ func TestConvertWriteFile(t *testing.T) {
 }
 
 // The test below passes on macosx but not ubuntu. Could someone try debugging it on a device running ubuntu?
-// func TestConvertWarning(t *testing.T) {
+func TestConvertWarning(t *testing.T) {
 
-// 	testFilePath := "../data/puc19Static.json"
-// 	var writeBuffer bytes.Buffer
+	testFilePath := "../data/puc19Static.json"
+	var writeBuffer bytes.Buffer
 
-// 	app := application()
-// 	app.Writer = &writeBuffer
+	app := application()
+	app.Writer = &writeBuffer
 
-// 	// testing file matching hash
-// 	args := os.Args[0:1]                                       // Name of the program.
-// 	args = append(args, "c", "-o", testFilePath, testFilePath) // Append a flag
+	// testing file matching hash
+	args := os.Args[0:1]                                       // Name of the program.
+	args = append(args, "c", "-o", testFilePath, testFilePath) // Append a flag
 
-// 	err := app.Run(args)
+	err := app.Run(args)
 
-// 	if err != nil {
-// 		t.Fatalf("Run error: %s", err)
-// 	}
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
 
-// 	if writeBuffer.Len() == 0 {
-// 		t.Error("TestConvertWarning did not write output to desired writer.")
-// 	}
+	if writeBuffer.Len() == 0 {
+		t.Error("TestConvertWarning did not write output to desired writer.")
+	}
 
-// 	warningOutputString := writeBuffer.String()
+	warningOutputString := writeBuffer.String()
 
-// 	warningTestString := "WARNING: " + "input path and output path match. File: " + testFilePath + ". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.\n"
-// 	if warningOutputString != warningTestString {
-// 		t.Errorf("TestConvertWarning has failed. Returned %q, want %q", warningOutputString, warningTestString)
-// 	}
-// }
+	warningTestString := "WARNING: " + "input path and output path match. File: " + testFilePath + ". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.\n"
+	if warningOutputString != warningTestString {
+		t.Errorf("TestConvertWarning has failed. Returned %q, want %q", warningOutputString, warningTestString)
+	}
+}
 
 func TestConvertPipeString(t *testing.T) {
 
