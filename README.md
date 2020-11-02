@@ -20,8 +20,8 @@ Poly is a Go library and command line utility for engineering organisms.
 ## Documentation
 
 * **[Installation](https://pkg.go.dev/github.com/TimothyStiles/poly)**
-* **[Library usage examples](https://pkg.go.dev/github.com/TimothyStiles/poly)**
-* **CLI usage**: Please [install Poly](https://pkg.go.dev/github.com/TimothyStiles/poly/poly) and make good use of our `-h` help flag.
+* **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
+* **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
 
 
 ## Community
