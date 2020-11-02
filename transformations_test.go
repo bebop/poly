@@ -28,14 +28,14 @@ func TestTranslation(t *testing.T) {
 func ExampleOptimize() {
 
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	codonTable := GetCodonTable(11)
 
 	sequence := ReadGbk("data/puc19.gbk")
-	rawSequence := sequence.Sequence
-	codonTable.CreateWeights(rawSequence)
+	codonTable := GetCodonTable(11)
 
-	optimizedSequence := Optimize(gfpTranslation, codonTable)
-	optimizedSequenceTranslation := Translate(optimizedSequence, codonTable)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	optimizedSequence := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation := Translate(optimizedSequence, optimizationTable)
 
 	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
 	// output: true
@@ -43,14 +43,14 @@ func ExampleOptimize() {
 
 func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	codonTable := GetCodonTable(11)
 
 	sequence := ReadGbk("data/puc19.gbk")
-	rawSequence := sequence.Sequence
-	codonTable.CreateWeights(rawSequence)
+	codonTable := GetCodonTable(11)
 
-	optimizedSequence := Optimize(gfpTranslation, codonTable)
-	optimizedSequenceTranslation := Translate(optimizedSequence, codonTable)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	optimizedSequence := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation := Translate(optimizedSequence, optimizationTable)
 
 	if optimizedSequenceTranslation != gfpTranslation {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)

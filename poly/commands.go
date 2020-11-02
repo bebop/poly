@@ -304,7 +304,7 @@ func optimizeCommand(c *cli.Context) error {
 	// if a file exists to weigh the table. Weigh it.
 	if fileExists(c.String("wt")) {
 		targetOrganism := fileParser(c, c.String("wt"))
-		codonTable.CreateWeights(targetOrganism.Sequence)
+		codonTable.OptimizeTable(targetOrganism.Sequence)
 	}
 
 	if isPipe(c) {

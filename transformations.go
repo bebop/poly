@@ -109,9 +109,15 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 	return codons.String()
 }
 
-// CreateWeights weights each codon in a codon table according to input string codon frequency.
+// GetOptimizationTable is a Sequence method that takes a CodonTable and weights it to be used to optimize inserts.
+func (sequence Sequence) GetOptimizationTable(codonTable CodonTable) CodonTable {
+	sequenceString := getCodingRegions(sequence)
+	return codonTable.OptimizeTable(sequenceString)
+}
+
+// OptimizeTable weights each codon in a codon table according to input string codon frequency.
 // This function actually mutates the CodonTable struct itself.
-func (codonTable CodonTable) CreateWeights(sequence string) CodonTable {
+func (codonTable CodonTable) OptimizeTable(sequence string) CodonTable {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
