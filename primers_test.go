@@ -46,6 +46,23 @@ func TestSantaLucia(t *testing.T) {
 	}
 }
 
+func TestSantaLuciaReverseComplement(t *testing.T) {
+	testSeq := "ACGTAGATCTACGT" //"GTAAAACGACGGCCAGT" // M13 fwd
+
+	testReverseComplement := ReverseComplement(testSeq)
+	if testSeq != testReverseComplement {
+		t.Errorf("Input is not a reverse complement of it's. Got %q instead of %q", testSeq, testReverseComplement)
+	}
+	testCPrimer := 0.1e-6
+	testCNa := 350e-3
+	testCMg := 0.0
+	expectedTM := 47.428514
+	if calcTM, _, _ := SantaLucia(testSeq, testCPrimer, testCNa, testCMg); math.Abs(expectedTM-calcTM)/expectedTM >= 0.02 {
+		t.Errorf("SantaLucia has changed on test. Got %f instead of %f", calcTM, expectedTM)
+	}
+
+}
+
 func ExampleMeltingTemp() {
 	sequenceString := "GTAAAACGACGGCCAGT" // M13 fwd
 	expectedTM := 52.8
