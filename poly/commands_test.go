@@ -130,7 +130,7 @@ func TestConvertWriteFile(t *testing.T) {
 // The test below passes on macosx but not ubuntu. Could someone try debugging it on a device running ubuntu?
 func TestConvertWarning(t *testing.T) {
 
-	testFilePath := "../data/puc19Static.json"
+	testFilePath := "../data/puc19.gbk"
 	var writeBuffer bytes.Buffer
 
 	app := application()
