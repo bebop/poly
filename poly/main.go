@@ -72,12 +72,6 @@ func application() *cli.App {
 				Name:  "o",
 				Usage: "Specify file output type or output path.",
 			},
-
-			&cli.BoolFlag{
-				Name:  "--log",
-				Value: false,
-				Usage: "Forces output to stdout.",
-			},
 		},
 
 		// This is where you start defining subcommands there's a lot of spacing to enhance readability since these nested brackets can be a little much.

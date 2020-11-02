@@ -38,6 +38,18 @@ write subtest to check for empty output before merge
 
 var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655-short.gff", "../data/sample.json", "../data/base.fasta"}
 
+func TestMain(t *testing.T) {
+	rescueStdout := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	arg := os.Args[0:1]
+	os.Args = append(arg, "-h")
+	main()
+	os.Args = os.Args[0:1]
+	w.Close()
+	os.Stdout = rescueStdout
+}
 func TestConvertPipe(t *testing.T) {
 
 	for _, match := range testFilePaths {
@@ -98,6 +110,64 @@ func TestConvertIO(t *testing.T) {
 	}
 }
 
+func TestConvertWriteFile(t *testing.T) {
+
+	for _, match := range testFilePaths {
+		extension := filepath.Ext(match)
+		testOutputPath := "test" + extension
+
+		loopApp := application()
+
+		args := os.Args[0:1] // Name of the program.
+		args = append(args, "c", "-o", testOutputPath, match)
+
+		err := loopApp.Run(args)
+
+		if err != nil {
+			t.Fatalf("Run error: %s", err)
+		}
+
+		// getting test sequence from non-pipe io to compare against io to stdout
+		baseTestSequence := parseExt(match)
+
+		outputSequence := parseExt(testOutputPath)
+
+		if diff := cmp.Diff(baseTestSequence, outputSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
+		}
+	}
+}
+
+func TestConvertWarning(t *testing.T) {
+
+	testFilePath := "../data/puc19Static.json"
+	var writeBuffer bytes.Buffer
+
+	app := application()
+	app.Writer = &writeBuffer
+
+	// testing file matching hash
+	args := os.Args[0:1]                                       // Name of the program.
+	args = append(args, "c", "-o", testFilePath, testFilePath) // Append a flag
+
+	err := app.Run(args)
+
+	if err != nil {
+		t.Fatalf("Run error: %s", err)
+	}
+
+	if writeBuffer.Len() == 0 {
+		t.Error("TestHash did not write output to desired writer.")
+	}
+
+	warningOutputString := writeBuffer.String()
+
+	warningTestString := "WARNING: " + "input path and output path match. File: " + testFilePath + ". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.\n"
+	if warningOutputString != warningTestString {
+		t.Errorf("TestConvertWarning has failed. Returned %q, want %q", warningOutputString, warningTestString)
+	}
+}
+
 func TestConvertPipeString(t *testing.T) {
 
 	var writeBuffer bytes.Buffer
@@ -121,7 +191,6 @@ func TestConvertPipeString(t *testing.T) {
 	if string(file) != pipeOutputTestSequence.Sequence {
 		t.Errorf(" mismatch reading and writing strings from stdin to stdout.")
 	}
-
 }
 
 func TestConvertFile(t *testing.T) {
@@ -162,6 +231,7 @@ func TestConvertFile(t *testing.T) {
 
 func TestHashFile(t *testing.T) {
 
+	testFilePath := "../data/puc19.gbk"
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 	var writeBuffer bytes.Buffer
 
@@ -169,8 +239,8 @@ func TestHashFile(t *testing.T) {
 	app.Writer = &writeBuffer
 
 	// testing file matching hash
-	args := os.Args[0:1]                             // Name of the program.
-	args = append(args, "hash", "../data/puc19.gbk") // Append a flag
+	args := os.Args[0:1]                      // Name of the program.
+	args = append(args, "hash", testFilePath) // Append a flag
 
 	err := app.Run(args)
 
@@ -182,8 +252,11 @@ func TestHashFile(t *testing.T) {
 		t.Error("TestHash did not write output to desired writer.")
 	}
 
-	hashOutputString := strings.TrimSpace(writeBuffer.String())
-	if hashOutputString != puc19GbkBlake3Hash {
+	hashOutputString := writeBuffer.String()
+
+	// use same function that outputs hash results to format test case.
+	testHashString := formatHashOutput(puc19GbkBlake3Hash, testFilePath)
+	if hashOutputString != testHashString {
 		t.Errorf("TestHashFile has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
 	}
 
@@ -192,12 +265,14 @@ func TestHashFile(t *testing.T) {
 func TestHashPipe(t *testing.T) {
 
 	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
+	testFilePath := "../data/puc19.gbk"
+
 	var writeBuffer bytes.Buffer
 
 	// create a mock application
 	app := application()
 	app.Writer = &writeBuffer
-	file, _ := ioutil.ReadFile("../data/puc19.gbk")
+	file, _ := ioutil.ReadFile(testFilePath)
 	app.Reader = bytes.NewReader(file)
 
 	args := os.Args[0:1]                     // Name of the program.
@@ -209,39 +284,20 @@ func TestHashPipe(t *testing.T) {
 		t.Fatalf("Run error: %s", err)
 	}
 
-	hashOutputString := strings.TrimSpace(writeBuffer.String())
+	hashOutputString := writeBuffer.String()
 
-	if hashOutputString != puc19GbkBlake3Hash {
+	// use same function that outputs hash results to format test case.
+	testHashString := formatHashOutput(puc19GbkBlake3Hash, "-")
+
+	if hashOutputString != testHashString {
 		t.Errorf("TestHashPipe has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
 	}
 
 }
 
-func TestHashJSON(t *testing.T) {
-	// testing json write output
-
-	puc19GbkBlake3Hash := "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
-
-	app := application()
-
-	args := os.Args[0:1]                                           // Name of the program.
-	args = append(args, "hash", "-o", "json", "../data/puc19.gbk") // Append a flag
-	err := app.Run(args)
-
-	if err != nil {
-		t.Fatalf("Run error: %s", err)
-	}
-
-	hashOutputString := poly.ReadJSON("../data/puc19.json").SequenceHash
-	os.Remove("../data/puc19.json")
-
-	if hashOutputString != puc19GbkBlake3Hash {
-		t.Errorf("TestHashJSON has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
-	}
-
-}
-
 func TestHashFunctions(t *testing.T) {
+
+	testFilePath := "../data/puc19.gbk"
 
 	hashfunctionsTestMap := map[string]string{
 		"":            "4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9", // default / defaults to blake3
@@ -281,7 +337,7 @@ func TestHashFunctions(t *testing.T) {
 		app := application()
 		app.Writer = &writeBuffer
 		args := os.Args[0:1]
-		args = append(args, "hash", "-f", key, "../data/puc19.gbk")
+		args = append(args, "hash", "-f", key, testFilePath)
 		err := app.Run(args)
 
 		if err != nil {
@@ -296,10 +352,11 @@ func TestHashFunctions(t *testing.T) {
 			t.Error("TestHash did not write output to desired writer.")
 		}
 
-		hashOutputString := strings.TrimSpace(writeBuffer.String())
+		hashOutputString := writeBuffer.String()
+		hashTestString := formatHashOutput(hashfunctionsTestMap[key], testFilePath)
 		// fmt.Println("\""+key+"\"", ": ", "\""+hashOutputString+"\",") // <- prints out every
-		if hashOutputString != hashfunctionsTestMap[key] {
-			t.Errorf("TestHashFunctions for function %q has failed. Returned %q, want %q", key, hashOutputString, hashfunctionsTestMap[key])
+		if hashOutputString != hashTestString {
+			t.Errorf("TestHashFunctions for function %q has failed. Returned %q, want %q", key, hashOutputString, hashTestString)
 		}
 	}
 }
