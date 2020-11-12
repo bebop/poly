@@ -74,7 +74,7 @@ func TestConvertPipe(t *testing.T) {
 		baseTestSequence := parseExt(match)
 		pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
 
-		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreUnexported(poly.Feature{})); diff != "" {
 			t.Errorf(" mismatch converting from %q to json (-want +got):\n%s", extension, diff)
 		}
 	}
@@ -104,7 +104,7 @@ func TestConvertIO(t *testing.T) {
 
 		pipeOutputTestSequence := parseFlag(writeBuffer.Bytes(), extension)
 
-		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreUnexported(poly.Feature{})); diff != "" {
 			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
 		}
 	}
@@ -133,7 +133,7 @@ func TestConvertWriteFile(t *testing.T) {
 		outputSequence := parseExt(testOutputPath)
 		os.Remove(testOutputPath)
 
-		if diff := cmp.Diff(baseTestSequence, outputSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, outputSequence, cmpopts.IgnoreUnexported(poly.Feature{})); diff != "" {
 			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
 		}
 	}
@@ -215,7 +215,7 @@ func TestConvertFile(t *testing.T) {
 	os.Remove("../data/puc19.json")
 
 	// compared input gff from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreUnexported(poly.Feature{})); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 
@@ -226,7 +226,7 @@ func TestConvertFile(t *testing.T) {
 	os.Remove("../data/t4_intron.json")
 
 	// compared input gbk from resulting output json. Fail test and print diff if error.
-	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreUnexported(poly.Feature{})); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 }

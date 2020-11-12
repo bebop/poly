@@ -36,7 +36,7 @@ import (
 // BLAKE2b_384                 // import golang.org/x/crypto/blake2b
 // BLAKE2b_512                 // import golang.org/x/crypto/blake2b
 
-// boothLeastRotation gets the least rotation of a circular string.
+// boothLeastRotation gets the least rotation indeces of a circular string.
 func boothLeastRotation(sequence string) int {
 
 	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
@@ -88,9 +88,15 @@ func boothLeastRotation(sequence string) int {
 	return leastRotationIndex
 }
 
-// RotateSequence rotates circular sequences to deterministic point.
-func RotateSequence(sequence string) string {
+// BoothRotation rotates circular sequences to deterministic point regardless of starting point.
+func BoothRotation(sequence string) string {
 	rotationIndex := boothLeastRotation(sequence)
+	sequence = RotateSequence(sequence, rotationIndex)
+	return sequence
+}
+
+// RotateSequence takes a sequence string and and index and rotates a circular sequence in the clockwise direction.
+func RotateSequence(sequence string, index int) string {
 	var sequenceBuilder strings.Builder
 
 	// writing the same sequence twice. using build incase of very long circular genome.
@@ -98,14 +104,15 @@ func RotateSequence(sequence string) string {
 	sequenceBuilder.WriteString(sequence)
 
 	concatenatedSequence := sequenceBuilder.String()
-	sequence = concatenatedSequence[rotationIndex : rotationIndex+len(sequence)]
+	sequence = concatenatedSequence[index : index+len(sequence)]
+
 	return sequence
 }
 
 // Hash is a method wrapper for hashing Sequence structs.
 func (sequence Sequence) Hash(hash hash.Hash) string {
 	if sequence.Meta.Locus.Circular {
-		sequence.Sequence = RotateSequence(sequence.Sequence)
+		sequence.Sequence = BoothRotation(sequence.Sequence)
 	}
 	seqHash, _ := hashSequence(sequence.Sequence, hash)
 	return seqHash

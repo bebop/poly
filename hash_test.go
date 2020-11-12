@@ -40,7 +40,7 @@ func ExampleRotateSequence() {
 	sequenceLength := len(sequence.Sequence)
 	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
 
-	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
+	fmt.Println(BoothRotation(sequence.Sequence) == BoothRotation(testSequence))
 	// output: true
 }
 
@@ -56,9 +56,9 @@ func TestLeastRotation(t *testing.T) {
 		bufferElement, _, _ := sequenceBuffer.ReadRune()
 		sequenceBuffer.WriteRune(bufferElement)
 		if elementIndex == 0 {
-			rotatedSequence = RotateSequence(sequenceBuffer.String())
+			rotatedSequence = BoothRotation(sequenceBuffer.String())
 		} else {
-			newRotatedSequence := RotateSequence(sequenceBuffer.String())
+			newRotatedSequence := BoothRotation(sequenceBuffer.String())
 			if rotatedSequence != newRotatedSequence {
 				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(rotatedSequence, newRotatedSequence, false)
