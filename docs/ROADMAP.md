@@ -2,14 +2,14 @@
 
 ## Must have features before V1 release in order of priority
 
-* `insert`, `delete`, `replace` sequence methods -> Tim
-* synthesis optimization -> Keoni, Nick, Milo, John
-* cloning - goldengate, gibson, restriction, etc
-* Primer Design CLI -> Milo, Nick, John
+* [`insert`, `delete`, `replace` sequence methods](https://github.com/TimothyStiles/poly/issues/56) -> Tim
+* [synthesis optimization](https://github.com/TimothyStiles/poly/issues/50) -> Keoni, Nick, Milo, John
+* [cloning - goldengate, gibson, restriction, etc](https://github.com/TimothyStiles/poly/issues/49)
+* [Primer Design CLI](https://github.com/TimothyStiles/poly/issues/43)-> Milo, Nick, John
 
 ## Will likely need before V1 release
 
-* SBOL3 IO -> James
+* [SBOL3 IO](https://github.com/TimothyStiles/poly/issues/52) -> James
 * wetlab test case -> Keoni
 
 ## Planned features that may be released before or after V1
