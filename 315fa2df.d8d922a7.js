@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[10],{147:function(e){e.exports=JSON.parse('{"docsSidebars":{"someSidebar":[{"collapsed":true,"type":"category","label":"Getting Started","items":[{"type":"link","label":"Installing Poly","href":"/poly/docs/"}]}]},"permalinkToSidebar":{"/poly/docs/":"someSidebar"}}')}}]);
