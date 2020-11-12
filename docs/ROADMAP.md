@@ -28,10 +28,11 @@
 ## Stability milestones
 
 * ~100% code coverage (currently at 94%)
-* Autodocumenation of command line tools.
+* Auto-documenation of command line tools.
 * Adding windows support
 * Integration testing of cross format IO.
 * Internationalize documentation
+* Improved error handling
 
 ## Feature upgrades
 
