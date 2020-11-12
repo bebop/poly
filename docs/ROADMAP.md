@@ -16,7 +16,14 @@
 
 * Ribosome binding site calculator
 * Non-repetitive parts calculator
+* RNA folding
 * `store`, `search`, `track`, and `diff` functions and CLI. -> Tim, Keoni
+
+## Future features that may or may not be implemented (pie in the sky)
+
+* API server for enterprise interop
+* Integration of published machine learning models for things like [RNA folding](https://github.com/ml4bio/e2efold)
+
 
 ## Stability milestones
 
