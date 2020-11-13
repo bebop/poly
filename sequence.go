@@ -78,7 +78,7 @@ func (sequence Sequence) Length() int {
 	return len(sequence.Sequence)
 }
 
-type Equaler interface {
+type equaler interface {
 	Equals(*Feature) bool
 }
 
