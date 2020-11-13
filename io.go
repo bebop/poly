@@ -106,7 +106,7 @@ type Feature struct {
 	SequenceHash         string            `json:"sequence_hash"`
 	Description          string            `json:"description"`
 	SequenceHashFunction string            `json:"hash_function"`
-	ParentSequence       *Sequence         `json:"-"`
+	parentSequence       *Sequence         `json:"-"`
 }
 
 // Sequence holds all sequence information in a single struct.
@@ -117,13 +117,6 @@ type Sequence struct {
 	SequenceHashFunction string    `json:"hash_function"`
 	Sequence             string    `json:"sequence"`
 	Features             []Feature `json:"features"`
-}
-
-// AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
-func (sequence *Sequence) AddFeature(feature Feature) []Feature {
-	feature.ParentSequence = sequence
-	sequence.Features = append(sequence.Features, feature)
-	return sequence.Features
 }
 
 /******************************************************************************
