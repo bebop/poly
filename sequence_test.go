@@ -69,3 +69,40 @@ func TestLocationParser(t *testing.T) {
 		t.Errorf("Feature sequence parser has changed on test 'complement(join(893..1098,1101..2770))'. Got this:\n%s instead of \n%s", featureComplementJoin, seqComplementJoin)
 	}
 }
+
+func TestSequenceMethods(t *testing.T) {
+	sequence := ReadGbk("data/puc19.gbk")
+	originalSequenceString := sequence.Sequence
+	deletedSubSequence := sequence.GetRange(0, 10)
+
+	sequenceLength := len(sequence.Sequence)
+	sequence.deleteRange(0, 10)
+	alteredSequenceLength := len(sequence.Sequence)
+	sequenceLengthDiff := sequenceLength - alteredSequenceLength
+	expectedLength := 10
+
+	if sequenceLengthDiff != expectedLength {
+		t.Errorf("deleteRange Sequence method has changed on test. Got length: \n%q instead of \n%q", sequenceLengthDiff, expectedLength)
+	}
+
+	sequence.insertSequence(0, deletedSubSequence)
+
+	if sequence.Sequence != originalSequenceString {
+		t.Errorf("sequence methods have changed on test Got this: \n%s instead of \n\n%s", sequence.Sequence, originalSequenceString)
+	}
+
+}
+
+func TestDeleteMeta(t *testing.T) {
+	sequence := ReadGbk("data/puc19.gbk")
+
+	// backupFeatures := sequence.Features
+	for _, feature := range sequence.Features {
+		sequence.RemoveFeature(feature)
+	}
+
+	if len(sequence.Features) != 0 {
+		t.Errorf("sequence methods have changed on test Got this: \n%d instead of \n%d", len(sequence.Features), 0)
+
+	}
+}
