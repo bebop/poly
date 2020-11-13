@@ -102,11 +102,19 @@ func RotateSequence(sequence string, index int) string {
 	// writing the same sequence twice. using build incase of very long circular genome.
 	sequenceBuilder.WriteString(sequence)
 	sequenceBuilder.WriteString(sequence)
-
 	concatenatedSequence := sequenceBuilder.String()
+
+	if index < 0 {
+		index = len(sequence) + index
+	}
 	sequence = concatenatedSequence[index : index+len(sequence)]
 
 	return sequence
+}
+
+// Rotate wraps RotateSequence as a Sequence method.
+func (sequence *Sequence) Rotate(index int) {
+	sequence.Sequence = RotateSequence(sequence.Sequence, index)
 }
 
 // Hash is a method wrapper for hashing Sequence structs.
