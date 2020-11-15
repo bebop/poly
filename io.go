@@ -189,7 +189,7 @@ func ParseGff(file []byte) Sequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			sequence.AddFeature(record)
+			sequence.Annotate(record)
 		}
 	}
 	sequence.Sequence = sequenceBuffer.String()
@@ -353,7 +353,7 @@ func ParseJSON(file []byte) Sequence {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		sequence.AddFeature(feature)
+		sequence.Annotate(feature)
 	}
 	return sequence
 }
@@ -449,7 +449,7 @@ func ParseFASTA(file []byte) Sequence {
 
 	// add features last so that internal pointer to parent sequence is accurate
 	for _, feature := range features {
-		sequence.AddFeature(feature)
+		sequence.Annotate(feature)
 	}
 
 	return sequence
@@ -583,7 +583,7 @@ func ParseGbk(file []byte) Sequence {
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
 	for _, feature := range features {
-		sequence.AddFeature(feature)
+		sequence.Annotate(feature)
 	}
 
 	return sequence

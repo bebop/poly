@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"sort"
 	"strings"
 
 	"lukechampine.com/blake3"
@@ -55,8 +56,8 @@ func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.SequenceLocation)
 }
 
-// AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
-func (sequence *Sequence) AddFeature(feature Feature) {
+// Annotate is the canonical way to add a feature as an annotation for a region of a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
+func (sequence *Sequence) Annotate(feature Feature) {
 	feature.parentSequence = sequence
 	sequence.Features = append(sequence.Features, feature)
 }
@@ -73,12 +74,101 @@ func (sequence *Sequence) RemoveFeature(feature Feature) {
 	sequence.Features = filteredFeatures
 }
 
+// Insert inserts a single feature and it's sequence into a sequence
+func (sequence *Sequence) Insert(feature Feature) {
+
+	retrievedSequence := feature.GetSequence()
+
+	if retrievedSequence != "" {
+		// if for some ungodly reason feature being added straddles 0 index
+		sequence.insertSequence(feature.SequenceLocation.Start, retrievedSequence)
+		shift := feature.SequenceLocation.End - feature.SequenceLocation.Start
+		for index := range sequence.Features {
+			if sequence.Features[index].SequenceLocation.Start >= feature.SequenceLocation.Start {
+				sequence.Features[index].SequenceLocation.Start += shift
+				sequence.Features[index].SequenceLocation.End += shift
+			}
+		}
+		sequence.Annotate(feature)
+	} else { // maybe include stored feature.sequence if feature.GetSequence() fails?
+		// throw error here.
+	}
+
+}
+
+// Delete deletes both a feature annotation and the feature sequence from the sequence string.
+func (sequence *Sequence) Delete(feature Feature) {
+	sequence.deleteRange(feature.SequenceLocation.Start, feature.SequenceLocation.End)
+	var shift, shiftStart int
+	// if straddles 0 index
+	if feature.SequenceLocation.Start > feature.SequenceLocation.End {
+		shift = -feature.SequenceLocation.End // if straddles end is positive and is shift
+		shiftStart = 0
+	} else {
+		// if does not straddle 0 index
+		shift = -(feature.SequenceLocation.End - feature.SequenceLocation.Start)
+		shiftStart = feature.SequenceLocation.End
+	}
+	for index := range sequence.Features {
+		if sequence.Features[index].SequenceLocation.Start >= shiftStart {
+			sequence.Features[index].SequenceLocation.Start += shift
+			sequence.Features[index].SequenceLocation.End += shift
+		}
+	}
+	sequence.RemoveFeature(feature)
+}
+
+// func (feature *Feature) SetStart(newStart int) {
+
+// }
+
+func (sequence *Sequence) sortFeatures() {
+	sort.Slice(sequence.Features, func(i, j int) bool {
+
+		flag := sequence.Features[i].SequenceLocation.Start < sequence.Features[j].SequenceLocation.Start
+
+		if sequence.Features[i].SequenceLocation.Start == sequence.Features[j].SequenceLocation.Start {
+			flag = sequence.Features[i].SequenceLocation.End < sequence.Features[j].SequenceLocation.End
+		}
+		return flag
+	})
+}
+func (sequence *Sequence) shiftLocations(start, end int, insert bool) {
+	// length := sequence.Length()
+	for index := range sequence.Features {
+		sequence.Features[index].SequenceLocation.shiftLocation(start, end, insert)
+	}
+}
+
+// given a new start with shift all locations and sublocations around newStart.
+func (location *Location) shiftLocation(start, end int, insert bool) {
+	if len(location.SubLocations) == 0 {
+		if insert {
+			if location.Start >= end {
+				location.Start += end - start
+				location.End += end - start
+			}
+		} else { // if deletion
+			if end-start < 0 { // if deletion straddles 0
+
+			} else {
+
+			}
+		}
+
+	} else {
+		for _, subLocation := range location.SubLocations {
+			subLocation.shiftLocation(start, end, insert)
+		}
+	}
+}
+
 // Length is a helper method to get Length of sequence.
 func (sequence Sequence) Length() int {
 	return len(sequence.Sequence)
 }
 
-type equaler interface {
+type equals interface {
 	Equals(*Feature) bool
 }
 

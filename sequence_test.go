@@ -1,7 +1,11 @@
 package poly
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestGetSequenceMethods(t *testing.T) {
@@ -104,5 +108,55 @@ func TestDeleteMeta(t *testing.T) {
 	if len(sequence.Features) != 0 {
 		t.Errorf("sequence methods have changed on test Got this: \n%d instead of \n%d", len(sequence.Features), 0)
 
+	}
+}
+
+func TestSingleInsert(t *testing.T) {
+	sequence := ReadGbk("./data/puc19.gbk")
+	sequenceCopy := ReadGbk("./data/puc19.gbk")
+
+	// feature := sequence.Features[4]
+	featureCopy := sequenceCopy.Features[4]
+	sequence.Delete(featureCopy)
+
+	for _, feature := range sequence.Features {
+		if Equals(feature, featureCopy) {
+			t.Errorf("feature was not deleted from Features.")
+		}
+	}
+
+	// checks to see if subsequence was deleted
+	if diff := cmp.Diff(sequence.GetSequence(), sequenceCopy.GetSequence(), cmpopts.IgnoreUnexported(Feature{})); diff == "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+	// why this line though
+	// sequence.sortFeatures()
+
+	sequence.Insert(featureCopy)
+
+	// checks to see if a feature was added
+	if len(sequence.Features) != len(sequenceCopy.Features) {
+		t.Errorf("sequence feature slices have different lengths. original: %d \n copy: %d", len(sequence.Features), len(sequenceCopy.Features))
+	}
+
+	// checks to see if subsequence was reinserted
+	if diff := cmp.Diff(sequence.GetSequence(), sequenceCopy.GetSequence(), cmpopts.IgnoreUnexported(Feature{})); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
+	sequence.sortFeatures()
+	sequenceCopy.sortFeatures()
+
+	for index := range sequence.Features {
+		original := sequence.Features[index]
+		copy := sequenceCopy.Features[index]
+		if !Equals(original, copy) {
+			fmt.Println(index)
+		}
+	}
+
+	// checks to see
+	if diff := cmp.Diff(sequence, sequenceCopy, cmpopts.IgnoreUnexported(Feature{})); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 }
