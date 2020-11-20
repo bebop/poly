@@ -126,25 +126,7 @@ func (codonTable CodonTable) OptimizeTable(sequence string) CodonTable {
 	codonFrequencyMap := getCodonFrequency(sequence)
 
 	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
-
-		// Get sum of codon occurences for particular amino acid
-		codonOccurenceSum := 0
-		for _, codon := range aminoAcid.Codons {
-			triplet := codonFrequencyMap[codon.Triplet]
-			codonOccurenceSum += triplet
-		}
-
-		// Threshold codons that occur less than 10% for coding a particular amino acid
-		for _, codon := range aminoAcid.Codons {
-			codonPercentage := float64(codonFrequencyMap[codon.Triplet]) / float64(codonOccurenceSum)
-
-			if codonPercentage < 0.10 {
-				codonFrequencyMap[codon.Triplet] = 0
-			}
-
-		}
-
-		// apply thresholded weights to codonTable
+		// apply weights to codonTable
 		for codonIndex, codon := range aminoAcid.Codons {
 			codonTable.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
@@ -194,9 +176,20 @@ func (codonTable CodonTable) chooser() map[string]weightedRand.Chooser {
 		// create a list of codon choices for this specific amino acid
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
 
-		// for every codon related to current amino acid append its Triplet and Weight to codonChoices
+		// Get sum of codon occurences for particular amino acid
+		codonOccurenceSum := 0
 		for _, codon := range aminoAcid.Codons {
-			codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Weight)})
+			codonOccurenceSum += codon.Weight
+		}
+
+		// Threshold codons that occur less than 10% for coding a particular amino acid
+		for _, codon := range aminoAcid.Codons {
+			codonPercentage := float64(codon.Weight) / float64(codonOccurenceSum)
+
+			if codonPercentage > 0.10 {
+				// for every codon related to current amino acid append its Triplet and Weight to codonChoices after thresholding
+				codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Weight)})
+			}
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.

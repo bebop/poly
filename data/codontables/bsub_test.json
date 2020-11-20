@@ -15,86 +15,57 @@
  ],
  "amino_acids": [
   {
-   "aa": "F",
+   "aa": "S",
    "codons": [
     {
-     "triplet": "TTT",
-     "weight": 38259
+     "triplet": "TCT",
+     "weight": 15946
     },
     {
-     "triplet": "TTC",
-     "weight": 17601
+     "triplet": "TCC",
+     "weight": 9893
+    },
+    {
+     "triplet": "TCA",
+     "weight": 18407
+    },
+    {
+     "triplet": "TCG",
+     "weight": 7798
+    },
+    {
+     "triplet": "AGT",
+     "weight": 8258
+    },
+    {
+     "triplet": "AGC",
+     "weight": 17544
     }
    ]
   },
   {
-   "aa": "R",
+   "aa": "Q",
    "codons": [
     {
-     "triplet": "CGT",
-     "weight": 9224
+     "triplet": "CAA",
+     "weight": 24406
     },
     {
-     "triplet": "CGC",
-     "weight": 10481
-    },
-    {
-     "triplet": "CGA",
-     "weight": 0
-    },
-    {
-     "triplet": "CGG",
-     "weight": 7912
-    },
-    {
-     "triplet": "AGA",
-     "weight": 13389
-    },
-    {
-     "triplet": "AGG",
-     "weight": 0
+     "triplet": "CAG",
+     "weight": 23161
     }
    ]
   },
   {
-   "aa": "V",
+   "aa": "K",
    "codons": [
     {
-     "triplet": "GTT",
-     "weight": 23880
+     "triplet": "AAA",
+     "weight": 61505
     },
     {
-     "triplet": "GTC",
-     "weight": 21496
-    },
-    {
-     "triplet": "GTA",
-     "weight": 16599
-    },
-    {
-     "triplet": "GTG",
-     "weight": 21997
-    }
-   ]
-  },
-  {
-   "aa": "A",
-   "codons": [
-    {
-     "triplet": "GCT",
-     "weight": 23546
-    },
-    {
-     "triplet": "GCC",
-     "weight": 19708
-    },
-    {
-     "triplet": "GCA",
-     "weight": 26889
-    },
-    {
-     "triplet": "GCG",
-     "weight": 24972
+     "triplet": "AAG",
+     "weight": 26159
     }
    ]
   },
@@ -153,7 +124,7 @@
     },
     {
      "triplet": "CTA",
-     "weight": 0
+     "weight": 6153
     },
     {
      "triplet": "CTG",
@@ -162,96 +133,15 @@
    ]
   },
   {
-   "aa": "I",
+   "aa": "Y",
    "codons": [
     {
-     "triplet": "ATT",
-     "weight": 46085
+     "triplet": "TAT",
+     "weight": 28327
     },
     {
-     "triplet": "ATC",
-     "weight": 33484
-    },
-    {
-     "triplet": "ATA",
-     "weight": 11750
-    }
-   ]
-  },
-  {
-   "aa": "M",
-   "codons": [
-    {
-     "triplet": "ATG",
-     "weight": 33601
-    }
-   ]
-  },
-  {
-   "aa": "N",
-   "codons": [
-    {
-     "triplet": "AAT",
-     "weight": 27751
-    },
-    {
-     "triplet": "AAC",
-     "weight": 21296
-    }
-   ]
-  },
-  {
-   "aa": "K",
-   "codons": [
-    {
-     "triplet": "AAA",
-     "weight": 61505
-    },
-    {
-     "triplet": "AAG",
-     "weight": 26159
-    }
-   ]
-  },
-  {
-   "aa": "E",
-   "codons": [
-    {
-     "triplet": "GAA",
-     "weight": 61131
-    },
-    {
-     "triplet": "GAG",
-     "weight": 28790
-    }
-   ]
-  },
-  {
-   "aa": "S",
-   "codons": [
-    {
-     "triplet": "TCT",
-     "weight": 15946
-    },
-    {
-     "triplet": "TCC",
-     "weight": 9893
-    },
-    {
-     "triplet": "TCA",
-     "weight": 18407
-    },
-    {
-     "triplet": "TCG",
-     "weight": 7798
-    },
-    {
-     "triplet": "AGT",
-     "weight": 8258
-    },
-    {
-     "triplet": "AGC",
-     "weight": 17544
+     "triplet": "TAC",
+     "weight": 14978
     }
    ]
   },
@@ -273,28 +163,96 @@
    ]
   },
   {
-   "aa": "C",
+   "aa": "N",
    "codons": [
     {
-     "triplet": "TGT",
-     "weight": 4439
+     "triplet": "AAT",
+     "weight": 27751
     },
     {
-     "triplet": "TGC",
-     "weight": 5336
+     "triplet": "AAC",
+     "weight": 21296
     }
    ]
   },
   {
-   "aa": "Q",
+   "aa": "V",
    "codons": [
     {
-     "triplet": "CAA",
-     "weight": 24406
+     "triplet": "GTT",
+     "weight": 23880
     },
     {
-     "triplet": "CAG",
-     "weight": 23161
+     "triplet": "GTC",
+     "weight": 21496
+    },
+    {
+     "triplet": "GTA",
+     "weight": 16599
+    },
+    {
+     "triplet": "GTG",
+     "weight": 21997
+    }
+   ]
+  },
+  {
+   "aa": "A",
+   "codons": [
+    {
+     "triplet": "GCT",
+     "weight": 23546
+    },
+    {
+     "triplet": "GCC",
+     "weight": 19708
+    },
+    {
+     "triplet": "GCA",
+     "weight": 26889
+    },
+    {
+     "triplet": "GCG",
+     "weight": 24972
+    }
+   ]
+  },
+  {
+   "aa": "W",
+   "codons": [
+    {
+     "triplet": "TGG",
+     "weight": 12809
+    }
+   ]
+  },
+  {
+   "aa": "P",
+   "codons": [
+    {
+     "triplet": "CCT",
+     "weight": 13007
+    },
+    {
+     "triplet": "CCC",
+     "weight": 4038
+    },
+    {
+     "triplet": "CCA",
+     "weight": 8665
+    },
+    {
+     "triplet": "CCG",
+     "weight": 19680
+    }
+   ]
+  },
+  {
+   "aa": "M",
+   "codons": [
+    {
+     "triplet": "ATG",
+     "weight": 33601
     }
    ]
   },
@@ -320,45 +278,58 @@
    ]
   },
   {
-   "aa": "Y",
+   "aa": "I",
    "codons": [
     {
-     "triplet": "TAT",
-     "weight": 28327
+     "triplet": "ATT",
+     "weight": 46085
     },
     {
-     "triplet": "TAC",
-     "weight": 14978
+     "triplet": "ATC",
+     "weight": 33484
+    },
+    {
+     "triplet": "ATA",
+     "weight": 11750
     }
    ]
   },
   {
-   "aa": "W",
+   "aa": "E",
    "codons": [
     {
-     "triplet": "TGG",
-     "weight": 12809
+     "triplet": "GAA",
+     "weight": 61131
+    },
+    {
+     "triplet": "GAG",
+     "weight": 28790
     }
    ]
   },
   {
-   "aa": "P",
+   "aa": "F",
    "codons": [
     {
-     "triplet": "CCT",
-     "weight": 13007
+     "triplet": "TTT",
+     "weight": 38259
     },
     {
-     "triplet": "CCC",
-     "weight": 0
+     "triplet": "TTC",
+     "weight": 17601
+    }
+   ]
+  },
+  {
+   "aa": "C",
+   "codons": [
+    {
+     "triplet": "TGT",
+     "weight": 4439
     },
     {
-     "triplet": "CCA",
-     "weight": 8665
-    },
-    {
-     "triplet": "CCG",
-     "weight": 19680
+     "triplet": "TGC",
+     "weight": 5336
     }
    ]
   },
@@ -372,6 +343,35 @@
     {
      "triplet": "CAC",
      "weight": 9190
+    }
+   ]
+  },
+  {
+   "aa": "R",
+   "codons": [
+    {
+     "triplet": "CGT",
+     "weight": 9224
+    },
+    {
+     "triplet": "CGC",
+     "weight": 10481
+    },
+    {
+     "triplet": "CGA",
+     "weight": 5005
+    },
+    {
+     "triplet": "CGG",
+     "weight": 7912
+    },
+    {
+     "triplet": "AGA",
+     "weight": 13389
+    },
+    {
+     "triplet": "AGG",
+     "weight": 4776
     }
    ]
   }
