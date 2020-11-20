@@ -2,8 +2,12 @@ package poly
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func ExampleTranslate() {
@@ -110,14 +114,43 @@ JSON related tests begin here.
 
 ******************************************************************************/
 
-func TestWriteCodonJSON(t *testing.T) {
-	sequence := ReadGbk("data/bsub.gbk")
-	rawCodonTable := GetCodonTable(11)
-	optimizationTable := sequence.GetOptimizationTable(rawCodonTable)
+func ExampleReadCodonJSON() {
+	codontable := ReadCodonJSON("data/codontables/bsub_test.json")
 
-	fmt.Println(optimizationTable)
-	WriteCodonJSON(optimizationTable, "data/bsub_test.json")
-	if false {
-		t.Errorf(" mismatch (-want +got):\n%s", "Woo")
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 46085
+}
+
+func ExampleParseCodonJSON() {
+	file, _ := ioutil.ReadFile("data/codontables/bsub_test.json")
+	codontable := ParseCodonJSON(file)
+
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 46085
+}
+
+func ExampleWriteCodonJSON() {
+	codontable := ReadCodonJSON("data/codontables/bsub_test.json")
+	WriteCodonJSON(codontable, "data/codontables/test.json")
+	testCodonTable := ReadCodonJSON("data/codontables/test.json")
+
+	// cleaning up test data
+	os.Remove("data/codontables/test.json")
+
+	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
+	//output: 46085
+}
+
+func TestWriteCodonJSON(t *testing.T) {
+	testCodonTable := ReadCodonJSON("data/codontables/bsub_test.json")
+	WriteCodonJSON(testCodonTable, "data/codontables/test1.json")
+	readTestCodonTable := ReadCodonJSON("data/codontables/test1.json")
+
+	// cleaning up test data
+	os.Remove("data/codontables/test1.json")
+
+	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
+
 }

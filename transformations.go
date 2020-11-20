@@ -448,7 +448,7 @@ PS: On it @Tim, publishing those JSON representations.
 // ParseCodonJSON parses a CodonTable JSON file and adds appropriate pointers to struct.
 func ParseCodonJSON(file []byte) CodonTable {
 	var codontable CodonTable
-	json.Unmarshal([]byte(file), &codontable)
+	_ = json.Unmarshal([]byte(file), &codontable)
 	return codontable
 }
 
