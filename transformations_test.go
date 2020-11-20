@@ -103,3 +103,21 @@ func TestGetCodonFrequency(t *testing.T) {
 	}
 
 }
+
+/******************************************************************************
+
+JSON related tests begin here.
+
+******************************************************************************/
+
+func TestWriteCodonJSON(t *testing.T) {
+	sequence := ReadGbk("data/bsub.gbk")
+	rawCodonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(rawCodonTable)
+
+	fmt.Println(optimizationTable)
+	WriteCodonJSON(optimizationTable, "data/bsub_test.json")
+	if false {
+		t.Errorf(" mismatch (-want +got):\n%s", "Woo")
+	}
+}
