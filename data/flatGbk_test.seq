@@ -1,0 +1,185 @@
+GBBCT1.SEQ          Genetic Sequence Data Bank
+                         October 15 2020
+
+                NCBI-GenBank Flat File Release 240.0
+
+                     Bacterial Sequences (Part 1)
+
+  101593 loci,   185853961 bases, from   101593 reported sequences
+
+
+LOCUS       AB000100                2992 bp    DNA     linear   BCT 15-MAY-2009
+DEFINITION  Synechococcus elongatus PCC 7942 genes for intrinsic membrane
+            protein, malK-like protein, cyanase, complete cds.
+ACCESSION   AB000100
+VERSION     AB000100.1
+KEYWORDS    .
+SOURCE      Synechococcus elongatus PCC 7942 = FACHB-805
+  ORGANISM  Synechococcus elongatus PCC 7942 = FACHB-805
+            Bacteria; Cyanobacteria; Synechococcales; Synechococcaceae;
+            Synechococcus.
+REFERENCE   1
+  AUTHORS   Harano,Y., Suzuki,I., Maeda,S., Kaneko,T., Tabata,S. and Omata,T.
+  TITLE     Identification and nitrogen regulation of the cyanase gene from the
+            cyanobacteria Synechocystis sp. strain PCC 6803 and Synechococcus
+            sp. strain PCC 7942
+  JOURNAL   J. Bacteriol. 179 (18), 5744-5750 (1997)
+   PUBMED   9294430
+REFERENCE   2  (bases 1 to 2992)
+  AUTHORS   Omata,T.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (26-DEC-1996) Contact:Tatsuo Omata School of Agricultural
+            Sciences, Nagoya University, Department of Applied Biological
+            Sciences; Chikusa, Nagoya, Aichi 464-01, Japan
+COMMENT     On Aug 16, 1997 this sequence version replaced gi:1943948.
+FEATURES             Location/Qualifiers
+     source          1..2992
+                     /organism="Synechococcus elongatus PCC 7942 = FACHB-805"
+                     /mol_type="genomic DNA"
+                     /strain="PCC 7942"
+                     /db_xref="taxon:1140"
+                     /clone_lib="constructed in pBluescript II KS-"
+     gene            121..912
+                     /gene="cynB"
+     CDS             121..912
+                     /gene="cynB"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="intrinsic membrane protein"
+                     /protein_id="BAA21794.1"
+                     /translation="MVRTPVPLYLRWAVSILSVLAFLAIWQIAAASGFLGKTFPGSLR
+                     TLQDLFGWLSDPFFDNGPNDLGIGWNLLISLRRVAIGYLLATVVAIPLGIAIGMSALA
+                     SSIFSPFVQLLKPVSPLAWLPIGLFLFRDSELTGVFVILISSLWPTLINTAFGVANVN
+                     PDFLKVSQSLGASRWRTILKVILPAALPSIIAGMRISMGIAWLVIVAAEMLLGTGIGY
+                     FIWNEWNNLSLPNIFSAIIIIGIVGILLDQGFRFLENQFSYAGNR"
+     gene            916..1785
+                     /gene="cynD"
+     CDS             916..1785
+                     /gene="cynD"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="malK-like protein"
+                     /protein_id="BAA21795.1"
+                     /translation="MISEAVPAKEETGQAQLLIEQVGKVFTVNSPSLLDRLRQRSPKR
+                     YVALEDVNLTIASNTFVSIIGPSGCGKSTLLNLIAGLDLPTSGQILLDGQRIRSPGPD
+                     RGIVFQNYALMPWMTALENVIFAVETARPNLSKSQAREVAREHLELVGLTKAADRYPG
+                     QISGGMKQRVAIARALSIRPKLLLMDEPFGALDALTRGYLQEEVLRIWEANKLSVVLI
+                     THSIDEALLLSDRIVVMSRGPRATIREVIDLPAVRPRQRSVIEEDERFVKIKLRLEEH
+                     LFNETRAVEEASV"
+     gene            1796..2236
+                     /gene="cynS"
+     CDS             1796..2236
+                     /gene="cynS"
+                     /EC_number="4.2.1.104"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="cyanase"
+                     /protein_id="BAA19515.1"
+                     /translation="MTSAITEQLLKAKKAKGITFTELEQLLGRDEVWIASVFYRQSTA
+                     SPEEAEKLLTALGLDLALADELTTPPVKGCLEPVIPTDPLIYRFYEIMQVYGLPLKDV
+                     IQEKFGDGIMSAIDFTLDVDKVEDPKGDRVKVTMCGKFLAYKKW"
+ORIGIN      
+        1 ctgcagccgc cgactgaaat ctatcgggaa gaaaagctcg cttacgacac ctttaacccg
+       61 caggatccag tcgcttacct cgcatctcaa aagcagaaat acgggagata aacacaactt
+      121 atggtgagaa ctcctgtacc gctttaccta cgttgggcgg tctccatcct cagcgtgctt
+      181 gcgttcctag ccatttggca aattgcggca gcttcaggat ttttaggcaa aacttttcct
+      241 ggctccctgc gcactttgca ggatttgttt ggatggcttt cagatccctt ctttgataac
+      301 ggccccaatg acttagggat tggctggaac ttactgatta gtttgcgtcg cgttgcgatc
+      361 ggctacctgc tggcaacagt tgttgcaatt cctttgggga ttgcaatcgg tatgtcggcg
+      421 ctagcttcca gtattttttc gccctttgtg caactcctga agccagtttc acctttggcc
+      481 tggttgccga ttggtctctt cttattccga gattcggaat tgacgggtgt ttttgtcatc
+      541 ctgatttcga gtctgtggcc aacgttgatc aacacagcgt ttggggtggc gaatgtcaat
+      601 cctgactttt tgaaggtttc gcaatctttg ggagctagtc gttggcgcac gattctgaag
+      661 gtgattctgc ccgcagcatt gcccagcatc atcgcgggaa tgcggatcag catgggcatt
+      721 gcttggctgg tcattgtggc agcagagatg ctgttgggaa caggaattgg ctatttcatt
+      781 tggaatgagt ggaataacct atcacttcct aatattttct cggccatcat catcattggg
+      841 attgttggca ttcttctcga ccaaggcttc cgttttcttg agaaccagtt ttcttacgca
+      901 ggcaaccgat aacccatgat ttctgaagct gtgccagcca aggaggagac agggcaggct
+      961 caattgctga ttgagcaagt tggcaaagtt tttactgtca attcaccttc tctcctcgat
+     1021 cgccttcgac agcgatcgcc caaacgctac gttgcattag aagatgtcaa cctcacgatc
+     1081 gcgtcgaaca catttgtctc gattattggc ccttcgggtt gtggtaaatc aacccttctc
+     1141 aacttgattg ctggccttga tttaccaacg tctggccaga ttctgctgga tggtcaacgc
+     1201 attcgatcgc cggggcccga tcgtggcatc gtcttccaga actatgccct gatgccctgg
+     1261 atgaccgcgc ttgagaatgt catctttgca gttgaaacgg cgcgcccaaa cctgagcaaa
+     1321 tcccaagctc gcgaagtggc acgagagcat ctagagctgg tgggtttaac caaagctgcc
+     1381 gatcgctatc cgggccaaat ttcagggggg atgaaacagc gcgtagcgat cgcccgtgcc
+     1441 ctctccatcc gtcctaagct cctgctgatg gatgaaccct ttggtgcctt ggatgccctc
+     1501 acccgtggct acctccaaga agaagtgctg cggatttggg aagccaacaa actgagtgtg
+     1561 gtgctcatca ctcacagtat tgatgaagca ctgctgcttt ccgatcgcat tgtggtgatg
+     1621 tctcgtgggc cacgagccac tattcgagaa gtgattgatt taccagccgt tcgccctcgg
+     1681 caacggtctg tgatcgaaga agatgagcgc ttcgtcaaaa tcaaattgcg ccttgaagaa
+     1741 catttgttca acgagacgcg tgcagttgaa gaagccagtg tttaggagaa ttccaatgac
+     1801 ctcagcgatt actgaacaac ttctgaaagc gaaaaaagca aagggaatta cctttactga
+     1861 gcttgagcaa ttacttggac gggatgaagt ctggattgcg agtgtgttct accgtcaatc
+     1921 tacggcttcg cctgaagagg cagaaaagct actgactgct ctgggcttag atctggcctt
+     1981 ggctgatgag ttgacgactc cgccggtcaa aggttgtttg gaaccggtga ttccaactga
+     2041 tccgttgatc tatcgcttct acgaaatcat gcaggtctat ggcttgcccc tcaaggatgt
+     2101 tatccaagaa aaatttggcg atggcatcat gagtgcgatt gatttcacct tagatgtcga
+     2161 taaggttgaa gatcccaaag gcgatcgcgt taaggtcacg atgtgtggca agttcttggc
+     2221 gtacaagaag tggtaaatac tgctagctaa tcaagcttca attcttgatc actggaggag
+     2281 agaggtttcc gcttctctcc ttttttgatt ggaattctct cattaactac gataccgctc
+     2341 tgcactgaat gacctcgagc tgagtggaag gtagctcgcc gccgatgata atggcgcctc
+     2401 tggaagagtt tggctaagct gtggacggcg atcgcggttg tctgtctgtg ctatgccctt
+     2461 gatttcggtg acccgactca agcttagaaa tgttctttat ttgccccgct tgcttccctt
+     2521 ctcgttgcga tcgacgtggc aggctaaacg agcgcctggc aatctgggcg ttaagctgtt
+     2581 gcaggatcgt aacttggctt tttggacctg caccgcttgg acggatgaag gagccatgcg
+     2641 tcggttcatg agagcggatg cccacgggca ggccatgacg aaattgatgg attggtgcag
+     2701 cgaagcctca gtcgtccatt ggcagcagga tcagccagac ttgcccgact ggcaggaagc
+     2761 tcaccgccgc atgatcgcgg aggggcgccc ctccaaagtg aaccatcctt cggctgccca
+     2821 ccaagcattt caggtcgatc cgccgcgccg cgcctagctc agtgactgcg gtcgcgctgt
+     2881 cttgcatcat tgcttcgctc taccagcccg gatcgctggc acagtccacg gtgatctcac
+     2941 ccgaggcggc atcgggaatc gcagtgatac agccgcagac tggctcgcca tc
+//
+LOCUS       AB000106                1343 bp    rRNA    linear   BCT 05-FEB-1999
+DEFINITION  Sphingomonas sp. 16S ribosomal RNA.
+ACCESSION   AB000106
+VERSION     AB000106.1
+KEYWORDS    16S rRNA.
+SOURCE      Sphingomonas sp.
+  ORGANISM  Sphingomonas sp.
+            Bacteria; Proteobacteria; Alphaproteobacteria; Sphingomonadales;
+            Sphingomonadaceae; Sphingomonas.
+REFERENCE   1  (bases 1 to 1343)
+  AUTHORS   Iwabuchi,T.
+  TITLE     Sphingomonas sp. VT1 16s rRNA
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 1343)
+  AUTHORS   Iwabuchi,T.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (25-DEC-1996) Tokuro Iwabuchi, Shiseido Research Center,
+            Pharmaco Science Laboratories; 1050 Nippa, Kouhoku-ku, Yokohama,
+            Kanagawa 223, Japan (E-mail:PEH01461@niftyserve.or.jp,
+            Tel:+81-45-542-1337, Fax:+81-45-545-5931)
+FEATURES             Location/Qualifiers
+     source          1..1343
+                     /organism="Sphingomonas sp."
+                     /mol_type="rRNA"
+                     /strain="VT1"
+                     /db_xref="taxon:28214"
+     rRNA            1..1343
+                     /product="16S ribosomal RNA"
+ORIGIN      
+        1 ggaatctgcc cttgggttcg gaataacgtc tggaaacgga cgctaatacc ggatgatgac
+       61 gtaagtccaa agatttatcg cccagggatg agcccgcgta ggattagcta gttggtgagg
+      121 taaaggctca ccaaggcgac gatccttagc tggtctgaga ggatgatcag ccacactggg
+      181 actgagacac ggcccagact cctacgggag gcagcagtag ggaatattgg acaatgggcg
+      241 aaagcctgat ccagcaatgc cgcgtgagtg atgaaggcct tagggttgta aagctctttt
+      301 acccgggatg ataatgacag taccgggaga ataagccccg gctaactccg tgccagcagc
+      361 cgcggtaata cggagggggc tagcgttgtt cggaattact gggcgtaaag cgcacgtagg
+      421 cggcgattta agtcagaggt gaaagcccgg ggctcaaccc cggaatagcc tttgagactg
+      481 gattgcttga atccgggaga ggtgagtgga attccgagtg tagaggtgaa attcgtagat
+      541 attcggaaga acaccagtgg cgaaggcgga tcactggacc ggcattgacg ctgaggtgcg
+      601 aaagcgtggg gagcaaacag gattagatac cctggtagtc cacgccgtaa acgatgataa
+      661 ctagctgctg gggctcatgg agtttcagtg gcgcagctaa cgcattaagt tatccgcctg
+      721 gggagtacgg tcgcaagatt aaaactcaaa ggaattgacg ggggcctgca caagcggtgg
+      781 agcatgtggt ttaattcgaa gcaacgcgca gaaccttacc aacgtttgac atccctagta
+      841 tggttaccag agatggtttc cttcagttcg gctggctagg tgacaggtgc tgcatggctg
+      901 tcgtcagctc gtgtcgtgag atgttgggtt aagtcccgca acgagcgcaa ccctcgcctt
+      961 tagttgccat cattcagttg ggtactctaa aggaaccgcc ggtgataagc cggaggaagg
+     1021 tggggatgac gtcaagtcct catggccctt acgcgttggg ctacacacgt gctacaatgg
+     1081 cgactacagt gggcagctat ctcgcgagag tgcgctaatc tccaaaagtc gtctcagttc
+     1141 ggatcgttct ctgcaactcg agagcgtgaa ggcggaatcg ctagtaatcg cggatcagca
+     1201 tgccgcggtg aatacgtccc caggtcttgt acacaccgcc cgtcacacca tgggagttgg
+     1261 tttcacccga aggcgctgcg ctaactcgca agagaggcag gcgaccacgg tgggatcagc
+     1321 gactgggtga gtcgtacagg tgc
+//

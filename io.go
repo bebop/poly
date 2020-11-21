@@ -25,6 +25,7 @@ File specific parsers, builders readers, and writers:
 	JSON- parser, reader, writer
 	FASTA - parser, reader, writer
 	Gbk/gb/genbank - parser, builder, reader, writer
+	Genbank flat / seq.gz - parser, reader
 
 
 ******************************************************************************/
@@ -1402,3 +1403,66 @@ func generateWhiteSpace(length int) string {
 GBK specific IO related things end here.
 
 ******************************************************************************/
+
+/******************************************************************************
+
+Genbank Flat specific IO related things begin here.
+
+******************************************************************************/
+
+func ParseGbkMulti(file []byte) []Sequence {
+
+	gbk := string(file)
+	genbankFiles := strings.SplitAfter(gbk, "//\n")
+
+	//Remove last genbankFile in list. The real file terminates with //, which
+	//will be interpreted as an empty genbankFile.
+	genbankFiles = genbankFiles[:len(genbankFiles)-1]
+
+	//Iterate through each genbankFile in genbankFiles list and Parse it
+	//using the ParseGbk function. Return output.
+	var sequences []Sequence
+	for _, f := range genbankFiles {
+		sequences = append(sequences, ParseGbk([]byte(f)))
+	}
+
+	return sequences
+
+}
+
+// ParseGbkFlat specifically takes the output of a Genbank Flat file that from
+// the genbank ftp dumps. These files have 10 line headers
+func ParseGbkFlat(file []byte) []Sequence {
+
+	gbk := string(file)
+
+	// This code removes the header, which is 10 lines long. This is inefficient
+	// and gets rid of the data in the header, which may be useful for some
+	// application. Header data is not needed to parse the Genbank files, though
+	gbkWithoutHeader := []byte(strings.Join(strings.Split(gbk, "\n")[10:], "\n"))
+
+	// Pass gbkWithoutHeader to ParseGbkMulti, which should handle
+	// the rest of the parsing just fine
+	sequences := ParseGbkMulti(gbkWithoutHeader)
+	return sequences
+}
+
+// Parse genbank files with multiple genbank files
+func ReadGbkMulti(path string) []Sequence {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	}
+	sequences := ParseGbkMulti(file)
+	return sequences
+}
+
+// Parse GbkFlat files
+func ReadGbkFlat(path string) []Sequence {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	}
+	sequences := ParseGbkFlat(file)
+	return sequences
+}

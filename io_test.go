@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -397,5 +398,63 @@ func TestFASTAIO(t *testing.T) {
 /******************************************************************************
 
 FASTA related tests end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+GbkMulti/GbkFlat related tests begin here.
+
+******************************************************************************/
+
+func ExampleReadGbkMulti() {
+	sequences := ReadGbkMulti("data/multiGbk_test.seq")
+	var locus []string
+	for _, sequence := range sequences {
+		locus = append(locus, sequence.Meta.Locus.Name)
+	}
+
+	fmt.Println(strings.Join(locus, ", "))
+	// Output: AB000100, AB000106
+}
+
+func ExampleReadGbkFlat() {
+	sequences := ReadGbkFlat("data/flatGbk_test.seq")
+	var locus []string
+	for _, sequence := range sequences {
+		locus = append(locus, sequence.Meta.Locus.Name)
+	}
+
+	fmt.Println(strings.Join(locus, ", "))
+	// Output: AB000100, AB000106
+}
+
+func ExampleParseGbkMulti() {
+	file, _ := ioutil.ReadFile("data/multiGbk_test.seq")
+	sequences := ParseGbkMulti(file)
+	var locus []string
+	for _, sequence := range sequences {
+		locus = append(locus, sequence.Meta.Locus.Name)
+	}
+
+	fmt.Println(strings.Join(locus, ", "))
+	// Output: AB000100, AB000106
+}
+
+func ExampleParseGbkFlat() {
+	file, _ := ioutil.ReadFile("data/flatGbk_test.seq")
+	sequences := ParseGbkFlat(file)
+	var locus []string
+	for _, sequence := range sequences {
+		locus = append(locus, sequence.Meta.Locus.Name)
+	}
+
+	fmt.Println(strings.Join(locus, ", "))
+	// Output: AB000100, AB000106
+}
+
+/******************************************************************************
+
+GbkMulti/GbkFlat related tests end here.
 
 ******************************************************************************/
