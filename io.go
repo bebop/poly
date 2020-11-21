@@ -1410,6 +1410,7 @@ Genbank Flat specific IO related things begin here.
 
 ******************************************************************************/
 
+// ParseGbkMulti parses multiple Genbank files in a byte array to multiple sequences
 func ParseGbkMulti(file []byte) []Sequence {
 
 	gbk := string(file)
@@ -1431,7 +1432,8 @@ func ParseGbkMulti(file []byte) []Sequence {
 }
 
 // ParseGbkFlat specifically takes the output of a Genbank Flat file that from
-// the genbank ftp dumps. These files have 10 line headers
+// the genbank ftp dumps. These files have 10 line headers, which are entirely
+// removed
 func ParseGbkFlat(file []byte) []Sequence {
 
 	gbk := string(file)
@@ -1447,7 +1449,7 @@ func ParseGbkFlat(file []byte) []Sequence {
 	return sequences
 }
 
-// Parse genbank files with multiple genbank files
+// ReadGbkMulti reads multiple genbank files from a single file
 func ReadGbkMulti(path string) []Sequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -1457,7 +1459,7 @@ func ReadGbkMulti(path string) []Sequence {
 	return sequences
 }
 
-// Parse GbkFlat files
+// ReadGbkFlat parses flat genbank files, like the ones provided by the NCBI FTP server
 func ReadGbkFlat(path string) []Sequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -1466,3 +1468,9 @@ func ReadGbkFlat(path string) []Sequence {
 	sequences := ParseGbkFlat(file)
 	return sequences
 }
+
+/******************************************************************************
+
+Genbank Flat specific IO related things end here.
+
+******************************************************************************/
