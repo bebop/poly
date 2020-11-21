@@ -118,7 +118,7 @@ func ExampleReadCodonJSON() {
 	codontable := ReadCodonJSON("data/bsub_codon_test.json")
 
 	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
-	//output: 46085
+	//output: 28327
 }
 
 func ExampleParseCodonJSON() {
@@ -126,7 +126,7 @@ func ExampleParseCodonJSON() {
 	codontable := ParseCodonJSON(file)
 
 	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
-	//output: 46085
+	//output: 28327
 }
 
 func ExampleWriteCodonJSON() {
@@ -138,7 +138,7 @@ func ExampleWriteCodonJSON() {
 	os.Remove("data/codon_test.json")
 
 	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
-	//output: 46085
+	//output: 28327
 }
 
 func TestWriteCodonJSON(t *testing.T) {
