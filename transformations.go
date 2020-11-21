@@ -62,7 +62,7 @@ type Codon struct {
 
 // AminoAcid holds information for an amino acid and related codons in a struct
 type AminoAcid struct {
-	Letter string  `json:"aa"`
+	Letter string  `json:"letter"`
 	Codons []Codon `json:"codons"`
 }
 
@@ -357,38 +357,6 @@ var defaultCodonTablesByName = map[string]CodonTable{
 	"CephalodiscidaeMitochondrial":     generateCodonTable("FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------")} // 33
 
 /******************************************************************************
-Oct, 15, 2020
-
-Codon table generation stuff begins here.
-
-Alright, I know it's ugly down below this comment block but there ain't much
-we can do until we can experimentally derive our own codon tables.
-
-The story is this. Different organisms use different codons to represent
-different things.
-
-The NCBI publishes this weird data format for developers to use for generating
-codon tables and mapping codons to amino acids for different organisms.
-
-All this stuff is experimentally derived and I'm not sure how it's done really.
-I won't really have a chance to find out for a while but there's some future
-work where I may want to do experiments like this and you'll see more about it.
-
-There are two tables. I got annoyed since the original only went by number so
-I made one that went by name too. Looking back on it this is probably useless
-but maybe someone will find a use for it so here it stays.
-
-Happy hacking,
-Tim
-
-P.S
-
-Maybe we should publish our JSON representations? Let me know if want you to
-organize that.
-
-******************************************************************************/
-
-/******************************************************************************
 Nov, 20, 2020
 
 Codon table JSON stuff begins here.
@@ -445,7 +413,7 @@ Keoni
 PS: On it @Tim, publishing those JSON representations.
 ******************************************************************************/
 
-// ParseCodonJSON parses a CodonTable JSON file and adds appropriate pointers to struct.
+// ParseCodonJSON parses a CodonTable JSON file.
 func ParseCodonJSON(file []byte) CodonTable {
 	var codontable CodonTable
 	_ = json.Unmarshal([]byte(file), &codontable)
