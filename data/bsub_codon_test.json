@@ -15,7 +15,7 @@
  ],
  "amino_acids": [
   {
-   "aa": "I",
+   "letter": "",
    "codons": [
     {
      "triplet": "ATT",
@@ -32,7 +32,7 @@
    ]
   },
   {
-   "aa": "L",
+   "letter": "",
    "codons": [
     {
      "triplet": "TTA",
@@ -61,7 +61,7 @@
    ]
   },
   {
-   "aa": "R",
+   "letter": "",
    "codons": [
     {
      "triplet": "CGT",
@@ -90,7 +90,7 @@
    ]
   },
   {
-   "aa": "P",
+   "letter": "",
    "codons": [
     {
      "triplet": "CCT",
@@ -111,7 +111,7 @@
    ]
   },
   {
-   "aa": "H",
+   "letter": "",
    "codons": [
     {
      "triplet": "CAT",
@@ -124,7 +124,7 @@
    ]
   },
   {
-   "aa": "Q",
+   "letter": "",
    "codons": [
     {
      "triplet": "CAA",
@@ -137,7 +137,7 @@
    ]
   },
   {
-   "aa": "M",
+   "letter": "",
    "codons": [
     {
      "triplet": "ATG",
@@ -146,7 +146,7 @@
    ]
   },
   {
-   "aa": "E",
+   "letter": "",
    "codons": [
     {
      "triplet": "GAA",
@@ -159,7 +159,7 @@
    ]
   },
   {
-   "aa": "F",
+   "letter": "",
    "codons": [
     {
      "triplet": "TTT",
@@ -172,7 +172,7 @@
    ]
   },
   {
-   "aa": "W",
+   "letter": "",
    "codons": [
     {
      "triplet": "TGG",
@@ -181,7 +181,7 @@
    ]
   },
   {
-   "aa": "N",
+   "letter": "",
    "codons": [
     {
      "triplet": "AAT",
@@ -194,7 +194,7 @@
    ]
   },
   {
-   "aa": "V",
+   "letter": "",
    "codons": [
     {
      "triplet": "GTT",
@@ -215,7 +215,7 @@
    ]
   },
   {
-   "aa": "*",
+   "letter": "",
    "codons": [
     {
      "triplet": "TAA",
@@ -232,7 +232,7 @@
    ]
   },
   {
-   "aa": "C",
+   "letter": "",
    "codons": [
     {
      "triplet": "TGT",
@@ -245,7 +245,7 @@
    ]
   },
   {
-   "aa": "T",
+   "letter": "",
    "codons": [
     {
      "triplet": "ACT",
@@ -266,7 +266,7 @@
    ]
   },
   {
-   "aa": "K",
+   "letter": "",
    "codons": [
     {
      "triplet": "AAA",
@@ -279,7 +279,7 @@
    ]
   },
   {
-   "aa": "A",
+   "letter": "",
    "codons": [
     {
      "triplet": "GCT",
@@ -300,7 +300,7 @@
    ]
   },
   {
-   "aa": "D",
+   "letter": "",
    "codons": [
     {
      "triplet": "GAT",
@@ -313,7 +313,7 @@
    ]
   },
   {
-   "aa": "S",
+   "letter": "",
    "codons": [
     {
      "triplet": "TCT",
@@ -342,7 +342,7 @@
    ]
   },
   {
-   "aa": "Y",
+   "letter": "",
    "codons": [
     {
      "triplet": "TAT",
@@ -355,7 +355,7 @@
    ]
   },
   {
-   "aa": "G",
+   "letter": "",
    "codons": [
     {
      "triplet": "GGT",
