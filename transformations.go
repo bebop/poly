@@ -410,7 +410,7 @@ the real reason I'm doing this now.
 Jolly Good!
 Keoni
 
-PS: On it @Tim, publishing those JSON representations.
+PS: On it @Tim, publishing those JSON representations. Woohoo!
 ******************************************************************************/
 
 // ParseCodonJSON parses a CodonTable JSON file.
