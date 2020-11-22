@@ -1459,7 +1459,7 @@ func ReadGbkMulti(path string) []Sequence {
 	return sequences
 }
 
-// ReadGbkFlat parses flat genbank files, like the ones provided by the NCBI FTP server
+// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server
 func ReadGbkFlat(path string) []Sequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
