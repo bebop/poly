@@ -2,6 +2,7 @@ package poly
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -1459,13 +1460,26 @@ func ReadGbkMulti(path string) []Sequence {
 	return sequences
 }
 
-// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server
+// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
 func ReadGbkFlat(path string) []Sequence {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
 	}
 	sequences := ParseGbkFlat(file)
+	return sequences
+}
+
+// ReadGbkFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
+func ReadGbkFlatGz(path string) []Sequence {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
+	}
+	rdata := bytes.NewReader(file)
+	r, _ := gzip.NewReader(rdata)
+	s, _ := ioutil.ReadAll(r)
+	sequences := ParseGbkFlat(s)
 	return sequences
 }
 
