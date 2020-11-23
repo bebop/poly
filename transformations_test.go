@@ -2,8 +2,12 @@ package poly
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func ExampleTranslate() {
@@ -100,6 +104,53 @@ func TestGetCodonFrequency(t *testing.T) {
 		if frequency != 2 {
 			t.Errorf("TestGetCodonFrequency has failed. The codon \"%q\" appears %q times when it should only appear twice.", codon, frequency)
 		}
+	}
+
+}
+
+/******************************************************************************
+
+JSON related tests begin here.
+
+******************************************************************************/
+
+func ExampleReadCodonJSON() {
+	codontable := ReadCodonJSON("data/bsub_codon_test.json")
+
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func ExampleParseCodonJSON() {
+	file, _ := ioutil.ReadFile("data/bsub_codon_test.json")
+	codontable := ParseCodonJSON(file)
+
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func ExampleWriteCodonJSON() {
+	codontable := ReadCodonJSON("data/bsub_codon_test.json")
+	WriteCodonJSON(codontable, "data/codon_test.json")
+	testCodonTable := ReadCodonJSON("data/codon_test.json")
+
+	// cleaning up test data
+	os.Remove("data/codon_test.json")
+
+	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func TestWriteCodonJSON(t *testing.T) {
+	testCodonTable := ReadCodonJSON("data/bsub_codon_test.json")
+	WriteCodonJSON(testCodonTable, "data/codon_test1.json")
+	readTestCodonTable := ReadCodonJSON("data/codon_test1.json")
+
+	// cleaning up test data
+	os.Remove("data/codon_test1.json")
+
+	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 
 }
