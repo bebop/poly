@@ -9,5 +9,5 @@ comment:
   
 coverage:
   status:
-    project: off
-    patch: off
+    project: on
+    patch: on
