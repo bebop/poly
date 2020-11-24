@@ -106,29 +106,13 @@ func RotateSequence(sequence string) string {
 	return sequence
 }
 
-var sequenceCharMap = map[rune]rune{'A': 'T', 'T': 'A', 'U': 'A', 'G': 'C', 'C': 'G', 'Y': 'R', 'R': 'Y', 'S': 'S', 'W': 'W', 'K': 'M', 'M': 'K', 'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B', 'N': 'N', 'Z': 'Z'}
-
-func ReverseComplement(sequence string) string {
-	n := len(sequence)
-	complement := make([]rune, n)
-	reverseComplement := make([]rune, n)
-	for _, char := range strings.ToUpper(sequence) {
-		complement = append(complement, sequenceCharMap[char])
-	}
-	for _, char := range complement {
-		n--
-		reverseComplement[n] = char
-	}
-	return string(reverseComplement[n:])
-}
-
 // SeqHash is a function to create SeqHashes, a specific kind of identifier
 func SeqHash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
 	// By definition, SeqHashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
 
 	// Run checks on the input
-	if sequenceType != "DNA" || sequenceType != "RNA" || sequenceType != "PROTEIN" {
+	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
 		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed")
 	}
 	if sequenceType == "DNA" || sequenceType == "RNA" {
