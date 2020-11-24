@@ -6,14 +6,18 @@ import (
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/hex"
+	"errors"
 	"hash"
 	"io"
+	"sort"
 	"strings"
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
 	_ "golang.org/x/crypto/ripemd160"
 	_ "golang.org/x/crypto/sha3"
+
+	"lukechampine.com/blake3"
 )
 
 // Where each hash function comes from.
@@ -100,6 +104,100 @@ func RotateSequence(sequence string) string {
 	concatenatedSequence := sequenceBuilder.String()
 	sequence = concatenatedSequence[rotationIndex : rotationIndex+len(sequence)]
 	return sequence
+}
+
+var sequenceCharMap = map[rune]rune{'A': 'T', 'T': 'A', 'U': 'A', 'G': 'C', 'C': 'G', 'Y': 'R', 'R': 'Y', 'S': 'S', 'W': 'W', 'K': 'M', 'M': 'K', 'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B', 'N': 'N', 'Z': 'Z'}
+
+func ReverseComplement(sequence string) string {
+	n := len(sequence)
+	complement := make([]rune, n)
+	reverseComplement := make([]rune, n)
+	for _, char := range strings.ToUpper(sequence) {
+		complement = append(complement, sequenceCharMap[char])
+	}
+	for _, char := range complement {
+		n--
+		reverseComplement[n] = char
+	}
+	return string(reverseComplement[n:])
+}
+
+// SeqHash is a function to create SeqHashes, a specific kind of identifier
+func SeqHash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+	// By definition, SeqHashes are of uppercase sequences
+	sequence = strings.ToUpper(sequence)
+
+	// Run checks on the input
+	if sequenceType != "DNA" || sequenceType != "RNA" || sequenceType != "PROTEIN" {
+		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed")
+	}
+	if sequenceType == "DNA" || sequenceType == "RNA" {
+		for _, char := range sequence {
+			if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
+				return "", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
+			}
+		}
+	}
+	if sequenceType == "PROTEIN" {
+		for _, char := range sequence {
+			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
+			// in accordance with https://www.uniprot.org/help/sequences
+			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO", string(char)) {
+				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO are allowed for Proteins. Got letter: " + string(char))
+			}
+		}
+	}
+	if sequenceType == "PROTEIN" && doubleStranded == true {
+		return "", errors.New("Proteins cannot be double stranded")
+	}
+
+	// Gets Deterministic sequence based off of metadata + sequence
+	var deterministicSequence string
+	switch {
+	case circular == true && doubleStranded == true:
+		potentialSequences := []string{RotateSequence(sequence), RotateSequence(ReverseComplement(sequence))}
+		sort.Strings(potentialSequences)
+		deterministicSequence = potentialSequences[0]
+	case circular == true && doubleStranded == false:
+		deterministicSequence = RotateSequence(sequence)
+	case circular == false && doubleStranded == true:
+		potentialSequences := []string{sequence, ReverseComplement(sequence)}
+		sort.Strings(potentialSequences)
+		deterministicSequence = potentialSequences[0]
+	case circular == false && doubleStranded == false:
+		deterministicSequence = sequence
+	}
+
+	// Build 3 letter metadata
+	var sequenceTypeLetter string
+	var circularLetter string
+	var doubleStrandedLetter string
+	// Get first letter. D for DNA, R for RNA, and P for Protein
+	switch sequenceType {
+	case "DNA":
+		sequenceTypeLetter = "D"
+	case "RNA":
+		sequenceTypeLetter = "R"
+	case "PROTEIN":
+		sequenceTypeLetter = "P"
+	}
+	// Get 2nd letter. C for circular, L for Liner
+	if circular == true {
+		circularLetter = "C"
+	} else {
+		circularLetter = "L"
+	}
+	// Get 3rd letter. D for Double stranded, S for Single stranded
+	if doubleStranded == true {
+		doubleStrandedLetter = "D"
+	} else {
+		doubleStrandedLetter = "S"
+	}
+
+	newhash := blake3.Sum256([]byte(deterministicSequence))
+	seqhash := "v1" + "_" + sequenceTypeLetter + circularLetter + doubleStrandedLetter + "_" + hex.EncodeToString(newhash[:])
+	return seqhash, nil
+
 }
 
 // Hash is a method wrapper for hashing Sequence structs.
