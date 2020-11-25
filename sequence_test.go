@@ -129,8 +129,6 @@ func TestSingleInsert(t *testing.T) {
 	if diff := cmp.Diff(sequence.GetSequence(), sequenceCopy.GetSequence(), cmpopts.IgnoreUnexported(Feature{})); diff == "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
-	// why this line though
-	// sequence.sortFeatures()
 
 	sequence.Insert(featureCopy)
 
@@ -159,4 +157,55 @@ func TestSingleInsert(t *testing.T) {
 	if diff := cmp.Diff(sequence, sequenceCopy, cmpopts.IgnoreUnexported(Feature{})); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestPlasmidEdgeInDel(t *testing.T) {
+
+	sequence := ReadGbk("./data/puc19.gbk")
+	sequenceCopy := ReadGbk("./data/puc19.gbk")
+
+	featureCopy := sequenceCopy.Features[20]
+	primerBindCopy := sequenceCopy.Features[1]
+	sequence.Delete(featureCopy)
+
+	for _, feature := range sequence.Features {
+		if Equals(feature, featureCopy) {
+			t.Errorf("feature was not deleted from Features.")
+		}
+	}
+
+	// checks to see if subsequence was deleted
+	if diff := cmp.Diff(sequence.GetSequence(), sequenceCopy.GetSequence(), cmpopts.IgnoreUnexported(Feature{})); diff == "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
+	sequence.Insert(featureCopy)
+	sequence.Annotate(primerBindCopy)
+
+	// checks to see if a feature was added
+	if len(sequence.Features) != len(sequenceCopy.Features) {
+		t.Errorf("sequence feature slices have different lengths. original: %d \n copy: %d", len(sequence.Features), len(sequenceCopy.Features))
+	}
+
+	// checks to see if subsequence was reinserted
+	if diff := cmp.Diff(sequence.GetSequence(), sequenceCopy.GetSequence(), cmpopts.IgnoreUnexported(Feature{})); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
+	sequence.sortFeatures()
+	sequenceCopy.sortFeatures()
+
+	for index := range sequence.Features {
+		original := sequence.Features[index]
+		copy := sequenceCopy.Features[index]
+		if !Equals(original, copy) {
+			fmt.Println(index)
+		}
+	}
+
+	// checks to see
+	if diff := cmp.Diff(sequence, sequenceCopy, cmpopts.IgnoreUnexported(Feature{})); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
 }

@@ -76,17 +76,34 @@ func (sequence *Sequence) RemoveFeature(feature Feature) {
 
 // Insert inserts a single feature and it's sequence into a sequence
 func (sequence *Sequence) Insert(feature Feature) {
+	var shift, shiftStart int
 
 	retrievedSequence := feature.GetSequence()
+	originalSequenceLength := sequence.Length()
 
+	// originalSequenceLength :=
 	if retrievedSequence != "" {
 		// if for some ungodly reason feature being added straddles 0 index
-		sequence.insertSequence(feature.SequenceLocation.Start, retrievedSequence)
-		shift := feature.SequenceLocation.End - feature.SequenceLocation.Start
+		if feature.SequenceLocation.Start > feature.SequenceLocation.End {
+			shift = feature.SequenceLocation.End // if straddles end is positive and is shift
+			shiftStart = 0
+			featureLength := feature.Length()
+
+			splitIndex := featureLength - feature.SequenceLocation.End
+			sequence.insertSequence(sequence.Length()-1, retrievedSequence[0:splitIndex-1])
+			sequence.insertSequence(0, retrievedSequence[splitIndex:])
+		} else {
+			sequence.insertSequence(feature.SequenceLocation.Start, retrievedSequence)
+			shift = feature.SequenceLocation.End - feature.SequenceLocation.Start
+			shiftStart = feature.SequenceLocation.Start
+		}
 		for index := range sequence.Features {
-			if sequence.Features[index].SequenceLocation.Start >= feature.SequenceLocation.Start {
+			possibleSourceLength := sequence.Features[index].SequenceLocation.End + sequence.Features[index].SequenceLocation.Start
+			if sequence.Features[index].SequenceLocation.Start >= shiftStart && originalSequenceLength != possibleSourceLength {
 				sequence.Features[index].SequenceLocation.Start += shift
 				sequence.Features[index].SequenceLocation.End += shift
+			} else if originalSequenceLength == possibleSourceLength {
+				sequence.Features[index].SequenceLocation.End = sequence.Length()
 			}
 		}
 		sequence.Annotate(feature)
@@ -98,29 +115,62 @@ func (sequence *Sequence) Insert(feature Feature) {
 
 // Delete deletes both a feature annotation and the feature sequence from the sequence string.
 func (sequence *Sequence) Delete(feature Feature) {
-	sequence.deleteRange(feature.SequenceLocation.Start, feature.SequenceLocation.End)
 	var shift, shiftStart int
-	// if straddles 0 index
-	if feature.SequenceLocation.Start > feature.SequenceLocation.End {
+
+	featureStraddlesOrigin := feature.SequenceLocation.Start > feature.SequenceLocation.End
+	originalSequenceLength := sequence.Length()
+
+	// if straddles 0 index edge
+	if featureStraddlesOrigin {
 		shift = -feature.SequenceLocation.End // if straddles end is positive and is shift
 		shiftStart = 0
+		sequence.deleteRange(feature.SequenceLocation.Start, sequence.Length()-1)
+		sequence.deleteRange(0, feature.SequenceLocation.End)
 	} else {
-		// if does not straddle 0 index
+		// if does not straddle 0 index edge
 		shift = -(feature.SequenceLocation.End - feature.SequenceLocation.Start)
-		shiftStart = feature.SequenceLocation.End
+		shiftStart = feature.SequenceLocation.Start
+		sequence.deleteRange(feature.SequenceLocation.Start, feature.SequenceLocation.End)
 	}
-	for index := range sequence.Features {
-		if sequence.Features[index].SequenceLocation.Start >= shiftStart {
+
+	deletedFeatureStart := feature.SequenceLocation.Start
+	deletedFeatureEnd := feature.SequenceLocation.End
+	if deletedFeatureStart > deletedFeatureEnd {
+		deletedFeatureStart = feature.SequenceLocation.Start - originalSequenceLength
+	}
+
+	// filter annotations where subsequences have been partially delete
+	for _, sequenceFeature := range sequence.Features {
+
+		featureStart := sequenceFeature.SequenceLocation.Start
+		featureEnd := sequenceFeature.SequenceLocation.End
+		if featureStart > featureEnd {
+			featureStart = feature.SequenceLocation.Start - originalSequenceLength
+		}
+
+		// flag for seeing if feature is a source i.e literally whole plasmid. Don't want to delete that annotation willy nilly.
+		sourceFlag := false
+		featureLength := sequenceFeature.SequenceLocation.End - sequenceFeature.SequenceLocation.Start
+		if originalSequenceLength == featureLength {
+			sourceFlag = true
+		}
+		if deletedFeatureEnd >= featureStart && featureEnd >= deletedFeatureStart && !sourceFlag {
+			sequence.RemoveFeature(sequenceFeature)
+		}
+	}
+
+	// update feature locations
+	for index, sequenceFeature := range sequence.Features {
+		featureLength := sequenceFeature.SequenceLocation.End - sequenceFeature.SequenceLocation.Start
+		if sequence.Features[index].SequenceLocation.Start >= shiftStart && originalSequenceLength != featureLength {
 			sequence.Features[index].SequenceLocation.Start += shift
 			sequence.Features[index].SequenceLocation.End += shift
+		} else if originalSequenceLength == featureLength {
+			sequence.Features[index].SequenceLocation.End = sequence.Length()
 		}
 	}
 	sequence.RemoveFeature(feature)
 }
-
-// func (feature *Feature) SetStart(newStart int) {
-
-// }
 
 func (sequence *Sequence) sortFeatures() {
 	sort.Slice(sequence.Features, func(i, j int) bool {
@@ -168,6 +218,11 @@ func (sequence Sequence) Length() int {
 	return len(sequence.Sequence)
 }
 
+// Length is a helper method to get length of a Feature's sequence
+func (feature Feature) Length() int {
+	return len(feature.GetSequence())
+}
+
 type equals interface {
 	Equals(*Feature) bool
 }
@@ -204,7 +259,8 @@ func (sequence *Sequence) insertSequence(start int, insertSequence string) {
 		newSequence.WriteRune(basepair)
 	}
 
-	sequence.Sequence = newSequence.String()
+	returnSequence := newSequence.String()
+	sequence.Sequence = returnSequence
 }
 
 // deleteRange sequence method deletes a substring within a sequence. This will ruin location coordinates unless updated.
@@ -261,7 +317,14 @@ func getFeatureSequence(feature Feature, location Location) string {
 	parentSequence := feature.parentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
-		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+		// use getRange after fixing indexing
+		if location.Start > location.End {
+			sequenceBuffer.WriteString(parentSequence[location.Start:])
+			sequenceBuffer.WriteString(parentSequence[0:location.End])
+		} else {
+			sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+		}
+
 	} else {
 
 		for _, subLocation := range location.SubLocations {
