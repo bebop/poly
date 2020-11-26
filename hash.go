@@ -106,10 +106,13 @@ func RotateSequence(sequence string) string {
 	return sequence
 }
 
-// SeqHash is a function to create SeqHashes, a specific kind of identifier
-func SeqHash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
-	// By definition, SeqHashes are of uppercase sequences
+// Seqhash is a function to create SeqHashes, a specific kind of identifier
+func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
+	// If RNA, convert to a DNA sequence. The hash itself between a DNA and RNA sequence will not
+	// be different, but their Seqhash will have a different metadata string (R vs D)
+	sequence = strings.ReplaceAll(sequence, "U", "T")
 
 	// Run checks on the input
 	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
@@ -182,6 +185,32 @@ func SeqHash(sequence string, sequenceType string, circular bool, doubleStranded
 	seqhash := "v1" + "_" + sequenceTypeLetter + circularLetter + doubleStrandedLetter + "_" + hex.EncodeToString(newhash[:])
 	return seqhash, nil
 
+}
+
+// Seqhash is a method wrapper for hashing Sequence structs. Note that
+// all sequence structs are, by default, double-stranded sequences,
+// since Genbank does not track whether or not a given sequence in their
+// database is single stranded or double stranded.
+func (sequence Sequence) SequenceSeqhash() (string, error) {
+	if sequence.Meta.Locus.MoleculeType == "" {
+		return "", errors.New("No MoleculeType found for sequence")
+	}
+	var sequenceType string
+	if strings.Contains(sequence.Meta.Locus.MoleculeType, "DNA") {
+		sequenceType = "DNA"
+	}
+	if strings.Contains(sequence.Meta.Locus.MoleculeType, "RNA") {
+		sequenceType = "RNA"
+	}
+	if (sequenceType != "DNA") && (sequenceType != "RNA") {
+		return "", errors.New("SequenceType not found. Looking for MoleculeTypes with DNA or RNA, got: " + sequence.Meta.Locus.MoleculeType)
+	}
+	// If not explicitly circular, assume linear. All sequences are by default doubleStranded
+	newSeqhash, err := Seqhash(sequence.Sequence, sequenceType, sequence.Meta.Locus.Circular, true)
+	if err != nil {
+		return "", err
+	}
+	return newSeqhash, nil
 }
 
 // Hash is a method wrapper for hashing Sequence structs.

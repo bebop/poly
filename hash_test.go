@@ -69,3 +69,27 @@ func TestLeastRotation(t *testing.T) {
 	}
 
 }
+
+/******************************************************************************
+
+Seqhash related tests begin here.
+
+******************************************************************************/
+
+func ExampleSeqhash() {
+	sequence := ReadGbk("data/puc19.gbk")
+
+	seqhash, _ := Seqhash(sequence.Sequence, "DNA", true, true)
+	fmt.Println(seqhash)
+	// output: v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
+}
+
+func ExampleSequenceSeqhash() {
+	sequence := ReadGbk("data/puc19.gbk")
+
+	// SequenceSeqhash assumes doubleStranded sequence and defaults to linear
+	// if sequence.Meta.Locus.Circular is not set
+	seqhash, _ := sequence.SequenceSeqhash()
+	fmt.Println(seqhash)
+	// output: v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
+}
