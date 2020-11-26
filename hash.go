@@ -116,7 +116,7 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 
 	// Run checks on the input
 	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
-		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed")
+		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + sequenceType)
 	}
 	if sequenceType == "DNA" || sequenceType == "RNA" {
 		for _, char := range sequence {
@@ -129,7 +129,7 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 		for _, char := range sequence {
 			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
 			// in accordance with https://www.uniprot.org/help/sequences
-			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO", string(char)) {
+			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*", string(char)) {
 				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO are allowed for Proteins. Got letter: " + string(char))
 			}
 		}
