@@ -106,7 +106,7 @@ func RotateSequence(sequence string) string {
 	return sequence
 }
 
-// Seqhash is a function to create SeqHashes, a specific kind of identifier
+// Seqhash is a function to create Seqhashes, a specific kind of identifier
 func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
 	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
@@ -134,6 +134,7 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 			}
 		}
 	}
+	// There is no check for circular proteins since proteins can be circular
 	if sequenceType == "PROTEIN" && doubleStranded == true {
 		return "", errors.New("Proteins cannot be double stranded")
 	}
