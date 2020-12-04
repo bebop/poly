@@ -2,6 +2,7 @@ package poly
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -325,13 +326,9 @@ func BuildGff(sequence Sequence) []byte {
 
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
+	file, _ := ioutil.ReadFile(path)
 	var sequence Sequence
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	} else {
-		sequence = ParseGff(file)
-	}
+	sequence = ParseGff(file)
 	return sequence
 }
 
@@ -368,10 +365,7 @@ func ParseJSON(file []byte) Sequence {
 
 // ReadJSON reads an Sequence JSON file.
 func ReadJSON(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequence := ParseJSON(file)
 	return sequence
 }
@@ -499,10 +493,7 @@ func BuildFASTA(sequence Sequence) []byte {
 
 // ReadFASTA reads a Sequence struct from a FASTA file.
 func ReadFASTA(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequence := ParseFASTA(file)
 	return sequence
 }
@@ -715,14 +706,9 @@ func BuildGbk(sequence Sequence) []byte {
 
 // ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
 func ReadGbk(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
+	file, _ := ioutil.ReadFile(path)
 	var sequence Sequence
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	} else {
-		sequence = ParseGbk(file)
-
-	}
+	sequence = ParseGbk(file)
 	return sequence
 }
 
@@ -1451,21 +1437,25 @@ func ParseGbkFlat(file []byte) []Sequence {
 
 // ReadGbkMulti reads multiple genbank files from a single file
 func ReadGbkMulti(path string) []Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequences := ParseGbkMulti(file)
 	return sequences
 }
 
-// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server
+// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
 func ReadGbkFlat(path string) []Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequences := ParseGbkFlat(file)
+	return sequences
+}
+
+// ReadGbkFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
+func ReadGbkFlatGz(path string) []Sequence {
+	file, _ := ioutil.ReadFile(path)
+	rdata := bytes.NewReader(file)
+	r, _ := gzip.NewReader(rdata)
+	s, _ := ioutil.ReadAll(r)
+	sequences := ParseGbkFlat(s)
 	return sequences
 }
 

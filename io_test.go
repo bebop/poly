@@ -429,6 +429,17 @@ func ExampleReadGbkFlat() {
 	// Output: AB000100, AB000106
 }
 
+func ExampleReadGbkFlatGz() {
+	sequences := ReadGbkFlatGz("data/flatGbk_test.seq.gz")
+	var locus []string
+	for _, sequence := range sequences {
+		locus = append(locus, sequence.Meta.Locus.Name)
+	}
+
+	fmt.Println(strings.Join(locus, ", "))
+	// Output: AB000100, AB000106
+}
+
 func ExampleParseGbkMulti() {
 	file, _ := ioutil.ReadFile("data/multiGbk_test.seq")
 	sequences := ParseGbkMulti(file)
