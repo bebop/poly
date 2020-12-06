@@ -334,7 +334,7 @@ JSON related tests end here.
 ******************************************************************************/
 
 func ExampleReadFASTAGz() {
-	fastas := make(chan Fasta, 50)
+	fastas := make(chan Fasta, 1000)
 	go ReadFASTAGz("data/test.fasta.gz", fastas)
 	var name string
 	for fasta := range fastas {
