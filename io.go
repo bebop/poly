@@ -388,22 +388,26 @@ type Fasta struct {
 	Sequence string `json:"sequence"`
 }
 
-func ReadFASTAGz(path string) chan Fasta {
-	var sequenceLines []string
-	var name string
+func ReadFASTAGz(path string, sequences chan<- Fasta) {
 	file, _ := ioutil.ReadFile(path)
 	rdata := bytes.NewReader(file)
 	r, _ := gzip.NewReader(rdata)
+	go ParseFASTAGz(r, sequences)
+}
+
+func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
+	var sequenceLines []string
+	var name string
 
 	// A channel is used for processing very large FASTA files like Uniprot TrEMBL
-	sequences := make(chan Fasta)
+	//sequences := make(chan Fasta, 100)
 
 	// lastLine is the lastLine without a terminating "\n". This is necessary
 	// in case the r.Read(p) stops at the middle of a line
 	lastLine := []byte{}
 
 	// p and r are convention for io Reader
-	p := make([]byte, 1024*1000) // 1mb
+	p := make([]byte, 1024) // 1mb
 	start := true
 	for {
 		n, err := r.Read(p)
@@ -421,9 +425,6 @@ func ReadFASTAGz(path string) chan Fasta {
 
 			stringBuffer := string(append(lastLine, p[:n]...))
 			lines := strings.Split(stringBuffer, "\n")
-
-			// set lastLine
-			lastLine = []byte(lines[len(lines)-1])
 
 			// remove lastLine if there is more file to process
 			if end == false {
@@ -476,7 +477,11 @@ func ReadFASTAGz(path string) chan Fasta {
 
 			}
 		}
+		if err == io.EOF {
+			break
+		}
 	}
+	close(sequences)
 }
 
 /******************************************************************************

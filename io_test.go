@@ -333,6 +333,18 @@ JSON related tests end here.
 
 ******************************************************************************/
 
+func ExampleReadFASTAGz() {
+	fastas := make(chan Fasta, 50)
+	go ReadFASTAGz("data/test.fasta.gz", fastas)
+	var name string
+	for fasta := range fastas {
+		name = fasta.Name
+	}
+
+	fmt.Println(name)
+	// Output: sp|Q6GZX4|001R_FRG3G Putative transcription factor 001R OS=Frog virus 3 (isolate Goorha) OX=654924 GN=FV3-001R PE=4 SV=1
+}
+
 /******************************************************************************
 
 FASTA related tests begin here.
@@ -430,6 +442,7 @@ func ExampleReadGbkFlat() {
 }
 
 func ExampleReadGbkFlatGz() {
+	// sequences := ReadGbkFlatGz("data/gbbct358.seq.gz")
 	sequences := ReadGbkFlatGz("data/flatGbk_test.seq.gz")
 	var locus []string
 	for _, sequence := range sequences {
