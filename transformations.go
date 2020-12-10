@@ -435,3 +435,70 @@ func WriteCodonJSON(codontable CodonTable, path string) {
 	file, _ := json.MarshalIndent(codontable, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
 }
+
+/******************************************************************************
+Dec, 9, 2020
+
+Synthesis fixing stuff begins here.
+
+Codon optimization is not good enough for synthetic DNA - there are certain
+elements that synthesis doesn't really work for. For example, long homopolymers
+will nearly always need removal in order to synthesize a gene efficiently.
+
+Poly codon optimization + synthesis fixing is meant to be as efficient yet
+accurate as possible.
+
+# How do we do it?
+
+From experience using Twist, there are a couple of major elements to fix:
+
+1. Global GC content
+2. ~50bp GC hotspots
+3. Homopolymers
+4. K-mer repeats
+5. Various banned restriction enzyme sites
+
+To implement this functionality, I imagine each major element will have a function
+that takes in a sequence and returns 2 integers and either "GC", "AT", or "NA". The
+2 integers are start and end positions of problematic sequences, and the "GC"/"AT"
+are for if the sequence needs to be biased in a particular direction (we call this
+the change type).
+
+If there are two elements that have an overlap (for example, a high "GC" region
+with a restriction enzyme site), fixing the outer element is tabled until the next
+round of fixes. However, the nearest outer element change type will be inherited for
+biased stochastic selection of a new codon. With the example of high "GC" and an
+internal restriction enzyme site, the internal restriction enzyme will be changed
+with an AT bias if possible.
+
+Once all change sites are identified, changes are implemented across the entire
+sequence. If any given change causes a problem which is *smaller* than the change,
+that change is reverted, the entire context of the problematic region is noted, and
+a change at a different position is attempted, until there is a change that fixes
+the original problem and does not cause a problem which is *smaller* than that change.
+
+The procedure above is repeated up the chain until all problems are resolved. If a problem
+cannot be resolved, this is noted in the output, but it is not an error - "It is possible to
+commit no mistakes and still lose. That is not a weakness. That is life."
+
+However, before a problem can be labeled as "unresolvable", *ALL* possible permutations must be
+attempted. This should essentially never happen - but just in case, it will go that deep.
+
+Although there is lots of recursion and rechecking, I roughly estimate only 1~2 rounds will be
+necessary for ~95% of sequences, which should be rather fast.
+
+# Anything else?
+
+This functionality should be fundamentally valuable to companies and labs. We will also
+be able to improve the functionality of these fixes as we collect more data, or even
+have company-by-company recommendations on things to fix. Hopefully by working in the
+open, we can improve codon optimization and usage in a transparent way. One day,
+this will enable us to be far better at expressing proteins at certain levels within
+cells. That is the dream - working in the open will enable us to be far better at
+engineering life.
+
+Information wants to be free,
+
+Keoni Gandall
+
+******************************************************************************/
