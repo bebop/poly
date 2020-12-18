@@ -439,7 +439,6 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 				if len(line) == 0 {
 					continue
 				}
-
 				// if it's a comment skip this line
 				if line[0:1] == ";" {
 					continue
@@ -467,7 +466,7 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 					sequences <- newFasta
 				}
 				// Process the last line of file
-				if lineIndex == linesLength && end == true {
+				if (lineIndex+2 == linesLength) && (end == true) { // I don't know why +2 works here but empirically it does
 					sequence := strings.Join(sequenceLines, "")
 					newFasta := Fasta{
 						Name:     name,

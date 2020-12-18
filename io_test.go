@@ -335,14 +335,14 @@ JSON related tests end here.
 
 func ExampleReadFASTAGz() {
 	fastas := make(chan Fasta, 1000)
-	go ReadFASTAGz("data/test.fasta.gz", fastas)
+	go ReadFASTAGz("data/uniprot_1mb_test.fasta.gz", fastas)
 	var name string
 	for fasta := range fastas {
 		name = fasta.Name
 	}
 
 	fmt.Println(name)
-	// Output: sp|Q6GZX4|001R_FRG3G Putative transcription factor 001R OS=Frog virus 3 (isolate Goorha) OX=654924 GN=FV3-001R PE=4 SV=1
+	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
 }
 
 /******************************************************************************
