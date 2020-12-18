@@ -466,6 +466,8 @@ Godspeed,
 Keoni
 ******************************************************************************/
 
+// CompromiseCodonTable takes 2 CodonTables and makes a new CodonTable
+// that is an equal compromise between the two tables.
 func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable, cutOff float64) (CodonTable, error) {
 	var c CodonTable
 	if cutOff < 0 {
@@ -534,6 +536,8 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 	return c, nil
 }
 
+// AddCodonTable takes 2 CodonTables and adds them together to create
+// a new CodonTable.
 func AddCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable) CodonTable {
 	var c CodonTable
 
