@@ -440,8 +440,10 @@ func WriteCodonJSON(codontable CodonTable, path string) {
 /******************************************************************************
 Dec, 17, 2020
 
-Compromise codon table stuff begins here
+Compromise + Add codon table stuff begins here
 
+
+== Compromise tables ==
 Basically, I want to codon optimize a protein for two or more organisms.
 In order to do that, I need to be able to generate a codon table that
 is a compromise between the codon tables between two different organisms.
@@ -453,6 +455,11 @@ tables lossy).
 
 Simple code, but very powerful if it can be used to encode genes for
 multiple organisms.
+
+== Add tables ==
+Some organisms have multiple chromosomes. We need to add em all up
+to get an accurate codon table (different than compromise tables,
+since these are all already balanced).
 
 Godspeed,
 
@@ -525,4 +532,30 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 	}
 	c.AminoAcids = finalAminoAcids
 	return c, nil
+}
+
+func AddCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable) CodonTable {
+	var c CodonTable
+
+	// Take start and stop strings from first table
+	c.StartCodons = firstCodonTable.StartCodons
+	c.StopCodons = firstCodonTable.StopCodons
+
+	// Add up codons
+	var finalAminoAcids []AminoAcid
+	for _, firstAa := range firstCodonTable.AminoAcids {
+		var finalCodons []Codon
+		for _, firstCodon := range firstAa.Codons {
+			for _, secondAa := range secondCodonTable.AminoAcids {
+				for _, secondCodon := range secondAa.Codons {
+					if firstCodon.Triplet == secondCodon.Triplet {
+						finalCodons = append(finalCodons, Codon{firstCodon.Triplet, firstCodon.Weight + secondCodon.Weight})
+					}
+				}
+			}
+		}
+		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
+	}
+	c.AminoAcids = finalAminoAcids
+	return c
 }
