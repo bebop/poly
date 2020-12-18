@@ -424,6 +424,7 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 			}
 
 			stringBuffer := string(append(lastLine, p[:n]...))
+			stringBuffer = strings.TrimSpace(stringBuffer) // Trim any newlines at EOF
 			lines := strings.Split(stringBuffer, "\n")
 
 			// remove lastLine if there is more file to process
