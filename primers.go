@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"bytes"
 	"math"
 	"strings"
 )
@@ -102,4 +103,55 @@ func MeltingTemp(sequence string) float64 {
 
 	meltingTemp, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
 	return meltingTemp
+}
+
+/******************************************************************************
+Start of the De Bruijn stuff
+******************************************************************************/
+
+// DeBruijn generates a DNA DeBruijn sequence
+// https://rosettacode.org/wiki/De_Bruijn_sequences#Go
+// Pulled and adapted from here
+func DeBruijn(n int) string {
+	k := 4
+	alphabet := "ATGC"
+	a := make([]byte, k*n)
+	var seq []byte
+	var db func(int, int) // recursive closure
+	db = func(t, p int) {
+		if t > n {
+			if n%p == 0 {
+				seq = append(seq, a[1:p+1]...)
+			}
+		} else {
+			a[t] = a[t-p]
+			db(t+1, p)
+			for j := int(a[t-p] + 1); j < k; j++ {
+				a[t] = byte(j)
+				db(t+1, t)
+			}
+		}
+	}
+	db(1, 1)
+	var buf bytes.Buffer
+	for _, i := range seq {
+		buf.WriteByte(alphabet[i])
+	}
+	b := buf.String()
+	return b + b[0:n-1] // as cyclic append first (n-1) digits
+}
+
+// UniqueSequence takes a channel and fills it with Unique sequences
+// which can then be sorted for desired properties (high/low GC,
+// restriction enzyme sites, etc)
+func UniqueSequence(c chan string, length int, maxSubSequence int) {
+	var start int
+	var end int
+	debruijn := DeBruijn(maxSubSequence)
+	for i := 0; (i*(length-(maxSubSequence-1)))+length < len(debruijn); i++ {
+		start = i * (length - (maxSubSequence - 1))
+		end = start + length
+		c <- debruijn[start:end]
+	}
+	close(c)
 }

@@ -80,3 +80,22 @@ func TestMeltingTemp(t *testing.T) {
 		t.Errorf("MeltingTemp has changed on test. Got %f instead of %f", calcTM, expectedTM)
 	}
 }
+
+func ExampleDeBruijn() {
+	a := DeBruijn(4)
+
+	fmt.Println(a)
+	// Output: AAAATAAAGAAACAATTAATGAATCAAGTAAGGAAGCAACTAACGAACCATATAGATACATTTATTGATTCATGTATGGATGCATCTATCGATCCAGAGACAGTTAGTGAGTCAGGTAGGGAGGCAGCTAGCGAGCCACACTTACTGACTCACGTACGGACGCACCTACCGACCCTTTTGTTTCTTGGTTGCTTCGTTCCTGTGTCTGGGTGGCTGCGTGCCTCTCGGTCGCTCCGTCCCGGGGCGGCCGCGCCCCAAA
+}
+
+func ExampleUniqueSequence() {
+	c := make(chan string)
+	go UniqueSequence(c, 20, 4)
+	var output string
+	for a := range c {
+		output = a
+	}
+
+	fmt.Println(output)
+	// Output: CCGGGGCGGCCGCGCCCCAA
+}
