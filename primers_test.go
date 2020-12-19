@@ -3,6 +3,7 @@ package poly
 import (
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -90,7 +91,7 @@ func ExampleDeBruijn() {
 
 func ExampleUniqueSequence() {
 	c := make(chan string)
-	go UniqueSequence(c, 20, 4, []string{"CTCTCGGTCGCTCC"})
+	go UniqueSequence(c, 20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
 	var output string
 	for a := range c {
 		output = a
@@ -98,4 +99,23 @@ func ExampleUniqueSequence() {
 
 	fmt.Println(output)
 	// Output: TCTCGGTCGCTCCGTCCCGG
+}
+
+func TestUniqueSequence(t *testing.T) {
+	c := make(chan string)
+	testFunc := func(s string) bool {
+		if strings.Contains(s, "CTCTCGGTCGCTCC") {
+			return false
+		} else {
+			return true
+		}
+	}
+	go UniqueSequence(c, 20, 4, []string{}, []func(string) bool{testFunc})
+	var output string
+	for a := range c {
+		output = a
+	}
+	if output != "TCTCGGTCGCTCCGTCCCGG" {
+		t.Errorf("TestUniqueSequence function should return TCTCGGTCGCTCCGTCCCGG")
+	}
 }
