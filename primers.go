@@ -144,13 +144,26 @@ func DeBruijn(n int) string {
 // UniqueSequence takes a channel and fills it with Unique sequences
 // which can then be sorted for desired properties (high/low GC,
 // restriction enzyme sites, etc)
-func UniqueSequence(c chan string, length int, maxSubSequence int) {
+func UniqueSequence(c chan string, length int, maxSubSequence int, banned []string) {
 	var start int
 	var end int
 	debruijn := DeBruijn(maxSubSequence)
-	for i := 0; (i*(length-(maxSubSequence-1)))+length < len(debruijn); i++ {
+	for i := 0; (i*(length-(maxSubSequence-1)))+length < len(debruijn); {
 		start = i * (length - (maxSubSequence - 1))
 		end = start + length
+		i++
+		for _, b := range banned {
+			for strings.Contains(debruijn[start:end], b) {
+				if end+1 > len(debruijn) {
+					close(c)
+					return
+				} else {
+					start++
+					end++
+					i++
+				}
+			}
+		}
 		c <- debruijn[start:end]
 	}
 	close(c)
