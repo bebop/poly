@@ -104,7 +104,7 @@ func ExampleUniqueSequence() {
 func TestUniqueSequence(t *testing.T) {
 	c := make(chan string)
 	testFunc := func(s string) bool {
-		if strings.Contains(s, "CTCTCGGTCGCTCC") {
+		if strings.Contains(s, "GGCCGCGCCCC") {
 			return false
 		} else {
 			return true
@@ -115,7 +115,16 @@ func TestUniqueSequence(t *testing.T) {
 	for a := range c {
 		output = a
 	}
-	if output != "TCTCGGTCGCTCCGTCCCGG" {
-		t.Errorf("TestUniqueSequence function should return TCTCGGTCGCTCCGTCCCGG")
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence function should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
+	}
+
+	b := make(chan string)
+	go UniqueSequence(b, 20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
+	for d := range b {
+		output = d
+	}
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 }

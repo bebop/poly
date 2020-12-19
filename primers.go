@@ -164,8 +164,8 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 				}
 			}
 		}
-		for _, b := range bannedFunc {
-			for !b(debruijn[start:end]) {
+		for _, f := range bannedFunc {
+			for !f(debruijn[start:end]) {
 				if end+1 > len(debruijn) {
 					close(c)
 					return
