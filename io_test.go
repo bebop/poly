@@ -437,7 +437,6 @@ func ExampleReadGbkFlatGz() {
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
 	}
-
 	fmt.Println(strings.Join(locus, ", "))
 	// Output: AB000100, AB000106
 }

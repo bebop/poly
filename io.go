@@ -56,7 +56,6 @@ type Meta struct {
 	Locus       Locus             `json:"locus"`
 	References  []Reference       `json:"references"`
 	Other       map[string]string `json:"other"`
-	Comment     string            `json:"comment"`
 }
 
 // Reference holds information one reference in a Meta struct.
@@ -1250,18 +1249,17 @@ func getSequence(subLines []string) string {
 func parseGbkLocation(locationString string) Location {
 	var location Location
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
-		partialRegex, _ := regexp.Compile("<|>")
-		startEndSplit := strings.Split(locationString, "..")
-		start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
-		// If length check is not added, the case will bust
-		// in Genbank flat files - KG 19 Dec 2020
-		end := start
-		if len(startEndSplit) > 1 {
-			end, _ = strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
+		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
+			position, _ := strconv.Atoi(locationString)
+			location = Location{Start: position, End: position}
+		} else {
+			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
+			partialRegex, _ := regexp.Compile("<|>")
+			startEndSplit := strings.Split(locationString, "..")
+			start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
+			end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
+			location = Location{Start: start - 1, End: end}
 		}
-
-		location = Location{Start: start - 1, End: end}
 
 	} else {
 		firstOuterParentheses := strings.Index(locationString, "(")
@@ -1276,11 +1274,6 @@ func parseGbkLocation(locationString string) Location {
 				comma := 0
 				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
 					comma = i
-					// If length check is not added, the case will bust
-					// in Genbank flat files - KG 19 Dec 2020
-					if len(expression) < firstInnerParentheses+i {
-						break
-					}
 					switch expression[firstInnerParentheses+i] {
 					case []byte("(")[0]:
 						ParenthesesCount++
