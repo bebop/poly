@@ -481,8 +481,7 @@ The procedure above is repeated up the chain until all problems are resolved. If
 cannot be resolved, this is noted in the output, but it is not an error - "It is possible to
 commit no mistakes and still lose. That is not a weakness. That is life."
 
-However, before a problem can be labeled as "unresolvable", *ALL* possible permutations must be
-attempted. This should essentially never happen - but just in case, it will go that deep.
+[Removed notes about backtracking. It's hard and I don't really want to implement it right now]
 
 Although there is lots of recursion and rechecking, I roughly estimate only 1~2 rounds will be
 necessary for ~95% of sequences, which should be rather fast.
@@ -502,3 +501,204 @@ Information wants to be free,
 Keoni Gandall
 
 ******************************************************************************/
+
+type DnaFix struct {
+	Start: int,
+	End: int,
+	Bias: string,
+	InternalFix: []DnaFix
+}
+
+type Triplet struct {
+	Letter: string
+	Position: int
+	Choices: []weightedRand.Choice
+}
+
+func FindBsaI(searchSeq, c chan DnaFix, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// This should be done with a regex to find all occurences, but this is just a test
+	// function so.... yea.
+	i := searchSeq(searchSeq, "GGTCTC")
+	c <- DnaFix{i, i+6, "NA"}
+}
+
+func FixCodons(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaFix, *sync.WaitGroup)) string, error{
+
+	// Check that sequence is triplets
+	// {}
+
+	// Uppercase the sequence
+	// {}
+
+	// Translate sequence
+	translation := Translate(sequence, codontable)
+
+	// Generate a list of triplets that represent the entire sequence
+	var triplets []Triplet
+	for i, aa := range translation {
+		for _, aminoAcid := range codontable.AminoAcids {
+			if aminoAcid.Letter == aa {
+
+				// Get sum of codon occurences for a particular amino acid
+				codonOccurenceSum := 0
+				for _, codon in aminoAcid.Codons {
+					codonOccurenceSum += codon.Weight
+				}
+
+				// Threshold codons that occur less than 10% for coding a particular amino acid
+				for _, codon := range aminoAcids {
+					codonPercentage := float64(codon.Weight) / float64(codonOccurenceSum)
+
+					var codonChoices []weightedRand.Choice
+					if codonPercentage > 0.10 {
+						// for every codon related to current amino acid append its Triplet and Weight to codonChoices after thresholding
+						// except for the codon currently at the translation location
+						if codon.Triplet != sequence[i*3:(i*3)+3] {
+							codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Weight)})
+						}
+					}
+				}
+				triplets = append(triplets, Triplet{aa, i, codonChoices})
+			}
+		}
+	}
+
+	// Build initial fix list
+	var fixes chan DnaFix
+	var wg sync.WaitGroup
+	for _, f := range problematicSequenceFuncs {
+		wg.Add(1)
+		go f(sequence, fixes, wg)
+	}
+	wg.Wait()
+
+	iterationCount := 0
+	// Loop until all fixes are fixed or there has been 1000 iterations
+	for (len(fixes) != 0) || (iterationCount < 1000) {
+		for _, fix := range fixes {
+			// bestFixScore keeps score of the best externalFix (ie, the smallest one that
+			// still covers the entire sequence)
+			var bestFixScore int
+			var bestExternalFix DnaFix
+			fittingExternal := false
+			for _, externalFix := range fixes {
+				if (fix.Start > externalFix.Start) && (fix.End < externalFix.End) {
+					externalFixScore := (fix.Start - externalFix.Start) + (externalFix.End - fix.End)
+					if externalFixScore < bestFixScore {
+						bestExternalFix = externalFix
+						fittingExternal = true
+					}
+				}
+			}
+			// If there is a best externalFix, add the current fix to its fix list
+			if fittingExternal == true {
+				externalFix.InternalFix = append(externalFix.InternalFix, fix)
+			}
+		}
+		// Only go actually fix things without any internal fixes
+		for _, fix := range fixes {
+			if fix.InternalFix == []DnaFix {
+				// It is ok to round down since wobbles are usually on right side
+				tripletStart = fix.Start / 3
+				tripletEnd = fix.End / 3
+				var fixableTriplets []Triplet
+				for i := tripletStart; i < tripletEnd; i++ {
+					fixableTriplets = append(fixableTriplets, triplets[i])
+				}
+
+				// This entire switch is code to Bias towards GC or AT content
+				tripletChoosers := make(map[int][]weightedRand.Choice)
+				switch {
+				case fix.Bias == "GC":
+					for i, triplet := fixableTriplets {
+						var finalChoices []weightedRand.Choice
+						for _, choice := range triplet.Choices {
+							if (strings.Count(choice.Item, "G") + strings.Count(choice.Item, "C")) > (strings.Count(sequence[Triplet.Position * 3:(Triplet.Position* 3) + 3], "G") + strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "C")) {
+								finalChoices = append(finalChoices, choice)
+							}
+						}
+						tripletChoosers[i] = finalChoices
+					}
+				case fix.Bias == "AT":
+					for i, triplet := fixableTriplets {
+                                                var finalChoices []weightedRand.Choice
+                                                for _, choice := range triplet.Choices {
+                                                        if (strings.Count(choice.Item, "A") + strings.Count(choice.Item, "T")) > (strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "A") + strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "T")) {
+                                                                finalChoices = append(finalChoices, choice)
+                                                        }
+                                                }
+						tripletChoosers[i] = finalChoices
+                                        }
+				case fix.Bias == "NA":
+					for i, triplet := fixableTriplets {
+						var finalChoices []weightedRand.Choice
+						for _, choice := range triplet.Choices {
+							finalChoices = append(finalChoices, choice)
+						}
+					}
+					tripletChoosers[i] = finalChoices
+				}
+				// Now that we have our tripletChoosers to yoink from, we have to choose one to use
+				targetPosition = int(len(fixableTriplets) / 2)
+				var middleOutTripletList []Triplet
+				var frontTriplets []Triplet
+				var endTriplets []Triplet
+				for i, t := range fixableTriplets {
+					switch {
+					case i < targetPosition:
+						frontTriplets = append(frontTriplets, t)
+					case i > targetPosition:
+						endTriplets = append(endTriplets, t)
+					case i == targetPosition:
+						middleOutTripletList = append(middleOutTripletList, t)
+					}
+				}
+
+				// Now sort em in middle out.
+				// For example, we have list [1, 2, 3, 4]
+				// we will reorder to list [2, 3, 1, 4]
+				if len(frontTriplets) < len(endTriplets) {
+					oddTriplets := endTriplets
+					evenTriplets := frontTriplets
+				} else {
+					oddTriplets := frontTriplets
+					evenTriplets := endTriplets
+				}
+				for i := 1; i < len(frontTriplets) + len(endTriplets); i++ {
+					if(n%2==0) {
+						middleOutTripletList = append(middleOutTripletList, endTriplets[(i/2)-1])
+					} else {
+						middleOutTripletList = append(middleOutTripletList, frontTriplets[((i+1)/2)-1])
+					}
+				}
+
+				// For each Triplet in middleOutTripletList, check if there is any option to change to. If there is,
+				// change it, and then note that in the original Triplet list. 
+				for i, tr := range middleOutTripletList {
+					if len(tripletChoosers[tr.Position]) == 0 {
+						if i+1 == len(middleOutTripletList) {
+							return sequence, errors.New("FAILED - NO TRIPLET TO CHOOSE FROM")
+						}
+					} else {
+						change := weightedRand.Chooser(tripletChoosers[tr.Position]...).Pick().(string)
+						changePosition := tr.Position
+						break
+					}
+				}
+
+				// Now we have the change we want to make. Let's make the change to the sequence itself, and then
+				//
+
+
+
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
