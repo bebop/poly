@@ -442,7 +442,6 @@ func ExampleReadGbkFlat() {
 }
 
 func ExampleReadGbkFlatGz() {
-	// sequences := ReadGbkFlatGz("data/gbbct358.seq.gz")
 	sequences := ReadGbkFlatGz("data/flatGbk_test.seq.gz")
 	var locus []string
 	for _, sequence := range sequences {
