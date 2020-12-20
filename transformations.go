@@ -469,6 +469,7 @@ Keoni
 // CompromiseCodonTable takes 2 CodonTables and makes a new CodonTable
 // that is an equal compromise between the two tables.
 func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable, cutOff float64) (CodonTable, error) {
+	// Initialize output CodonTable, c
 	var c CodonTable
 	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
@@ -479,13 +480,14 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 	}
 
 	// Take start and stop strings from first table
+	// and use them as start + stops in final CodonTable
 	c.StartCodons = firstCodonTable.StartCodons
 	c.StopCodons = firstCodonTable.StopCodons
 
 	// Initialize the finalAminoAcid list for the output CodonTable
 	var finalAminoAcids []AminoAcid
 
-	// Loop over all Aa in first CodonTable, and add the
+	// Loop over all AminoAcids represented in the first CodonTable
 	for _, firstAa := range firstCodonTable.AminoAcids {
 		var firstTriplets []string
 		var firstWeights []int
