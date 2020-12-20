@@ -470,6 +470,7 @@ Keoni
 // that is an equal compromise between the two tables.
 func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable, cutOff float64) (CodonTable, error) {
 	var c CodonTable
+	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
 		return c, errors.New("Cut off too low. Cannot be less than 0 or greater than 1")
 	}
@@ -481,55 +482,66 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 	c.StartCodons = firstCodonTable.StartCodons
 	c.StopCodons = firstCodonTable.StopCodons
 
+	// Initialize the finalAminoAcid list for the output CodonTable
 	var finalAminoAcids []AminoAcid
+
+	// Loop over all Aa in first CodonTable, and add the
 	for _, firstAa := range firstCodonTable.AminoAcids {
-		// For any amino acid, get the first table and second table's weights
 		var firstTriplets []string
 		var firstWeights []int
 		var firstTotal int
+
+		var secondTriplets []string
+		var secondWeights []int
+		var secondTotal int
+		// For each amino acid in firstCodonTable, get list of all codons, and append triplets
+		// and weights to a list
 		for _, firstCodon := range firstAa.Codons {
 			firstTriplets = append(firstTriplets, firstCodon.Triplet)
 			firstWeights = append(firstWeights, firstCodon.Weight)
 			firstTotal = firstTotal + firstCodon.Weight
-		}
-		var secondTriplets []string
-		var secondWeights []int
-		var secondTotal int
-		for _, secondAa := range secondCodonTable.AminoAcids {
-			if secondAa.Letter == firstAa.Letter {
-				for _, secondCodon := range secondAa.Codons {
-					secondTriplets = append(secondTriplets, secondCodon.Triplet)
-					secondWeights = append(secondWeights, secondCodon.Weight)
-					secondTotal = secondTotal + secondCodon.Weight
-				}
-			}
-		}
-
-		// Compromise codons
-		cutOffWeight := int(10000 * cutOff)
-		var finalTriplets []string
-		var finalWeights []int
-		for i, firstTriplet := range firstTriplets {
-			for j, secondTriplet := range firstTriplets {
-				if firstTriplet == secondTriplet {
-					finalTriplets = append(finalTriplets, firstTriplet)
-					firstTripletWeight := int((float64(firstWeights[i]) / float64(firstTotal)) * 10000)
-					secondTripletWeight := int((float64(secondWeights[j]) / float64(secondTotal)) * 10000)
-					if (firstTripletWeight < cutOffWeight) || (secondTripletWeight < cutOffWeight) {
-						finalWeights = append(finalWeights, 0)
-					} else {
-						finalWeights = append(finalWeights, int((float64(firstTripletWeight)+float64(secondTripletWeight))/2))
+			for _, secondAa := range secondCodonTable.AminoAcids {
+				if secondAa.Letter == firstAa.Letter {
+					for _, secondCodon := range secondAa.Codons {
+						// For each codon from firstCodonTable, get the
+						// corresponding triplet and weight from secondCodonTable
+						if secondCodon.Triplet == firstCodon.Triplet {
+							secondTriplets = append(secondTriplets, secondCodon.Triplet)
+							secondWeights = append(secondWeights, secondCodon.Weight)
+							secondTotal = secondTotal + secondCodon.Weight
+						}
 					}
 				}
 			}
 		}
-		// Generate codon list
+
+		var finalTriplets []string
+		var finalWeights []int
+		cutOffWeight := int(10000 * cutOff)
+
+		// For each of the Triplets in the amino acid, output a triplet weight
+		// for the first and second triplet, which is the percentage of Triplets
+		// coding for that amino acid multiplied by 10,000
+		for i, firstTriplet := range firstTriplets {
+			finalTriplets = append(finalTriplets, firstTriplet)
+			firstTripletWeight := int((float64(firstWeights[i]) / float64(firstTotal)) * 10000)
+			secondTripletWeight := int((float64(secondWeights[i]) / float64(secondTotal)) * 10000)
+			// If the triplet is less than the cutoff weight in either the first or second table,
+			// set its weight to zero. Otherwise, append the average of the first and second weight
+			// to final weights
+			if (firstTripletWeight < cutOffWeight) || (secondTripletWeight < cutOffWeight) {
+				finalWeights = append(finalWeights, 0)
+			} else {
+				finalWeights = append(finalWeights, int((float64(firstTripletWeight)+float64(secondTripletWeight))/2))
+			}
+		}
+		// From those final weights and final triplets, build a list of Codons
 		var finalCodons []Codon
 		for i, finalTriplet := range finalTriplets {
 			finalCodons = append(finalCodons, Codon{finalTriplet, finalWeights[i]})
 		}
 
-		// Append to finalAminoAcids
+		// Append list of Codons to finalAminoAcids
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 	c.AminoAcids = finalAminoAcids
