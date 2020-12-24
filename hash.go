@@ -191,8 +191,10 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 		for _, char := range sequence {
 			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
 			// in accordance with https://www.uniprot.org/help/sequences
-			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*", string(char)) {
-				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO are allowed for Proteins. Got letter: " + string(char))
+			// X and Z are added since Uniprot files do have these in sequences
+			// scattered about
+			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*XZ", string(char)) {
+				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO*XZ are allowed for Proteins. Got letter: " + string(char))
 			}
 		}
 	}

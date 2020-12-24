@@ -106,9 +106,9 @@ func TestSeqhash(t *testing.T) {
 		t.Errorf("TestSeqhashSequenceString() has failed. X is not a valid DNA or RNA sequence character.")
 	}
 	// Test X in PROTEIN
-	_, err = Seqhash("MGCX*", "PROTEIN", false, false)
+	_, err = Seqhash("MGCB*", "PROTEIN", false, false)
 	if err == nil {
-		t.Errorf("TestSeqhashSequenceProteinString() has failed. X is not a valid PROTEIN sequence character.")
+		t.Errorf("TestSeqhashSequenceProteinString() has failed. B is not a valid PROTEIN sequence character.")
 		fmt.Println(err)
 	}
 	// Test double stranded Protein
