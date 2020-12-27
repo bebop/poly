@@ -425,7 +425,7 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 
 			stringBuffer := string(append(lastLine, p[:n]...))
 			stringBuffer = strings.TrimSpace(stringBuffer) // Trim any newlines at EOF
-			lines := strings.Split(stringBuffer, "\n")
+			linesBuffer := strings.Split(stringBuffer, "\n")
 
 			// This will solve if there isn't a line split between a sequence
 			// and a new >name
