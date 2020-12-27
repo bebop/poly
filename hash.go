@@ -191,10 +191,11 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 		for _, char := range sequence {
 			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
 			// in accordance with https://www.uniprot.org/help/sequences
-			// X and Z are added since Uniprot files do have these in sequences
-			// scattered about
-			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*XZ", string(char)) {
-				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO*XZ are allowed for Proteins. Got letter: " + string(char))
+			// The release notes https://web.expasy.org/docs/relnotes/relstat.html
+			// also state there are Asx (B), Glx (Z), and Xaa (X) amino acids, so
+			// these are added in as well.
+			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*BXZ", string(char)) {
+				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO*BXZ are allowed for Proteins. Got letter: " + string(char))
 			}
 		}
 	}
