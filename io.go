@@ -427,6 +427,19 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 			stringBuffer = strings.TrimSpace(stringBuffer) // Trim any newlines at EOF
 			lines := strings.Split(stringBuffer, "\n")
 
+			// This will solve if there isn't a line split between a sequence
+			// and a new >name
+			var lines []string
+			for _, line := range linesBuffer {
+				carrotIndex := strings.Index(line, ">")
+				if carrotIndex < 1 {
+					lines = append(lines, line)
+				} else {
+					lines = append(lines, line[:carrotIndex])
+					lines = append(lines, line[carrotIndex:])
+				}
+			}
+
 			// remove lastLine if there is more file to process
 			if end == false {
 				lastLine = []byte(lines[len(lines)-1])
