@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -390,16 +391,14 @@ type Fasta struct {
 }
 
 func ReadFASTAGz(path string, sequences chan<- Fasta) {
-	file, _ := ioutil.ReadFile(path)
-	rdata := bytes.NewReader(file)
-	r, _ := gzip.NewReader(rdata)
+	file, _ := os.Open(path)
+	r, _ := gzip.NewReader(file)
 	go ParseFASTAGz(r, sequences)
 }
 
 func ReadFASTAConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := ioutil.ReadFile(path)
-	rdata := bytes.NewReader(file)
-	go ParseFASTAGz(rdata, sequences)
+	file, _ := os.Open(path)
+	go ParseFASTAGz(file, sequences)
 }
 
 func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
