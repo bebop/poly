@@ -411,26 +411,18 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
+		switch {
 		// if there's nothing on this line skip this iteration of the loop
-		if len(line) == 0 {
+		case len(line) == 0:
 			continue
-		}
 		// if it's a comment skip this line
-		if line[0:1] == ";" {
+		case line[0:1] == ";":
 			continue
-		}
-
 		// start of a fasta line
-		if line[0:1] != ">" {
+		case line[0:1] != ">":
 			sequenceLines = append(sequenceLines, line)
-		}
-		// Process first line of file
-		if line[0:1] == ">" && start == true {
-			name = line[1:]
-			start = false
-		}
-		// Process subsequent lines
-		if line[0:1] == ">" && start == false {
+		// Process normal new lines
+		case line[0:1] == ">" && start == false:
 			sequence := strings.Join(sequenceLines, "")
 			newFasta := Fasta{
 				Name:     name,
@@ -440,6 +432,10 @@ func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 			// New name
 			name = line[1:]
 			sequences <- newFasta
+		// Process first line of file
+		case line[0:1] == ">" && start == true:
+			name = line[1:]
+			start = false
 		}
 	}
 	// Add final sequence in file to channel
