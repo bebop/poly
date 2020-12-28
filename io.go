@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -395,105 +396,59 @@ func ReadFASTAGz(path string, sequences chan<- Fasta) {
 	go ParseFASTAGz(r, sequences)
 }
 
+func ReadFASTAConcurrent(path string, sequences chan<- Fasta) {
+	file, _ := ioutil.ReadFile(path)
+	rdata := bytes.NewReader(file)
+	go ParseFASTAGz(rdata, sequences)
+}
+
 func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
+	// Initialize necessary variables
 	var sequenceLines []string
 	var name string
-
-	// A channel is used for processing very large FASTA files like Uniprot TrEMBL
-	//sequences := make(chan Fasta, 100)
-
-	// lastLine is the lastLine without a terminating "\n". This is necessary
-	// in case the r.Read(p) stops at the middle of a line
-	lastLine := []byte{}
-
-	// p and r are convention for io Reader
-	p := make([]byte, 1024) // 1mb
 	start := true
-	for {
-		n, err := r.Read(p)
-		// If n > 0, consider those bytes
-		if n > 0 {
-			// We have to handle parsing sequences separately from ParseFASTA since
-			// we want a list of Sequences, not a concatenation of FASTA lines into
-			// a single Sequence
 
-			// If this is the end of the file, set end to true
-			end := false
-			if err == io.EOF {
-				end = true
-			}
-
-			stringBuffer := string(append(lastLine, p[:n]...))
-			stringBuffer = strings.TrimSpace(stringBuffer) // Trim any newlines at EOF
-			linesBuffer := strings.Split(stringBuffer, "\n")
-
-			// This will solve if there isn't a line split between a sequence
-			// and a new >name
-			var lines []string
-			for _, line := range linesBuffer {
-				carrotIndex := strings.Index(line, ">")
-				if carrotIndex < 1 {
-					lines = append(lines, line)
-				} else {
-					lines = append(lines, line[:carrotIndex])
-					lines = append(lines, line[carrotIndex:])
-				}
-			}
-
-			// remove lastLine if there is more file to process
-			if end == false {
-				lastLine = []byte(lines[len(lines)-1])
-				lines = lines[:len(lines)-1]
-			}
-
-			linesLength := len(lines)
-
-			for lineIndex, line := range lines {
-				// if there's nothing on this line skip this iteration of the loop
-				if len(line) == 0 {
-					continue
-				}
-				// if it's a comment skip this line
-				if line[0:1] == ";" {
-					continue
-				}
-
-				// start of a fasta line
-				if line[0:1] != ">" {
-					sequenceLines = append(sequenceLines, line)
-				}
-				// Process first line of file
-				if line[0:1] == ">" && start == true {
-					name = line[1:]
-					start = false
-				}
-				// Process subsequent lines
-				if line[0:1] == ">" && start == false {
-					sequence := strings.Join(sequenceLines, "")
-					newFasta := Fasta{
-						Name:     name,
-						Sequence: sequence}
-					// Reset sequence lines
-					sequenceLines = []string{}
-					// New name
-					name = line[1:]
-					sequences <- newFasta
-				}
-				// Process the last line of file
-				if (lineIndex+2 == linesLength) && (end == true) { // I don't know why +2 works here but empirically it does
-					sequence := strings.Join(sequenceLines, "")
-					newFasta := Fasta{
-						Name:     name,
-						Sequence: sequence}
-					sequences <- newFasta
-				}
-
-			}
+	// Start the scanner
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// if there's nothing on this line skip this iteration of the loop
+		if len(line) == 0 {
+			continue
 		}
-		if err == io.EOF {
-			break
+		// if it's a comment skip this line
+		if line[0:1] == ";" {
+			continue
+		}
+
+		// start of a fasta line
+		if line[0:1] != ">" {
+			sequenceLines = append(sequenceLines, line)
+		}
+		// Process first line of file
+		if line[0:1] == ">" && start == true {
+			name = line[1:]
+			start = false
+		}
+		// Process subsequent lines
+		if line[0:1] == ">" && start == false {
+			sequence := strings.Join(sequenceLines, "")
+			newFasta := Fasta{
+				Name:     name,
+				Sequence: sequence}
+			// Reset sequence lines
+			sequenceLines = []string{}
+			// New name
+			name = line[1:]
+			sequences <- newFasta
 		}
 	}
+	// Add final sequence in file to channel
+	sequence := strings.Join(sequenceLines, "")
+	newFasta := Fasta{
+		Name:     name,
+		Sequence: sequence}
+	sequences <- newFasta
 	close(sequences)
 }
 

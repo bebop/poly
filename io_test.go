@@ -345,6 +345,18 @@ func ExampleReadFASTAGz() {
 	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
 }
 
+func ExampleReadFASTAConcurrent() {
+	fastas := make(chan Fasta, 1000)
+	go ReadFASTAConcurrent("data/smallfasta.fasta", fastas)
+	var name string
+	for fasta := range fastas {
+		name = fasta.Name
+	}
+
+	fmt.Println(name)
+	// Output: camR-2|AGAC,AGGT
+}
+
 /******************************************************************************
 
 FASTA related tests begin here.
