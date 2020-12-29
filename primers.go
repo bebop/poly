@@ -94,6 +94,7 @@ func MarmurDoty(sequence string) float64 {
 	return meltingTemp
 }
 
+// TODO make custom function for phusion according to https://tmcalculator.neb.com/#!/help
 // MeltingTemp calls SantaLucia with default inputs for primer and salt concentration.
 func MeltingTemp(sequence string) float64 {
 	primerConcentration := 500e-9 // 500 nM (nanomolar) primer concentration
@@ -102,4 +103,17 @@ func MeltingTemp(sequence string) float64 {
 
 	meltingTemp, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
 	return meltingTemp
+}
+
+// MakePrimers makes primers for a given sequence at a targetTm. It uses the default values from MeltingTemp
+func MakePrimers(sequence string, targetTm float64) (string, string) {
+	forwardPrimer := sequence[0:15]
+	for i := 0; MeltingTemp(forwardPrimer) < targetTm; i++ {
+		forwardPrimer = sequence[0 : 15+i]
+	}
+	reversePrimer := ReverseComplement(sequence[len(sequence)-15:])
+	for i := 0; MeltingTemp(reversePrimer) < targetTm; i++ {
+		reversePrimer = ReverseComplement(sequence[len(sequence)-(15+i):])
+	}
+	return forwardPrimer, reversePrimer
 }
