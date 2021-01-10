@@ -702,3 +702,59 @@ func FixCodons(sequence string, codontable CodonTable, problematicSequenceFuncs 
 
 
 
+type DnaFix2 struct {
+	Positions: []int
+	Bias: string
+
+}
+
+func FixSequence2(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaFix *sync.WaitGroup)) (string, error) {
+	aaSequence = Translation(sequence, codontable)
+	// Initialize a SQLite database representing the sequence
+	db = database, _ := sql.Open("sqlite3", ":memory:")
+
+	// Initialize Tables
+	statement, _ := db.Prepare("CREATE TABLE aminoacid(aminoacid TEXT PRIMARY KEY)")
+	statement.Exec()
+	statement, _ = db.Prepare("CREATE TABLE codonchoices(id INTEGER PRIMARY KEY, tripletchoice TEXT, weight INT, aminoacid TEXT, FOREIGN KEY(aminoacid) REFERENCES aminoacid(aminoacid))")
+	statement.Exec()
+	statement, _ = db.Prepare("CREATE TABLE position (position INTEGER PRIMARY KEY, aminoacid TEXT, FOREIGN KEY(aminoacid) REFERENCES aminoacid(aminoacid))")
+	statement.Exec()
+	statement, _ = db.Prepare("CREATE TABLE codon (id INTEGER PRIMARY KEY, position INTEGER, triplet TEXT, level INTEGER, FOREIGN KEY(position) REFERENCES position(position))")
+	statement.Exec()
+
+	// Fill aminoacid with codonTable data
+	statement, _ = db.Prepare("INSERT INTO aminoacid(aminoacid) VALUES (?)")
+	for _, aa := range codontable.AminoAcids {
+		statement.Exec(aa.Letter)
+	}
+
+	// Fill codonchoices with codonTable data
+	statement, _ = db.Prepare("INSERT INTO codonchoices(tripletchoice, weight, aminoacid) VALUES (?,?,?)")
+	for _, aa := range codontable.AminoAcids {
+		for _, codon := range aa.Codons {
+			statement.Exec(codon.Triplet, codon.Weight, aa.Letter)
+		}
+	}
+
+	// Fill position with translation data
+	statement, _ = db.Prepare("INSERT INTO position (position, aminoacid) VALUES (?,?)")
+	for i, aa := range aaSequence {
+		statement.Exec(i, aa)
+	}
+
+	// Fill codon with sequence specific data
+	statement, _ = db.Prepare("INSERT INTO codon (position, triplet, level) VALUES (?,?,?)")
+	for i, aa := range aaSequence {
+		statement.Exec(i, sequence[i*3:(i*3)+3], 0)
+	}
+
+	func getErrors() {
+		// Get full sequence to pass to problematicSequenceFuncs
+	}
+	return "hi", nil
+
+}
+
+
+
