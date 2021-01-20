@@ -1,9 +1,11 @@
 package poly
 
 import (
+	"errors"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 )
 
 type CloneSequence struct {
@@ -17,85 +19,146 @@ type Overhang struct {
 	Forward  bool
 }
 
-func GoldenGateCloneBbsI(sequences []CloneSequence) []CloneSequence {
-	var fragments []string
-	enzymeSite := "GAAGAC"
-	enzymeSkip := 2
-	enzymeOverhangLen := 4
-	simulateAll := false
-	for _, seq := range sequences {
-		// Check circularity
-		var sequence string
-		if seq.Circular == true {
-			sequence = strings.ToUpper(seq.Sequence + seq.Sequence)
-		} else {
-			sequence = strings.ToUpper(seq.Sequence)
-		}
-		// Find and define overhangs
-		var overhangs []Overhang
-		forwardCuts := regexp.MustCompile(enzymeSite).FindAllStringIndex(sequence, -1)
-		reverseCuts := regexp.MustCompile(ReverseComplement(enzymeSite)).FindAllStringIndex(sequence, -1)
-		for _, forwardCut := range forwardCuts {
-			overhangs = append(overhangs, Overhang{Length: enzymeOverhangLen, Position: forwardCut[1] + enzymeSkip, Forward: true})
-		}
-		for _, reverseCut := range reverseCuts {
-			overhangs = append(overhangs, Overhang{Length: enzymeOverhangLen, Position: reverseCut[0] - enzymeSkip, Forward: false})
-		}
-		// TODO add checks that make sure overhangs + enzymeSkip is over or below the length of the string
+type Fragment struct {
+	Sequence        string
+	ForwardOverhang string
+	ReverseOverhang string
+}
 
-		// Sort overhangs
-		sort.SliceStable(overhangs, func(i, j int) bool {
-			return overhangs[i].Position < overhangs[j].Position
-		})
+type Enzyme struct {
+	EnzymeName        string
+	RegexpFor         *regexp.Regexp
+	RegexpRev         *regexp.Regexp
+	EnzymeSkip        int
+	EnzymeOverhangLen int
+	Directional       bool
+}
 
-		// Convert Overhangs into Fragments
-		var currentOverhang Overhang
-		var nextOverhang Overhang
-		for i := 0; i < len(overhangs)-1; i++ {
-			currentOverhang = overhangs[i]
-			nextOverhang = overhangs[i+1]
-			if (seq.Circular == true) && (simulateAll == false) {
-				if nextOverhang.Position > len(seq.Sequence) {
-					if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
-						fragments = append(fragments, sequence[currentOverhang.Position:nextOverhang.Position])
-						break
-					}
-				}
-			} else {
+/******************************************************************************
+
+Base cloning functions begin here.
+
+******************************************************************************/
+
+// https://qvault.io/2019/10/21/golang-constant-maps-slices/
+func getBaseRestrictionEnzymes() map[string]Enzyme {
+	// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
+	enzymeMap := make(map[string]Enzyme)
+
+	// Build default enzymes
+	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, true}
+	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, true}
+	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, true}
+	enzymeMap["BsmBI"] = Enzyme{"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, true}
+
+	// Return EnzymeMap
+	return enzymeMap
+}
+
+func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
+	enzymeMap := getBaseRestrictionEnzymes()
+	if _, ok := enzymeMap[enzymeStr]; ok == false {
+		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
+	}
+	enzyme, _ := enzymeMap[enzymeStr]
+	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme), nil
+}
+
+func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragment {
+	var fragmentSeqs []string
+	var sequence string
+	if seq.Circular == true {
+		sequence = strings.ToUpper(seq.Sequence + seq.Sequence)
+	} else {
+		sequence = strings.ToUpper(seq.Sequence)
+	}
+	// Find and define overhangs
+	var overhangs []Overhang
+	forwardCuts := enzyme.RegexpFor.FindAllStringIndex(sequence, -1)
+	reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
+	for _, forwardCut := range forwardCuts {
+		overhangs = append(overhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: forwardCut[1] + enzyme.EnzymeSkip, Forward: true})
+	}
+	for _, reverseCut := range reverseCuts {
+		overhangs = append(overhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
+	}
+	// TODO add checks that make sure overhangs + enzymeSkip is over or below the length of the string
+
+	// Sort overhangs
+	sort.SliceStable(overhangs, func(i, j int) bool {
+		return overhangs[i].Position < overhangs[j].Position
+	})
+
+	// Convert Overhangs into Fragments
+	var currentOverhang Overhang
+	var nextOverhang Overhang
+	if len(overhangs) == 1 { // Check the case of a single cut
+	}
+	for i := 0; i < len(overhangs)-1; i++ {
+		currentOverhang = overhangs[i]
+		nextOverhang = overhangs[i+1]
+		switch {
+		case (seq.Circular == true) && (enzyme.Directional == true):
+			if nextOverhang.Position > len(seq.Sequence) {
 				if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
-					fragments = append(fragments, sequence[currentOverhang.Position:nextOverhang.Position])
+					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+					break
 				}
 			}
+		case (seq.Circular == false) && (enzyme.Directional == true):
+			if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
+				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+			}
+		case enzyme.Directional == false:
+			fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+		}
 
-		}
 	}
-	// Now that we have Fragments, lets see if we can connect any together to make a circle
-	var assembledConstructs []string
-	var fragment string
-	var appendable bool
-	for _, fragmentStarter := range fragments {
-		fragment = fragmentStarter
-		appendable = true
-		if appendable == true {
-			appendable = false
-			for _, newFragment := range fragments {
-				if fragment[len(fragment)-4:] == newFragment[:4] {
-					appendable = true
-					fragment = fragment + newFragment[4:]
-				}
-				if fragment[len(fragment)-4:] == fragment[:4] {
-					assembledConstructs = append(assembledConstructs, fragment[4:])
-					appendable = false
-				}
+
+	// Convert fragment sequences into fragments
+	var fragments []Fragment
+	for _, fragment := range fragmentSeqs {
+		fragments = append(fragments, Fragment{Sequence: fragment[enzyme.EnzymeOverhangLen : len(fragment)-enzyme.EnzymeOverhangLen], ForwardOverhang: fragment[:enzyme.EnzymeOverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.EnzymeOverhangLen:]})
+	}
+	return fragments
+}
+
+func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fragmentList []Fragment) {
+	defer wg.Done()
+	if seedFragment.ForwardOverhang == seedFragment.ReverseOverhang {
+		c <- seedFragment.ForwardOverhang + seedFragment.Sequence
+	} else {
+		for _, newFragment := range fragmentList {
+			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
+				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
+				wg.Add(1)
+				go recurseLigate(wg, c, newSeed, fragmentList)
+			}
+			if seedFragment.ReverseOverhang == ReverseComplement(newFragment.ReverseOverhang) {
+				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}
+				wg.Add(1)
+				go recurseLigate(wg, c, newSeed, fragmentList)
 			}
 		}
 	}
+}
+
+func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
+	var wg sync.WaitGroup
+	c := make(chan string, maxClones) // A buffered channel is needed to prevent blocking.
+	wg.Add(len(fragments))
+	for _, fragment := range fragments {
+		go recurseLigate(&wg, c, fragment, fragments)
+	}
+	wg.Wait()
+	close(c)
+
 	// For any given cloning reaction, there will be rotations that fulfill the requirement. This removes
 	// Rotations. Later, will be replaced with the seqhash algorithm
 	var rotatedConstructs []CloneSequence
 	var rotatedSeq string
 	var withinConstructs bool
-	for _, construct := range assembledConstructs {
+	for construct := range c {
 		rotatedSeq = RotateSequence(construct)
 		withinConstructs = true
 		for _, rotated := range rotatedConstructs {
@@ -108,4 +171,22 @@ func GoldenGateCloneBbsI(sequences []CloneSequence) []CloneSequence {
 		}
 	}
 	return rotatedConstructs
+}
+
+/******************************************************************************
+
+Specific cloning functions begin here.
+
+******************************************************************************/
+
+func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, error) {
+	var fragments []Fragment
+	for _, sequence := range sequences {
+		newFragments, err := RestrictionEnzymeCut(sequence, enzymeStr)
+		if err != nil {
+			return []CloneSequence{}, err
+		}
+		fragments = append(fragments, newFragments...)
+	}
+	return Ligate(fragments, 1000), nil
 }
