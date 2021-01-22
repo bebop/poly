@@ -134,7 +134,7 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 				wg.Add(1)
 				go recurseLigate(wg, c, newSeed, fragmentList)
 			}
-			if seedFragment.ReverseOverhang == ReverseComplement(newFragment.ReverseOverhang) {
+			if (seedFragment.ReverseOverhang == ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
 				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}
 				wg.Add(1)
 				go recurseLigate(wg, c, newSeed, fragmentList)
