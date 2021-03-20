@@ -2,7 +2,9 @@ package poly
 
 import (
 	"errors"
+	"index/suffixarray"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -180,4 +182,94 @@ func MakeNucleotideMutationPrimers(sequence string, sequenceContext string, muta
 	primerRev := additionalReverseOverlap + ReverseComplement(mutation.MutatedNucleotides) + seedPrimerRev
 
 	return primerFor, primerRev, nil
+}
+
+// Pcr simulates a PCR reaction in both the forward and reverse direction
+func Pcr(sequence string, circular bool, targetTm float64, forward string, reverse string) []string {
+	// Setup forward and reverse indexes for this PCR reaction
+	indexForward := suffixarray.New([]byte(sequence))
+	sequenceReverse := ReverseComplement(sequence)
+	indexReverse := suffixarray.New([]byte(sequenceReverse))
+
+	// Run the PCR reaction with PcrSa
+	return PcrSa(sequence, indexForward, sequenceReverse, indexReverse, circular, targetTm, forward, reverse)
+}
+
+// PcrSa simulates a PCR reaction, given suffix arrays of the forward sequence and reverse sequence of a given DNA molecule
+func PcrSa(sequenceForward string, indexForward *suffixarray.Index, sequenceReverse string, indexReverse *suffixarray.Index, circular bool, targetTm float64, forward string, reverse string) []string {
+	return append(PcrSaUnidirectional(sequenceForward, indexForward, circular, targetTm, forward, reverse), PcrSaUnidirectional(sequenceReverse, indexReverse, circular, targetTm, forward, reverse)...)
+}
+
+// PcrSaUnidirectional simulates a PCR reaction with a prebuilt suffix array (https://golang.org/pkg/index/suffixarray/) in a single direction
+func PcrSaUnidirectional(sequence string, sequenceIndex *suffixarray.Index, circular bool, targetTm float64, forward string, reverse string) []string {
+	// For the forward primer, index from right to left until the targetTm is hit
+	var minimalForwardLength int
+	for i := 10; MeltingTemp(forward[len(forward)-i:]) < targetTm; i++ {
+		minimalForwardLength = i + 1
+		if forward[len(forward)-i:] == forward {
+			return []string{}
+		}
+	}
+	// Once the targetTm is hit, search for the sequence in the sequenceIndex
+	forwardSequence := forward[len(forward)-minimalForwardLength:]
+	forwardLocations := sequenceIndex.Lookup([]byte(forwardSequence), -1)
+
+	// Do the same for the reverse primer
+	var minimalReverseLength int
+	for i := 10; MeltingTemp(reverse[:i]) < targetTm; i++ {
+		minimalReverseLength = i + 1
+		if reverse == reverse[:i] {
+			return []string{}
+		}
+	}
+	reverseSequence := ReverseComplement(reverse[:minimalReverseLength])
+	reverseLocations := sequenceIndex.Lookup([]byte(reverseSequence), -1)
+
+	// Now that there are forwardLocations and reverseLocations, we need to find forward primer / reverse primer pairs. We do this
+	// by finding a reverse primer after a forward primer that is smaller than the next forward pair. Once at the end of the list,
+	// we need to check circularity, and if we are working with a circular genome, check that there aren't primers overlapping at
+	// the origin of the sequence
+	var pcrFragment string
+	var pcrFragments []string
+
+	// First, we sort the forwardLocations and reverseLocations lists
+	sort.Ints(forwardLocations)
+	sort.Ints(reverseLocations)
+
+	// Next, iterate through the forwardLocations list
+	for i, forwardLocation := range forwardLocations {
+		// First, make sure that this isn't the last element in forwardLocations
+		if i+1 != len(forwardLocations) {
+			// If this isn't the last element in forwardLocations, then we can select the first reverseLocation that is less than the next forwardLocation
+			for _, reverseLocation := range reverseLocations {
+				if (forwardLocation < reverseLocation) && (reverseLocation < forwardLocations[i+1]) {
+					// If both are true, we have found the sequence we are aiming to PCR!
+					pcrFragment = forward[:len(forward)-minimalForwardLength] + sequence[forwardLocation:reverseLocation] + ReverseComplement(reverse)
+					// Append to pcrFragments
+					pcrFragments = append(pcrFragments, pcrFragment)
+					break
+				}
+			}
+		} else {
+			foundFragment := false
+			for _, reverseLocation := range reverseLocations {
+				if forwardLocation < reverseLocation {
+					pcrFragment = forward[:len(forward)-minimalForwardLength] + sequence[forwardLocation:reverseLocation] + ReverseComplement(reverse)
+					pcrFragments = append(pcrFragments, pcrFragment)
+					foundFragment = true
+				}
+			}
+			// If the sequence is circular and we haven't found a fragment yet, check the other side of the origin
+			if (circular == true) && (foundFragment == false) {
+				for _, reverseLocation := range reverseLocations {
+					if forwardLocations[0] > reverseLocation {
+						// If either one of these are true, create a new pcrFragment and append to pcrFragments
+						pcrFragment = forward[:len(forward)-minimalForwardLength] + sequence[forwardLocation:] + sequence[:reverseLocation] + ReverseComplement(reverse)
+						pcrFragments = append(pcrFragments, pcrFragment)
+					}
+				}
+			}
+		}
+	}
+	return pcrFragments
 }
