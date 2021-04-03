@@ -192,6 +192,63 @@ func application() *cli.App {
 					return nil
 				},
 			},
+      {
+				Name:    "amplify",
+				Aliases: []string{"amp"},
+				Usage:   "Design primers to amplify a particular sequence of DNA.",
+
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "primer_for",
+						Value: "string",
+						Usage: "Name the output forward primer in primers.txt",
+					},
+          &cli.StringFlag{
+						Name:  "primer_rev",
+						Value: "string",
+						Usage: "Name the output reverse primer in primers.txt",
+					},
+          &cli.StringFlag{
+            Name:  "amplicon",
+						Value: "string",
+						Usage: "Amplify a particular string",
+          },
+          &cli.StringFlag{
+            Name:  "range",
+						Value: "string",
+						Usage: "Amplify a particular range of sequence",
+          },
+          &cli.StringFlag{
+            Name:  "no_amplify",
+						Value: "string",
+						Usage: "Prevent primers from amplifying a sequence from a different file",
+          },
+          &cli.StringFlag{
+            Name:  "validate",
+						Value: "string",
+						Usage: "Specify file input type.",
+          },
+          &cli.StringFlag{
+            Name:  "size",
+						Value: "string",
+						Usage: "Specify file input type.",
+          },
+          &cli.StringFlag{
+            Name:  "coverage",
+						Value: "string",
+						Usage: "Specify file input type.",
+          },
+          &cli.StringFlag{
+            Name:  "overlap",
+						Value: "string",
+						Usage: "Specify file input type.",
+          },
+				},
+				Action: func(c *cli.Context) error {
+					// amplifyCommand()
+					return nil
+				},
+			},
 		}, // subcommands list ends here
 	} // app definition ends here
 
