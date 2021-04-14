@@ -253,11 +253,11 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 
 }
 
-// SequenceSeqhash is a method wrapper for hashing Sequence structs. Note that
+// Seqhash is a method wrapper for hashing Sequence structs. Note that
 // all sequence structs are, by default, double-stranded sequences,
 // since Genbank does not track whether or not a given sequence in their
 // database is single stranded or double stranded.
-func (sequence Sequence) SequenceSeqhash() (string, error) {
+func (sequence Sequence) Seqhash() (string, error) {
 	if sequence.Meta.Locus.MoleculeType == "" {
 		return "", errors.New("No MoleculeType found for sequence")
 	}
