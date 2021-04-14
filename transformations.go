@@ -500,261 +500,167 @@ Information wants to be free,
 
 Keoni Gandall
 
+
+
+
+
+
+
+This is Keoni coming back after a few months. Let me re-explain what this code will do.
+
+1 First, we generate an in-memory SQLite DB. This database lets us do relational queries
+  on important parts of our sequence that would be difficult to write in Golang
+2 Next, we use the inputed functions to look for problematic regions (problematicRegion).
+  Each problematicRegion has a list of suggested fixes (suggestedFixes) that, if fixed up,
+  should resolve the problematicRegion.
+3 Once we have the list of problematicRegions + suggestedFixes, we sort the suggestedFixes by
+  the estimated amount of changes needed to fix that region.
+3a The suggestedFix with the smallest quantity of changes necessary to fix the problem is then
+   fixed in sequence space. 
+3b The specific codon that is changed to fix a problem is first sorted by if it has been used already.
+   For example, if one codon has already been switched around, the system will avoid changing it
+   again unless absolutely necessary. 
+3c Codons are then sorted to move towards optimal codons. For example, if one codon can be changed from
+   a fairly rare codon to the most common codon for that amino acid, it will be chosen to be changed over
+   a codon who is already fairly optimal.
+4. All problematicRegions *without overlaps* are repeated with [GOTO 3] in order of quantity of changes
+5. After all independent problematicRegions have been checked, repeat search with [GOTO 2]
+6. If we end up with a sequence without any problematicRegions, we return the sequence!
+
+
+
 ******************************************************************************/
 
-type DnaFix struct {
-	Start: int,
-	End: int,
-	Bias: string,
-	InternalFix: []DnaFix
+type DnaSuggestion struct {
+	Start: int
+	End: int
+	Bias: string
+	QuantityFixes: int
 }
 
-type Triplet struct {
-	Letter: string
-	Position: int
-	Choices: []weightedRand.Choice
-}
-
-func FindBsaI(searchSeq, c chan DnaFix, wg *sync.WaitGroup) {
+func FindBsaI(sequence, c chan DnaSuggestion, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// This should be done with a regex to find all occurences, but this is just a test
-	// function so.... yea.
-	i := searchSeq(searchSeq, "GGTCTC")
-	c <- DnaFix{i, i+6, "NA"}
+	re := regexp.MustCompile(`GGTCTC`)
+	locs := re.FindAllString(sequence, -1)
+	for _, loc := range locs {
+		position := loc[0]/3
+		leftover := loc[0]%3
+		switch {
+		case leftover == 0:
+			c <- DnaSuggestion{position, (loc[1]/3), "NA", 1}
+		case leftover != 0:
+			c <- DnaSuggestion{position - 1, (loc[1]/3) - 1, "NA", 1}
+		}
+	}
 }
 
-func FixCodons(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaFix, *sync.WaitGroup)) string, error{
+func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
+	// Run functions to get suggestions
+        suggestions := make(chan DnaSuggestions, 100)
+        var wg sync.WaitGroup
+        for _, f := range problematicSequenceFuncs {
+                wg.Add(1)
+                go f(sequence, suggestions, wg)
+        }
+        wg.Wait()
 
-	// Check that sequence is triplets
-	// {}
-
-	// Uppercase the sequence
-	// {}
-
-	// Translate sequence
-	translation := Translate(sequence, codontable)
-
-	// Generate a list of triplets that represent the entire sequence
-	var triplets []Triplet
-	for i, aa := range translation {
-		for _, aminoAcid := range codontable.AminoAcids {
-			if aminoAcid.Letter == aa {
-
-				// Get sum of codon occurences for a particular amino acid
-				codonOccurenceSum := 0
-				for _, codon in aminoAcid.Codons {
-					codonOccurenceSum += codon.Weight
-				}
-
-				// Threshold codons that occur less than 10% for coding a particular amino acid
-				for _, codon := range aminoAcids {
-					codonPercentage := float64(codon.Weight) / float64(codonOccurenceSum)
-
-					var codonChoices []weightedRand.Choice
-					if codonPercentage > 0.10 {
-						// for every codon related to current amino acid append its Triplet and Weight to codonChoices after thresholding
-						// except for the codon currently at the translation location
-						if codon.Triplet != sequence[i*3:(i*3)+3] {
-							codonChoices = append(codonChoices, weightedRand.Choice{Item: codon.Triplet, Weight: uint(codon.Weight)})
-						}
-					}
-				}
-				triplets = append(triplets, Triplet{aa, i, codonChoices})
-			}
-		}
+	var suggestionsList []DnaSuggestion
+	for suggestion := range suggestions {
+		suggestionsList = append(suggestionsList, suggestion)
 	}
+	return suggestionList
+}
 
-	// Build initial fix list
-	var fixes chan DnaFix
-	var wg sync.WaitGroup
-	for _, f := range problematicSequenceFuncs {
-		wg.Add(1)
-		go f(sequence, fixes, wg)
-	}
-	wg.Wait()
+func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) string, error {
+	createMemoryDbSql := `
+	CREATE TABLE codon (
+		codon TEXT PRIMARY KEY,
+		aa TEXT
+	);
 
-	iterationCount := 0
-	// Loop until all fixes are fixed or there has been 1000 iterations
-	for (len(fixes) != 0) || (iterationCount < 1000) {
-		for _, fix := range fixes {
-			// bestFixScore keeps score of the best externalFix (ie, the smallest one that
-			// still covers the entire sequence)
-			var bestFixScore int
-			var bestExternalFix DnaFix
-			fittingExternal := false
-			for _, externalFix := range fixes {
-				if (fix.Start > externalFix.Start) && (fix.End < externalFix.End) {
-					externalFixScore := (fix.Start - externalFix.Start) + (externalFix.End - fix.End)
-					if externalFixScore < bestFixScore {
-						bestExternalFix = externalFix
-						fittingExternal = true
-					}
-				}
-			}
-			// If there is a best externalFix, add the current fix to its fix list
-			if fittingExternal == true {
-				externalFix.InternalFix = append(externalFix.InternalFix, fix)
-			}
-		}
-		// Only go actually fix things without any internal fixes
-		for _, fix := range fixes {
-			if fix.InternalFix == []DnaFix {
-				// It is ok to round down since wobbles are usually on right side
-				tripletStart = fix.Start / 3
-				tripletEnd = fix.End / 3
-				var fixableTriplets []Triplet
-				for i := tripletStart; i < tripletEnd; i++ {
-					fixableTriplets = append(fixableTriplets, triplets[i])
-				}
+	CREATE TABLE seq (
+		pos INT PRIMARY KEY,
+		codon TEXT NOT NULL REFERENCES codon(codon)
+	);
 
-				// This entire switch is code to Bias towards GC or AT content
-				tripletChoosers := make(map[int][]weightedRand.Choice)
+	CREATE TABLE history (
+		pos INT REFERENCES seq(pos),
+		codon TEXT NOT NULL REFERNECES codon(codon),
+		step INT
+	);
+
+	-- Weights are set on a per position basis for codon harmonization at a later point
+	CREATE TABLE weights (
+		pos INT REFERENCES seq(pos),
+		codon TEXT NOT NULL REFERENCES codon(codon),
+		weight INT
+	);
+
+	CREATE TABLE codonbias (
+		fromcodon TEXT REFERENCES codon(codon),
+		tocodon TEXT REFERENCES codon(codon),
+		gcbias BOOL 
+	);
+
+	CREATE TABLE suggestedFix (
+		step INT,
+		start INT REFERENCES seq(pos),
+		end INT REFERENCES seq(pos),
+		gcbias bool,
+		quantityfixes INT
+	);
+`
+	// Insert codons
+	weightTable := make(map[string]int)
+	codonInsert := `INSERT INTO codon(codon, aa) VALUES (?, ?)`
+	for _, aminoAcid := range codontable.AminoAcids {
+		for _, codon := range aminoAcid.Codons {
+			db.MustExec(codonInsert, codon.Triplet, aminoAcid.Letter)
+			weightTable[codon.Triplet] = codon.Weight
+
+			codonBias := strings.Count(codon.Triplet, "G") + strings.Count(codon.Triplet, "C")
+			for _, toCodon := range aminoAcid.Codons {
+				toCodonBias := strings.Count(toCodon.Triplet, "G") + strings.Count(toCodon.Triplet, "C")
 				switch {
-				case fix.Bias == "GC":
-					for i, triplet := fixableTriplets {
-						var finalChoices []weightedRand.Choice
-						for _, choice := range triplet.Choices {
-							if (strings.Count(choice.Item, "G") + strings.Count(choice.Item, "C")) > (strings.Count(sequence[Triplet.Position * 3:(Triplet.Position* 3) + 3], "G") + strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "C")) {
-								finalChoices = append(finalChoices, choice)
-							}
-						}
-						tripletChoosers[i] = finalChoices
-					}
-				case fix.Bias == "AT":
-					for i, triplet := fixableTriplets {
-                                                var finalChoices []weightedRand.Choice
-                                                for _, choice := range triplet.Choices {
-                                                        if (strings.Count(choice.Item, "A") + strings.Count(choice.Item, "T")) > (strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "A") + strings.Count(sequence[Triplet.Position * 3:(Triplet.Position * 3) + 3], "T")) {
-                                                                finalChoices = append(finalChoices, choice)
-                                                        }
-                                                }
-						tripletChoosers[i] = finalChoices
-                                        }
-				case fix.Bias == "NA":
-					for i, triplet := fixableTriplets {
-						var finalChoices []weightedRand.Choice
-						for _, choice := range triplet.Choices {
-							finalChoices = append(finalChoices, choice)
-						}
-					}
-					tripletChoosers[i] = finalChoices
-				}
-				// Now that we have our tripletChoosers to yoink from, we have to choose one to use
-				targetPosition = int(len(fixableTriplets) / 2)
-				var middleOutTripletList []Triplet
-				var frontTriplets []Triplet
-				var endTriplets []Triplet
-				for i, t := range fixableTriplets {
-					switch {
-					case i < targetPosition:
-						frontTriplets = append(frontTriplets, t)
-					case i > targetPosition:
-						endTriplets = append(endTriplets, t)
-					case i == targetPosition:
-						middleOutTripletList = append(middleOutTripletList, t)
-					}
-				}
-
-				// Now sort em in middle out.
-				// For example, we have list [1, 2, 3, 4]
-				// we will reorder to list [2, 3, 1, 4]
-				if len(frontTriplets) < len(endTriplets) {
-					oddTriplets := endTriplets
-					evenTriplets := frontTriplets
-				} else {
-					oddTriplets := frontTriplets
-					evenTriplets := endTriplets
-				}
-				for i := 1; i < len(frontTriplets) + len(endTriplets); i++ {
-					if(n%2==0) {
-						middleOutTripletList = append(middleOutTripletList, endTriplets[(i/2)-1])
-					} else {
-						middleOutTripletList = append(middleOutTripletList, frontTriplets[((i+1)/2)-1])
-					}
-				}
-
-				// For each Triplet in middleOutTripletList, check if there is any option to change to. If there is,
-				// change it, and then note that in the original Triplet list. 
-				for i, tr := range middleOutTripletList {
-					if len(tripletChoosers[tr.Position]) == 0 {
-						if i+1 == len(middleOutTripletList) {
-							return sequence, errors.New("FAILED - NO TRIPLET TO CHOOSE FROM")
-						}
-					} else {
-						change := weightedRand.Chooser(tripletChoosers[tr.Position]...).Pick().(string)
-						changePosition := tr.Position
-						break
-					}
-				}
-
-				// Now we have the change we want to make. Let's make the change to the sequence itself, and then
-				//
-
-
-
-					}
+				case codonBias == toCodonBias:
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon) VALUES (?, ?)`, codon.Triplet, toCodon.Triplet)
+				case codonBias > toCodonBias:
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, false)
+				case codonBias < toCodonBias:
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, true)
 				}
 			}
 		}
 	}
-}
 
-
-
-type DnaFix2 struct {
-	Positions: []int
-	Bias: string
-
-}
-
-func FixSequence2(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaFix *sync.WaitGroup)) (string, error) {
-	aaSequence = Translation(sequence, codontable)
-	// Initialize a SQLite database representing the sequence
-	db = database, _ := sql.Open("sqlite3", ":memory:")
-
-	// Initialize Tables
-	statement, _ := db.Prepare("CREATE TABLE aminoacid(aminoacid TEXT PRIMARY KEY)")
-	statement.Exec()
-	statement, _ = db.Prepare("CREATE TABLE codonchoices(id INTEGER PRIMARY KEY, tripletchoice TEXT, weight INT, aminoacid TEXT, FOREIGN KEY(aminoacid) REFERENCES aminoacid(aminoacid))")
-	statement.Exec()
-	statement, _ = db.Prepare("CREATE TABLE position (position INTEGER PRIMARY KEY, aminoacid TEXT, FOREIGN KEY(aminoacid) REFERENCES aminoacid(aminoacid))")
-	statement.Exec()
-	statement, _ = db.Prepare("CREATE TABLE codon (id INTEGER PRIMARY KEY, position INTEGER, triplet TEXT, level INTEGER, FOREIGN KEY(position) REFERENCES position(position))")
-	statement.Exec()
-
-	// Fill aminoacid with codonTable data
-	statement, _ = db.Prepare("INSERT INTO aminoacid(aminoacid) VALUES (?)")
-	for _, aa := range codontable.AminoAcids {
-		statement.Exec(aa.Letter)
+	// Insert seq and history
+	pos := 1
+	for i := 0; i < len(sequence) - 3; i = i + 3 {
+		codon := sequence[i:i+3]
+		db.MustExec(`INSERT INTO seq(pos, codon) VALUES (?, ?)`, pos, codon)
+		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
+		db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
 	}
 
-	// Fill codonchoices with codonTable data
-	statement, _ = db.Prepare("INSERT INTO codonchoices(tripletchoice, weight, aminoacid) VALUES (?,?,?)")
-	for _, aa := range codontable.AminoAcids {
-		for _, codon := range aa.Codons {
-			statement.Exec(codon.Triplet, codon.Weight, aa.Letter)
+	// For a maximum of 1000 iterations, see if we can do better
+	for i := 1; i < 1000; i++ {
+		suggestions := findProblems(sequence, problematicSequenceFuncs)
+		for _, suggestion := range suggestions {
+			switch suggestion.Bias {
+			case "NA":
+				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, null, ?)`, i, suggestion.Start, suggestion.End, suggestion.QuantityFixes)
+			case "GC":
+				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, true, suggestion.QuantityFixes)
+			case "AT":
+				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, false, suggestion.QuantityFixes)
+			}
 		}
-	}
+		// Select all non-overlapping suggestions
 
-	// Fill position with translation data
-	statement, _ = db.Prepare("INSERT INTO position (position, aminoacid) VALUES (?,?)")
-	for i, aa := range aaSequence {
-		statement.Exec(i, aa)
-	}
+		// Select the smallest quantity fixes ne
 
-	// Fill codon with sequence specific data
-	statement, _ = db.Prepare("INSERT INTO codon (position, triplet, level) VALUES (?,?,?)")
-	for i, aa := range aaSequence {
-		statement.Exec(i, sequence[i*3:(i*3)+3], 0)
 	}
-
-	func getErrors() {
-		// Get full sequence to pass to problematicSequenceFuncs
-	}
-	return "hi", nil
 
 }
-
-
 
