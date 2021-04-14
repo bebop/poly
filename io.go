@@ -1220,7 +1220,8 @@ func getFeatures(lines []string) []Feature {
 			// it is still here - KG 19 Dec 2020
 			if len(attributeSplit) < 2 {
 				attributeValue = ""
-				//attributeValue = strings.TrimSpace(attributeSplit[1])
+			} else {
+				attributeValue = strings.TrimSpace(attributeSplit[1])
 			}
 			feature.Attributes[attributeLabel] = attributeValue
 		}
