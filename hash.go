@@ -143,7 +143,7 @@ store that relate to storing and searching large quantities of sequences - dedup
 be used on those Seqhashes to save a lot of space.
 
 For DNA or RNA sequences, only ATUGCYRSWKMBDHVNZ characters are allowed. For Proteins,
-only ACDEFGHIKLMNPQRSTVWYUO* characters are allowed in sequences. Selenocysteine (Sec; U) and pyrrolysine
+only ACDEFGHIKLMNPQRSTVWYUO*BXZ characters are allowed in sequences. Selenocysteine (Sec; U) and pyrrolysine
 (Pyl; O) are included in the protein character set - usually U and O don't occur within protein sequences,
 but for certain organisms they do, and it is certainly a relevant amino acid for those particular proteins.
 
