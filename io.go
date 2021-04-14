@@ -2,6 +2,7 @@ package poly
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -25,6 +26,7 @@ File specific parsers, builders readers, and writers:
 	JSON- parser, reader, writer
 	FASTA - parser, reader, writer
 	Gbk/gb/genbank - parser, builder, reader, writer
+	Genbank flat / seq.gz - parser, reader
 
 
 ******************************************************************************/
@@ -324,13 +326,9 @@ func BuildGff(sequence Sequence) []byte {
 
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
+	file, _ := ioutil.ReadFile(path)
 	var sequence Sequence
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	} else {
-		sequence = ParseGff(file)
-	}
+	sequence = ParseGff(file)
 	return sequence
 }
 
@@ -367,10 +365,7 @@ func ParseJSON(file []byte) Sequence {
 
 // ReadJSON reads an Sequence JSON file.
 func ReadJSON(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequence := ParseJSON(file)
 	return sequence
 }
@@ -498,10 +493,7 @@ func BuildFASTA(sequence Sequence) []byte {
 
 // ReadFASTA reads a Sequence struct from a FASTA file.
 func ReadFASTA(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	sequence := ParseFASTA(file)
 	return sequence
 }
@@ -714,14 +706,9 @@ func BuildGbk(sequence Sequence) []byte {
 
 // ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
 func ReadGbk(path string) Sequence {
-	file, err := ioutil.ReadFile(path)
+	file, _ := ioutil.ReadFile(path)
 	var sequence Sequence
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	} else {
-		sequence = ParseGbk(file)
-
-	}
+	sequence = ParseGbk(file)
 	return sequence
 }
 
@@ -1400,5 +1387,80 @@ func generateWhiteSpace(length int) string {
 /******************************************************************************
 
 GBK specific IO related things end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+Genbank Flat specific IO related things begin here.
+
+******************************************************************************/
+
+// ParseGbkMulti parses multiple Genbank files in a byte array to multiple sequences
+func ParseGbkMulti(file []byte) []Sequence {
+
+	gbk := string(file)
+	genbankFiles := strings.SplitAfter(gbk, "//\n")
+
+	//Remove last genbankFile in list. The real file terminates with //, which
+	//will be interpreted as an empty genbankFile.
+	genbankFiles = genbankFiles[:len(genbankFiles)-1]
+
+	//Iterate through each genbankFile in genbankFiles list and Parse it
+	//using the ParseGbk function. Return output.
+	var sequences []Sequence
+	for _, f := range genbankFiles {
+		sequences = append(sequences, ParseGbk([]byte(f)))
+	}
+
+	return sequences
+
+}
+
+// ParseGbkFlat specifically takes the output of a Genbank Flat file that from
+// the genbank ftp dumps. These files have 10 line headers, which are entirely
+// removed
+func ParseGbkFlat(file []byte) []Sequence {
+
+	gbk := string(file)
+
+	// This code removes the header, which is 10 lines long. This is inefficient
+	// and gets rid of the data in the header, which may be useful for some
+	// application. Header data is not needed to parse the Genbank files, though
+	gbkWithoutHeader := []byte(strings.Join(strings.Split(gbk, "\n")[10:], "\n"))
+
+	// Pass gbkWithoutHeader to ParseGbkMulti, which should handle
+	// the rest of the parsing just fine
+	sequences := ParseGbkMulti(gbkWithoutHeader)
+	return sequences
+}
+
+// ReadGbkMulti reads multiple genbank files from a single file
+func ReadGbkMulti(path string) []Sequence {
+	file, _ := ioutil.ReadFile(path)
+	sequences := ParseGbkMulti(file)
+	return sequences
+}
+
+// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
+func ReadGbkFlat(path string) []Sequence {
+	file, _ := ioutil.ReadFile(path)
+	sequences := ParseGbkFlat(file)
+	return sequences
+}
+
+// ReadGbkFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
+func ReadGbkFlatGz(path string) []Sequence {
+	file, _ := ioutil.ReadFile(path)
+	rdata := bytes.NewReader(file)
+	r, _ := gzip.NewReader(rdata)
+	s, _ := ioutil.ReadAll(r)
+	sequences := ParseGbkFlat(s)
+	return sequences
+}
+
+/******************************************************************************
+
+Genbank Flat specific IO related things end here.
 
 ******************************************************************************/

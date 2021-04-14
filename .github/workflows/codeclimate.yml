@@ -1,8 +1,6 @@
 name: Codecov
 
-on:
-  push:
-    branches: [ prime ]
+on: [push, pull_request]
 
 jobs:
   build:

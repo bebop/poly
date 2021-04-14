@@ -2,8 +2,12 @@ package poly
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func ExampleTranslate() {
@@ -102,4 +106,116 @@ func TestGetCodonFrequency(t *testing.T) {
 		}
 	}
 
+}
+
+/******************************************************************************
+
+JSON related tests begin here.
+
+******************************************************************************/
+
+func ExampleReadCodonJSON() {
+	codontable := ReadCodonJSON("data/bsub_codon_test.json")
+
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func ExampleParseCodonJSON() {
+	file, _ := ioutil.ReadFile("data/bsub_codon_test.json")
+	codontable := ParseCodonJSON(file)
+
+	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func ExampleWriteCodonJSON() {
+	codontable := ReadCodonJSON("data/bsub_codon_test.json")
+	WriteCodonJSON(codontable, "data/codon_test.json")
+	testCodonTable := ReadCodonJSON("data/codon_test.json")
+
+	// cleaning up test data
+	os.Remove("data/codon_test.json")
+
+	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
+	//output: 28327
+}
+
+func TestWriteCodonJSON(t *testing.T) {
+	testCodonTable := ReadCodonJSON("data/bsub_codon_test.json")
+	WriteCodonJSON(testCodonTable, "data/codon_test1.json")
+	readTestCodonTable := ReadCodonJSON("data/codon_test1.json")
+
+	// cleaning up test data
+	os.Remove("data/codon_test1.json")
+
+	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	}
+
+}
+
+/******************************************************************************
+
+Codon Compromise + Add related tests begin here.
+
+******************************************************************************/
+
+func ExampleCompromiseCodonTable() {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	finalTable, _ := CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
+	for _, aa := range finalTable.AminoAcids {
+		for _, codon := range aa.Codons {
+			if codon.Triplet == "TAA" {
+				fmt.Println(codon.Weight)
+			}
+		}
+	}
+	//output: 2727
+}
+
+func TestCompromiseCodonTable(t *testing.T) {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
+	if err == nil {
+		t.Errorf("Compromise table should fail on -1.0")
+	}
+	_, err = CompromiseCodonTable(optimizationTable, optimizationTable2, 10.0) // Fails too high
+	if err == nil {
+		t.Errorf("Compromise table should fail on 10.0")
+	}
+}
+
+func ExampleAddCodonTable() {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	finalTable := AddCodonTable(optimizationTable, optimizationTable2)
+	for _, aa := range finalTable.AminoAcids {
+		for _, codon := range aa.Codons {
+			if codon.Triplet == "GGC" {
+				fmt.Println(codon.Weight)
+			}
+		}
+	}
+	//output: 90
 }
