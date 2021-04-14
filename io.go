@@ -398,13 +398,13 @@ func ReadFASTAGz(path string, sequences chan<- Fasta) {
 	go ParseFASTAGz(r, sequences)
 }
 
-// ReadFastaConcurrent concurrently reads a flat Fasta file.
+// ReadFASTAConcurrent concurrently reads a flat Fasta file.
 func ReadFASTAConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
 	go ParseFASTAGz(file, sequences)
 }
 
-// ParseFastaGz concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
+// ParseFASTAGz concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
 func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 	// Initialize necessary variables
 	var sequenceLines []string
