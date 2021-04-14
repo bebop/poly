@@ -27,5 +27,5 @@ jobs:
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
       with:
-        coverageCommand: cd poly && go test ./... -coverprofile=c.out
+        coverageCommand: go test ./... -coverprofile=c.out
         debug: true
