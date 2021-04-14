@@ -234,7 +234,7 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 	case "PROTEIN":
 		sequenceTypeLetter = "P"
 	}
-	// Get 2nd letter. C for circular, L for Liner
+	// Get 2nd letter. C for circular, L for Linear
 	if circular == true {
 		circularLetter = "C"
 	} else {
