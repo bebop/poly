@@ -1,7 +1,8 @@
 version: "2"         # required to adjust maintainability checks
 
 checks:
-  severity: info
+  issue_override:
+    severity: info
   argument-count:
     enabled: true
     config:
