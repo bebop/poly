@@ -419,7 +419,6 @@ func ExampleReadGbkMulti() {
 }
 
 func ExampleReadGbkFlat() {
-	//sequences := ReadGbkFlat("data/flatGbk_test.seq")
 	sequences := ReadGbkFlat("data/long_comment.seq")
 	var locus []string
 	for _, sequence := range sequences {
