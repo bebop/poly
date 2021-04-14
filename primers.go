@@ -109,7 +109,8 @@ func MeltingTemp(sequence string) float64 {
 Start of the De Bruijn stuff
 ******************************************************************************/
 
-// DeBruijn generates a DNA DeBruijn sequence
+// DeBruijn generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once.
+// https://en.wikipedia.org/wiki/De_Bruijn_sequence
 // https://rosettacode.org/wiki/De_Bruijn_sequences#Go
 // Pulled and adapted from here
 func DeBruijn(n int) string {
@@ -153,6 +154,7 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 		end = start + length
 		i++
 		for _, b := range banned {
+			// If the current deBruijn range has the banned sequence, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for strings.Contains(debruijn[start:end], b) {
 				if end+1 > len(debruijn) {
 					close(c)
@@ -165,6 +167,7 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 			}
 		}
 		for _, f := range bannedFunc {
+			// If the function returns False for the deBruijn range, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for !f(debruijn[start:end]) {
 				if end+1 > len(debruijn) {
 					close(c)
