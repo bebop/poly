@@ -253,7 +253,7 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 
 }
 
-// Seqhash is a method wrapper for hashing Sequence structs. Note that
+// SequenceSeqhash is a method wrapper for hashing Sequence structs. Note that
 // all sequence structs are, by default, double-stranded sequences,
 // since Genbank does not track whether or not a given sequence in their
 // database is single stranded or double stranded.
