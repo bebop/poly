@@ -28,3 +28,4 @@ jobs:
         CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
       with:
         coverageCommand: go test -coverprofile c.out
+        debug: true
