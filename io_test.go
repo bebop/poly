@@ -335,6 +335,7 @@ JSON related tests end here.
 
 func ExampleReadFASTAGz() {
 	fastas := make(chan Fasta, 1000)
+	// ExampleReadFASTAGz is concurrent by default
 	go ReadFASTAGz("data/uniprot_1mb_test.fasta.gz", fastas)
 	var name string
 	for fasta := range fastas {
