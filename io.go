@@ -385,22 +385,26 @@ JSON specific IO related things end here.
 
 ******************************************************************************/
 
+// Fasta is a struct representing a single Fasta file element with a Name and its corresponding Sequence.
 type Fasta struct {
 	Name     string `json:"name"`
 	Sequence string `json:"sequence"`
 }
 
+// ReadFASTAGz concurrently reads a gzipped Fasta file.
 func ReadFASTAGz(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
 	r, _ := gzip.NewReader(file)
 	go ParseFASTAGz(r, sequences)
 }
 
+// ReadFastaConcurrent concurrently reads a flat Fasta file.
 func ReadFASTAConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
 	go ParseFASTAGz(file, sequences)
 }
 
+// ParseFastaGz concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
 func ParseFASTAGz(r io.Reader, sequences chan<- Fasta) {
 	// Initialize necessary variables
 	var sequenceLines []string
