@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"errors"
 	"math/rand"
 	"strings"
 	"time"
@@ -434,4 +435,145 @@ func ReadCodonJSON(path string) CodonTable {
 func WriteCodonJSON(codontable CodonTable, path string) {
 	file, _ := json.MarshalIndent(codontable, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
+}
+
+/******************************************************************************
+Dec, 17, 2020
+
+Compromise + Add codon table stuff begins here
+
+
+== Compromise tables ==
+Basically, I want to codon optimize a protein for two or more organisms.
+In order to do that, I need to be able to generate a codon table that
+is a compromise between the codon tables between two different organisms.
+
+The method is fairly simple: standardize codon counts so the weights are
+equal between both organisms, then add them together. In addition, have
+a variable percentage for removing rare codons (this makes compromise
+tables lossy).
+
+Simple code, but very powerful if it can be used to encode genes for
+multiple organisms.
+
+== Add tables ==
+Some organisms have multiple chromosomes. We need to add em all up
+to get an accurate codon table (different than compromise tables,
+since these are all already balanced).
+
+Godspeed,
+
+Keoni
+******************************************************************************/
+
+// CompromiseCodonTable takes 2 CodonTables and makes a new CodonTable
+// that is an equal compromise between the two tables.
+func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable, cutOff float64) (CodonTable, error) {
+	// Initialize output CodonTable, c
+	var c CodonTable
+	// Check if cutOff is too high or low (this is converted to a percent)
+	if cutOff < 0 {
+		return c, errors.New("Cut off too low. Cannot be less than 0 or greater than 1")
+	}
+	if cutOff > 1 {
+		return c, errors.New("Cut off too high. Cannot be greater than 1")
+	}
+
+	// Take start and stop strings from first table
+	// and use them as start + stops in final CodonTable
+	c.StartCodons = firstCodonTable.StartCodons
+	c.StopCodons = firstCodonTable.StopCodons
+
+	// Initialize the finalAminoAcid list for the output CodonTable
+	var finalAminoAcids []AminoAcid
+
+	// Loop over all AminoAcids represented in the first CodonTable
+	for _, firstAa := range firstCodonTable.AminoAcids {
+		var firstTriplets []string
+		var firstWeights []int
+		var firstTotal int
+
+		var secondTriplets []string
+		var secondWeights []int
+		var secondTotal int
+		// For each amino acid in firstCodonTable, get list of all codons, and append triplets
+		// and weights to a list
+		for _, firstCodon := range firstAa.Codons {
+			firstTriplets = append(firstTriplets, firstCodon.Triplet)
+			firstWeights = append(firstWeights, firstCodon.Weight)
+			firstTotal = firstTotal + firstCodon.Weight
+			for _, secondAa := range secondCodonTable.AminoAcids {
+				if secondAa.Letter == firstAa.Letter {
+					for _, secondCodon := range secondAa.Codons {
+						// For each codon from firstCodonTable, get the
+						// corresponding triplet and weight from secondCodonTable
+						if secondCodon.Triplet == firstCodon.Triplet {
+							secondTriplets = append(secondTriplets, secondCodon.Triplet)
+							secondWeights = append(secondWeights, secondCodon.Weight)
+							secondTotal = secondTotal + secondCodon.Weight
+						}
+					}
+				}
+			}
+		}
+
+		var finalTriplets []string
+		var finalWeights []int
+		cutOffWeight := int(10000 * cutOff)
+
+		// For each of the Triplets in the amino acid, output a triplet weight
+		// for the first and second triplet, which is the percentage of Triplets
+		// coding for that amino acid multiplied by 10,000
+		for i, firstTriplet := range firstTriplets {
+			finalTriplets = append(finalTriplets, firstTriplet)
+			firstTripletWeight := int((float64(firstWeights[i]) / float64(firstTotal)) * 10000)
+			secondTripletWeight := int((float64(secondWeights[i]) / float64(secondTotal)) * 10000)
+			// If the triplet is less than the cutoff weight in either the first or second table,
+			// set its weight to zero. Otherwise, append the average of the first and second weight
+			// to final weights
+			if (firstTripletWeight < cutOffWeight) || (secondTripletWeight < cutOffWeight) {
+				finalWeights = append(finalWeights, 0)
+			} else {
+				finalWeights = append(finalWeights, int((float64(firstTripletWeight)+float64(secondTripletWeight))/2))
+			}
+		}
+		// From those final weights and final triplets, build a list of Codons
+		var finalCodons []Codon
+		for i, finalTriplet := range finalTriplets {
+			finalCodons = append(finalCodons, Codon{finalTriplet, finalWeights[i]})
+		}
+
+		// Append list of Codons to finalAminoAcids
+		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
+	}
+	c.AminoAcids = finalAminoAcids
+	return c, nil
+}
+
+// AddCodonTable takes 2 CodonTables and adds them together to create
+// a new CodonTable.
+func AddCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTable) CodonTable {
+	var c CodonTable
+
+	// Take start and stop strings from first table
+	c.StartCodons = firstCodonTable.StartCodons
+	c.StopCodons = firstCodonTable.StopCodons
+
+	// Add up codons
+	var finalAminoAcids []AminoAcid
+	for _, firstAa := range firstCodonTable.AminoAcids {
+		var finalCodons []Codon
+		for _, firstCodon := range firstAa.Codons {
+			for _, secondAa := range secondCodonTable.AminoAcids {
+				for _, secondCodon := range secondAa.Codons {
+					if firstCodon.Triplet == secondCodon.Triplet {
+						finalCodons = append(finalCodons, Codon{firstCodon.Triplet, firstCodon.Weight + secondCodon.Weight})
+					}
+				}
+			}
+		}
+		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
+	}
+	c.AminoAcids = finalAminoAcids
+	return c
 }
