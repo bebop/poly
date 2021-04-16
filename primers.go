@@ -146,11 +146,11 @@ func Pcr(sequence string, circular bool, targetTm float64, forward string, rever
 
 // PcrSa simulates a PCR reaction, given suffix arrays of the forward sequence and reverse sequence of a given DNA molecule
 func PcrSa(sequenceForward string, indexForward *suffixarray.Index, sequenceReverse string, indexReverse *suffixarray.Index, circular bool, targetTm float64, forward string, reverse string) []string {
-	return append(PcrSaUnidirectional(sequenceForward, indexForward, circular, targetTm, forward, reverse), PcrSaUnidirectional(sequenceReverse, indexReverse, circular, targetTm, forward, reverse)...)
+	return append(pcrSaUnidirectional(sequenceForward, indexForward, circular, targetTm, forward, reverse), pcrSaUnidirectional(sequenceReverse, indexReverse, circular, targetTm, forward, reverse)...)
 }
 
-// PcrSaUnidirectional simulates a PCR reaction with a prebuilt suffix array (https://golang.org/pkg/index/suffixarray/) in a single direction
-func PcrSaUnidirectional(sequence string, sequenceIndex *suffixarray.Index, circular bool, targetTm float64, forward string, reverse string) []string {
+// pcrSaUnidirectional simulates a PCR reaction with a prebuilt suffix array (https://golang.org/pkg/index/suffixarray/) in a single direction
+func pcrSaUnidirectional(sequence string, sequenceIndex *suffixarray.Index, circular bool, targetTm float64, forward string, reverse string) []string {
 	// For the forward primer, index from right to left until the targetTm is hit
 	var minimalForwardLength int
 	for i := 10; MeltingTemp(forward[len(forward)-i:]) < targetTm; i++ {
