@@ -1,11 +1,9 @@
 package poly
 
 import (
-	"errors"
 	"index/suffixarray"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -109,6 +107,19 @@ func MeltingTemp(sequence string) float64 {
 	return meltingTemp
 }
 
+/******************************************************************************
+
+Start of PCR functions
+
+The PCR functions basically take a sequence and simulate PCRs. The PCR template
+is first converted to a suffixarray to enable fast searching. In the case of
+small templates, suffixarray generation does not take a significant amount of time.
+In the case of large templates with many PCRs (such as PCRs from an oligo pool),
+the suffixarray saves a significant amount of time when simulating. A large template
+with a single PCR may take longer to simulate, but will still work fine.
+
+******************************************************************************/
+
 // MakePrimers makes primers for a given sequence at a targetTm. It uses the default values from MeltingTemp
 func MakePrimers(sequence string, targetTm float64) (string, string) {
 	forwardPrimer := sequence[0:15]
@@ -120,68 +131,6 @@ func MakePrimers(sequence string, targetTm float64) (string, string) {
 		reversePrimer = ReverseComplement(sequence[len(sequence)-(15+i):])
 	}
 	return forwardPrimer, reversePrimer
-}
-
-// AminoAcidMutation holds information for a given amino acid mutation. Indexing of positions starts at 1, as per convention
-type AminoAcidMutation struct {
-	StartPosition     int
-	EndPosition       int
-	InitialAminoAcids string
-	MutatedAminoAcids string
-}
-
-// NucleotideMutation holds information for a given nucleotide mutation. Indexing of positions starts at 1, as per convention
-type NucleotideMutation struct {
-	StartPosition      int
-	EndPosition        int
-	MutatedNucleotides string
-}
-
-// MakeNucleotideMutationPrimers takes a sequence and a given sequence context and generates primers to make a targeted mutation
-func MakeNucleotideMutationPrimers(sequence string, sequenceContext string, mutation NucleotideMutation, targetTm float64, overlap int) (string, string, error) {
-	// Check that StartPosition < EndPosition
-	if mutation.StartPosition > mutation.EndPosition {
-		return "", "", errors.New("StartPosition is greater than EndPosition in NucelotideMutation. StartPosition: " + strconv.Itoa(mutation.StartPosition) + " EndPosition: " + strconv.Itoa(mutation.EndPosition))
-	}
-
-	// Check that the overall length of the sequence is greater than EndPosition
-	if mutation.EndPosition > len(sequence) {
-		return "", "", errors.New("EndPosition is greater than length of sequence. EndPosition: " + strconv.Itoa(mutation.EndPosition) + " Sequence length: " + strconv.Itoa(len(sequence)))
-	}
-
-	// Check that sequence is within the sequenceContext
-	sequenceStart := strings.Index(sequenceContext, sequence)
-	if sequenceStart == -1 {
-		return "", "", errors.New("sequence is not a substring of sequenceContext")
-	}
-
-	// Index the "real" start and end position given the sequenceStart within the sequenceContext.
-	// Note: indexing of positions in Mutation notation begins at 1, so 1 is subtracted from the start
-	// and end positions
-	indexedStartPosition := sequenceStart + (mutation.StartPosition - 1)
-	indexedEndPosition := sequenceStart + (mutation.EndPosition - 1)
-
-	// Generate starter primers, in which nucleotide mutations can be added
-	seedPrimerFor, _ := MakePrimers(sequenceContext[indexedEndPosition:], targetTm)
-	_, seedPrimerRev := MakePrimers(sequenceContext[:indexedStartPosition], targetTm)
-
-	// To assemble properly, the fragments resulting from a PCR with these primers need a certain amount of overlap.
-	// This overlap will be the length of the mutation + a little homologous sequence on both ends.
-	var additionalForwardOverlap string
-	var additionalReverseOverlap string
-	additionalOverlap := overlap - len(mutation.MutatedNucleotides)
-	if additionalOverlap > 1 {
-		// Split overlap between forward and reverse
-		targetAdditionalOverlap := additionalOverlap / 2
-		additionalForwardOverlap = sequenceContext[indexedStartPosition-targetAdditionalOverlap : indexedStartPosition]
-		additionalReverseOverlap = ReverseComplement(sequenceContext[indexedEndPosition : indexedEndPosition+targetAdditionalOverlap])
-	}
-
-	// Generate final primers
-	primerFor := additionalForwardOverlap + mutation.MutatedNucleotides + seedPrimerFor
-	primerRev := additionalReverseOverlap + ReverseComplement(mutation.MutatedNucleotides) + seedPrimerRev
-
-	return primerFor, primerRev, nil
 }
 
 // Pcr simulates a PCR reaction in both the forward and reverse direction
