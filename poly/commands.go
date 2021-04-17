@@ -284,6 +284,19 @@ func translateCommand(c *cli.Context) error {
 	return nil
 }
 
+/******************************************************************************
+
+poly amplify currently has one mode. Fileio.
+
+The function isPipe() detects if input is coming from a pipe like:
+
+	cat data/DNAsequence.txt | poly amplify > test.txt
+
+******************************************************************************/
+//func amplifyCommand(c *cli.Context) error {
+  
+//}
+
 // a simple helper function to convert an *os.File type into a string.
 func stdinToBytes(file io.Reader) []byte {
 	var stringBuffer bytes.Buffer

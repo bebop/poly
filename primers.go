@@ -103,3 +103,21 @@ func MeltingTemp(sequence string) float64 {
 	meltingTemp, _, _ := SantaLucia(sequence, primerConcentration, saltConcentration, magnesiumConcentration)
 	return meltingTemp
 }
+
+/** takes a sequence and finds a subsequence with a melting temp between lowTM 
+ and highTM and closest to idealTM. if no such sequence exists, return an empty string. */
+func findPrimer(sequence string, lowTM float64, idealTM float64, highTM float64) string {
+  test := "" 
+  bestSequence := test
+  bestDistToIdeal := math.Inf(+1)
+  for n := 0; n < len(sequence); n++ { 
+    test = test + string(sequence[n])
+    testTM := MeltingTemp(test)
+    distToIdeal := math.Abs(testTM - idealTM)
+    if (testTM > lowTM && testTM < highTM && distToIdeal < bestDistToIdeal) {
+      bestSequence = test
+      bestDistToIdeal = distToIdeal
+    }
+  }
+  return bestSequence
+}

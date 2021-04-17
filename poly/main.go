@@ -200,13 +200,13 @@ func application() *cli.App {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "primer_for",
-						Value: "string",
-						Usage: "Name the output forward primer in primers.txt",
+						Value: "primer_for",
+						Usage: "Name the output forward primer in primers.txt. Defaults to 'primer_for'.",
 					},
           &cli.StringFlag{
 						Name:  "primer_rev",
-						Value: "string",
-						Usage: "Name the output reverse primer in primers.txt",
+						Value: "primer_rev",
+						Usage: "Name the output reverse primer in primers.txt. Defaults to 'primer_rev'.",
 					},
           &cli.StringFlag{
             Name:  "amplicon",
@@ -242,6 +242,21 @@ func application() *cli.App {
             Name:  "overlap",
 						Value: "string",
 						Usage: "Specify file input type.",
+          },
+          &cli.Float64Flag{
+            Name: "high_tm",
+            Value: 70.0,
+            Usage: "Specify max acceptable melting temp for primer design,",
+          },
+          &cli.Float64Flag{
+            Name: "low_tm",
+            Value: 60.0,
+            Usage: "Specify min acceptable melting temp for primer design.",
+          },
+          &cli.Float64Flag{
+            Name: "tm",
+            Value: 65.0,
+            Usage: "Specify ideal melting temp for primer design; defaults to 65.",
           },
 				},
 				Action: func(c *cli.Context) error {
