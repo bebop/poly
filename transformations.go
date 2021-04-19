@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+	"github.com/juliangruber/go-intersect"
 
 	weightedRand "github.com/mroth/weightedrand"
 
@@ -532,10 +533,11 @@ This is Keoni coming back after a few months. Let me re-explain what this code w
 ******************************************************************************/
 
 type DnaSuggestion struct {
-	Start: int
-	End: int
-	Bias: string
-	QuantityFixes: int
+	Start: int `db:"start"`
+	End: int `db:"end"`
+	Bias: string `db:"bias"`
+	QuantityFixes: int `db:"quantityfixes"`
+	SuggestionType: string `db:"suggestiontype"`
 }
 
 func FindBsaI(sequence, c chan DnaSuggestion, wg *sync.WaitGroup) {
@@ -600,15 +602,17 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 	CREATE TABLE codonbias (
 		fromcodon TEXT REFERENCES codon(codon),
 		tocodon TEXT REFERENCES codon(codon),
-		gcbias BOOL 
+		gcbias string
 	);
 
 	CREATE TABLE suggestedFix (
+		id INT PRIMARY KEY,
 		step INT,
 		start INT REFERENCES seq(pos),
 		end INT REFERENCES seq(pos),
-		gcbias bool,
-		quantityfixes INT
+		gcbias string,
+		quantityfixes INT,
+		suggestiontype TEXT
 	);
 `
 	// Insert codons
@@ -624,11 +628,11 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 				toCodonBias := strings.Count(toCodon.Triplet, "G") + strings.Count(toCodon.Triplet, "C")
 				switch {
 				case codonBias == toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon) VALUES (?, ?)`, codon.Triplet, toCodon.Triplet)
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "NA")
 				case codonBias > toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, false)
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "AT")
 				case codonBias < toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, true)
+					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "GC")
 				}
 			}
 		}
@@ -646,20 +650,84 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 	// For a maximum of 1000 iterations, see if we can do better
 	for i := 1; i < 1000; i++ {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
-		for _, suggestion := range suggestions {
-			switch suggestion.Bias {
-			case "NA":
-				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, null, ?)`, i, suggestion.Start, suggestion.End, suggestion.QuantityFixes)
-			case "GC":
-				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, true, suggestion.QuantityFixes)
-			case "AT":
-				db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, false, suggestion.QuantityFixes)
+		for suggestionIndex, suggestion := range suggestions {
+			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
+                        db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes)
+
+			// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
+			// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
+			for secondSuggestionIndex, secondSuggestion := range suggestions {
+				if suggestionIndex != secondSuggestionIndex {
+					// makeRange is a helper function that will allow us to generate lists for intersection
+					makeRange := func(min, max int) []int {
+						a := make([]int, max-min+1)
+						for i := range a {
+							a[i] = min + i
+						}
+						return a
+					}
+
+
+					// The overlapping regions would need to have the same bias applied to them. So we check first if they have no preference or the same bias
+					if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestionBias == secondSuggestion.Bias) {
+						// Each suggestion will have a start and end. If we take the intersection of the numbers between the start and the end of both suggestions,
+						// we should be able to find a region where an edit would affect both suggested changes.
+						overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End))
+						if overlap != []int{} {
+							// Each overlap that is successfully found will be inserted as a suggestedfix. First, we need to find its bias
+							var overlapBias string
+							if suggestion.Bias == "NA" {
+								overlapBias = secondSuggestion.Bias
+							} else {
+								overlapBias = suggestion.Bias
+							}
+
+							// Each overlap will have a number of fixes that need to be hit to fix the outer objects 
+							var overlapQuantityFixes int
+							if suggestion.QuantityFixes >= secondSuggestion.QuantityFixes {
+								overlapQuantityFixes = suggestion.QuantityFixes
+							} else {
+								overlapQuantityFixes = secondSuggestion.QuantityFixes
+							}
+
+							// There can't be more desired fixes than there are positions
+							if overlapQuantityFixes > len(overlap) {
+								overlapQuantityFixes = len(overlap)
+							}
+
+							// Lets check if there is already an overlap at this position during this step
+							var id int
+							err := db.Get(&id, `SELECT id FROM suggestedfix WHERE step = ? AND start = ? AND end = ? AND suggestiontype = "overlap"`, i, overlap[0], overlap[len(overlap)-1])
+							// If err is not nil, then we couldn't scan a single instance of the above query
+							if err != nil {
+								db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, "overlap")`, i, overlap[0], overlap[len(overlap)-1], overlapBias, overlapQuantityFixes)
+							}
+
+						}
+					}
+				}
 			}
 		}
-		// Select all non-overlapping suggestions
 
-		// Select the smallest quantity fixes ne
-
+		// The following statements are the magic sauce that makes this all worthwhile.
+		selectSql := ``
+		fix := `SELECT t.codon, t.pos FROM (
+				SELECT w.codon, w.pos 
+				FROM seq AS s 
+					JOIN history AS h ON h.pos = s.pos 
+					JOIN weights AS w ON w.pos = s.pos 
+					JOIN codon AS c ON s.codon = c.codon 
+					JOIN codonbias AS cb ON cb.fromcodon = c.codon 
+				WHERE cb.gbias = ? 
+					AND s.pos >= ?
+					AND s.pos <= ?
+					AND w.codon != h.codon 
+				ORDER BY w.weight
+			) AS t
+			GROUP BY t.pos
+			LIMIT ?;`
+		updateSeq := ``
+		updateHistory := ``
 	}
 
 }
