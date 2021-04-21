@@ -1,10 +1,13 @@
 package poly
 
 import (
-	"math/rand"
-	"strings"
-	"time"
+	"github.com/jmoiron/sqlx"
 	"github.com/juliangruber/go-intersect"
+	"math/rand"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
 
 	weightedRand "github.com/mroth/weightedrand"
 
@@ -517,10 +520,10 @@ This is Keoni coming back after a few months. Let me re-explain what this code w
 3 Once we have the list of problematicRegions + suggestedFixes, we sort the suggestedFixes by
   the estimated amount of changes needed to fix that region.
 3a The suggestedFix with the smallest quantity of changes necessary to fix the problem is then
-   fixed in sequence space. 
+   fixed in sequence space.
 3b The specific codon that is changed to fix a problem is first sorted by if it has been used already.
    For example, if one codon has already been switched around, the system will avoid changing it
-   again unless absolutely necessary. 
+   again unless absolutely necessary.
 3c Codons are then sorted to move towards optimal codons. For example, if one codon can be changed from
    a fairly rare codon to the most common codon for that amino acid, it will be chosen to be changed over
    a codon who is already fairly optimal.
@@ -533,48 +536,50 @@ This is Keoni coming back after a few months. Let me re-explain what this code w
 ******************************************************************************/
 
 type DnaSuggestion struct {
-	Start: int `db:"start"`
-	End: int `db:"end"`
-	Bias: string `db:"bias"`
-	QuantityFixes: int `db:"quantityfixes"`
-	SuggestionType: string `db:"suggestiontype"`
+	Start          int    `db:"start"`
+	End            int    `db:"end"`
+	Bias           string `db:"bias"`
+	QuantityFixes  int    `db:"quantityfixes"`
+	SuggestionType string `db:"suggestiontype"`
 }
 
-func FindBsaI(sequence, c chan DnaSuggestion, wg *sync.WaitGroup) {
+func FindBsaI(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	re := regexp.MustCompile(`GGTCTC`)
-	locs := re.FindAllString(sequence, -1)
+	locs := re.FindAllStringIndex(sequence, -1)
 	for _, loc := range locs {
-		position := loc[0]/3
-		leftover := loc[0]%3
+		position := loc[0] / 3
+		leftover := loc[0] % 3
 		switch {
 		case leftover == 0:
-			c <- DnaSuggestion{position, (loc[1]/3), "NA", 1}
+			c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "BsaI removal"}
 		case leftover != 0:
-			c <- DnaSuggestion{position - 1, (loc[1]/3) - 1, "NA", 1}
+			c <- DnaSuggestion{position - 1, (loc[1] / 3) - 1, "NA", 1, "BsaI removal"}
 		}
 	}
 }
 
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
-        suggestions := make(chan DnaSuggestions, 100)
-        var wg sync.WaitGroup
-        for _, f := range problematicSequenceFuncs {
-                wg.Add(1)
-                go f(sequence, suggestions, wg)
-        }
-        wg.Wait()
+	suggestions := make(chan DnaSuggestion, 100)
+	var wg sync.WaitGroup
+	for _, f := range problematicSequenceFuncs {
+		wg.Add(1)
+		go f(sequence, suggestions, &wg)
+	}
+	wg.Wait()
 
 	var suggestionsList []DnaSuggestion
 	for suggestion := range suggestions {
 		suggestionsList = append(suggestionsList, suggestion)
 	}
-	return suggestionList
+	return suggestionsList
 }
 
-func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) string, error {
+func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
+	var db *sqlx.DB
+	db = sqlx.MustConnect("sqlite3", ":memory:")
 	createMemoryDbSql := `
 	CREATE TABLE codon (
 		codon TEXT PRIMARY KEY,
@@ -583,7 +588,6 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 	CREATE TABLE seq (
 		pos INT PRIMARY KEY,
-		codon TEXT NOT NULL REFERENCES codon(codon)
 	);
 
 	CREATE TABLE history (
@@ -615,6 +619,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		suggestiontype TEXT
 	);
 `
+	db.MustExec(createMemoryDbSql)
 	// Insert codons
 	weightTable := make(map[string]int)
 	codonInsert := `INSERT INTO codon(codon, aa) VALUES (?, ?)`
@@ -640,9 +645,9 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 	// Insert seq and history
 	pos := 1
-	for i := 0; i < len(sequence) - 3; i = i + 3 {
-		codon := sequence[i:i+3]
-		db.MustExec(`INSERT INTO seq(pos, codon) VALUES (?, ?)`, pos, codon)
+	for i := 0; i < len(sequence)-3; i = i + 3 {
+		codon := sequence[i : i+3]
+		db.MustExec(`INSERT INTO seq(pos) VALUES (?, ?)`, pos)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
 		db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
 	}
@@ -650,9 +655,13 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 	// For a maximum of 1000 iterations, see if we can do better
 	for i := 1; i < 1000; i++ {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
+		// If there are no suggestions, break the iteration!
+		if len(suggestions) == 0 {
+			break
+		}
 		for suggestionIndex, suggestion := range suggestions {
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
-                        db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes)
+			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes)
 
 			// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
 			// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
@@ -667,13 +676,12 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 						return a
 					}
 
-
 					// The overlapping regions would need to have the same bias applied to them. So we check first if they have no preference or the same bias
-					if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestionBias == secondSuggestion.Bias) {
+					if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestion.Bias == secondSuggestion.Bias) {
 						// Each suggestion will have a start and end. If we take the intersection of the numbers between the start and the end of both suggestions,
 						// we should be able to find a region where an edit would affect both suggested changes.
-						overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End))
-						if overlap != []int{} {
+						overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End)).([]int)
+						if len(overlap) != 0 {
 							// Each overlap that is successfully found will be inserted as a suggestedfix. First, we need to find its bias
 							var overlapBias string
 							if suggestion.Bias == "NA" {
@@ -682,7 +690,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 								overlapBias = suggestion.Bias
 							}
 
-							// Each overlap will have a number of fixes that need to be hit to fix the outer objects 
+							// Each overlap will have a number of fixes that need to be hit to fix the outer objects
 							var overlapQuantityFixes int
 							if suggestion.QuantityFixes >= secondSuggestion.QuantityFixes {
 								overlapQuantityFixes = suggestion.QuantityFixes
@@ -710,13 +718,13 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		}
 
 		// The following statements are the magic sauce that makes this all worthwhile.
-		selectSql := ``
-		fix := `SELECT t.codon, t.pos FROM (
+		// Parameters: step, gcbias, start, end, quantityfix
+		sqlFix := `INSERT INTO history (codon, pos, step) SELECT t.codon, t.pos, ? FROM (
 				SELECT w.codon, w.pos 
 				FROM seq AS s 
 					JOIN history AS h ON h.pos = s.pos 
 					JOIN weights AS w ON w.pos = s.pos 
-					JOIN codon AS c ON s.codon = c.codon 
+					JOIN codon AS c ON h.codon = c.codon 
 					JOIN codonbias AS cb ON cb.fromcodon = c.codon 
 				WHERE cb.gbias = ? 
 					AND s.pos >= ?
@@ -726,9 +734,25 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 			) AS t
 			GROUP BY t.pos
 			LIMIT ?;`
-		updateSeq := ``
-		updateHistory := ``
+
+		// During this step, first see if there are any overlapping suggestedfixes
+		var overlapSuggestions []DnaSuggestion
+		db.Select(&overlapSuggestions, `SELECT * FROM suggestedfix WHERE suggestiontype = "overlap" AND step = ?`, i)
+		// If there are overlapping suggestedfixes, fix those and iterate along
+		if len(overlapSuggestions) > 0 {
+			for _, overlapSuggestion := range overlapSuggestions {
+				db.MustExec(sqlFix, i, overlapSuggestion.Bias, overlapSuggestion.Start, overlapSuggestion.End, overlapSuggestion.QuantityFixes)
+			}
+		} else { // If there aren't any overlapping suggestedfixes, fix the the remaining independent suggestedfixes
+			var independentSuggestions []DnaSuggestion
+			db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
+			for _, independentSuggestion := range independentSuggestions {
+				db.MustExec(sqlFix, i, independentSuggestion.Bias, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+			}
+		}
 	}
-
+	var codons []string
+	db.Select(&codons, `SELECT codon FROM history GROUP BY pos ORDER BY (pos, step)`)
+	finalSeq := strings.Join(codons, "")
+	return finalSeq, nil
 }
-
