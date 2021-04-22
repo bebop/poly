@@ -100,25 +100,29 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 	var nextOverhang Overhang
 	if len(overhangs) == 1 { // Check the case of a single cut
 	}
+	// The following will iterate over the overhangs list to turn them into fragments
+	// There are two important variables: if the sequence is circular, and if the enzyme cutting is directional. All Type IIS enzymes
+	// are directional, and in normal GoldenGate reactions these fragments would be constantly cut with enzyme as the reaction runs,
+	// so are removed from the output sequences. If the enzyme is not directional, all fragments are valid.
+	// If the sequence is circular, there is a chance that the nextOverhang's position will be greater than the length of the original sequence.
+	// This is ok, and represents a valid cut/fragmentation of a rotation of the sequence. However, everything after will be a repeat fragment
+	// of current fragments, so the iteration is terminated.
 	for overhangIndex := 0; overhangIndex < len(overhangs)-1; overhangIndex++ {
 		currentOverhang = overhangs[overhangIndex]
 		nextOverhang = overhangs[overhangIndex+1]
-		switch {
-		case (seq.Circular == true) && (enzyme.Directional == true):
-			if nextOverhang.Position > len(seq.Sequence) {
-				if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
-					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
-					break
-				}
-			}
-		case (seq.Circular == false) && (enzyme.Directional == true):
+		if enzyme.Directional == true {
 			if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
 				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 			}
-		case enzyme.Directional == false:
+			if nextOverhang.Position > len(seq.Sequence) {
+				break
+			}
+		} else {
 			fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+			if nextOverhang.Position > len(seq.Sequence) {
+				break
+			}
 		}
-
 	}
 
 	// Convert fragment sequences into fragments
