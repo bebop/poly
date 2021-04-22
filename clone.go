@@ -66,7 +66,7 @@ func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, erro
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
 	enzyme, _ := enzymeMap[enzymeStr]
-	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme)
+	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme), nil
 }
 
 // RestrictionEnzymeCutEnzymeStruct cuts a given sequence with an enzyme represented by an Enzyme struct.
@@ -91,7 +91,7 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 
 	// If, on a linear sequence, the last overhang's position plus EnzymeSkip is over the length of the sequence, remove that overhang.
 	if (seq.Circular == false) && (overhangs[len(overhangs)-1].Position+enzyme.EnzymeSkip > len(sequence)) {
-		overhangs = overhangs[len(overhangs)-1]
+		overhangs = overhangs[:len(overhangs)-1]
 	}
 
 	// Sort overhangs
@@ -186,10 +186,10 @@ func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
 	var seqhashConstruct string
 	var withinConstructs bool
 	for construct := range c {
-		seqhashConstruct, _ = Seqhash(construct)
+		seqhashConstruct, _ = Seqhash(construct, "DNA", true, true)
 		withinConstructs = false
 		for _, outputConstruct := range outputConstructs {
-			if outputConstruct == seqhashConstruct {
+			if outputConstruct.Sequence == seqhashConstruct {
 				withinConstructs = true
 			}
 		}
