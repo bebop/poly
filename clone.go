@@ -100,9 +100,9 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 	var nextOverhang Overhang
 	if len(overhangs) == 1 { // Check the case of a single cut
 	}
-	for i := 0; i < len(overhangs)-1; i++ {
-		currentOverhang = overhangs[i]
-		nextOverhang = overhangs[i+1]
+	for overhangIndex := 0; overhangIndex < len(overhangs)-1; overhangIndex++ {
+		currentOverhang = overhangs[overhangIndex]
+		nextOverhang = overhangs[overhangIndex+1]
 		switch {
 		case (seq.Circular == true) && (enzyme.Directional == true):
 			if nextOverhang.Position > len(seq.Sequence) {
