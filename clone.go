@@ -8,23 +8,27 @@ import (
 	"sync"
 )
 
+// CloneSequence is a simple struct that can carry a circular or linear DNA sequence.
 type CloneSequence struct {
 	Sequence string
 	Circular bool
 }
 
+// Overhang is a struct that represents the ends of a linearized sequence where Enzymes had cut.
 type Overhang struct {
 	Length   int
 	Position int
 	Forward  bool
 }
 
+// Fragment is a struct that represents linear DNA sequences with sticky ends.
 type Fragment struct {
 	Sequence        string
 	ForwardOverhang string
 	ReverseOverhang string
 }
 
+// Enzyme is a struct that represents restriction enzymes.
 type Enzyme struct {
 	EnzymeName        string
 	RegexpFor         *regexp.Regexp
@@ -55,6 +59,7 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 	return enzymeMap
 }
 
+// RestictionEnzymeCut cuts a given sequence with an enzyme represented by the enzyme's name.
 func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; ok == false {
@@ -64,6 +69,7 @@ func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, erro
 	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme), nil
 }
 
+// RestrictionEnzymeCutEnzymeStruct cuts a given sequence with an enzyme represented by an Enzyme struct.
 func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragment {
 	var fragmentSeqs []string
 	var sequence string
@@ -143,6 +149,7 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 	}
 }
 
+// Ligate simulates ligation of all possible fragment combinations into circular plasmids.
 func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
 	var wg sync.WaitGroup
 	c := make(chan string, maxClones) // A buffered channel is needed to prevent blocking.
@@ -153,24 +160,24 @@ func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
 	wg.Wait()
 	close(c)
 
-	// For any given cloning reaction, there will be rotations that fulfill the requirement. This removes
-	// Rotations. Later, will be replaced with the seqhash algorithm
-	var rotatedConstructs []CloneSequence
-	var rotatedSeq string
+	// Due to how recurseLigate works, any sequence which is used in a complete build can be used to seed
+	// a valid rotation of the complete build. This sorts those sequences out using their unique Seqhashes.
+	var outputConstructs []CloneSequence
+	var seqhashConstruct string
 	var withinConstructs bool
 	for construct := range c {
-		rotatedSeq = RotateSequence(construct)
-		withinConstructs = true
-		for _, rotated := range rotatedConstructs {
-			if rotated.Sequence == rotatedSeq {
-				withinConstructs = false
+		seqhashConstruct, _ = Seqhash(construct)
+		withinConstructs = false
+		for _, outputConstruct := range outputConstructs {
+			if outputConstruct == seqhashConstruct {
+				withinConstructs = true
 			}
 		}
-		if withinConstructs == true {
-			rotatedConstructs = append(rotatedConstructs, CloneSequence{rotatedSeq, true})
+		if withinConstructs == false {
+			outputConstructs = append(outputConstructs, CloneSequence{construct, true})
 		}
 	}
-	return rotatedConstructs
+	return outputConstructs
 }
 
 /******************************************************************************
@@ -179,6 +186,7 @@ Specific cloning functions begin here.
 
 ******************************************************************************/
 
+// GoldenGate simulates a GoldenGate cloning reaction.
 func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
