@@ -8,6 +8,48 @@ import (
 	"sync"
 )
 
+/******************************************************************************
+Apr 22, 2021
+
+Cloning stuff starts here.
+
+Since 1973, the most common way to make recombinant DNA has been restriction
+enzyme cloning (though lately, homologous recombination based methods like
+Gibson assembly have attracted a lot of use). The cloning functions here allow
+for simulation of restriction enzyme cloning.
+
+For a historical review leading up to the discovery:
+https://doi.org/10.1073/pnas.1313397110
+
+The idea of restriction enzyme cloning is that you can cut DNA at specific
+locations with restriction enzyme and then glue them back together in different
+patterns using ligase. The final product is (99.9% of the time) a circular plasmid
+that you can transform into a bacterial cell for propagation.
+
+While simulation is simple for simple cases, there are a lot of edge cases to handle, for example:
+- Which input sequences are circular? How do we handle their rotations?
+- Is the enzyme that is cutting directional? How do we handle that directionality?
+- Are there multiple possible outputs of our ligation reaction? For example, ligations may be
+  to create a "library" of plasmids, in which there are millions of valid combinations.
+- How do we handle sequences that get ligated in multiple orientations?
+
+These cloning functions handle all those problems so that they appear simple to the end user.
+
+In particular, there is a focus here on GoldenGate Assembly:
+https://en.wikipedia.org/wiki/Golden_Gate_Cloning
+https://www.neb.com/applications/cloning-and-synthetic-biology/dna-assembly-and-cloning/golden-gate-assembly
+
+GoldenGate is a particular kind of restriction enzyme cloning reaction that you can do
+in a single tube and that is extraordinarily efficient (up to 50 parts) and is popular
+for new modular DNA part toolkits. Users can easily simulate GoldenGate assembly reactions
+with just their input fragments + the enzyme name.
+
+Let's build some DNA!
+
+Keoni
+
+******************************************************************************/
+
 // CloneSequence is a simple struct that can carry a circular or linear DNA sequence.
 type CloneSequence struct {
 	Sequence string
