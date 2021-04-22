@@ -66,7 +66,7 @@ func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, erro
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
 	enzyme, _ := enzymeMap[enzymeStr]
-	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme), nil
+	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme)
 }
 
 // RestrictionEnzymeCutEnzymeStruct cuts a given sequence with an enzyme represented by an Enzyme struct.
@@ -88,7 +88,11 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 	for _, reverseCut := range reverseCuts {
 		overhangs = append(overhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
 	}
-	// TODO add checks that make sure overhangs + enzymeSkip is over or below the length of the string
+
+	// If, on a linear sequence, the last overhang's position plus EnzymeSkip is over the length of the sequence, remove that overhang.
+	if (seq.Circular == false) && (overhangs[len(overhangs)-1].Position+enzyme.EnzymeSkip > len(sequence)) {
+		overhangs = overhangs[len(overhangs)-1]
+	}
 
 	// Sort overhangs
 	sort.SliceStable(overhangs, func(i, j int) bool {
@@ -99,28 +103,35 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 	var currentOverhang Overhang
 	var nextOverhang Overhang
 	if len(overhangs) == 1 { // Check the case of a single cut
-	}
-	// The following will iterate over the overhangs list to turn them into fragments
-	// There are two important variables: if the sequence is circular, and if the enzyme cutting is directional. All Type IIS enzymes
-	// are directional, and in normal GoldenGate reactions these fragments would be constantly cut with enzyme as the reaction runs,
-	// so are removed from the output sequences. If the enzyme is not directional, all fragments are valid.
-	// If the sequence is circular, there is a chance that the nextOverhang's position will be greater than the length of the original sequence.
-	// This is ok, and represents a valid cut/fragmentation of a rotation of the sequence. However, everything after will be a repeat fragment
-	// of current fragments, so the iteration is terminated.
-	for overhangIndex := 0; overhangIndex < len(overhangs)-1; overhangIndex++ {
-		currentOverhang = overhangs[overhangIndex]
-		nextOverhang = overhangs[overhangIndex+1]
-		if enzyme.Directional == true {
-			if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
-				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
-			}
-			if nextOverhang.Position > len(seq.Sequence) {
-				break
-			}
+		if seq.Circular == true {
+			fragmentSeqs = append(fragmentSeqs, sequence[overhangs[0].Position:]+sequence[:overhangs[0].Position])
 		} else {
-			fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
-			if nextOverhang.Position > len(seq.Sequence) {
-				break
+			fragmentSeqs = append(fragmentSeqs, sequence[overhangs[0].Position:])
+			fragmentSeqs = append(fragmentSeqs, sequence[:overhangs[0].Position])
+		}
+	} else {
+		// The following will iterate over the overhangs list to turn them into fragments
+		// There are two important variables: if the sequence is circular, and if the enzyme cutting is directional. All Type IIS enzymes
+		// are directional, and in normal GoldenGate reactions these fragments would be constantly cut with enzyme as the reaction runs,
+		// so are removed from the output sequences. If the enzyme is not directional, all fragments are valid.
+		// If the sequence is circular, there is a chance that the nextOverhang's position will be greater than the length of the original sequence.
+		// This is ok, and represents a valid cut/fragmentation of a rotation of the sequence. However, everything after will be a repeat fragment
+		// of current fragments, so the iteration is terminated.
+		for overhangIndex := 0; overhangIndex < len(overhangs)-1; overhangIndex++ {
+			currentOverhang = overhangs[overhangIndex]
+			nextOverhang = overhangs[overhangIndex+1]
+			if enzyme.Directional == true {
+				if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
+					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+				}
+				if nextOverhang.Position > len(seq.Sequence) {
+					break
+				}
+			} else {
+				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+				if nextOverhang.Position > len(seq.Sequence) {
+					break
+				}
 			}
 		}
 	}
@@ -134,16 +145,21 @@ func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragme
 }
 
 func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fragmentList []Fragment) {
+	// Recurse ligate simulates all possible ligations of a series of fragments. Each possible combination begins with a "seed" that fragments from the pool can be added to.
 	defer wg.Done()
+	// If the seed ligates to itself, we can call it done with a successful circularization!
 	if seedFragment.ForwardOverhang == seedFragment.ReverseOverhang {
 		c <- seedFragment.ForwardOverhang + seedFragment.Sequence
 	} else {
 		for _, newFragment := range fragmentList {
+			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
 			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
 				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
 				wg.Add(1)
 				go recurseLigate(wg, c, newSeed, fragmentList)
 			}
+			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
+			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
 			if (seedFragment.ReverseOverhang == ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
 				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}
 				wg.Add(1)
