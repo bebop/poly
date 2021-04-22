@@ -577,7 +577,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 	return suggestionsList
 }
 
-func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
+func FixCds(sequence string, protectedPositions []int, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
 	var db *sqlx.DB
 	db = sqlx.MustConnect("sqlite3", ":memory:")
 	createMemoryDbSql := `
@@ -588,6 +588,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 	CREATE TABLE seq (
 		pos INT PRIMARY KEY,
+		protected BOOL DEFAULT false
 	);
 
 	CREATE TABLE history (
@@ -645,9 +646,16 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 	// Insert seq and history
 	pos := 1
+	var protected bool
 	for i := 0; i < len(sequence)-3; i = i + 3 {
 		codon := sequence[i : i+3]
-		db.MustExec(`INSERT INTO seq(pos) VALUES (?, ?)`, pos)
+		protected = false
+		for _, protectedPosition := range protectedPositions {
+			if protectedPosition == i {
+				protected = true
+			}
+		}
+		db.MustExec(`INSERT INTO seq(pos, protected) VALUES (?, ?)`, pos, protected)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
 		db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
 	}
@@ -726,10 +734,11 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 					JOIN weights AS w ON w.pos = s.pos 
 					JOIN codon AS c ON h.codon = c.codon 
 					JOIN codonbias AS cb ON cb.fromcodon = c.codon 
-				WHERE cb.gbias = ? 
+				WHERE cb.gbias = ?
 					AND s.pos >= ?
 					AND s.pos <= ?
 					AND w.codon != h.codon 
+					AND s.protected = false
 				ORDER BY w.weight
 			) AS t
 			GROUP BY t.pos
