@@ -94,6 +94,8 @@ func getFeatureSequence(feature Feature, location Location) string {
 	return sequenceString
 }
 
+// the following functions Iter and iter, derive from github.com/schwarmco/go-cartesian-product
+// which uses interfaces, so I modified it to use runes
 func Iter(params ...[]rune) chan []rune {
 	// create channel
 	c := make(chan []rune)
