@@ -1,9 +1,10 @@
 package poly
 
 import (
+	"errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/juliangruber/go-intersect"
-	"errors"
+	_ "github.com/mattn/go-sqlite3"
 
 	"math/rand"
 	"regexp"
@@ -681,14 +682,14 @@ This is Keoni coming back after a few months. Let me re-explain what this code w
 type DnaSuggestion struct {
 	Start          int    `db:"start"`
 	End            int    `db:"end"`
-	Bias           string `db:"bias"`
+	Bias           string `db:"gcbias"`
 	QuantityFixes  int    `db:"quantityfixes"`
 	SuggestionType string `db:"suggestiontype"`
+	Step           int    `db:"step"`
+	Id             int    `db:"id"`
 }
 
 func FindBsaI(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-	defer wg.Done()
-
 	re := regexp.MustCompile(`GGTCTC`)
 	locs := re.FindAllStringIndex(sequence, -1)
 	for _, loc := range locs {
@@ -696,11 +697,12 @@ func FindBsaI(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		leftover := loc[0] % 3
 		switch {
 		case leftover == 0:
-			c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "BsaI removal"}
+			c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "BsaI removal", 0, 0}
 		case leftover != 0:
-			c <- DnaSuggestion{position - 1, (loc[1] / 3) - 1, "NA", 1, "BsaI removal"}
+			c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, "BsaI removal", 0, 0}
 		}
 	}
+	wg.Done()
 }
 
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
@@ -712,6 +714,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 		go f(sequence, suggestions, &wg)
 	}
 	wg.Wait()
+	close(suggestions)
 
 	var suggestionsList []DnaSuggestion
 	for suggestion := range suggestions {
@@ -728,32 +731,37 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		codon TEXT PRIMARY KEY,
 		aa TEXT
 	);
+
 	CREATE TABLE seq (
-		pos INT PRIMARY KEY,
+		pos INT PRIMARY KEY
 	);
+
 	CREATE TABLE history (
-		pos INT REFERENCES seq(pos),
-		codon TEXT NOT NULL REFERNECES codon(codon),
+		pos INTEGER REFERENCES seq(pos),
+		codon TEXT NOT NULL REFERENCES codon(codon),
 		step INT
 	);
+
 	-- Weights are set on a per position basis for codon harmonization at a later point
 	CREATE TABLE weights (
-		pos INT REFERENCES seq(pos),
+		pos INTEGER REFERENCES seq(pos),
 		codon TEXT NOT NULL REFERENCES codon(codon),
-		weight INT
+		weight INTEGER
 	);
+
 	CREATE TABLE codonbias (
 		fromcodon TEXT REFERENCES codon(codon),
 		tocodon TEXT REFERENCES codon(codon),
-		gcbias string
+		gcbias TEXT
 	);
-	CREATE TABLE suggestedFix (
-		id INT PRIMARY KEY,
-		step INT,
-		start INT REFERENCES seq(pos),
-		end INT REFERENCES seq(pos),
-		gcbias string,
-		quantityfixes INT,
+
+	CREATE TABLE suggestedfix (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		step INTEGER,
+		start INTEGER REFERENCES seq(pos),
+		end INTEGER REFERENCES seq(pos),
+		gcbias TEXT,
+		quantityfixes INTEGER,
 		suggestiontype TEXT
 	);
 `
@@ -768,26 +776,29 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 			codonBias := strings.Count(codon.Triplet, "G") + strings.Count(codon.Triplet, "C")
 			for _, toCodon := range aminoAcid.Codons {
-				toCodonBias := strings.Count(toCodon.Triplet, "G") + strings.Count(toCodon.Triplet, "C")
-				switch {
-				case codonBias == toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "NA")
-				case codonBias > toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "AT")
-				case codonBias < toCodonBias:
-					db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "GC")
+				if codon.Triplet != toCodon.Triplet {
+					toCodonBias := strings.Count(toCodon.Triplet, "G") + strings.Count(toCodon.Triplet, "C")
+					switch {
+					case codonBias == toCodonBias:
+						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "NA")
+					case codonBias > toCodonBias:
+						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "AT")
+					case codonBias < toCodonBias:
+						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "GC")
+					}
 				}
 			}
 		}
 	}
 
 	// Insert seq and history
-	pos := 1
+	pos := 0
 	for i := 0; i < len(sequence)-3; i = i + 3 {
 		codon := sequence[i : i+3]
-		db.MustExec(`INSERT INTO seq(pos) VALUES (?, ?)`, pos)
+		db.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
 		db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
+		pos++
 	}
 
 	// For a maximum of 1000 iterations, see if we can do better
@@ -799,8 +810,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		}
 		for suggestionIndex, suggestion := range suggestions {
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
-			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes) VALUES (?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes)
-
+			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
 			// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
 			// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
 			for secondSuggestionIndex, secondSuggestion := range suggestions {
@@ -857,21 +867,31 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 		// The following statements are the magic sauce that makes this all worthwhile.
 		// Parameters: step, gcbias, start, end, quantityfix
-		sqlFix := `INSERT INTO history (codon, pos, step) SELECT t.codon, t.pos, ? FROM (
-				SELECT w.codon, w.pos 
-				FROM seq AS s 
-					JOIN history AS h ON h.pos = s.pos 
-					JOIN weights AS w ON w.pos = s.pos 
-					JOIN codon AS c ON h.codon = c.codon 
-					JOIN codonbias AS cb ON cb.fromcodon = c.codon 
-				WHERE cb.gbias = ? 
-					AND s.pos >= ?
-					AND s.pos <= ?
-					AND w.codon != h.codon 
-				ORDER BY w.weight
-			) AS t
-			GROUP BY t.pos
-			LIMIT ?;`
+		sqlFix := `INSERT INTO history
+		            (codon,
+		             pos,
+		             step)
+		SELECT t.codon,
+		       t.pos,
+		       ? AS step
+		FROM   (SELECT cb.tocodon AS codon,
+		               s.pos      AS pos
+		        FROM   seq AS s
+		               JOIN history AS h
+		                 ON h.pos = s.pos
+		               JOIN weights AS w
+		                 ON w.pos = s.pos
+		               JOIN codon AS c
+		                 ON h.codon = c.codon
+		               JOIN codonbias AS cb
+		                 ON cb.fromcodon = c.codon
+		        WHERE  cb.gcbias = ?
+		               AND s.pos >= ?
+		               AND s.pos <= ?
+		               AND h.codon != cb.tocodon
+		        ORDER  BY w.weight) AS t
+		GROUP  BY t.pos
+		LIMIT  ?; `
 
 		// During this step, first see if there are any overlapping suggestedfixes
 		var overlapSuggestions []DnaSuggestion
@@ -882,15 +902,16 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 				db.MustExec(sqlFix, i, overlapSuggestion.Bias, overlapSuggestion.Start, overlapSuggestion.End, overlapSuggestion.QuantityFixes)
 			}
 		} else { // If there aren't any overlapping suggestedfixes, fix the the remaining independent suggestedfixes
-			var independentSuggestions []DnaSuggestion
+			independentSuggestions := []DnaSuggestion{}
 			db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
+
 			for _, independentSuggestion := range independentSuggestions {
 				db.MustExec(sqlFix, i, independentSuggestion.Bias, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			}
 		}
+		var codons []string
+		db.Select(&codons, `SELECT codon FROM (SELECT codon, pos FROM history ORDER BY step DESC) GROUP BY pos`)
+		sequence = strings.Join(codons, "")
 	}
-	var codons []string
-	db.Select(&codons, `SELECT codon FROM history GROUP BY pos ORDER BY (pos, step)`)
-	finalSeq := strings.Join(codons, "")
-	return finalSeq, nil
+	return sequence, nil
 }
