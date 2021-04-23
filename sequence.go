@@ -3,6 +3,7 @@ package poly
 import (
 	"bytes"
 	"strings"
+	"sync"
 )
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
@@ -91,4 +92,74 @@ func getFeatureSequence(feature Feature, location Location) string {
 	}
 
 	return sequenceString
+}
+
+func Iter(params ...[]rune) chan []rune {
+	// create channel
+	c := make(chan []rune)
+	// create waitgroup
+	var wg sync.WaitGroup
+	// call iterator
+	wg.Add(1)
+	iterate(&wg, c, []rune{}, params...)
+	// call channel-closing go-func
+	go func() { wg.Wait(); close(c) }()
+	// return channel
+	return c
+}
+
+// private, recursive Iteration-Function
+func iterate(wg *sync.WaitGroup, channel chan []rune, result []rune, params ...[]rune) {
+	// dec WaitGroup when finished
+	defer wg.Done()
+	// no more params left?
+	if len(params) == 0 {
+		// send result to channel
+		channel <- result
+		return
+	}
+	// shift first param
+	p, params := params[0], params[1:]
+	// iterate over it
+	for i := 0; i < len(p); i++ {
+		// inc WaitGroup
+		wg.Add(1)
+		// create copy of result
+		resultCopy := append([]rune{}, result...)
+		// call self with remaining params
+		go iterate(wg, channel, append(resultCopy, p[i]), params...)
+	}
+}
+
+func allVariantsIUPAC(seq string) []string {
+	var allVariants = []string{}
+	var iupacList = [][]rune{}
+	iupac := map[rune][]rune{
+		'G': []rune{'G'},
+		'A': []rune{'A'},
+		'T': []rune{'T'},
+		'C': []rune{'C'},
+		'R': []rune{'G', 'A'},
+		'Y': []rune{'T', 'C'},
+		'M': []rune{'A', 'C'},
+		'K': []rune{'G', 'T'},
+		'S': []rune{'G', 'C'},
+		'W': []rune{'A', 'T'},
+		'H': []rune{'A', 'C', 'T'},
+		'B': []rune{'G', 'T', 'C'},
+		'V': []rune{'G', 'C', 'A'},
+		'D': []rune{'G', 'A', 'T'},
+		'N': []rune{'G', 'A', 'T', 'C'},
+	}
+	for _, s := range seq {
+		iupacList = append(iupacList, iupac[s])
+	}
+
+	cartesianProducts := Iter(iupacList...)
+	for product := range cartesianProducts {
+		allVariants = append(allVariants, string(product))
+	}
+
+	return allVariants
+
 }
