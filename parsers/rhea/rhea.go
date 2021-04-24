@@ -3,6 +3,7 @@ package rhea
 import (
 	"compress/gzip"
 	"database/sql"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"io/ioutil"
@@ -627,20 +628,7 @@ func CreateRheaSqlite(db *sql.DB) error {
 }
 
 // InsertRheaSqlite inserts the Rhea database into an SQLite database with proper normalization for advanced queries.
-func InsertRheaSqlite(db *sql.DB, rheaPath string) error {
-
-	// Read the Compressed Rhea XML to bytes
-	rheaBytes, err := ReadRhea(rheaPath)
-	if err != nil {
-		return err
-	}
-
-	// Parse the Rhea bytes into the rhea struct
-	rhea, err := ParseRhea(rheaBytes)
-	if err != nil {
-		return err
-	}
-
+func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
 	// Start transaction with database for insertion. This ensures if there are any problems, they are seamlessly rolled back
 	tx, err := db.Begin()
 	if err != nil {
@@ -736,4 +724,19 @@ func InsertRheaSqlite(db *sql.DB, rheaPath string) error {
 		return err
 	}
 	return nil
+}
+
+/******************************************************************************
+
+JSON functions
+
+******************************************************************************/
+
+// Export exports Rhea as a JSON file
+func (rhea *Rhea) Export() ([]byte, error) {
+	rheaJson, err := json.Marshal(rhea)
+	if err != nil {
+		return []byte{}, err
+	}
+	return rheaJson, nil
 }
