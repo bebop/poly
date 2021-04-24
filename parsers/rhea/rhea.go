@@ -37,7 +37,7 @@ type Description struct {
 	Id                   int                  `xml:"id"`
 	Accession            string               `xml:"accession"`
 	Equation             string               `xml:"equation"`
-	HtmlEquation         string               `xml:"htmlEquation"`
+	HTMLEquation         string               `xml:"htmlEquation"`
 	IsChemicallyBalanced bool                 `xml:"isChemicallyBalanced"`
 	IsTransport          bool                 `xml:"isTransport"`
 	Citations            []Citation           `xml:"citation"`
@@ -315,7 +315,7 @@ type Reaction struct {
 	Status               string   `json:"status" db:"status"`
 	Comment              string   `json:"comment" db:"comment"`
 	Equation             string   `json:"equation" db:"equation"`
-	HtmlEquation         string   `json:"htmlequation" db:"htmlequation"`
+	HTMLEquation         string   `json:"htmlequation" db:"htmlequation"`
 	IsChemicallyBalanced bool     `json:"ischemicallybalanced" db:"ischemicallybalanced"`
 	IsTransport          bool     `json:"istransport" db:"istransport"`
 	Ec                   string   `json:"ec" db:"ec"`
@@ -372,7 +372,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 					Status:               description.Status.Resource,
 					Comment:              description.Comment,
 					Equation:             description.Equation,
-					HtmlEquation:         description.HtmlEquation,
+					HTMLEquation:         description.HTMLEquation,
 					IsChemicallyBalanced: description.IsChemicallyBalanced,
 					IsTransport:          description.IsTransport,
 					Ec:                   description.EC.Resource,
@@ -390,7 +390,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 					Status:               description.Status.Resource,
 					Comment:              description.Comment,
 					Equation:             description.Equation,
-					HtmlEquation:         description.HtmlEquation,
+					HTMLEquation:         description.HTMLEquation,
 					IsChemicallyBalanced: description.IsChemicallyBalanced,
 					IsTransport:          description.IsTransport,
 					Ec:                   description.EC.Resource,
@@ -687,7 +687,7 @@ func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
 	// Insert the Reactions themselves
 	for _, reaction := range rhea.Reactions {
 		// Insert Reaction
-		_, err = tx.Exec("INSERT INTO reaction(id, directional, accession, status, comment, equation, htmlequation, ischemicallybalanced, istransport, ec, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", reaction.Id, reaction.Directional, reaction.Accession, reaction.Status, reaction.Comment, reaction.Equation, reaction.HtmlEquation, reaction.IsChemicallyBalanced, reaction.IsTransport, reaction.Ec, reaction.Location)
+		_, err = tx.Exec("INSERT INTO reaction(id, directional, accession, status, comment, equation, htmlequation, ischemicallybalanced, istransport, ec, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", reaction.Id, reaction.Directional, reaction.Accession, reaction.Status, reaction.Comment, reaction.Equation, reaction.HTMLEquation, reaction.IsChemicallyBalanced, reaction.IsTransport, reaction.Ec, reaction.Location)
 		if err != nil {
 			tx.Rollback()
 			return err
