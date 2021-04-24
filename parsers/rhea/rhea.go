@@ -16,15 +16,15 @@ import (
 
 Lower level structs
 
-These structs operate at the lowest level to parse the RheaRdf database dump
+These structs operate at the lowest level to parse the Rhea Rdf database dump
 into structs that Golang can understand. Getting all of Rhea from Rdf->Golang
 is quite verbose, and so most of the time you should not use these structs unless
 you know what you are doing and it cannot be accomplished with higher level structs.
 
 ******************************************************************************/
 
-// RheaRdf is the XML representation of the Rhea database.
-type RheaRdf struct {
+// Rdf is the RDF XML representation of the Rhea database.
+type Rdf struct {
 	XMLName      xml.Name      `xml:"RDF"`
 	Descriptions []Description `xml:"Description"`
 }
@@ -338,8 +338,8 @@ which contains all of the higher level structs
 // ParseRhea parses a list of bytes into a higher-level Rhea Struct.
 func ParseRhea(rheaBytes []byte) (Rhea, error) {
 	var err error
-	// Read rheaBytes into a RheaRdf object
-	var rdf RheaRdf
+	// Read rheaBytes into a Rdf object
+	var rdf Rdf
 	err = xml.Unmarshal(rheaBytes, &rdf)
 	if err != nil {
 		return Rhea{}, err
