@@ -92,3 +92,20 @@ func getFeatureSequence(feature Feature, location Location) string {
 
 	return sequenceString
 }
+
+func anonymized_record(sequence Sequence, sequence_id string) Sequence { 
+
+        anonymizer := "anonymized"
+
+        if (sequence_id != "") {
+            anonymizer = sequence_id
+        }
+
+        sequence.Meta.Name = anonymizer
+        sequence.Meta.Keywords = ""
+        for i := range sequence.Features {
+                sequence.Features[i].Name = anonymizer
+        }
+
+        return sequence
+}

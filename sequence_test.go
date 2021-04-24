@@ -69,3 +69,26 @@ func TestLocationParser(t *testing.T) {
 		t.Errorf("Feature sequence parser has changed on test 'complement(join(893..1098,1101..2770))'. Got this:\n%s instead of \n%s", featureComplementJoin, seqComplementJoin)
 	}
 }
+
+func TestAnonymizedRecord(t *testing.T) {
+    sequence := ReadFASTA("data/base.fasta")
+    anonymousSequence := anonymized_record(sequence, "")
+    metaOutput := anonymousSequence.Meta
+    
+    if (metaOutput.Name != "anonymized") {
+               t.Errorf("Should return Meta.Name from the sequence as anonymized. Got this: \n%s instead of \n%s", metaOutput.Name, "anonymized")
+    }
+
+    if (metaOutput.Keywords != "") {
+                   t.Errorf("Should return Meta.Keywords from the sequence as anonymized. Got this: \n%s instead of \n%s", metaOutput.Keywords, "")
+    }
+
+    for i, Feature := range anonymousSequence.Features {
+        if (sequence.Features[i].Sequence != anonymousSequence.Features[i].Sequence) {
+                t.Errorf("Should return for each Feature the same sequence. Got this: \n%s instead of \n%s", sequence.Features[i].Sequence, anonymousSequence.Features[i].Sequence)
+        }
+        if (Feature.Name != "anonymized") {
+                t.Errorf("Should return from each Feature.id in the Sequence as anonymized. Got this: \n%s instead of \n%s", Feature.Name, "anonymized")
+        }
+    }
+}
