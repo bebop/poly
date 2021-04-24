@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/google/go-cmp v0.4.1
+	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/mroth/weightedrand v0.2.1
 	github.com/pmezard/go-difflib v1.0.0
