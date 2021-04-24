@@ -34,7 +34,7 @@ type Description struct {
 	// Reaction
 	XMLName              xml.Name             `xml:"Description"`
 	About                string               `xml:"about,attr"`
-	Id                   int                  `xml:"id"`
+	ID                   int                  `xml:"id"`
 	Accession            string               `xml:"accession"`
 	Equation             string               `xml:"equation"`
 	HTMLEquation         string               `xml:"htmlEquation"`
@@ -48,7 +48,7 @@ type Description struct {
 	Comment              string               `xml:"comment"`
 	EC                   EC                   `xml:"ec"`
 	Status               Status               `xml:"status"`
-	Compound             CompoundXml          `xml:"compound"`
+	Compound             CompoundXML          `xml:"compound"`
 
 	// ReactionSide / Reaction Participant
 	BidirectionalReactions []BidirectionalReaction `xml:"bidirectionalReaction"`
@@ -64,13 +64,13 @@ type Description struct {
 
 	// Small Molecule tags
 	Name     string   `xml:"name"`
-	HtmlName string   `xml:"htmlName"`
+	HTMLName string   `xml:"htmlName"`
 	Formula  string   `xml:"formula"`
 	Charge   string   `xml:"charge"`
-	Chebi    ChebiXml `xml:"chebi"`
+	Chebi    ChebiXML `xml:"chebi"`
 
 	// Generic Compound
-	ReactivePartXml ReactivePartXml `xml:"reactivePart"`
+	ReactivePartXML ReactivePartXML `xml:"reactivePart"`
 
 	// ReactivePart
 	Position string `xml:"position"`
@@ -161,8 +161,8 @@ type Status struct {
 	Resource string   `xml:"resource,attr"`
 }
 
-// CompoundXml is an XML representation of a compound.
-type CompoundXml struct {
+// CompoundXML is an XML representation of a compound.
+type CompoundXML struct {
 	XMLName  xml.Name `xml:"compound"`
 	Resource string   `xml:"resource,attr"`
 }
@@ -209,8 +209,8 @@ type ContainsX struct {
 	Content string `xml:"resource,attr"`
 }
 
-// ChebiXml is an XML representation of a Chebi.
-type ChebiXml struct {
+// ChebiXML is an XML representation of a Chebi.
+type ChebiXML struct {
 	XMLName  xml.Name `xml:"chebi"`
 	Resource string   `xml:"resource,attr"`
 }
@@ -221,8 +221,8 @@ type UnderlyingChebi struct {
 	Resource string   `xml:"resource,attr"`
 }
 
-// ReactivePartXml is an XML representation of a ReactivePart.
-type ReactivePartXml struct {
+// ReactivePartXML is an XML representation of a ReactivePart.
+type ReactivePartXML struct {
 	XMLName  xml.Name `xml:"reactivePart"`
 	Resource string   `xml:"resource,attr"`
 }
@@ -277,20 +277,20 @@ type Rhea struct {
 // Compound is a struct of a Rhea compound. These are chemicals - sometimes they are
 // complicated chemicals like proteins or polymers, but often they are simple molecules.
 type Compound struct {
-	Id                  int    `json:"id" db:"id"`
+	ID                  int    `json:"id" db:"id"`
 	Accession           string `json:"accession" db:"accession"`
 	Position            string `json:"position" db: "position"`
 	Name                string `json:"name" db:"name"`
-	HtmlName            string `json:"htmlName" db:"htmlname"`
+	HTMLName            string `json:"htmlName" db:"htmlname"`
 	Formula             string `json:"formula" db:"formula"`
 	Charge              string `json:"charge" db:"charge"`
 	Chebi               string `json:"chebi" db:"chebi"`
 	SubclassOfChebi     string `json:"subclassOfChebi"`
 	PolymerizationIndex string `json:"polymerizationIndex" db:"polymerizationindex"`
-	CompoundId          int    `json:"id" db:"compoundid"`
+	CompoundID          int    `json:"id" db:"compoundid"`
 	CompoundAccession   string `json:"accession" db:"compoundaccession"`
 	CompoundName        string `json:"name" db:"compoundname"`
-	CompoundHtmlName    string `json:"htmlName" db:"compoundhtmlname"`
+	CompoundHTMLName    string `json:"htmlName" db:"compoundhtmlname"`
 	CompoundType        string `json:"compoundType" db:"compoundtype"`
 }
 
@@ -309,7 +309,7 @@ type ReactionParticipant struct {
 // Reaction represents a Rhea reaction. Substrates, Products, and SubstrateOrProducts are all ReactionSide accession
 // numbers, which can be linked to the ReactionParticipant's ReactionSide accession
 type Reaction struct {
-	Id                   int      `json:"id" db:"id"`
+	ID                   int      `json:"id" db:"id"`
 	Directional          bool     `json:"directional" db:"directional"`
 	Accession            string   `json:"accession" db:"accession"`
 	Status               string   `json:"status" db:"status"`
@@ -355,8 +355,8 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 		// <rdf:Description rdf:about="http://rdf.rhea-db.org/Compound_10594">
 		// 	<rh:reactivePart rdf:resource="http://rdf.rhea-db.org/Compound_10594_rp2"/>
 		// </rdf:Description>
-		if (len(description.Subclass) == 0) && (description.ReactivePartXml.Resource != "") {
-			compoundParticipantMap[description.ReactivePartXml.Resource] = description.About
+		if (len(description.Subclass) == 0) && (description.ReactivePartXML.Resource != "") {
+			compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
 		}
 		if description.Compound.Resource != "" {
 			compoundParticipantMap[description.About] = description.Compound.Resource
@@ -366,7 +366,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 			switch subclass.Resource {
 			case "http://rdf.rhea-db.org/DirectionalReaction":
 				newReaction := Reaction{
-					Id:                   description.Id,
+					ID:                   description.ID,
 					Directional:          true,
 					Accession:            description.Accession,
 					Status:               description.Status.Resource,
@@ -384,7 +384,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 				rhea.Reactions = append(rhea.Reactions, newReaction)
 			case "http://rdf.rhea-db.org/BidirectionalReaction":
 				newReaction := Reaction{
-					Id:                   description.Id,
+					ID:                   description.ID,
 					Directional:          false,
 					Accession:            description.Accession,
 					Status:               description.Status.Resource,
@@ -403,19 +403,19 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer":
 				compoundType := subclass.Resource[23:]
 				newCompound := Compound{
-					Id:        description.Id,
+					ID:        description.ID,
 					Accession: description.About,
 					Position:  description.Position,
 					Name:      description.Name,
-					HtmlName:  description.HtmlName,
+					HTMLName:  description.HTMLName,
 					Formula:   description.Formula,
 					Charge:    description.Charge,
 					Chebi:     description.Chebi.Resource,
 
-					CompoundId:        description.Id,
+					CompoundID:        description.ID,
 					CompoundAccession: description.Accession,
 					CompoundName:      description.Name,
-					CompoundHtmlName:  description.HtmlName,
+					CompoundHTMLName:  description.HTMLName,
 					CompoundType:      compoundType}
 				if compoundType == "Polymer" {
 					newCompound.Chebi = description.UnderlyingChebi.Resource
@@ -432,12 +432,12 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 				compoundType := subclass.Resource[23:]
 				newCompound := Compound{
 					Accession:        description.About,
-					CompoundId:       description.Id,
+					CompoundID:       description.ID,
 					CompoundName:     description.Name,
-					CompoundHtmlName: description.HtmlName,
+					CompoundHTMLName: description.HTMLName,
 					CompoundType:     compoundType}
 				compoundMap[description.About] = newCompound
-				compoundParticipantMap[description.ReactivePartXml.Resource] = description.About
+				compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
 			}
 		}
 	}
@@ -451,11 +451,11 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 				if ok != true {
 					return Rhea{}, errors.New("Could not find " + description.About)
 				}
-				newCompound.Id = description.Id
+				newCompound.ID = description.ID
 				newCompound.CompoundAccession = description.About
 				newCompound.Position = description.Position
 				newCompound.Name = description.Name
-				newCompound.HtmlName = description.HtmlName
+				newCompound.HTMLName = description.HTMLName
 				newCompound.Formula = description.Formula
 				newCompound.Charge = description.Charge
 				newCompound.Chebi = description.Chebi.Resource
@@ -651,14 +651,14 @@ func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
 			return err
 		}
 		// Insert the compound itself
-		_, err = tx.Exec("INSERT INTO compound(id, accession, position, name, htmlname, formula, charge, chebi, polymerizationindex, compoundtype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", compound.Id, compound.Accession, compound.Position, compound.Name, compound.HtmlName, compound.Formula, compound.Charge, compound.Chebi, compound.PolymerizationIndex, compound.CompoundType)
+		_, err = tx.Exec("INSERT INTO compound(id, accession, position, name, htmlname, formula, charge, chebi, polymerizationindex, compoundtype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", compound.ID, compound.Accession, compound.Position, compound.Name, compound.HTMLName, compound.Formula, compound.Charge, compound.Chebi, compound.PolymerizationIndex, compound.CompoundType)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 		// If the compound isn't a small molecule or polymer, that means it would be a reactive part of a larger compound. So we add it in
 		if (compound.CompoundType != "SmallMolecule") && (compound.CompoundType != "Polymer") {
-			_, err = tx.Exec("INSERT INTO reactivepart(id, accession, name, htmlname, compound) VALUES (?, ?, ?, ?, ?)", compound.CompoundId, compound.CompoundAccession, compound.CompoundName, compound.CompoundHtmlName, compound.Accession)
+			_, err = tx.Exec("INSERT INTO reactivepart(id, accession, name, htmlname, compound) VALUES (?, ?, ?, ?, ?)", compound.CompoundID, compound.CompoundAccession, compound.CompoundName, compound.CompoundHTMLName, compound.Accession)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -687,7 +687,7 @@ func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
 	// Insert the Reactions themselves
 	for _, reaction := range rhea.Reactions {
 		// Insert Reaction
-		_, err = tx.Exec("INSERT INTO reaction(id, directional, accession, status, comment, equation, htmlequation, ischemicallybalanced, istransport, ec, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", reaction.Id, reaction.Directional, reaction.Accession, reaction.Status, reaction.Comment, reaction.Equation, reaction.HTMLEquation, reaction.IsChemicallyBalanced, reaction.IsTransport, reaction.Ec, reaction.Location)
+		_, err = tx.Exec("INSERT INTO reaction(id, directional, accession, status, comment, equation, htmlequation, ischemicallybalanced, istransport, ec, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", reaction.ID, reaction.Directional, reaction.Accession, reaction.Status, reaction.Comment, reaction.Equation, reaction.HTMLEquation, reaction.IsChemicallyBalanced, reaction.IsTransport, reaction.Ec, reaction.Location)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -734,9 +734,9 @@ JSON functions
 
 // Export exports Rhea as a JSON file
 func (rhea *Rhea) Export() ([]byte, error) {
-	rheaJson, err := json.Marshal(rhea)
+	rheaJSON, err := json.Marshal(rhea)
 	if err != nil {
 		return []byte{}, err
 	}
-	return rheaJson, nil
+	return rheaJSON, nil
 }
