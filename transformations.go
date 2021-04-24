@@ -734,6 +734,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 
 	CREATE TABLE seq (
 		pos INT PRIMARY KEY
+		protected BOOL
 	);
 
 	CREATE TABLE history (
