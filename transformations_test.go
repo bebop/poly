@@ -154,3 +154,68 @@ func TestWriteCodonJSON(t *testing.T) {
 	}
 
 }
+
+/******************************************************************************
+
+Codon Compromise + Add related tests begin here.
+
+******************************************************************************/
+
+func ExampleCompromiseCodonTable() {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	finalTable, _ := CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
+	for _, aa := range finalTable.AminoAcids {
+		for _, codon := range aa.Codons {
+			if codon.Triplet == "TAA" {
+				fmt.Println(codon.Weight)
+			}
+		}
+	}
+	//output: 2727
+}
+
+func TestCompromiseCodonTable(t *testing.T) {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
+	if err == nil {
+		t.Errorf("Compromise table should fail on -1.0")
+	}
+	_, err = CompromiseCodonTable(optimizationTable, optimizationTable2, 10.0) // Fails too high
+	if err == nil {
+		t.Errorf("Compromise table should fail on 10.0")
+	}
+}
+
+func ExampleAddCodonTable() {
+	sequence := ReadGbk("data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+	optimizationTable := sequence.GetOptimizationTable(codonTable)
+
+	sequence2 := ReadGbk("data/phix174.gb")
+	codonTable2 := GetCodonTable(11)
+	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+
+	finalTable := AddCodonTable(optimizationTable, optimizationTable2)
+	for _, aa := range finalTable.AminoAcids {
+		for _, codon := range aa.Codons {
+			if codon.Triplet == "GGC" {
+				fmt.Println(codon.Weight)
+			}
+		}
+	}
+	//output: 90
+}

@@ -419,7 +419,7 @@ func ExampleReadGbkMulti() {
 }
 
 func ExampleReadGbkFlat() {
-	sequences := ReadGbkFlat("data/flatGbk_test.seq")
+	sequences := ReadGbkFlat("data/long_comment.seq")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -431,11 +431,11 @@ func ExampleReadGbkFlat() {
 
 func ExampleReadGbkFlatGz() {
 	sequences := ReadGbkFlatGz("data/flatGbk_test.seq.gz")
+	//sequences := ReadGbkFlatGz("data/gbbct358.seq.gz")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
 	}
-
 	fmt.Println(strings.Join(locus, ", "))
 	// Output: AB000100, AB000106
 }
