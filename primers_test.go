@@ -90,13 +90,14 @@ func ExampleDeBruijn() {
 }
 
 func ExampleUniqueSequence() {
-	c := make(chan string)
+	uniqueSequences := make(chan string)
 	go UniqueSequence(c, 20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
 	var output string
-	for a := range c {
-		output = a
+	for uniqueSeq := range uniqueSequences {
+		output = uniqueSeq
 	}
 
+	// Only we only want 1 output to check against
 	fmt.Println(output)
 	// Output: TCTCGGTCGCTCCGTCCCGG
 }
