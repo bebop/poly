@@ -61,7 +61,7 @@ release:
   # Defaults to false.
   # disable: true
 brews:
-  - github:
+  - tap:
       owner: timothystiles
       name: homebrew-poly
     folder: Formula
