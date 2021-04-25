@@ -71,7 +71,7 @@ func TestLocationParser(t *testing.T) {
 	}
 }
 
-func ExampleAnonymizeSequence(t *testing.T) {
+func ExampleAnonymizeSequence() {
     sequence := ReadFASTA("data/base.fasta")
     anonymousSequence := anonymizeSequence(sequence, "")
 
