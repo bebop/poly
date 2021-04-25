@@ -159,11 +159,10 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 				if end+1 > len(debruijn) {
 					close(c)
 					return
-				} else {
-					start++
-					end++
-					i++
 				}
+				start++
+				end++
+				i++
 			}
 		}
 		for _, f := range bannedFunc {
@@ -172,11 +171,10 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 				if end+1 > len(debruijn) {
 					close(c)
 					return
-				} else {
-					start++
-					end++
-					i++
 				}
+				start++
+				end++
+				i++
 			}
 		}
 		c <- debruijn[start:end]
