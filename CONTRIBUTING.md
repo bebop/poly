@@ -4,7 +4,9 @@ Yo, what up! if you're reading this then I'm super psyched because that means th
 
 I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help.
 
-Currently any sincere pull request is a good request. Poly is still in [pre-release](https://twitter.com/TimothyStiles/status/1365545416876417028) so there are so many way to contribute! Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
+Currently any sincere pull request is a good request.
+Poly is still in [pre-release](https://twitter.com/TimothyStiles/status/1365545416876417028) so there are so many way to contribute!
+Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
 
 * Feature requests - especially cool new algorithms with citations.
 * Devops features. Github action bots, linters, deployment, etc.
