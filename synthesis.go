@@ -10,100 +10,45 @@ import (
 )
 
 /******************************************************************************
-Dec, 9, 2020
+Apr 25, 2021
 
-Synthesis fixing stuff begins here.
+DNA synthesis fixing stuff starts here.
 
-Codon optimization is not good enough for synthetic DNA - there are certain
-elements that synthesis doesn't really work for. For example, long homopolymers
-will nearly always need removal in order to synthesize a gene efficiently.
+[Check commit history for previous comments]
 
-Poly codon optimization + synthesis fixing is meant to be as efficient yet
-accurate as possible.
+The primary goal of the synthesis fixer is to fix protein coding sequences (CDS) in preparation
+for DNA synthesis. Because CDSs are flexible in their coding, we can change codons to remove
+problematic parts of sequences. The synthesis fixer is built to be very fast while covering the
+majority of use-cases for synthesis fixing.
 
-# How do we do it?
+Our synthesis fixer function (FixCds) takes in 3 parameters: a coding sequence, a codon table,
+and a list of functions that identify problematic sequences. These functions output not only
+the region where a problem occurs, but also some heuristics to help the function quickly find a
+solution to the given constraints. For example, function outputs can include a gc bias.
 
-From experience using Twist, there are a couple of major elements to fix:
+The synthesis fixer works in a declarative rather than imperative approach. We spend a lot of time
+setting up our problem space so that we can quickly and easily move to a solution. First, we build
+an in-memory SQLite database with everything about our sequence - including its codon table,
+possible codon-to-codont transformations, and the sequence itself.
 
-1. Global GC content
-2. ~50bp GC hotspots
-3. Homopolymers
-4. K-mer repeats
-5. Various banned restriction enzyme sites
+We then run all the user-provided problematicSequenceFuncs in-parallel to generate DnaSuggestions
+of places that we should fix in our sequence. Then, we check if there are any DnaSuggestions that
+overlap - for example, perhaps a repeat region needs to be fixed in a location with a high GC content,
+so we bias fixing that repeat region to fixes that have a high AT content. If there are any overlapping
+suggestions, those suggestions are fixed first.
 
-To implement this functionality, I imagine each major element will have a function
-that takes in a sequence and returns 2 integers and either "GC", "AT", or "NA". The
-2 integers are start and end positions of problematic sequences, and the "GC"/"AT"
-are for if the sequence needs to be biased in a particular direction (we call this
-the change type).
+Once we have a list of those suggestions, we fix the sequence using some simple SQL. Once our first round
+of fixes is applied, we test the sequence again to see if we missed any problematic sequence locations. We
+do that for 1000 rounds, at which point we just give up and return the sequence to the user as is.
 
-If there are two elements that have an overlap (for example, a high "GC" region
-with a restriction enzyme site), fixing the outer element is tabled until the next
-round of fixes. However, the nearest outer element change type will be inherited for
-biased stochastic selection of a new codon. With the example of high "GC" and an
-internal restriction enzyme site, the internal restriction enzyme will be changed
-with an AT bias if possible.
+Hopefully, this will enable more high throughput synthesis of genes!
 
-Once all change sites are identified, changes are implemented across the entire
-sequence. If any given change causes a problem which is *smaller* than the change,
-that change is reverted, the entire context of the problematic region is noted, and
-a change at a different position is attempted, until there is a change that fixes
-the original problem and does not cause a problem which is *smaller* than that change.
+Keoni
 
-The procedure above is repeated up the chain until all problems are resolved. If a problem
-cannot be resolved, this is noted in the output, but it is not an error - "It is possible to
-commit no mistakes and still lose. That is not a weakness. That is life."
-
-[Removed notes about backtracking. It's hard and I don't really want to implement it right now]
-
-Although there is lots of recursion and rechecking, I roughly estimate only 1~2 rounds will be
-necessary for ~95% of sequences, which should be rather fast.
-
-# Anything else?
-
-This functionality should be fundamentally valuable to companies and labs. We will also
-be able to improve the functionality of these fixes as we collect more data, or even
-have company-by-company recommendations on things to fix. Hopefully by working in the
-open, we can improve codon optimization and usage in a transparent way. One day,
-this will enable us to be far better at expressing proteins at certain levels within
-cells. That is the dream - working in the open will enable us to be far better at
-engineering life.
-
-Information wants to be free,
-
-Keoni Gandall
-
-
-
-
-
-
-
-This is Keoni coming back after a few months. Let me re-explain what this code will do.
-
-1 First, we generate an in-memory SQLite DB. This database lets us do relational queries
-  on important parts of our sequence that would be difficult to write in Golang
-2 Next, we use the inputed functions to look for problematic regions (problematicRegion).
-  Each problematicRegion has a list of suggested fixes (suggestedFixes) that, if fixed up,
-  should resolve the problematicRegion.
-3 Once we have the list of problematicRegions + suggestedFixes, we sort the suggestedFixes by
-  the estimated amount of changes needed to fix that region.
-3a The suggestedFix with the smallest quantity of changes necessary to fix the problem is then
-   fixed in sequence space.
-3b The specific codon that is changed to fix a problem is first sorted by if it has been used already.
-   For example, if one codon has already been switched around, the system will avoid changing it
-   again unless absolutely necessary.
-3c Codons are then sorted to move towards optimal codons. For example, if one codon can be changed from
-   a fairly rare codon to the most common codon for that amino acid, it will be chosen to be changed over
-   a codon who is already fairly optimal.
-4. All problematicRegions *without overlaps* are repeated with [GOTO 3] in order of quantity of changes
-5. After all independent problematicRegions have been checked, repeat search with [GOTO 2]
-6. If we end up with a sequence without any problematicRegions, we return the sequence!
-
-
-
+[started Dec 9, 2020]
 ******************************************************************************/
 
+// DnaSuggestion is a suggestion of a fixer, generated by a problematicSequenceFunc.
 type DnaSuggestion struct {
 	Start          int    `db:"start"`
 	End            int    `db:"end"`
@@ -114,6 +59,7 @@ type DnaSuggestion struct {
 	Id             int    `db:"id"`
 }
 
+// FindBsaI is a simple problematicSequenceFunc, for use in testing
 func FindBsaI(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 	re := regexp.MustCompile(`GGTCTC`)
 	locs := re.FindAllStringIndex(sequence, -1)
@@ -148,6 +94,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 	return suggestionsList
 }
 
+// FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
 	var db *sqlx.DB
 	db = sqlx.MustConnect("sqlite3", ":memory:")
