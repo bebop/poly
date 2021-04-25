@@ -43,6 +43,8 @@ All successfully merged pull requests must meet the following criteria:
 * All current tests must pass.
  
 * At least one new test must be written to prove that the merged feature works correctly.
+
+* At least one new [example test](https://blog.golang.org/examples) must be written to demonstrate the merged feature in our docs.
   
 * Build tests must pass for all currently supported systems and package managers. Linux, Mac OSX, Windows, etc.
   
