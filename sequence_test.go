@@ -70,11 +70,21 @@ func TestLocationParser(t *testing.T) {
 	}
 }
 
-func TestAnonymizedRecord(t *testing.T) {
-    sequence := ReadFASTA("data/base.fasta")
-    anonymousSequence := anonymized_record(sequence, "")
-    metaOutput := anonymousSequence.Meta
-    
+func ExampleAnonymizeSequence(t *testing.T) {
+    sequence := readfasta("data/base.fasta")
+    anonymoussequence := anonymizesequence(sequence, "")
+    metaoutput := anonymoussequence.meta
+
+    fmt.Println(sequence.Features[0].Name)
+    // Output: anonymized
+}
+
+func TestAnonymizeSequence(t *testing.T) {
+    sequence := readfasta("data/base.fasta")
+    anonymousSequence := anonymizeSequence(sequence, "")
+    metaoutput := anonymousSequence.meta
+
+
     if (metaOutput.Name != "anonymized") {
                t.Errorf("Should return Meta.Name from the sequence as anonymized. Got this: \n%s instead of \n%s", metaOutput.Name, "anonymized")
     }
@@ -92,3 +102,5 @@ func TestAnonymizedRecord(t *testing.T) {
         }
     }
 }
+
+

@@ -93,7 +93,8 @@ func getFeatureSequence(feature Feature, location Location) string {
 	return sequenceString
 }
 
-func anonymized_record(sequence Sequence, sequence_id string) Sequence { 
+//AnonymizeSequence takes a sequence struct and substitute identification data for a new anonymized string and returns this modified Sequence struct.
+func anonymizeSequence(sequence Sequence, sequence_id string) Sequence {
 
         anonymizer := "anonymized"
 
