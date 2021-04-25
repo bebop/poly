@@ -1,7 +1,4 @@
----
-id: installation
-title: Installing Poly
----
+# Installing Poly
 
 Poly can be used in two ways.
 
