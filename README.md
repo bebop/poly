@@ -16,14 +16,12 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, open a pull request, or [sponsor the project](https://github.com/sponsors/TimothyStiles).
 
-
 ## Documentation
 
 * **[Installation](https://timothystiles.github.io/poly/docs/)**
 * **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
 * **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
 * **[Roadmap](https://github.com/TimothyStiles/poly/blob/prime/docs/ROADMAP.md)**
-
 
 ## Community
 
@@ -40,7 +38,7 @@ Poly is a Go library and command line utility for engineering organisms.
 * **[Sponsor](https://github.com/sponsors/TimothyStiles):** 🤘 Thanks for your support 🤘
 
 ## License
+
 * [MIT](LICENSE)
 
 * Copyright (c) 2020 Timothy Stiles
-

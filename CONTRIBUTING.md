@@ -2,11 +2,14 @@
 
 Yo, what up! if you're reading this then I'm super psyched because that means that you're thinking about contributing to Poly! Thanks so much for your time and consideration. It's rad people like you that make Poly such a cool computational synthetic biology tool.
 
-I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help. 
+I wrote this contributor's guide to help newcomers feel welcome. Getting started with a new project can be complicated and I wanted to make it as easy as possible for you to contribute and as easy as possible for me to help.
 
-Currently any sincere pull request is a good request. Poly is still super alpha (as of writing it kinda parses genbank files) so there are so many way to contribute! Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
+Currently any sincere pull request is a good request.
+Poly is still in [pre-release](https://twitter.com/TimothyStiles/status/1365545416876417028) so there are so many way to contribute!
+Here's a list of ideas but feel free to suggest anything I may have forgotten to include.
 
 * Feature requests - especially cool new algorithms with citations.
+* Devops features. Github action bots, linters, deployment, etc.
 * Unit and integration tests.
 * Writing, editing, and translating tutorials, documentation, or blog posts.
 * Auditing for accessibility.
@@ -40,6 +43,8 @@ All successfully merged pull requests must meet the following criteria:
 * All current tests must pass.
  
 * At least one new test must be written to prove that the merged feature works correctly.
+
+* At least one new [example test](https://blog.golang.org/examples) must be written to demonstrate the merged feature in our docs.
   
 * Build tests must pass for all currently supported systems and package managers. Linux, Mac OSX, Windows, etc.
   
@@ -48,8 +53,8 @@ All successfully merged pull requests must meet the following criteria:
 Don't worry if you submit a pull request and all the tests break and the code is not readable. We won't merge it just yet and then you can get some feedback about what needs to be changed before we do!
 
 ### Be welcoming
-As one final guideline please be welcoming to newcomers and encourage new contributors from all walks of life. I want Poly to be for everyone and that includes you and people who don't look, sound, or act like you!
 
+As one final guideline please be welcoming to newcomers and encourage new contributors from all walks of life. I want Poly to be for everyone and that includes you and people who don't look, sound, or act like you!
 
 # Your first contribution
 
@@ -67,7 +72,7 @@ Unsure where to begin contributing to Poly? You can start by looking through the
 
 You can learn how from this *free* series, [How to Contribute to an Open Source Project on GitHub](https://egghead.io/series/how-to-contribute-to-an-open-source-project-on-github).
 
-You can also check out these tutorials: http://makeapullrequest.com/ and http://www.firsttimersonly.com/
+You can also check out [these](http://makeapullrequest.com/)[tutorials](http://www.firsttimersonly.com/).
 
 At this point, you're ready to make your changes! Feel free to ask for help; everyone is a beginner at first :smile_cat:
 
@@ -81,21 +86,21 @@ For something that is bigger than a one or two line fix:
 4. Send a pull request.
 
 # How to report a bug
+
 ### Security disclosures
 
 If you find a security vulnerability, do NOT open an issue. I've yet to set up a security email for this so please in the interim DM me on twitter for my email [@timothystiles](https://twitter.com/TimothyStiles).
 
 In order to determine whether you are dealing with a security issue, ask yourself these two questions:
+
 * Can I access something that's not mine, or something I shouldn't have access to?
 * Can I disable something for other people?
   
 If the answer to either of those two questions are "yes", then you're probably dealing with a security issue. Note that even if you answer "no" to both questions, you may still be dealing with a security issue, so if you're unsure, just DM me [@timothystiles](https://twitter.com/TimothyStiles) for my personal email until I can set up a security related email.
 
-
-### Non-security related bugs 
+### Non-security related bugs
 
 For non-security bug reports please [submit it using this template!](https://github.com/TimothyStiles/poly/issues/new?assignees=&labels=&template=bug_report.md&title=)
-
 
 # How to suggest a feature or enhancement
 
