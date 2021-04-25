@@ -59,7 +59,7 @@ func ParseFASTA(r io.Reader) []Fasta {
 	return outputFastas
 }
 
-// ParseFASTAGz concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
+// ParseFASTAConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
 func ParseFASTAConcurrent(r io.Reader, sequences chan<- Fasta) {
 	// Initialize necessary variables
 	var sequenceLines []string

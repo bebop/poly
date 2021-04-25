@@ -56,8 +56,8 @@ func ExampleReadFASTAGz() {
 	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
 }
 
-// ExampleReadFASTAConcurrent shows how to use the concurrent FASTA parser for larger files.
-func ExampleReadFASTAConcurrent() {
+// ExampleReadFASTAGzConcurrent shows how to use the concurrent FASTA parser for larger files.
+func ExampleReadFASTAGzConcurrent() {
 	fastas := make(chan Fasta, 1000)
 	go ReadFASTAGzConcurrent("data/uniprot_1mb_test.fasta.gz", fastas)
 	var name string
@@ -67,4 +67,17 @@ func ExampleReadFASTAConcurrent() {
 
 	fmt.Println(name)
 	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
+}
+
+// ExampleReadFASTAConcurrent shows how to use the concurrent FASTA parser for decompressed fasta files.
+func ExampleReadFASTAConcurrent() {
+	fastas := make(chan Fasta, 100)
+	go ReadFASTAConcurrent("data/base.fasta", fastas)
+	var name string
+	for fasta := range fastas {
+		name = fasta.Name
+	}
+
+	fmt.Println(name)
+	// Output: MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
 }
