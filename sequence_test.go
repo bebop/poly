@@ -2,6 +2,7 @@ package poly
 
 import (
 	"testing"
+        "fmt"
 )
 
 func TestGetSequenceMethods(t *testing.T) {
@@ -71,18 +72,17 @@ func TestLocationParser(t *testing.T) {
 }
 
 func ExampleAnonymizeSequence(t *testing.T) {
-    sequence := readfasta("data/base.fasta")
-    anonymoussequence := anonymizesequence(sequence, "")
-    metaoutput := anonymoussequence.meta
+    sequence := ReadFASTA("data/base.fasta")
+    anonymousSequence := anonymizeSequence(sequence, "")
 
-    fmt.Println(sequence.Features[0].Name)
+    fmt.Println(anonymousSequence.Features[0].Name)
     // Output: anonymized
 }
 
 func TestAnonymizeSequence(t *testing.T) {
-    sequence := readfasta("data/base.fasta")
+    sequence := ReadFASTA("data/base.fasta")
     anonymousSequence := anonymizeSequence(sequence, "")
-    metaoutput := anonymousSequence.meta
+    metaOutput := anonymousSequence.Meta
 
 
     if (metaOutput.Name != "anonymized") {
