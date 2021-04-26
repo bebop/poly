@@ -1,12 +1,12 @@
-package main
+package poly
 
 import (
 	"bytes"
 	"strings"
 )
 
-// ComplementBaseRuneMap provides 1:1 mapping between bases and their complements
-var ComplementBaseRuneMap = map[rune]rune{
+// complementBaseRuneMap provides 1:1 mapping between bases and their complements
+var complementBaseRuneMap = map[rune]rune{
 	65:  84,  // A -> T
 	66:  86,  // B -> V
 	67:  71,  // C -> G
@@ -41,7 +41,12 @@ var ComplementBaseRuneMap = map[rune]rune{
 	121: 114, // y -> r
 }
 
-// GetSequence is a method wrapper to get a Feature's sequence. Mutates with AnnotatedSequence.
+// GetSequence is a method to get the full sequence of an annotated sequence
+func (sequence Sequence) GetSequence() string {
+	return sequence.Sequence
+}
+
+// GetSequence is a method wrapper to get a Feature's sequence. Mutates with Sequence.
 func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.SequenceLocation)
 }
@@ -60,14 +65,14 @@ func ReverseComplement(sequence string) string {
 
 // ComplementBase accepts a base pair and returns its complement base pair
 func ComplementBase(basePair rune) rune {
-	return ComplementBaseRuneMap[basePair]
+	return complementBaseRuneMap[basePair]
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
-	parentSequence := feature.ParentAnnotatedSequence.Sequence.Sequence
+	parentSequence := feature.ParentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])

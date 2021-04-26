@@ -7,13 +7,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/TimothyStiles/poly"
 	"github.com/urfave/cli/v2"
+	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -76,18 +80,11 @@ parse them, and then spit out a similiarly named file with the .json extension.
 func convertCommand(c *cli.Context) error {
 	if isPipe(c) {
 
-		annotatedSequence := parseStdin(c)
+		sequence := parseStdin(c)
 
-		var output []byte
+		output := buildStdOut(c, sequence)
 
 		// logic for chosing output format, then builds string to be output.
-		if c.String("o") == "json" {
-			output, _ = json.MarshalIndent(annotatedSequence, "", " ")
-		} else if c.String("o") == "gff" {
-			output = BuildGff(annotatedSequence)
-		} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-			output = BuildGbk(annotatedSequence)
-		}
 
 		// output to stdout
 		fmt.Fprint(c.App.Writer, string(output))
@@ -112,19 +109,8 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				extension := filepath.Ext(match)
-				annotatedSequence := fileParser(c, match)
-
-				// determining output format and name, then writing out to name.
-				outputPath := match[0 : len(match)-len(extension)]
-				if c.String("o") == "json" {
-					WriteJSON(annotatedSequence, outputPath+".json")
-				} else if c.String("o") == "gff" {
-					WriteGff(annotatedSequence, outputPath+".gff")
-				} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-					WriteGbk(annotatedSequence, outputPath+".gbk")
-				}
-
+				sequence := fileParser(c, match)
+				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
 
@@ -171,27 +157,9 @@ parse them, and then spit out a similiarly named file with the .json extension a
 func hashCommand(c *cli.Context) error {
 
 	if isPipe(c) {
-		annotatedSequence := parseStdin(c)                   // get sequence from stdin
-		sequenceHash := flagSwitchHash(c, annotatedSequence) // get hash include no-op which only rotates the sequence
-
-		// handler for outputting String to stdout <- Default for pipes
-		if c.String("o") == "string" {
-
-			if strings.ToUpper(c.String("f")) == "NO" {
-				fmt.Fprint(c.App.Writer, sequenceHash) // prints with no newline
-			} else {
-				fmt.Fprintln(c.App.Writer, sequenceHash) // prints with newline
-			}
-
-		}
-
-		// handler for outputting JSON to stdout
-		if c.String("o") == "json" {
-			annotatedSequence.Sequence.Hash = sequenceHash                           // adding hash to JSON
-			annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f")) // adding hash type to JSON
-			output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-			fmt.Fprint(c.App.Writer, string(output))
-		}
+		sequence := parseStdin(c)                   // get sequence from stdin
+		sequenceHash := flagSwitchHash(c, sequence) // get hash include no-op which only rotates the sequence
+		printHash(c, sequenceHash, "-")
 
 	} else {
 
@@ -209,49 +177,9 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				extension := filepath.Ext(match)
-				annotatedSequence := fileParser(c, match)
-				sequenceHash := flagSwitchHash(c, annotatedSequence)
-
-				// handler for outputting String <- Default
-				if strings.ToLower(c.String("o")) == "string" {
-
-					// if there's only one match then
-					if len(matches) == 1 {
-
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Fprint(c.App.Writer, sequenceHash)
-						} else {
-							// fmt.Println(sequenceHash)
-							fmt.Fprintln(c.App.Writer, sequenceHash)
-						}
-
-					} else { // if there's more than one match then print each hash
-
-						if strings.ToUpper(c.String("f")) == "NO" {
-							fmt.Fprintln(c.App.Writer, sequenceHash) // just prints list of rotated, unhashed sequences
-						} else {
-							fmt.Fprintln(c.App.Writer, sequenceHash, " ", match) // prints list of hashes and corresponding filepaths.
-						}
-
-					}
-				}
-
-				// handler for outputting JSON.
-				if strings.ToLower(c.String("o")) == "json" {
-					annotatedSequence.Sequence.Hash = sequenceHash
-					annotatedSequence.Sequence.HashFunction = strings.ToUpper(c.String("f"))
-
-					if c.Bool("--log") == true {
-						output, _ := json.MarshalIndent(annotatedSequence, "", " ")
-						fmt.Fprint(c.App.Writer, string(output))
-					} else {
-						outputPath := match[0 : len(match)-len(extension)]
-						// should have way to support wildcard matches for varied output names.
-						WriteJSON(annotatedSequence, outputPath+".json")
-					}
-
-				}
+				sequence := fileParser(c, match)
+				sequenceHash := flagSwitchHash(c, sequence)
+				printHash(c, sequenceHash, match)
 
 				// decrementing wait group.
 				wg.Done()
@@ -286,34 +214,32 @@ In the future there will be multi file support. Check our issues on github to se
 func optimizeCommand(c *cli.Context) error {
 
 	// get appropriate codon table from flag
-	var codonTable CodonTable
+	var codonTable poly.CodonTable
 
 	if isNumeric(c.String("ct")) {
 		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-		codonTable = DefaultCodonTablesByNumber[codonTableNumber]
-	} else {
-		codonTable = DefaultCodonTablesByName[c.String("ct")]
+		codonTable = poly.GetCodonTable(codonTableNumber)
 	}
 
 	// if a file exists to weigh the table. Weigh it.
 	if fileExists(c.String("wt")) {
 		targetOrganism := fileParser(c, c.String("wt"))
-		codonTable.CreateWeights(targetOrganism.Sequence.Sequence)
+		codonTable.OptimizeTable(targetOrganism.Sequence)
 	}
 
 	if isPipe(c) {
 
-		// uncomment below to parse annotatedSequence from pipe
-		annotatedSequence := parseStdin(c)
+		// uncomment below to parse sequence from pipe
+		sequence := parseStdin(c)
 		var aminoAcids string
 
 		if c.Bool("aa") {
-			aminoAcids = annotatedSequence.Sequence.Sequence
+			aminoAcids = sequence.Sequence
 		} else {
-			aminoAcids = Translate(annotatedSequence.Sequence.Sequence, codonTable)
+			aminoAcids = poly.Translate(sequence.Sequence, codonTable)
 		}
 
-		optimizedSequence := Optimize(aminoAcids, codonTable)
+		optimizedSequence := poly.Optimize(aminoAcids, codonTable)
 		fmt.Fprintln(c.App.Writer, optimizedSequence)
 
 	}
@@ -341,19 +267,16 @@ func translateCommand(c *cli.Context) error {
 	if isPipe(c) {
 
 		// get appropriate codon table from flag
-		var codonTable CodonTable
+		var codonTable poly.CodonTable
 
 		if isNumeric(c.String("ct")) {
 			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-			codonTable = DefaultCodonTablesByNumber[codonTableNumber]
-		} else {
-			codonTable = DefaultCodonTablesByName[c.String("ct")]
+			codonTable = poly.GetCodonTable(codonTableNumber)
 		}
 
-		// uncomment below to parse annotatedSequence from pipe
-		annotatedSequence := parseStdin(c)
+		sequence := parseStdin(c)
 
-		aminoAcids := Translate(annotatedSequence.Sequence.Sequence, codonTable)
+		aminoAcids := poly.Translate(sequence.Sequence, codonTable)
 
 		fmt.Fprintln(c.App.Writer, aminoAcids)
 
@@ -362,7 +285,7 @@ func translateCommand(c *cli.Context) error {
 }
 
 // a simple helper function to convert an *os.File type into a string.
-func stdinToString(file io.Reader) string {
+func stdinToBytes(file io.Reader) []byte {
 	var stringBuffer bytes.Buffer
 	reader := bufio.NewReader(file)
 	for {
@@ -372,26 +295,7 @@ func stdinToString(file io.Reader) string {
 		}
 		stringBuffer.WriteRune(input)
 	}
-	return stringBuffer.String()
-}
-
-// a simple helper function to remove duplicates from a list of strings.
-// Used to reduce reduncy in filepath pattern matching.
-// from https://gist.github.com/johnwesonga/6301924
-func uniqueNonEmptyElementsOf(s []string) []string {
-	unique := make(map[string]bool, len(s))
-	us := make([]string, len(unique))
-	for _, elem := range s {
-		if len(elem) != 0 {
-			if !unique[elem] {
-				us = append(us, elem)
-				unique[elem] = true
-			}
-		}
-	}
-
-	return us
-
+	return stringBuffer.Bytes()
 }
 
 // a simple helper function to determine if there is input coming from stdin pipe.
@@ -413,67 +317,88 @@ func isNumeric(s string) bool {
 	return err == nil
 }
 
-// a simple helper function to take stdin from a pipe and parse it into an annotated sequence
-func parseStdin(c *cli.Context) AnnotatedSequence {
-	var annotatedSequence AnnotatedSequence
+// a simple helper function to take stdin from a pipe and parse it into an Sequence
+func parseStdin(c *cli.Context) poly.Sequence {
+	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToString(c.App.Reader)), &annotatedSequence)
+		json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ParseGbk(stdinToString(c.App.Reader))
+		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		annotatedSequence = ParseGff(stdinToString(c.App.Reader))
+		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
+	} else if c.String("i") == "fasta" {
+		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "string" {
-		annotatedSequence.Sequence.Sequence = stdinToString(c.App.Reader)
+		sequence.Sequence = parseText(stdinToBytes(c.App.Reader))
 	}
-	return annotatedSequence
+	return sequence
+}
+
+// a simple helper function to take stdin from a pipe and parse it into an Sequence
+func parseFlag(file []byte, flag string) poly.Sequence {
+	var sequence poly.Sequence
+	// logic for determining input format, then parses accordingly.
+	if flag == "json" {
+		json.Unmarshal(file, &sequence)
+	} else if flag == "gbk" || flag == "gb" {
+		sequence = poly.ParseGbk(file)
+	} else if flag == "gff" {
+		sequence = poly.ParseGff(file)
+	} else if flag == "fasta" {
+		sequence = poly.ParseFASTA(file)
+	} else if flag == "string" {
+		sequence.Sequence = string(file)
+	}
+	return sequence
 }
 
 // helper function to hash sequence based on flag using generic hash.
-func flagSwitchHash(c *cli.Context, annotatedSequence AnnotatedSequence) string {
+func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 
 	var hashString string
-	switch strings.ToUpper(c.String("f")) {
+	hashFunctionName := strings.ToUpper(c.String("f"))
+	switch hashFunctionName {
 	case "MD5":
-		hashString = annotatedSequence.Hash(crypto.MD5)
+		hashString = sequence.Hash(crypto.MD5.New())
 	case "SHA1":
-		hashString = annotatedSequence.Hash(crypto.SHA1)
+		hashString = sequence.Hash(crypto.SHA1.New())
 	case "SHA244":
-		hashString = annotatedSequence.Hash(crypto.SHA224)
+		hashString = sequence.Hash(crypto.SHA224.New())
 	case "SHA256":
-		hashString = annotatedSequence.Hash(crypto.SHA256)
+		hashString = sequence.Hash(crypto.SHA256.New())
 	case "SHA384":
-		hashString = annotatedSequence.Hash(crypto.SHA384)
+		hashString = sequence.Hash(crypto.SHA384.New())
 	case "SHA512":
-		hashString = annotatedSequence.Hash(crypto.SHA512)
+		hashString = sequence.Hash(crypto.SHA512.New())
 	case "RIPEMD160":
-		hashString = annotatedSequence.Hash(crypto.RIPEMD160)
+		hashString = sequence.Hash(crypto.RIPEMD160.New())
 	case "SHA3_224":
-		hashString = annotatedSequence.Hash(crypto.SHA3_224)
+		hashString = sequence.Hash(crypto.SHA3_224.New())
 	case "SHA3_256":
-		hashString = annotatedSequence.Hash(crypto.SHA3_256)
+		hashString = sequence.Hash(crypto.SHA3_256.New())
 	case "SHA3_384":
-		hashString = annotatedSequence.Hash(crypto.SHA3_384)
+		hashString = sequence.Hash(crypto.SHA3_384.New())
 	case "SHA3_512":
-		hashString = annotatedSequence.Hash(crypto.SHA3_512)
+		hashString = sequence.Hash(crypto.SHA3_512.New())
 	case "SHA512_224":
-		hashString = annotatedSequence.Hash(crypto.SHA512_224)
+		hashString = sequence.Hash(crypto.SHA512_224.New())
 	case "SHA512_256":
-		hashString = annotatedSequence.Hash(crypto.SHA512_256)
-	case "BLAKE2s_256":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2s_256)
-	case "BLAKE2b_256":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_256)
-	case "BLAKE2b_384":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_384)
-	case "BLAKE2b_512":
-		hashString = annotatedSequence.Hash(crypto.BLAKE2b_512)
+		hashString = sequence.Hash(crypto.SHA512_256.New())
+	case "BLAKE2S_256":
+		hashString = sequence.Hash(crypto.BLAKE2s_256.New())
+	case "BLAKE2B_256":
+		hashString = sequence.Hash(crypto.BLAKE2b_256.New())
+	case "BLAKE2B_384":
+		hashString = sequence.Hash(crypto.BLAKE2b_384.New())
+	case "BLAKE2B_512":
+		hashString = sequence.Hash(crypto.BLAKE2b_512.New())
 	case "BLAKE3":
-		hashString = annotatedSequence.Blake3Hash()
+		hashString = sequence.Hash(blake3.New(32, nil))
 	case "NO":
-		hashString = RotateSequence(annotatedSequence.Sequence.Sequence)
+		hashString = poly.RotateSequence(sequence.Sequence)
 	default:
-		hashString = annotatedSequence.Blake3Hash()
+		hashString = sequence.Hash(blake3.New(32, nil))
 		break
 	}
 	return hashString
@@ -496,22 +421,112 @@ func getMatches(c *cli.Context) []string {
 
 }
 
-// function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) AnnotatedSequence {
-	extension := filepath.Ext(match)
-	var annotatedSequence AnnotatedSequence
-
-	// determining which reader to use and parse into AnnotatedSequence struct.
-	if extension == ".gff" || c.String("i") == "gff" {
-		annotatedSequence = ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-		annotatedSequence = ReadGbk(match)
-	} else if extension == ".json" || c.String("i") == "json" {
-		annotatedSequence = ReadJSON(match)
-	} else {
-		// TODO put default error handling here.
+// a simple helper function to remove duplicates from a list of strings.
+// Used to reduce reduncy in filepath pattern matching.
+// from https://gist.github.com/johnwesonga/6301924
+func uniqueNonEmptyElementsOf(s []string) []string {
+	unique := make(map[string]bool, len(s))
+	us := make([]string, len(unique))
+	for _, elem := range s {
+		if len(elem) != 0 {
+			if !unique[elem] {
+				us = append(us, elem)
+				unique[elem] = true
+			}
+		}
 	}
-	return annotatedSequence
+
+	return us
+
+}
+
+// function to parse whatever file is at a matched path.
+func fileParser(c *cli.Context, match string) poly.Sequence {
+	extension := filepath.Ext(match)
+	var sequence poly.Sequence
+
+	// determining which reader to use and parse into Sequence struct.
+	if extension == ".gff" || c.String("i") == "gff" {
+		sequence = poly.ReadGff(match)
+	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
+		sequence = poly.ReadGbk(match)
+	} else if extension == ".json" || c.String("i") == "json" {
+		sequence = poly.ReadJSON(match)
+	} else if extension == ".fasta" || c.String("i") == "fasta" {
+		sequence = poly.ReadFASTA(match)
+	}
+	// TODO put default error handling here.
+	return sequence
+}
+
+func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
+	var output []byte
+	if c.String("o") == "json" {
+		output, _ = json.MarshalIndent(sequence, "", " ")
+	} else if c.String("o") == "gff" {
+		output = poly.BuildGff(sequence)
+	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
+		output = poly.BuildGbk(sequence)
+	} else if c.String("o") == "fasta" {
+		output = poly.BuildFASTA(sequence)
+	} else if c.String("o") == "string" || c.String("o") == "txt" {
+		output = []byte(sequence.Sequence)
+	}
+	return output
+}
+
+func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
+	// determining output format and name, then writing out to name.
+	inputExtension := filepath.Ext(match)
+
+	var outputPath string
+	var outputExtension string
+	if filepath.Ext(c.String("o")) == "" {
+		outputExtension = c.String("o")
+		outputPath = match[0:len(match)-len(inputExtension)] + "." + outputExtension
+	} else {
+		outputPath = c.String("o")
+		outputExtension = filepath.Ext(c.String("o"))[1:]
+	}
+
+	if match == outputPath {
+		fmt.Fprintln(c.App.Writer, "WARNING: "+"input path and output path match. File: "+match+". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.")
+	} else if outputExtension == "json" {
+		poly.WriteJSON(sequence, outputPath)
+	} else if outputExtension == "gff" {
+		poly.WriteGff(sequence, outputPath)
+	} else if outputExtension == "gbk" || c.String("o") == "gb" {
+		poly.WriteGbk(sequence, outputPath)
+	} else if outputExtension == "fasta" {
+		poly.WriteFASTA(sequence, outputPath)
+	}
+
+}
+
+func printHash(c *cli.Context, hash string, path string) {
+	output := formatHashOutput(hash, path)
+	fmt.Fprint(c.App.Writer, output)
+}
+
+func formatHashOutput(hash string, path string) string {
+	return hash + "  " + path + "\n"
+}
+
+func parseExt(match string) poly.Sequence {
+	extension := filepath.Ext(match)
+	var sequence poly.Sequence
+
+	// determining which reader to use and parse into Sequence struct.
+	if extension == ".gff" {
+		sequence = poly.ReadGff(match)
+	} else if extension == ".gbk" || extension == ".gb" {
+		sequence = poly.ReadGbk(match)
+	} else if extension == ".json" {
+		sequence = poly.ReadJSON(match)
+	} else if extension == ".fasta" {
+		sequence = poly.ReadFASTA(match)
+	}
+	return sequence
 }
 
 // fileExists checks if a file exists and is not a directory before we
@@ -524,4 +539,14 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func parseText(file []byte) string {
+	fileString := string(file)
+	reg, err := regexp.Compile("\\*[^a-zA-Z]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	processedString := reg.ReplaceAllString(fileString, "")
+	return processedString
 }

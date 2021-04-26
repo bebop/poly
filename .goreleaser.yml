@@ -7,8 +7,9 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-- env:
-  - CGO_ENABLED=0
+- main: ./poly/
+  env:
+    - CGO_ENABLED=0
 archives:
 - replacements:
     darwin: Darwin
@@ -60,7 +61,7 @@ release:
   # Defaults to false.
   # disable: true
 brews:
-  - github:
+  - tap:
       owner: timothystiles
       name: homebrew-poly
     folder: Formula

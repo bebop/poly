@@ -1,20 +1,22 @@
-package main
+package poly
 
 import (
-	"crypto"
 	_ "crypto/md5"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"hash"
 	"io"
+	"sort"
 	"strings"
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
 	_ "golang.org/x/crypto/ripemd160"
 	_ "golang.org/x/crypto/sha3"
+
 	"lukechampine.com/blake3"
 )
 
@@ -38,10 +40,11 @@ import (
 // BLAKE2b_384                 // import golang.org/x/crypto/blake2b
 // BLAKE2b_512                 // import golang.org/x/crypto/blake2b
 
-// BoothLeastRotation gets the least rotation of a circular string.
-// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
-// this is generally over commented but I'm keeping it this way for now. - Tim
-func BoothLeastRotation(sequence string) int {
+// boothLeastRotation gets the least rotation of a circular string.
+func boothLeastRotation(sequence string) int {
+
+	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
+	// this is generally over commented but I'm keeping it this way for now. - Tim
 
 	// first concatenate the sequence to itself to avoid modular arithmateic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
@@ -89,48 +92,210 @@ func BoothLeastRotation(sequence string) int {
 	return leastRotationIndex
 }
 
-//RotateSequence rotates circular sequences to deterministic point.
+// RotateSequence rotates circular sequences to deterministic point.
 func RotateSequence(sequence string) string {
-	rotationIndex := BoothLeastRotation(sequence)
-	concatenatedSequence := sequence + sequence
+	rotationIndex := boothLeastRotation(sequence)
+	var sequenceBuilder strings.Builder
+
+	// writing the same sequence twice. using build incase of very long circular genome.
+	sequenceBuilder.WriteString(sequence)
+	sequenceBuilder.WriteString(sequence)
+
+	concatenatedSequence := sequenceBuilder.String()
 	sequence = concatenatedSequence[rotationIndex : rotationIndex+len(sequence)]
 	return sequence
 }
 
-// GenericSequenceHash takes an AnnotatedSequence and a hash function and hashes it.
-// from https://stackoverflow.com/questions/32620290/how-to-dynamically-switch-between-hash-algorithms-in-golang <- this had a bug I had to fix! - Tim
-func GenericSequenceHash(annotatedSequence AnnotatedSequence, hash crypto.Hash) (string, error) {
-	if !hash.Available() {
-		return "", errors.New("hash unavailable")
+/******************************************************************************
+Dec, 2, 2020
+
+Seqhash stuff starts here.
+
+There is a big problem with current sequence databases - they all use different
+identifiers and accession numbers. This means cross-referencing databases is
+a complicated exercise, especially as the quantity of databases increases, or if
+you need to compare "wild" DNA sequences.
+
+Seqhash is a simple algorithm to produce consistent identifiers for any genetic sequence. The
+basic premise of the Seqhash algorithm is to hash sequences with the hash being a robust
+cross-database identifier. Sequences themselves shouldn't be used as a database index
+(often, they're too big), so a hash based off of a sequence is the next best thing.
+
+Usability wise, you should be able to Seqhash any rotation of a sequence in any direction and
+get a consistent hash.
+
+The Seqhash algorithm makes several opinionated design choices, primarily to make working
+with Seqhashes more consistent and nice. The Seqhash algorithm only uses a single hash function,
+Blake3, and only operates on DNA, RNA, and Protein sequences. These identifiers will be seen
+by human beings, so versioning and metadata is attached to the front of the hashes so that
+a human operator can quickly identify problems with hashing.
+
+If the sequence is DNA or RNA, the Seqhash algorithm needs to know whether or not the nucleic
+acid is circular and/or double stranded. If circular, the sequence is rotated to a deterministic
+point. If double stranded, the sequence is compared to its reverse complement, and the lexiographically
+minimal sequence is taken (whether or not the min or max is used doesn't matter, just needs to
+be consistent).
+
+If the sequence is RNA, the sequence will be converted to DNA before hashing. While the full Seqhash
+will still be different between RNA and DNA (due to the metadata string), the hash afterwards will be the same.
+This makes it easy to cross reference DNA and RNA sequences. This fact is important for parts of Poly
+store that relate to storing and searching large quantities of sequences - deduplication can easily
+be used on those Seqhashes to save a lot of space.
+
+For DNA or RNA sequences, only ATUGCYRSWKMBDHVNZ characters are allowed. For Proteins,
+only ACDEFGHIKLMNPQRSTVWYUO*BXZ characters are allowed in sequences. Selenocysteine (Sec; U) and pyrrolysine
+(Pyl; O) are included in the protein character set - usually U and O don't occur within protein sequences,
+but for certain organisms they do, and it is certainly a relevant amino acid for those particular proteins.
+
+A Seqhash is separated into 3 different elements divided by underscores. It looks like the following:
+
+v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
+
+The first element is the version tag (v1 for version 1). If there is ever a Seqhash version 2, this tag
+will differentiate seqhashes. The second element is the metadata tag, which has 3 letters. The first letter
+codes for the sequenceType (D for DNA, R for RNA, and P for Protein). The second letter codes for whether or
+not the sequence is circular (C for Circular, L for Linear). The final letter codes for whether or not the
+sequence is double stranded (D for Double stranded, S for Single stranded). The final element is the blake3
+hash of the sequence (once rotated and complemented, as stated above).
+
+Seqhash is a simple algorithm that allows for much better indexing of genetic sequences than what is
+currently available. I hope it will be widely adopted someday.
+
+En Taro Adun,
+Keoni
+
+******************************************************************************/
+
+// Seqhash is a function to create Seqhashes, a specific kind of identifier.
+func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+	// By definition, Seqhashes are of uppercase sequences
+	sequence = strings.ToUpper(sequence)
+	// If RNA, convert to a DNA sequence. The hash itself between a DNA and RNA sequence will not
+	// be different, but their Seqhash will have a different metadata string (R vs D)
+	if sequenceType == "RNA" {
+		sequence = strings.ReplaceAll(sequence, "U", "T")
 	}
-	if annotatedSequence.Meta.Locus.Circular {
-		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
+
+	// Run checks on the input
+	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
+		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + sequenceType)
 	}
-	h := hash.New()
-	io.WriteString(h, strings.ToUpper(annotatedSequence.Sequence.Sequence))
-	return hex.EncodeToString(h.Sum(nil)), nil
+	if sequenceType == "DNA" || sequenceType == "RNA" {
+		for _, char := range sequence {
+			if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
+				return "", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
+			}
+		}
+	}
+	if sequenceType == "PROTEIN" {
+		for _, char := range sequence {
+			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
+			// in accordance with https://www.uniprot.org/help/sequences
+			// The release notes https://web.expasy.org/docs/relnotes/relstat.html
+			// also state there are Asx (B), Glx (Z), and Xaa (X) amino acids, so
+			// these are added in as well.
+			if !strings.Contains("ACDEFGHIKLMNPQRSTVWYUO*BXZ", string(char)) {
+				return "", errors.New("Only letters ACDEFGHIKLMNPQRSTVWYUO*BXZ are allowed for Proteins. Got letter: " + string(char))
+			}
+		}
+	}
+	// There is no check for circular proteins since proteins can be circular
+	if sequenceType == "PROTEIN" && doubleStranded == true {
+		return "", errors.New("Proteins cannot be double stranded")
+	}
+
+	// Gets Deterministic sequence based off of metadata + sequence
+	var deterministicSequence string
+	switch {
+	case circular == true && doubleStranded == true:
+		potentialSequences := []string{RotateSequence(sequence), RotateSequence(ReverseComplement(sequence))}
+		sort.Strings(potentialSequences)
+		deterministicSequence = potentialSequences[0]
+	case circular == true && doubleStranded == false:
+		deterministicSequence = RotateSequence(sequence)
+	case circular == false && doubleStranded == true:
+		potentialSequences := []string{sequence, ReverseComplement(sequence)}
+		sort.Strings(potentialSequences)
+		deterministicSequence = potentialSequences[0]
+	case circular == false && doubleStranded == false:
+		deterministicSequence = sequence
+	}
+
+	// Build 3 letter metadata
+	var sequenceTypeLetter string
+	var circularLetter string
+	var doubleStrandedLetter string
+	// Get first letter. D for DNA, R for RNA, and P for Protein
+	switch sequenceType {
+	case "DNA":
+		sequenceTypeLetter = "D"
+	case "RNA":
+		sequenceTypeLetter = "R"
+	case "PROTEIN":
+		sequenceTypeLetter = "P"
+	}
+	// Get 2nd letter. C for circular, L for Linear
+	if circular == true {
+		circularLetter = "C"
+	} else {
+		circularLetter = "L"
+	}
+	// Get 3rd letter. D for Double stranded, S for Single stranded
+	if doubleStranded == true {
+		doubleStrandedLetter = "D"
+	} else {
+		doubleStrandedLetter = "S"
+	}
+
+	newhash := blake3.Sum256([]byte(deterministicSequence))
+	seqhash := "v1" + "_" + sequenceTypeLetter + circularLetter + doubleStrandedLetter + "_" + hex.EncodeToString(newhash[:])
+	return seqhash, nil
+
 }
 
-// Hash is a method wrapper for hashing annotatedSequence structs.
-func (annotatedSequence AnnotatedSequence) Hash(hash crypto.Hash) string {
-	seqHash, _ := GenericSequenceHash(annotatedSequence, hash)
+// Seqhash is a method wrapper for hashing Sequence structs. Note that
+// all sequence structs are, by default, double-stranded sequences,
+// since Genbank does not track whether or not a given sequence in their
+// database is single stranded or double stranded.
+func (sequence Sequence) Seqhash() (string, error) {
+	if sequence.Meta.Locus.MoleculeType == "" {
+		return "", errors.New("No MoleculeType found for sequence")
+	}
+	var sequenceType string
+	if strings.Contains(sequence.Meta.Locus.MoleculeType, "DNA") {
+		sequenceType = "DNA"
+	}
+	if strings.Contains(sequence.Meta.Locus.MoleculeType, "RNA") {
+		sequenceType = "RNA"
+	}
+	if (sequenceType != "DNA") && (sequenceType != "RNA") {
+		return "", errors.New("SequenceType not found. Looking for MoleculeTypes with DNA or RNA, got: " + sequence.Meta.Locus.MoleculeType)
+	}
+	// If not explicitly circular, assume linear. All sequences are by default doubleStranded
+	newSeqhash, err := Seqhash(sequence.Sequence, sequenceType, sequence.Meta.Locus.Circular, true)
+	if err != nil {
+		return "", err
+	}
+	return newSeqhash, nil
+}
+
+// Hash is a method wrapper for hashing Sequence structs.
+func (sequence Sequence) Hash(hash hash.Hash) string {
+	if sequence.Meta.Locus.Circular {
+		sequence.Sequence = RotateSequence(sequence.Sequence)
+	}
+	seqHash, _ := hashSequence(sequence.Sequence, hash)
 	return seqHash
 }
 
-// Blake3SequenceHash Blake3 function doesn't use standard golang hash interface
-// so we couldn't use it with the generic sequence hash.
-func Blake3SequenceHash(annotatedSequence AnnotatedSequence) string {
-
-	if annotatedSequence.Meta.Locus.Circular {
-		annotatedSequence.Sequence.Sequence = RotateSequence(annotatedSequence.Sequence.Sequence)
-	}
-
-	b := blake3.Sum256([]byte(strings.ToUpper(annotatedSequence.Sequence.Sequence)))
-	return hex.EncodeToString(b[:])
+// Hash is a method wrapper for hashing sequences contained in Feature structs.
+func (feature Feature) Hash(hash hash.Hash) string {
+	seqHash, _ := hashSequence(feature.GetSequence(), hash)
+	return seqHash
 }
 
-// Blake3Hash is a method wrapper for hashing annotatedSequence structs with Blake3.
-func (annotatedSequence AnnotatedSequence) Blake3Hash() string {
-	seqHash := Blake3SequenceHash(annotatedSequence)
-	return seqHash
+// hashSequence takes a string and a hashing function and returns a hashed string.
+func hashSequence(sequence string, hash hash.Hash) (string, error) {
+	io.WriteString(hash, strings.ToUpper(sequence))
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

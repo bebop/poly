@@ -1,4 +1,10 @@
-# (Poly)merase &middot; [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+# (Poly)merase <img align="right" src="https://cdn.discordapp.com/attachments/766785755305213953/777596834734145546/ProfileFrameArtboard_1.png" width="100">
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
+![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
 
 Poly is a Go library and command line utility for engineering organisms.
 
@@ -10,97 +16,29 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, open a pull request, or [sponsor the project](https://github.com/sponsors/TimothyStiles).
 
-
 ## Documentation
 
-* **Check out our [docs site](https://timothystiles.github.io/poly/docs/)**: If you want to see a ton of great examples of what poly can do.
-
-* **From the command line**: You can also learn more about the `poly` cli or a sub command like `convert` using the -h flag which will provide more documentation.
+* **[Installation](https://github.com/TimothyStiles/poly/blob/prime/docs/installation.md)**
+* **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
+* **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
+* **[Roadmap](https://github.com/TimothyStiles/poly/blob/prime/docs/ROADMAP.md)**
 
 ## Community
 
-* **Chat about Poly and join us for game nights on our [discord server](https://discord.gg/Hc8Ncwt)**. 
+* **[Discord](https://discord.gg/Hc8Ncwt):** Chat about Poly and join us for game nights on our discord server!
 
 ## Contributing
 
-### Code of Conduct
+* **[Code of conduct](CODE_OF_CONDUCT.md):** Please read the full text so you can understand what we're all about and remember to be excellent to each other!
 
-Poly has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). Please read the full text so you can understand what we're all about and please remember to be excellent to each other!
+* **[Contributor's guide](CONTRIBUTING.md):** Please read through it before you start hacking away and pushing contributions to this fine codebase.
 
-### Contributing Guide
+## Sponsor
 
-Poly also has a [contributor's guide](CONTRIBUTING.md). Please read through it before you start hacking away and pushing contributions to this fine codebase.
-
-## Examples
-
-
-### Command Line Interface
-
-Converting a .gbk to .json using pipes. 
-
-```bash
-cat bsub.gbk | poly c -i gbk -o json > bsub.json
-```
-
-Here's how you can non-destructively copy and convert every genbank and gff file into JSON files. The -o flag defaults to json and can also be used to specify gff as output.
-
-```bash
-poly c -o json *.gbk *.gb *.gff
-```
-
-### Go Library
-
-Here's how you'd read in a file from its path:
-
-```Go
-bsubAnnotatedSequence := ReadGbk("data/bsub.gbk")
-```
-
-## Installation
-
-### Building Poly from Scratch
-
-This assumes you already have a working Go environment, if not please see
-[this page](https://golang.org/doc/install) first.
-
-```bash
-git clone https://github.com/TimothyStiles/poly.git && cd poly && go build && go install
-```
-
-### Installing Poly as a Go library and Command Line Utility
-This assumes you already have a working Go environment, if not please see
-[this page](https://golang.org/doc/install) first.
-
-`go get` *will always pull the latest released version from the prime branch.*
-
-```bash
-go get github.com/TimothyStiles/poly
-```
-
-### Installing Poly as a Command Line Utility
-
-Poly ships many binaries for many different operating systems and package managers thanks to the wonderful work of the [go releaser](https://goreleaser.com/) team. You can check out our [releases page](https://github.com/TimothyStiles/poly/releases) on github or install via package manager for your OS with the instructions below.
-
-#### Mac OS
-
-```bash
-brew install timothystiles/poly/poly
-```
-
-#### Linux - deb/rpm
-
-Download the .deb or .rpm from the [releases page](https://github.com/TimothyStiles/poly/releases) and install with `dpkg -i` and `rpm -i` respectively.
-
-#### Windows
-
-[Coming soon...](https://github.com/TimothyStiles/poly/issues/16)
-
-
-
-
+* **[Sponsor](https://github.com/sponsors/TimothyStiles):** 🤘 Thanks for your support 🤘
 
 ## License
+
 * [MIT](LICENSE)
 
 * Copyright (c) 2020 Timothy Stiles
-
