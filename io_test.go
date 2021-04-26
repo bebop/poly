@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pmezard/go-difflib/difflib"
 )
 
 /******************************************************************************
@@ -69,17 +70,37 @@ func ExampleWriteGff() {
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
-	// testInputPath := "data/ecoli-mg1655-short.gff"
-	// testOutputPath := "data/test.gff"
+	testInputPath := "data/ecoli-mg1655-short.gff"
+	testOutputPath := "data/test.gff"
 
-	// testSequence := ReadGff(testInputPath)
-	// WriteGff(testSequence, testOutputPath)
+	testSequence := ReadGff(testInputPath)
+	WriteGff(testSequence, testOutputPath)
 
-	// readTestSequence := ReadGff(testOutputPath)
+	readTestSequence := ReadGff(testOutputPath)
 
-	// if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
-	// 	t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
-	// }
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
+		t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
+	}
+
+	original, _ := ioutil.ReadFile(testInputPath)
+	builtOutput, _ := ioutil.ReadFile(testOutputPath)
+	gffDiff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(string(original)),
+		B:        difflib.SplitLines(string(builtOutput)),
+		FromFile: testInputPath,
+		ToFile:   testOutputPath,
+		Context:  3,
+	}
+
+	gffDiffText, _ := difflib.GetUnifiedDiffString(gffDiff)
+
+	// cleaning up test data.
+	os.Remove(testOutputPath)
+
+	if gffDiffText != "" {
+		t.Errorf("BuildGff() does not output the same file as was input through ReadGff(). Got this diff:\n%s", gffDiffText)
+	}
+
 }
 
 func BenchmarkReadGff(b *testing.B) {
