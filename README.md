@@ -22,7 +22,7 @@ Poly is a Go library and command line utility for engineering organisms.
 * **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
 * **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
 * **[Roadmap](https://github.com/TimothyStiles/poly/blob/prime/docs/ROADMAP.md)**
-* **[Learning Synbio](https://github.com/TimothyStiles/how-to-synbio/blob/main/README.md)**
+* **[Learning Synbio](https://github.com/TimothyStiles/how-to-synbio)**
 
 ## Community
 
