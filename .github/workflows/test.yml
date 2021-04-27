@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - prime
+  pull_request:
 name: Test
 jobs:
   test:
