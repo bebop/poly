@@ -5,15 +5,18 @@ import (
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
+	
+	_ "golang.org/x/crypto/blake2b"
+	_ "golang.org/x/crypto/blake2s"
+	_ "golang.org/x/crypto/ripemd160"
+	_ "golang.org/x/crypto/sha3"
+	
 	"log"
 	"os"
 
 	"github.com/urfave/cli/v2"
 
-	_ "golang.org/x/crypto/blake2b"
-	_ "golang.org/x/crypto/blake2s"
-	_ "golang.org/x/crypto/ripemd160"
-	_ "golang.org/x/crypto/sha3"
+
 )
 
 /******************************************************************************
