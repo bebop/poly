@@ -322,7 +322,10 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
+		err := json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
+		if err == nil {
+			// do proper error handling here.
+		}
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {

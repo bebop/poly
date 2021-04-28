@@ -287,6 +287,10 @@ func (feature Feature) Hash(hash hash.Hash) string {
 
 // hashSequence takes a string and a hashing function and returns a hashed string.
 func hashSequence(sequence string, hash hash.Hash) (string, error) {
-	io.WriteString(hash, strings.ToUpper(sequence))
+	_, err := io.WriteString(hash, strings.ToUpper(sequence))
+	if err != nil {
+		// todo add error handling
+	}
+
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }

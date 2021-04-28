@@ -5,18 +5,16 @@ import (
 	_ "crypto/sha1"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
-	
+
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
 	_ "golang.org/x/crypto/ripemd160"
 	_ "golang.org/x/crypto/sha3"
-	
+
 	"log"
 	"os"
 
 	"github.com/urfave/cli/v2"
-
-
 )
 
 /******************************************************************************
@@ -112,8 +110,8 @@ func application() *cli.App {
 				},
 				// where we provide the actual function that is called by the subcommand.
 				Action: func(c *cli.Context) error {
-					convertCommand(c)
-					return nil
+					err := convertCommand(c)
+					return err
 				},
 			},
 
@@ -143,8 +141,8 @@ func application() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					hashCommand(c)
-					return nil
+					err := hashCommand(c)
+					return err
 				},
 			},
 			{
@@ -166,8 +164,8 @@ func application() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					translateCommand(c)
-					return nil
+					err := translateCommand(c)
+					return err
 				},
 			},
 			{
@@ -200,8 +198,8 @@ func application() *cli.App {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					optimizeCommand(c)
-					return nil
+					err := optimizeCommand(c)
+					return err
 				},
 			},
 		}, // subcommands list ends here
