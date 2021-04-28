@@ -8,7 +8,6 @@ import (
 
 	_ "golang.org/x/crypto/blake2b"
 	_ "golang.org/x/crypto/blake2s"
-	_ "golang.org/x/crypto/ripemd160"
 	_ "golang.org/x/crypto/sha3"
 
 	"log"

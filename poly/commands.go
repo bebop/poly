@@ -377,8 +377,6 @@ func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 		hashString = sequence.Hash(crypto.SHA384.New())
 	case "SHA512":
 		hashString = sequence.Hash(crypto.SHA512.New())
-	case "RIPEMD160":
-		hashString = sequence.Hash(crypto.RIPEMD160.New())
 	case "SHA3_224":
 		hashString = sequence.Hash(crypto.SHA3_224.New())
 	case "SHA3_256":
