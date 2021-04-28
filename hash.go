@@ -191,24 +191,24 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 		}
 	}
 	// There is no check for circular proteins since proteins can be circular
-	if sequenceType == "PROTEIN" && doubleStranded == true {
+	if sequenceType == "PROTEIN" && doubleStranded {
 		return "", errors.New("Proteins cannot be double stranded")
 	}
 
 	// Gets Deterministic sequence based off of metadata + sequence
 	var deterministicSequence string
 	switch {
-	case circular == true && doubleStranded == true:
+	case circular && doubleStranded:
 		potentialSequences := []string{RotateSequence(sequence), RotateSequence(ReverseComplement(sequence))}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
-	case circular == true && doubleStranded == false:
+	case circular && !doubleStranded:
 		deterministicSequence = RotateSequence(sequence)
-	case circular == false && doubleStranded == true:
+	case !circular && doubleStranded:
 		potentialSequences := []string{sequence, ReverseComplement(sequence)}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
-	case circular == false && doubleStranded == false:
+	case !circular && !doubleStranded:
 		deterministicSequence = sequence
 	}
 
@@ -226,13 +226,13 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 		sequenceTypeLetter = "P"
 	}
 	// Get 2nd letter. C for circular, L for Linear
-	if circular == true {
+	if circular {
 		circularLetter = "C"
 	} else {
 		circularLetter = "L"
 	}
 	// Get 3rd letter. D for Double stranded, S for Single stranded
-	if doubleStranded == true {
+	if doubleStranded {
 		doubleStrandedLetter = "D"
 	} else {
 		doubleStrandedLetter = "S"
