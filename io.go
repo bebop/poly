@@ -167,10 +167,10 @@ func ParseGff(file []byte) Sequence {
 			continue
 		} else if line[0:2] == "##" {
 			continue
-		} else if fastaFlag == true && line[0:1] != ">" {
+		} else if fastaFlag && line[0:1] != ">" {
 			// sequence.Sequence = sequence.Sequence + line
 			sequenceBuffer.WriteString(line)
-		} else if fastaFlag == true && line[0:1] == ">" {
+		} else if fastaFlag && line[0:1] == ">" {
 			sequence.Description = line
 		} else {
 			record := Feature{}
@@ -327,8 +327,7 @@ func BuildGff(sequence Sequence) []byte {
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGff(file)
+	sequence := ParseGff(file)
 	return sequence
 }
 
@@ -543,7 +542,7 @@ func ParseGbk(file []byte) Sequence {
 		// Break has to be in scope and can't be called within switch statement.
 		// Otherwise it will just break the switch which is redundant.
 		sequenceBreakFlag := false
-		if sequenceBreakFlag == true {
+		if sequenceBreakFlag {
 			break
 		}
 
@@ -710,8 +709,7 @@ func BuildGbk(sequence Sequence) []byte {
 // ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
 func ReadGbk(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGbk(file)
+	sequence := ParseGbk(file)
 	return sequence
 }
 
@@ -1138,7 +1136,7 @@ func parseGbkLocation(locationString string) Location {
 	}
 
 	// if excess root node then trim node. Maybe should just be handled with second arg?
-	if location.Start == 0 && location.End == 0 && location.Join == false && location.Complement == false {
+	if location.Start == 0 && location.End == 0 && !location.Join && !location.Complement {
 		location = location.SubLocations[0]
 	}
 
