@@ -144,63 +144,6 @@ func application() *cli.App {
 					return err
 				},
 			},
-			{
-				Name:    "translate",
-				Aliases: []string{"tr"},
-				Usage:   "Translate a coding sequence into an amino acid string",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "Standard",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					err := translateCommand(c)
-					return err
-				},
-			},
-			{
-				Name:    "optimize",
-				Aliases: []string{"op"},
-				Usage:   "Optimize a sequence for a specific organism.",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "1",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.BoolFlag{
-						Name:    "aa",
-						Aliases: []string{"--amino-acid"},
-						Value:   false,
-						Usage:   "Specify that the input sequence is an amino acid sequence.",
-					},
-					&cli.StringFlag{
-						Name:    "wt",
-						Aliases: []string{"--weight-table"},
-						Usage:   "Specify file to weigh table with",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					err := optimizeCommand(c)
-					return err
-				},
-			},
 		}, // subcommands list ends here
 	} // app definition ends here
 

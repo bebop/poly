@@ -7,11 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -28,29 +25,16 @@ File is structured as so:
 	Top level commands:
 		Convert
 		Hash
-		Translate
-		Optimize
 
-	Helper functions
+These commands are mainly for developer utility.
+They are well tested but really, really shouldn't be used in production.
+Unless there's a strong case for a new command line utility tool it's very unlikely that I'll
+merge a new command so please ask before developing one with the intent of merging a pull request.
+Too much effort for not enough pay off just to maintain it in most cases.
 
-
-This file contains a majority of the code that runs when command line routines
-are run. The one exception is that argument flags and helper text for each
-command are defined in main.go which then makes calls to their corresponding
-function in this file. This keeps main.go clean and readable.
-
-To ease development you'll notice there's a common command line template in
-the section below along with helper functions for parsing stdin, getting blob
-matches, etc which almost every command ends up using.
-
-Each command must also have a test in commands_test.go that demonstrates its
-correct usage by executing a bash subprocess. You can read more about that at
-the top of commands_test.go itself.
-
-Happy hacking,
+TTFN,
 Tim
 
-https://github.com/urfave/cli/issues/731
 ******************************************************************************/
 
 /******************************************************************************
@@ -195,95 +179,6 @@ func hashCommand(c *cli.Context) error {
 	return nil
 }
 
-/******************************************************************************
-
-poly optimize currently has one mode. Pipe io.
-
-The function isPipe() detects if input is coming from a pipe like:
-
-	cat data/DNAsequence.txt | poly optimize > test.txt
-
-	poly optimize can also have it's codon table specified
-	and files can be provided to add weight to the codon table
-
-	cat data/DNAsequence.txt | poly optimize -ct 11 -wt data/puc19.gbk > test.txt
-
-In the future there will be multi file support. Check our issues on github to see what's up.
-
-******************************************************************************/
-func optimizeCommand(c *cli.Context) error {
-
-	// get appropriate codon table from flag
-	var codonTable poly.CodonTable
-
-	if isNumeric(c.String("ct")) {
-		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-		codonTable = poly.GetCodonTable(codonTableNumber)
-	}
-
-	// if a file exists to weigh the table. Weigh it.
-	if fileExists(c.String("wt")) {
-		targetOrganism := fileParser(c, c.String("wt"))
-		codonTable.OptimizeTable(targetOrganism.Sequence)
-	}
-
-	if isPipe(c) {
-
-		// uncomment below to parse sequence from pipe
-		sequence := parseStdin(c)
-		var aminoAcids string
-
-		if c.Bool("aa") {
-			aminoAcids = sequence.Sequence
-		} else {
-			aminoAcids = poly.Translate(sequence.Sequence, codonTable)
-		}
-
-		optimizedSequence := poly.Optimize(aminoAcids, codonTable)
-		fmt.Fprintln(c.App.Writer, optimizedSequence)
-
-	}
-	return nil
-}
-
-/******************************************************************************
-
-poly translate currently has one mode. Pipe io.
-
-The function isPipe() detects if input is coming from a pipe like:
-
-	cat data/DNAsequence.txt | poly translate > test.txt
-
-	poly optimize can also have it's codon table specified
-
-	cat data/DNAsequence.txt | poly translate --codon-table Standard > test.txt
-
-In the future there will be multi file support. Check our issues on github to see what's up.
-
-******************************************************************************/
-
-func translateCommand(c *cli.Context) error {
-
-	if isPipe(c) {
-
-		// get appropriate codon table from flag
-		var codonTable poly.CodonTable
-
-		if isNumeric(c.String("ct")) {
-			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-			codonTable = poly.GetCodonTable(codonTableNumber)
-		}
-
-		sequence := parseStdin(c)
-
-		aminoAcids := poly.Translate(sequence.Sequence, codonTable)
-
-		fmt.Fprintln(c.App.Writer, aminoAcids)
-
-	}
-	return nil
-}
-
 // a simple helper function to convert an *os.File type into a string.
 func stdinToBytes(file io.Reader) []byte {
 	var stringBuffer bytes.Buffer
@@ -312,11 +207,6 @@ func isPipe(c *cli.Context) bool {
 	return flag
 }
 
-func isNumeric(s string) bool {
-	_, err := strconv.ParseFloat(s, 64)
-	return err == nil
-}
-
 // a simple helper function to take stdin from a pipe and parse it into an Sequence
 func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
@@ -332,8 +222,6 @@ func parseStdin(c *cli.Context) poly.Sequence {
 		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "fasta" {
 		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
-	} else if c.String("i") == "string" {
-		sequence.Sequence = parseText(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -530,26 +418,4 @@ func parseExt(match string) poly.Sequence {
 		sequence = poly.ReadFASTA(match)
 	}
 	return sequence
-}
-
-// fileExists checks if a file exists and is not a directory before we
-// try using it to prevent further errors.
-// from https://golangcode.com/check-if-a-file-exists/
-
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
-func parseText(file []byte) string {
-	fileString := string(file)
-	reg, err := regexp.Compile("\\*[^a-zA-Z]+")
-	if err != nil {
-		log.Fatal(err)
-	}
-	processedString := reg.ReplaceAllString(fileString, "")
-	return processedString
 }

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/TimothyStiles/poly"
@@ -155,31 +154,6 @@ func TestConvertWarning(t *testing.T) {
 	warningTestString := "WARNING: " + "input path and output path match. File: " + testFilePath + ". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.\n"
 	if warningOutputString != warningTestString {
 		t.Errorf("TestConvertWarning has failed. Returned %q, want %q", warningOutputString, warningTestString)
-	}
-}
-
-func TestConvertPipeString(t *testing.T) {
-
-	var writeBuffer bytes.Buffer
-	app := application()
-	app.Writer = &writeBuffer
-
-	args := os.Args[0:1] // Name of the program.
-	args = append(args, "c", "-i", "string", "-o", "string")
-	file := []byte("ACTGATCGATCAGCTACGACTAGCATCAGCATCAGCATCAGCTACGACTAG")
-	app.Reader = bytes.NewReader(file)
-
-	err := app.Run(args)
-
-	if err != nil {
-		t.Fatalf("Run error: %s", err)
-	}
-
-	// getting test sequence from non-pipe io to compare against io to stdout
-	pipeOutputTestSequence := parseFlag(writeBuffer.Bytes(), "string")
-
-	if string(file) != pipeOutputTestSequence.Sequence {
-		t.Errorf(" mismatch reading and writing strings from stdin to stdout.")
 	}
 }
 
@@ -348,60 +322,4 @@ func TestHashFunctions(t *testing.T) {
 			t.Errorf("TestHashFunctions for function %q has failed. Returned %q, want %q", key, hashOutputString, hashTestString)
 		}
 	}
-}
-
-func TestOptimizeString(t *testing.T) {
-
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	var writeBuffer bytes.Buffer
-
-	app := application()
-	app.Writer = &writeBuffer
-	app.Reader = bytes.NewBufferString(gfpTranslation)
-
-	args := os.Args[0:1]                                      // Name of the program.
-	args = append(args, "op", "-aa", "-wt", "data/puc19.gbk") // Append a flag
-	err := app.Run(args)
-
-	if err != nil {
-		t.Fatalf("Run error: %s", err)
-	}
-	app.Reader = os.Stdin
-
-	// should return codon optimized sequence
-	optimizeOutputString := strings.TrimSpace(writeBuffer.String())
-
-	translation := poly.Translate(optimizeOutputString, poly.GetCodonTable(1))
-
-	if translation != gfpTranslation {
-		t.Errorf("TestOptimizeCommand for string output has failed. Returned %q, want %q", translation, gfpTranslation)
-	}
-
-}
-
-func TestTranslationString(t *testing.T) {
-	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-
-	var writeBuffer bytes.Buffer
-
-	app := application()
-	app.Writer = &writeBuffer
-	app.Reader = bytes.NewBufferString(gfpDnaSequence)
-
-	args := os.Args[0:1]                   // Name of the program.
-	args = append(args, "tr", "-ct", "11") // Append a flag
-	err := app.Run(args)
-
-	if err != nil {
-		t.Fatalf("Run error: %s", err)
-	}
-	app.Reader = os.Stdin
-
-	translation := strings.TrimSpace(writeBuffer.String())
-
-	if translation != gfpTranslation {
-		t.Errorf("TestTranslationString for string output has failed. Returned %q, want %q", translation, gfpTranslation)
-	}
-
 }
