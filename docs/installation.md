@@ -13,7 +13,7 @@ This assumes you already have a working Go environment, if not please see
 Also, this will build and install both the library and command line utility.
 
 ```bash
-git clone https://github.com/TimothyStiles/poly.git && cd poly && go build ./... && go install ./...
+git clone https://github.com/TimothyStiles/poly.git && cd poly/poly && go build ./... && go install ./...
 ```
 
 ### Installing Poly as a Go library
