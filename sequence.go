@@ -3,6 +3,9 @@ package poly
 import (
 	"bytes"
 	"strings"
+        "math/rand"
+        "fmt"
+        "errors"
 )
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
@@ -91,4 +94,33 @@ func getFeatureSequence(feature Feature, location Location) string {
 	}
 
 	return sequenceString
+}
+
+
+//RandomProteinSequence returns a random protein sequence as a string that have size n, starts with aminoacid M and finishes with aminoacid *. The random generator uses the seed provided as parameter.
+func RandomProteinSequence(n int, seed int64) string {
+
+        if n <= 2 {
+            err := errors.New("The parameter n should be higher than 2, please select another n in RandomProteinSequence") 
+            fmt.Print(err)
+            return ""
+        }
+
+        var aminoAcidsAlphabet = []rune("ACEDGFIHKLNQPSRTWVY")
+        rand.Seed(seed)
+
+        randomSequence := make([]rune, n)
+
+        for i := range randomSequence {
+            if (i == 0) {
+                randomSequence[i] = 'M'
+            } else if (i == n-1) {
+                randomSequence[i] = '*'
+            } else {
+                randomIndex := rand.Intn(len(aminoAcidsAlphabet))
+                randomSequence[i] = aminoAcidsAlphabet[randomIndex]
+            }
+        }
+
+        return string(randomSequence)
 }

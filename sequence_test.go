@@ -2,6 +2,8 @@ package poly
 
 import (
 	"testing"
+        "strconv"
+        "fmt"
 )
 
 func TestGetSequenceMethods(t *testing.T) {
@@ -69,3 +71,42 @@ func TestLocationParser(t *testing.T) {
 		t.Errorf("Feature sequence parser has changed on test 'complement(join(893..1098,1101..2770))'. Got this:\n%s instead of \n%s", featureComplementJoin, seqComplementJoin)
 	}
 }
+
+func ExampleRandomProteinSequence() {
+
+	randomProtein := RandomProteinSequence(15, 2)
+	fmt.Println(randomProtein)
+	// Output: MGLLTAVNIFGNNP*
+}
+
+func TestRandomProteinSequence(t *testing.T) {
+        const n = 10
+        const seed = 2
+        sequence := RandomProteinSequence(n, seed)
+        
+        if sequence[0] != 'M' {
+            t.Errorf("Random sequence doesn't have the correct initial aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[0]), "M")
+        }
+
+        if sequence[len(sequence)-1] != '*' {
+            t.Errorf("Random sequence doesn't have correct last aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[len(sequence)-1]), "*")
+        }
+
+        if len(sequence) != n {
+            t.Errorf("Random sequence doesn't have the sequence size equal parameter passed through n 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(n))
+        }
+}
+
+
+// Write a new case of test when you have a n inferior than 3
+func TestRandomProteinSequenceError (t *testing.T) {
+        const n = 2
+        const seed = 4
+        sequence := RandomProteinSequence(n, seed)
+        
+
+         if len(sequence) != 0 {
+            t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(n))
+        }
+}
+ 
