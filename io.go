@@ -353,7 +353,7 @@ JSON specific IO related things begin here.
 func ParseJSON(file []byte) Sequence {
 	var sequence Sequence
 	err := json.Unmarshal([]byte(file), &sequence)
-	if err == nil {
+	if err != nil {
 		// todo add error handling
 	}
 	legacyFeatures := sequence.Features

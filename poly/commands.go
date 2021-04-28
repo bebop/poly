@@ -323,7 +323,7 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
 		err := json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
-		if err == nil {
+		if err != nil {
 			// do proper error handling here.
 		}
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
@@ -343,7 +343,10 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if flag == "json" {
-		json.Unmarshal(file, &sequence)
+		err := json.Unmarshal(file, &sequence)
+		if err != nil {
+			// todo proper error testing here.
+		}
 	} else if flag == "gbk" || flag == "gb" {
 		sequence = poly.ParseGbk(file)
 	} else if flag == "gff" {
@@ -402,7 +405,6 @@ func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
 		hashString = poly.RotateSequence(sequence.Sequence)
 	default:
 		hashString = sequence.Hash(blake3.New(32, nil))
-		break
 	}
 	return hashString
 }
