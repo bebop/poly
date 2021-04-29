@@ -49,7 +49,7 @@ Seqhash related tests begin here.
 
 ******************************************************************************/
 
-func ExampleHash(t *testing.T) {
+func ExampleHash() {
 	sequence := ReadGbk("data/puc19.gbk")
 
 	seqhash, _ := Hash(sequence.Sequence, "DNA", true, true)
@@ -57,7 +57,7 @@ func ExampleHash(t *testing.T) {
 	// output: v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
 }
 
-func ExampleSequence_Hash(t *testing.T) {
+func ExampleSequence_Hash() {
 	sequence := ReadGbk("data/puc19.gbk")
 
 	// Seqhash assumes doubleStranded sequence and defaults to linear
