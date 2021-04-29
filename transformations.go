@@ -379,10 +379,7 @@ func ParseCodonJSON(file []byte) CodonTable {
 
 // ReadCodonJSON reads a CodonTable JSON file.
 func ReadCodonJSON(path string) CodonTable {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		// return 0, fmt.Errorf("Failed to open file %s for unpack: %s", gzFilePath, err)
-	}
+	file, _ := ioutil.ReadFile(path)
 	codontable := ParseCodonJSON(file)
 	return codontable
 }
