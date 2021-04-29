@@ -352,10 +352,7 @@ JSON specific IO related things begin here.
 // ParseJSON parses an Sequence JSON file and adds appropriate pointers to struct.
 func ParseJSON(file []byte) Sequence {
 	var sequence Sequence
-	err := json.Unmarshal([]byte(file), &sequence)
-	if err != nil {
-		// todo add error handling
-	}
+	_ = json.Unmarshal([]byte(file), &sequence)
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 

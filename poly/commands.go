@@ -209,10 +209,7 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		err := json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
-		if err != nil {
-			// do proper error handling here.
-		}
+		_ = json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
@@ -228,10 +225,7 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if flag == "json" {
-		err := json.Unmarshal(file, &sequence)
-		if err != nil {
-			// todo proper error testing here.
-		}
+		_ = json.Unmarshal(file, &sequence)
 	} else if flag == "gbk" || flag == "gb" {
 		sequence = poly.ParseGbk(file)
 	} else if flag == "gff" {
