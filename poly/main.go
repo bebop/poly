@@ -117,12 +117,6 @@ func application() *cli.App {
 						Value: "json",
 						Usage: "Specify file input type. For use with pipes.",
 					},
-
-					&cli.StringFlag{
-						Name:  "o",
-						Value: "string",
-						Usage: "Specify output type. Defaults to string.",
-					},
 				},
 				Action: func(c *cli.Context) error {
 					err := hashCommand(c)
