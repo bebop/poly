@@ -3,33 +3,11 @@ package poly
 import (
 	"encoding/hex"
 	"errors"
-	"hash"
-	"io"
 	"sort"
 	"strings"
 
 	"lukechampine.com/blake3"
 )
-
-// Where each hash function comes from.
-// MD5                         // import crypto/md5
-// SHA1                        // import crypto/sha1
-// SHA224                      // import crypto/sha256
-// SHA256                      // import crypto/sha256
-// SHA384                      // import crypto/sha512
-// SHA512                      // import crypto/sha512
-// MD5SHA1                     // no implementation; MD5+SHA1 used for TLS RSA
-// RIPEMD160                   // import golang.org/x/crypto/ripemd160
-// SHA3_224                    // import golang.org/x/crypto/sha3
-// SHA3_256                    // import golang.org/x/crypto/sha3
-// SHA3_384                    // import golang.org/x/crypto/sha3
-// SHA3_512                    // import golang.org/x/crypto/sha3
-// SHA512_224                  // import crypto/sha512
-// SHA512_256                  // import crypto/sha512
-// BLAKE2s_256                 // import golang.org/x/crypto/blake2s
-// BLAKE2b_256                 // import golang.org/x/crypto/blake2b
-// BLAKE2b_384                 // import golang.org/x/crypto/blake2b
-// BLAKE2b_512                 // import golang.org/x/crypto/blake2b
 
 // boothLeastRotation gets the least rotation of a circular string.
 func boothLeastRotation(sequence string) int {
@@ -158,7 +136,7 @@ Keoni
 ******************************************************************************/
 
 // Seqhash is a function to create Seqhashes, a specific kind of identifier.
-func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+func Hash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
 	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
 	// If RNA, convert to a DNA sequence. The hash itself between a DNA and RNA sequence will not
@@ -244,11 +222,11 @@ func Seqhash(sequence string, sequenceType string, circular bool, doubleStranded
 
 }
 
-// Seqhash is a method wrapper for hashing Sequence structs. Note that
+// Hash is a method wrapper for hashing Sequence structs. Note that
 // all sequence structs are, by default, double-stranded sequences,
 // since Genbank does not track whether or not a given sequence in their
 // database is single stranded or double stranded.
-func (sequence Sequence) Seqhash() (string, error) {
+func (sequence Sequence) Hash() (string, error) {
 	if sequence.Meta.Locus.MoleculeType == "" {
 		return "", errors.New("No MoleculeType found for sequence")
 	}
@@ -263,34 +241,10 @@ func (sequence Sequence) Seqhash() (string, error) {
 		return "", errors.New("SequenceType not found. Looking for MoleculeTypes with DNA or RNA, got: " + sequence.Meta.Locus.MoleculeType)
 	}
 	// If not explicitly circular, assume linear. All sequences are by default doubleStranded
-	newSeqhash, err := Seqhash(sequence.Sequence, sequenceType, sequence.Meta.Locus.Circular, true)
+	newSeqhash, err := Hash(sequence.Sequence, sequenceType, sequence.Meta.Locus.Circular, true)
 	if err != nil {
 		return "", err
 	}
 	return newSeqhash, nil
-}
 
-// Hash is a method wrapper for hashing Sequence structs.
-func (sequence Sequence) Hash(hash hash.Hash) string {
-	if sequence.Meta.Locus.Circular {
-		sequence.Sequence = RotateSequence(sequence.Sequence)
-	}
-	seqHash, _ := hashSequence(sequence.Sequence, hash)
-	return seqHash
-}
-
-// Hash is a method wrapper for hashing sequences contained in Feature structs.
-func (feature Feature) Hash(hash hash.Hash) string {
-	seqHash, _ := hashSequence(feature.GetSequence(), hash)
-	return seqHash
-}
-
-// hashSequence takes a string and a hashing function and returns a hashed string.
-func hashSequence(sequence string, hash hash.Hash) (string, error) {
-	_, err := io.WriteString(hash, strings.ToUpper(sequence))
-	if err != nil {
-		// todo add error handling
-	}
-
-	return hex.EncodeToString(hash.Sum(nil)), nil
 }

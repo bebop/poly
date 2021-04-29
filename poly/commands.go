@@ -3,18 +3,15 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/TimothyStiles/poly"
 	"github.com/urfave/cli/v2"
-	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -141,9 +138,9 @@ parse them, and then spit out a similiarly named file with the .json extension a
 func hashCommand(c *cli.Context) error {
 
 	if isPipe(c) {
-		sequence := parseStdin(c)                   // get sequence from stdin
-		sequenceHash := flagSwitchHash(c, sequence) // get hash include no-op which only rotates the sequence
-		printHash(c, sequenceHash, "-")
+		sequence := parseStdin(c) // get sequence from stdin
+		hash, _ := sequence.Hash()
+		printHash(c, hash, "-")
 
 	} else {
 
@@ -162,8 +159,8 @@ func hashCommand(c *cli.Context) error {
 			// executing Go routine.
 			go func(match string) {
 				sequence := fileParser(c, match)
-				sequenceHash := flagSwitchHash(c, sequence)
-				printHash(c, sequenceHash, match)
+				hash, _ := sequence.Hash()
+				printHash(c, hash, match)
 
 				// decrementing wait group.
 				wg.Done()
@@ -241,58 +238,8 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 		sequence = poly.ParseGff(file)
 	} else if flag == "fasta" {
 		sequence = poly.ParseFASTA(file)
-	} else if flag == "string" {
-		sequence.Sequence = string(file)
 	}
 	return sequence
-}
-
-// helper function to hash sequence based on flag using generic hash.
-func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
-
-	var hashString string
-	hashFunctionName := strings.ToUpper(c.String("f"))
-	switch hashFunctionName {
-	case "MD5":
-		hashString = sequence.Hash(crypto.MD5.New())
-	case "SHA1":
-		hashString = sequence.Hash(crypto.SHA1.New())
-	case "SHA244":
-		hashString = sequence.Hash(crypto.SHA224.New())
-	case "SHA256":
-		hashString = sequence.Hash(crypto.SHA256.New())
-	case "SHA384":
-		hashString = sequence.Hash(crypto.SHA384.New())
-	case "SHA512":
-		hashString = sequence.Hash(crypto.SHA512.New())
-	case "SHA3_224":
-		hashString = sequence.Hash(crypto.SHA3_224.New())
-	case "SHA3_256":
-		hashString = sequence.Hash(crypto.SHA3_256.New())
-	case "SHA3_384":
-		hashString = sequence.Hash(crypto.SHA3_384.New())
-	case "SHA3_512":
-		hashString = sequence.Hash(crypto.SHA3_512.New())
-	case "SHA512_224":
-		hashString = sequence.Hash(crypto.SHA512_224.New())
-	case "SHA512_256":
-		hashString = sequence.Hash(crypto.SHA512_256.New())
-	case "BLAKE2S_256":
-		hashString = sequence.Hash(crypto.BLAKE2s_256.New())
-	case "BLAKE2B_256":
-		hashString = sequence.Hash(crypto.BLAKE2b_256.New())
-	case "BLAKE2B_384":
-		hashString = sequence.Hash(crypto.BLAKE2b_384.New())
-	case "BLAKE2B_512":
-		hashString = sequence.Hash(crypto.BLAKE2b_512.New())
-	case "BLAKE3":
-		hashString = sequence.Hash(blake3.New(32, nil))
-	case "NO":
-		hashString = poly.RotateSequence(sequence.Sequence)
-	default:
-		hashString = sequence.Hash(blake3.New(32, nil))
-	}
-	return hashString
 }
 
 // helper function to get unique glob patterns from cli.context
@@ -360,8 +307,6 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 		output = poly.BuildGbk(sequence)
 	} else if c.String("o") == "fasta" {
 		output = poly.BuildFASTA(sequence)
-	} else if c.String("o") == "string" || c.String("o") == "txt" {
-		output = []byte(sequence.Sequence)
 	}
 	return output
 }

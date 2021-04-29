@@ -1,15 +1,6 @@
 package main
 
 import (
-	_ "crypto/md5"
-	_ "crypto/sha1"
-	_ "crypto/sha256"
-	_ "crypto/sha512"
-
-	_ "golang.org/x/crypto/blake2b"
-	_ "golang.org/x/crypto/blake2s"
-	_ "golang.org/x/crypto/sha3"
-
 	"log"
 	"os"
 
@@ -117,20 +108,14 @@ func application() *cli.App {
 			{
 				Name:    "hash",
 				Aliases: []string{"ha"},
-				Usage:   "Hash a sequence while accounting for circularity.",
+				Usage:   "Hash a sequence while accounting for circularity using SeqhashV1.",
 
 				Flags: []cli.Flag{
 
 					&cli.StringFlag{
-						Name:  "f",
-						Value: "blake3",
-						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
-					},
-
-					&cli.StringFlag{
 						Name:  "i",
 						Value: "json",
-						Usage: "Specify file input type.",
+						Usage: "Specify file input type. For use with pipes.",
 					},
 
 					&cli.StringFlag{
