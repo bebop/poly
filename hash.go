@@ -135,7 +135,7 @@ Keoni
 
 ******************************************************************************/
 
-// Seqhash is a function to create Seqhashes, a specific kind of identifier.
+// Hash is a function to create Seqhashes, a specific kind of identifier.
 func Hash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
 	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
