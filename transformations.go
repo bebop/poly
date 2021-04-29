@@ -446,7 +446,6 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 		var firstWeights []int
 		var firstTotal int
 
-		var secondTriplets []string
 		var secondWeights []int
 		var secondTotal int
 		// For each amino acid in firstCodonTable, get list of all codons, and append triplets
@@ -461,7 +460,6 @@ func CompromiseCodonTable(firstCodonTable CodonTable, secondCodonTable CodonTabl
 						// For each codon from firstCodonTable, get the
 						// corresponding triplet and weight from secondCodonTable
 						if secondCodon.Triplet == firstCodon.Triplet {
-							secondTriplets = append(secondTriplets, secondCodon.Triplet)
 							secondWeights = append(secondWeights, secondCodon.Weight)
 							secondTotal = secondTotal + secondCodon.Weight
 						}
