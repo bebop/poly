@@ -8,47 +8,6 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-func ExampleRotateSequence() {
-	sequence := ReadGbk("data/puc19.gbk")
-	sequenceLength := len(sequence.Sequence)
-	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
-
-	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
-	// output: true
-}
-
-func TestLeastRotation(t *testing.T) {
-	sequence := ReadGbk("data/puc19.gbk")
-	var sequenceBuffer bytes.Buffer
-
-	sequenceBuffer.WriteString(sequence.Sequence)
-	bufferLength := sequenceBuffer.Len()
-
-	var rotatedSequence string
-	for elementIndex := 0; elementIndex < bufferLength; elementIndex++ {
-		bufferElement, _, _ := sequenceBuffer.ReadRune()
-		sequenceBuffer.WriteRune(bufferElement)
-		if elementIndex == 0 {
-			rotatedSequence = RotateSequence(sequenceBuffer.String())
-		} else {
-			newRotatedSequence := RotateSequence(sequenceBuffer.String())
-			if rotatedSequence != newRotatedSequence {
-				dmp := diffmatchpatch.New()
-				diffs := dmp.DiffMain(rotatedSequence, newRotatedSequence, false)
-				t.Errorf("TestLeastRotation() has failed. rotationSequence mutated.")
-				fmt.Println(dmp.DiffPrettyText(diffs))
-			}
-		}
-	}
-
-}
-
-/******************************************************************************
-
-Seqhash related tests begin here.
-
-******************************************************************************/
-
 func ExampleHash() {
 	sequence := ReadGbk("data/puc19.gbk")
 
@@ -151,4 +110,39 @@ func TestSequence_Hash(t *testing.T) {
 	if err == nil {
 		t.Errorf("Seqhash method should fail with X nucleotide")
 	}
+}
+
+func ExampleRotateSequence() {
+	sequence := ReadGbk("data/puc19.gbk")
+	sequenceLength := len(sequence.Sequence)
+	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
+
+	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
+	// output: true
+}
+
+func TestLeastRotation(t *testing.T) {
+	sequence := ReadGbk("data/puc19.gbk")
+	var sequenceBuffer bytes.Buffer
+
+	sequenceBuffer.WriteString(sequence.Sequence)
+	bufferLength := sequenceBuffer.Len()
+
+	var rotatedSequence string
+	for elementIndex := 0; elementIndex < bufferLength; elementIndex++ {
+		bufferElement, _, _ := sequenceBuffer.ReadRune()
+		sequenceBuffer.WriteRune(bufferElement)
+		if elementIndex == 0 {
+			rotatedSequence = RotateSequence(sequenceBuffer.String())
+		} else {
+			newRotatedSequence := RotateSequence(sequenceBuffer.String())
+			if rotatedSequence != newRotatedSequence {
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(rotatedSequence, newRotatedSequence, false)
+				t.Errorf("TestLeastRotation() has failed. rotationSequence mutated.")
+				fmt.Println(dmp.DiffPrettyText(diffs))
+			}
+		}
+	}
+
 }
