@@ -261,7 +261,7 @@ func generateCodonTable(aminoAcids, starts string) CodonTable {
 	var startCodons []string
 	var stopCodons []string
 	for i, aminoAcid := range aminoAcids {
-		if _, ok := aminoAcidMap[aminoAcid]; ok == false {
+		if _, ok := aminoAcidMap[aminoAcid]; !ok {
 			aminoAcidMap[aminoAcid] = []Codon{}
 		}
 		triplet := string([]byte{base1[i], base2[i], base3[i]})
