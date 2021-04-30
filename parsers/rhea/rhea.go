@@ -730,6 +730,9 @@ func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
 
 JSON functions
 
+These functions simply export the Rhea database as a JSON file for consumption
+in different programs.
+
 ******************************************************************************/
 
 // Export exports Rhea as a JSON file
@@ -739,4 +742,58 @@ func (rhea *Rhea) Export() ([]byte, error) {
 		return []byte{}, err
 	}
 	return rheaJSON, nil
+}
+
+/******************************************************************************
+
+Rhea2Uniprot tsv
+
+Rhea conveniently provides a TSV list of reaction IDs to Uniprot accession numbers.
+These can be used to map Rhea reactions to protein sequences, which is very useful
+for actually building synthetic circuits. While these parsers are very basic TSV
+parsing, they are convenient to use with the rhea2uniprot data dumps specifically.
+
+The sprot and trembl data dumps are available at:
+https://ftp.expasy.org/databases/rhea/tsv/rhea2uniprot_sprot.tsv
+https://ftp.expasy.org/databases/rhea/tsv/rhea2uniprot_trembl.tsv.gz
+
+The decompressed gzip side of the rhea2uniprot_trembl.tsv.gz file, as of Apr 30, 2021
+is 678M. Because it is fairly large, the parser is implemented to stream in the file,
+passing the parsed lines into a channel, to save on memory.
+
+The TSV is structured like:
+
+`
+RHEA_ID DIRECTION       MASTER_ID       ID
+10008   UN      10008   O17433
+10008   UN      10008   O34564
+...
+`
+
+******************************************************************************/
+
+// Rhea2Uniprot represents a single line of the TSV file
+type Rhea2Uniprot struct {
+	RheaID    int
+	Direction string
+	MasterID  int
+	UniprotID string
+}
+
+func ParseRhea2UniprotTsv(r io.Reader, lines chan<- Rhea2Uniprot) {
+	start := true
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		// We skip the header line
+		if start {
+			start = false
+			continue
+		}
+
+		// Get the line from the scanner
+		line := scanner.Text()
+
+		// Split the line between tabs
+		lineSplit := strings.Split(line, "\t")
+	}
 }
