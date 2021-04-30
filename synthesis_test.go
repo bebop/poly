@@ -47,7 +47,8 @@ func ExampleFixCds() {
 	optimizationTable := sequence.GetOptimizationTable(codonTable)
 
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
-	functions = append(functions, FindBsaI)
+	//functions = append(functions, FindBsaI)
+	functions = append(functions, FindTypeIIS)
 
 	fixedSeq, _ := FixCds(bla, optimizationTable, functions)
 	fmt.Println(fixedSeq)
