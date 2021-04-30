@@ -204,7 +204,7 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		if len(suggestions) == 0 {
 			break
 		}
-		for suggestionIndex, suggestion := range suggestions {
+		for _, suggestion := range suggestions { // if you want to add overlaps, add suggestionIndex
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
 			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
 			//// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
