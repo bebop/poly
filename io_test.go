@@ -169,6 +169,16 @@ func TestGbkIO(t *testing.T) {
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
+
+	// Test multiline Genbank features
+	pichia := ReadGbk("data/pichia_chr1_head.gb")
+	var multilineOutput string
+	for _, feature := range pichia.Features {
+		multilineOutput = feature.GbkLocationString
+	}
+	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
+		t.Errorf("Failed to parse multiline genbank feature string")
+	}
 }
 
 func TestGbkLocationStringBuilder(t *testing.T) {

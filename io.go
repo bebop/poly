@@ -997,6 +997,20 @@ func getFeatures(lines []string) []Feature {
 		feature.Type = strings.TrimSpace(splitLine[0])
 		// feature.GbkLocationString is the string used by GBK to denote location
 		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+
+		//
+		nextLineNum := 0
+		for {
+			nextLineNum++
+			nextLine := lines[lineIndex+nextLineNum]
+			// Check if the next line is not a qualifier, it is part of the
+			// GbkLocation String
+			if !strings.Contains(nextLine, "/") {
+				feature.GbkLocationString = feature.GbkLocationString + strings.TrimSpace(nextLine)
+			} else {
+				break
+			}
+		}
 		feature.SequenceLocation = parseGbkLocation(feature.GbkLocationString)
 
 		// initialize attributes.
