@@ -2,7 +2,7 @@ package poly
 
 import (
 	"github.com/jmoiron/sqlx"
-	"github.com/juliangruber/go-intersect"
+	//"github.com/juliangruber/go-intersect"
 	_ "github.com/mattn/go-sqlite3"
 	"regexp"
 	"strings"
@@ -207,58 +207,58 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		for suggestionIndex, suggestion := range suggestions {
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
 			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
-			// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
-			// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
-			for secondSuggestionIndex, secondSuggestion := range suggestions {
-				if suggestionIndex != secondSuggestionIndex {
-					// makeRange is a helper function that will allow us to generate lists for intersection
-					makeRange := func(min, max int) []int {
-						a := make([]int, max-min+1)
-						for i := range a {
-							a[i] = min + i
-						}
-						return a
-					}
+			//// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
+			//// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
+			//for secondSuggestionIndex, secondSuggestion := range suggestions {
+			//	if suggestionIndex != secondSuggestionIndex {
+			//		// makeRange is a helper function that will allow us to generate lists for intersection
+			//		makeRange := func(min, max int) []int {
+			//			a := make([]int, max-min+1)
+			//			for i := range a {
+			//				a[i] = min + i
+			//			}
+			//			return a
+			//		}
 
-					// The overlapping regions would need to have the same bias applied to them. So we check first if they have no preference or the same bias
-					if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestion.Bias == secondSuggestion.Bias) {
-						// Each suggestion will have a start and end. If we take the intersection of the numbers between the start and the end of both suggestions,
-						// we should be able to find a region where an edit would affect both suggested changes.
-						overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End)).([]int)
-						if len(overlap) != 0 {
-							// Each overlap that is successfully found will be inserted as a suggestedfix. First, we need to find its bias
-							var overlapBias string
-							if suggestion.Bias == "NA" {
-								overlapBias = secondSuggestion.Bias
-							} else {
-								overlapBias = suggestion.Bias
-							}
+			//		// The overlapping regions would need to have the same bias applied to them. So we check first if they have no preference or the same bias
+			//		if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestion.Bias == secondSuggestion.Bias) {
+			//			// Each suggestion will have a start and end. If we take the intersection of the numbers between the start and the end of both suggestions,
+			//			// we should be able to find a region where an edit would affect both suggested changes.
+			//			overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End)).([]int)
+			//			if len(overlap) != 0 {
+			//				// Each overlap that is successfully found will be inserted as a suggestedfix. First, we need to find its bias
+			//				var overlapBias string
+			//				if suggestion.Bias == "NA" {
+			//					overlapBias = secondSuggestion.Bias
+			//				} else {
+			//					overlapBias = suggestion.Bias
+			//				}
 
-							// Each overlap will have a number of fixes that need to be hit to fix the outer objects
-							var overlapQuantityFixes int
-							if suggestion.QuantityFixes >= secondSuggestion.QuantityFixes {
-								overlapQuantityFixes = suggestion.QuantityFixes
-							} else {
-								overlapQuantityFixes = secondSuggestion.QuantityFixes
-							}
+			//				// Each overlap will have a number of fixes that need to be hit to fix the outer objects
+			//				var overlapQuantityFixes int
+			//				if suggestion.QuantityFixes >= secondSuggestion.QuantityFixes {
+			//					overlapQuantityFixes = suggestion.QuantityFixes
+			//				} else {
+			//					overlapQuantityFixes = secondSuggestion.QuantityFixes
+			//				}
 
-							// There can't be more desired fixes than there are positions
-							if overlapQuantityFixes > len(overlap) {
-								overlapQuantityFixes = len(overlap)
-							}
+			//				// There can't be more desired fixes than there are positions
+			//				if overlapQuantityFixes > len(overlap) {
+			//					overlapQuantityFixes = len(overlap)
+			//				}
 
-							// Lets check if there is already an overlap at this position during this step
-							var id int
-							err := db.Get(&id, `SELECT id FROM suggestedfix WHERE step = ? AND start = ? AND end = ? AND suggestiontype = "overlap"`, i, overlap[0], overlap[len(overlap)-1])
-							// If err is not nil, then we couldn't scan a single instance of the above query
-							if err != nil {
-								db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, "overlap")`, i, overlap[0], overlap[len(overlap)-1], overlapBias, overlapQuantityFixes)
-							}
+			//				// Lets check if there is already an overlap at this position during this step
+			//				var id int
+			//				err := db.Get(&id, `SELECT id FROM suggestedfix WHERE step = ? AND start = ? AND end = ? AND suggestiontype = "overlap"`, i, overlap[0], overlap[len(overlap)-1])
+			//				// If err is not nil, then we couldn't scan a single instance of the above query
+			//				if err != nil {
+			//					db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, "overlap")`, i, overlap[0], overlap[len(overlap)-1], overlapBias, overlapQuantityFixes)
+			//				}
 
-						}
-					}
-				}
-			}
+			//			}
+			//		}
+			//	}
+			//}
 		}
 
 		// The following statements are the magic sauce that makes this all worthwhile.
