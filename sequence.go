@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strings"
         "math/rand"
-        "fmt"
         "errors"
 )
 
@@ -98,12 +97,11 @@ func getFeatureSequence(feature Feature, location Location) string {
 
 
 //RandomProteinSequence returns a random protein sequence as a string that have size n, starts with aminoacid M and finishes with aminoacid *. The random generator uses the seed provided as parameter.
-func RandomProteinSequence(n int, seed int64) string {
+func RandomProteinSequence(n int, seed int64) (string, error) {
 
         if n <= 2 {
-            err := errors.New("The parameter n should be higher than 2, please select another n in RandomProteinSequence") 
-            fmt.Print(err)
-            return ""
+            err := errors.New("The parameter n should be higher than 2, please select another n in RandomProteinSequence")
+            return "", err
         }
 
         var aminoAcidsAlphabet = []rune("ACEDGFIHKLNQPSRTWVY")
@@ -122,5 +120,5 @@ func RandomProteinSequence(n int, seed int64) string {
             }
         }
 
-        return string(randomSequence)
+        return string(randomSequence), nil
 }

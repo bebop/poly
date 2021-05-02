@@ -74,7 +74,7 @@ func TestLocationParser(t *testing.T) {
 
 func ExampleRandomProteinSequence() {
 
-	randomProtein := RandomProteinSequence(15, 2)
+	randomProtein, _ := RandomProteinSequence(15, 2)
 	fmt.Println(randomProtein)
 	// Output: MGLLTAVNIFGNNP*
 }
@@ -82,7 +82,7 @@ func ExampleRandomProteinSequence() {
 func TestRandomProteinSequence(t *testing.T) {
         const n = 10
         const seed = 2
-        sequence := RandomProteinSequence(n, seed)
+        sequence, _ := RandomProteinSequence(n, seed)
         
         if sequence[0] != 'M' {
             t.Errorf("Random sequence doesn't have the correct initial aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[0]), "M")
@@ -102,7 +102,7 @@ func TestRandomProteinSequence(t *testing.T) {
 func TestRandomProteinSequenceError (t *testing.T) {
         const n = 2
         const seed = 4
-        sequence := RandomProteinSequence(n, seed)
+        sequence, _ := RandomProteinSequence(n, seed)
         
 
          if len(sequence) != 0 {
