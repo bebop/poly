@@ -1,6 +1,11 @@
 name: Code Climate Reporter
 
-on: [push]
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - prime
 
 jobs:
   build:
