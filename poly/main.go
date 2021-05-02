@@ -1,22 +1,10 @@
 package main
 
 import (
-	_ "crypto/md5"
-	_ "crypto/sha1"
-	_ "crypto/sha256"
-	_ "crypto/sha512"
-	
-	_ "golang.org/x/crypto/blake2b"
-	_ "golang.org/x/crypto/blake2s"
-	_ "golang.org/x/crypto/ripemd160"
-	_ "golang.org/x/crypto/sha3"
-	
 	"log"
 	"os"
 
 	"github.com/urfave/cli/v2"
-
-
 )
 
 /******************************************************************************
@@ -112,96 +100,27 @@ func application() *cli.App {
 				},
 				// where we provide the actual function that is called by the subcommand.
 				Action: func(c *cli.Context) error {
-					convertCommand(c)
-					return nil
+					err := convertCommand(c)
+					return err
 				},
 			},
 
 			{
 				Name:    "hash",
 				Aliases: []string{"ha"},
-				Usage:   "Hash a sequence while accounting for circularity.",
+				Usage:   "Hash a sequence while accounting for circularity using SeqhashV1.",
 
 				Flags: []cli.Flag{
-
-					&cli.StringFlag{
-						Name:  "f",
-						Value: "blake3",
-						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
-					},
 
 					&cli.StringFlag{
 						Name:  "i",
 						Value: "json",
-						Usage: "Specify file input type.",
-					},
-
-					&cli.StringFlag{
-						Name:  "o",
-						Value: "string",
-						Usage: "Specify output type. Defaults to string.",
+						Usage: "Specify file input type. For use with pipes.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-					hashCommand(c)
-					return nil
-				},
-			},
-			{
-				Name:    "translate",
-				Aliases: []string{"tr"},
-				Usage:   "Translate a coding sequence into an amino acid string",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "Standard",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					translateCommand(c)
-					return nil
-				},
-			},
-			{
-				Name:    "optimize",
-				Aliases: []string{"op"},
-				Usage:   "Optimize a sequence for a specific organism.",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "1",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.BoolFlag{
-						Name:    "aa",
-						Aliases: []string{"--amino-acid"},
-						Value:   false,
-						Usage:   "Specify that the input sequence is an amino acid sequence.",
-					},
-					&cli.StringFlag{
-						Name:    "wt",
-						Aliases: []string{"--weight-table"},
-						Usage:   "Specify file to weigh table with",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					optimizeCommand(c)
-					return nil
+					err := hashCommand(c)
+					return err
 				},
 			},
 		}, // subcommands list ends here
