@@ -119,9 +119,9 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 }
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
-func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
+func FixCds(sqlitePath string, sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
 	var db *sqlx.DB
-	db = sqlx.MustConnect("sqlite3", ":memory:")
+	db = sqlx.MustConnect("sqlite3", sqlitePath)
 	createMemoryDbSql := `
 	CREATE TABLE codon (
 		codon TEXT PRIMARY KEY,
@@ -197,8 +197,9 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		pos++
 	}
 
+	var err error
 	// For a maximum of 1000 iterations, see if we can do better
-	for i := 1; i < 1000; i++ {
+	for i := 1; i < 100; i++ {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
 		// If there are no suggestions, break the iteration!
 		if len(suggestions) == 0 {
@@ -206,64 +207,15 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		}
 		for _, suggestion := range suggestions { // if you want to add overlaps, add suggestionIndex
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
-			db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
-			//// Second, lets look for if there are any overlapping suggestions. This is equivalent to a spot where we can "kill two birds with one stone"
-			//// TODO: make this into a function so you can get overlapping overlaps (for when 3 problems are overlapped on top of each other)
-			//for secondSuggestionIndex, secondSuggestion := range suggestions {
-			//	if suggestionIndex != secondSuggestionIndex {
-			//		// makeRange is a helper function that will allow us to generate lists for intersection
-			//		makeRange := func(min, max int) []int {
-			//			a := make([]int, max-min+1)
-			//			for i := range a {
-			//				a[i] = min + i
-			//			}
-			//			return a
-			//		}
-
-			//		// The overlapping regions would need to have the same bias applied to them. So we check first if they have no preference or the same bias
-			//		if (suggestion.Bias == "NA") || (secondSuggestion.Bias == "NA") || (suggestion.Bias == secondSuggestion.Bias) {
-			//			// Each suggestion will have a start and end. If we take the intersection of the numbers between the start and the end of both suggestions,
-			//			// we should be able to find a region where an edit would affect both suggested changes.
-			//			overlap := intersect.Sorted(makeRange(suggestion.Start, suggestion.End), makeRange(secondSuggestion.Start, secondSuggestion.End)).([]int)
-			//			if len(overlap) != 0 {
-			//				// Each overlap that is successfully found will be inserted as a suggestedfix. First, we need to find its bias
-			//				var overlapBias string
-			//				if suggestion.Bias == "NA" {
-			//					overlapBias = secondSuggestion.Bias
-			//				} else {
-			//					overlapBias = suggestion.Bias
-			//				}
-
-			//				// Each overlap will have a number of fixes that need to be hit to fix the outer objects
-			//				var overlapQuantityFixes int
-			//				if suggestion.QuantityFixes >= secondSuggestion.QuantityFixes {
-			//					overlapQuantityFixes = suggestion.QuantityFixes
-			//				} else {
-			//					overlapQuantityFixes = secondSuggestion.QuantityFixes
-			//				}
-
-			//				// There can't be more desired fixes than there are positions
-			//				if overlapQuantityFixes > len(overlap) {
-			//					overlapQuantityFixes = len(overlap)
-			//				}
-
-			//				// Lets check if there is already an overlap at this position during this step
-			//				var id int
-			//				err := db.Get(&id, `SELECT id FROM suggestedfix WHERE step = ? AND start = ? AND end = ? AND suggestiontype = "overlap"`, i, overlap[0], overlap[len(overlap)-1])
-			//				// If err is not nil, then we couldn't scan a single instance of the above query
-			//				if err != nil {
-			//					db.MustExec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, "overlap")`, i, overlap[0], overlap[len(overlap)-1], overlapBias, overlapQuantityFixes)
-			//				}
-
-			//			}
-			//		}
-			//	}
-			//}
+			_, err = db.Exec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
+			if err != nil {
+				return sequence, err
+			}
 		}
 
 		// The following statements are the magic sauce that makes this all worthwhile.
 		// Parameters: step, gcbias, start, end, quantityfix
-		sqlFix := `INSERT INTO history
+		sqlFix1 := `INSERT INTO history
 		            (codon,
 		             pos,
 		             step)
@@ -281,28 +233,25 @@ func FixCds(sequence string, codontable CodonTable, problematicSequenceFuncs []f
 		                 ON h.codon = c.codon
 		               JOIN codonbias AS cb
 		                 ON cb.fromcodon = c.codon
-		        WHERE  cb.gcbias = ?
-		               AND s.pos >= ?
+		        WHERE `
+		sqlFix2 := ` s.pos >= ?
 		               AND s.pos <= ?
 		               AND h.codon != cb.tocodon
 		        ORDER  BY w.weight) AS t
 		GROUP  BY t.pos
 		LIMIT  ?; `
 
-		// During this step, first see if there are any overlapping suggestedfixes
-		var overlapSuggestions []DnaSuggestion
-		db.Select(&overlapSuggestions, `SELECT * FROM suggestedfix WHERE suggestiontype = "overlap" AND step = ?`, i)
-		// If there are overlapping suggestedfixes, fix those and iterate along
-		if len(overlapSuggestions) > 0 {
-			for _, overlapSuggestion := range overlapSuggestions {
-				db.MustExec(sqlFix, i, overlapSuggestion.Bias, overlapSuggestion.Start, overlapSuggestion.End, overlapSuggestion.QuantityFixes)
-			}
-		} else { // If there aren't any overlapping suggestedfixes, fix the the remaining independent suggestedfixes
-			independentSuggestions := []DnaSuggestion{}
-			db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
+		independentSuggestions := []DnaSuggestion{}
+		db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
 
-			for _, independentSuggestion := range independentSuggestions {
-				db.MustExec(sqlFix, i, independentSuggestion.Bias, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+		for _, independentSuggestion := range independentSuggestions {
+			switch independentSuggestion.Bias {
+			case "NA":
+				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+			case "GC":
+				db.MustExec(sqlFix1+`cb.bias = 'GC' AND `+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+			case "AT":
+				db.MustExec(sqlFix1+`cb.bias = 'AT' AND `+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			}
 		}
 		var codons []string
