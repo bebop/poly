@@ -14,8 +14,8 @@ jobs:
       - uses: actions/setup-node@master
       - uses: actions/setup-go@v2
          with:
-         go-version: '1.14.1'
-         
+          go-version: '1.14.1'
+
     - name: Create coverage report
       run: |
         mkdir -p ./pr
