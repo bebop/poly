@@ -36,7 +36,6 @@ jobs:
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
-
       - name: Upload to code climate
         uses: paambaati/codeclimate-action@v2.7.5
         env:
