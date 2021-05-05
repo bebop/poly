@@ -44,4 +44,4 @@ jobs:
           prefix: github.com/${{ github.repository }}
           debug: true
           coverageLocations: |
-              ${{github.workspace}}/pr/c.out:out
+              ${{github.workspace}}/pr/c.out:gocov
