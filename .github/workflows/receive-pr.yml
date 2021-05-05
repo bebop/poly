@@ -26,8 +26,7 @@ jobs:
 
     - name: Save commit timestamp
       run: |
-        mkdir -p ./pr
-        echo ${{github.event.head_commit.timestamp}} > ./pr/TIMESTAMP
+        echo ${{ github.event.head_commit.timestamp }} > ./pr/TIMESTAMP
 
     - name: Save REF number
       run: |
