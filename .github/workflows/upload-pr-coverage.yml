@@ -47,6 +47,11 @@ jobs:
       - name: 'Get and set commit time'
         uses: actions/github-script@0.3.0
         id: author-date
+        env:
+          GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
+          GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
+          REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
+          OWNER: $(cat ${{github.workspace}}/pr/OWNER)
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -60,6 +65,10 @@ jobs:
         uses: paambaati/codeclimate-action@v2.7.5
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
+          GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
+          GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
+          REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
+          OWNER: $(cat ${{github.workspace}}/pr/OWNER)
         with:
           prefix: github.com/${{ env.REPOSITORY }}
           debug: true
