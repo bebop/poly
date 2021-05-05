@@ -22,11 +22,19 @@ jobs:
     - name: Save commit SHA
       run: |
         mkdir -p ./pr
-        echo $(git rev-parse origin/$GITHUB_HEAD_REF) > ./pr/SHA
+        echo ${{ github.sha }} > ./pr/SHA
+
+    - name: Save commit owner
+      run: |
+        echo ${{ github.repository_owner }} > ./pr/OWNER
 
     - name: Save REF number
       run: |
         echo $GITHUB_HEAD_REF > ./pr/REF
+
+    - name: Save Repository
+      run: |
+        echo ${{ github.repository }} > ./pr/REPO
 
     - name: Create coverage report
       run: |
