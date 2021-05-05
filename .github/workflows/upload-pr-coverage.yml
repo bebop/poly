@@ -37,7 +37,8 @@ jobs:
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
             
       - run: unzip pr.zip
-      - run: tree 
+      - run: pwd
+      - run: tree
 
       - name: 'Get and set commit time'
         uses: actions/github-script@0.3.0
