@@ -47,6 +47,8 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             var fs = require('fs');
+            console.log(process.cwd())
+            console.log(process.env.PWD)
             var commit_sha = Number(fs.readFileSync('${{github.workspace}}/pr/SHA'));
             var owner = String(fs.readFileSync('${{github.workspace}}/pr/OWNER'));
             var repo_name = String(fs.readFileSync('${{github.workspace}}/pr/REPO_NAME'));
