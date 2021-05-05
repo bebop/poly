@@ -22,17 +22,16 @@ jobs:
     - name: Save commit SHA
       run: |
         mkdir -p ./pr
-        echo ${{ github.event.GITHUB_SHA }} > ./pr/SHA
+        echo $(git rev-parse --short "$GITHUB_SHA") > ./pr/SHA
 
     - name: Save REF number
       run: |
-        mkdir -p ./pr
-        echo ${{ github.event.GITHUB_REF }} > ./pr/REF
+        echo ${GITHUB_REF#refs/heads/} > ./pr/REF
 
     - name: Create coverage report
       run: |
-        mkdir -p ./pr
         go test ./... -coverprofile=./pr/c.out
+
     - uses: actions/upload-artifact@v2
       with:
         name: pr
