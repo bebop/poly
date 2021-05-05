@@ -41,7 +41,7 @@ jobs:
       - name: 'Get and set commit time'
         uses: actions/github-script@0.3.0
         id: author-date
-        env:
+        with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             var fs = require('fs');
