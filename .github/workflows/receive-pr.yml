@@ -1,0 +1,28 @@
+name: Receive PR
+
+# read-only repo token
+# no access to secrets
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@master
+    - uses: actions/setup-go@v2
+
+
+      with:
+        go-version: '1.14.1'
+
+    - name: Create coverage report
+      run: |
+        mkdir -p ./pr
+        go test ./... -coverprofile=./pr/c.out
+    - uses: actions/upload-artifact@v2
+      with:
+        name: pr
+        path: pr/
