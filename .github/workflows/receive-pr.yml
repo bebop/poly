@@ -20,20 +20,19 @@ jobs:
 
 
     - name: Save commit SHA
-        run: |
-          mkdir -p ./pr
-          echo ${{ github.event.GITHUB_SHA }} > ./pr/SHA
+      run: |
+        mkdir -p ./pr
+        echo ${{ github.event.GITHUB_SHA }} > ./pr/SHA
 
     - name: Save REF number
-        run: |
-          mkdir -p ./pr
-          echo ${{ github.event.GITHUB_REF }} > ./pr/REF
+      run: |
+        mkdir -p ./pr
+        echo ${{ github.event.GITHUB_REF }} > ./pr/REF
 
     - name: Create coverage report
       run: |
         mkdir -p ./pr
         go test ./... -coverprofile=./pr/c.out
-        
     - uses: actions/upload-artifact@v2
       with:
         name: pr
