@@ -1,4 +1,4 @@
-name: Comment on the pull request
+name: Upload code coverage securely to Code Climate
 
 # read-write repo token
 # access to secrets
