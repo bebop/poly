@@ -12,7 +12,7 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     if: >
-      ${{ github.event.workflow_run.event == 'push' &&
+      ${{ github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: 'Download artifact'
@@ -36,12 +36,16 @@ jobs:
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
+      
       - name: Upload to code climate
         uses: paambaati/codeclimate-action@v2.7.5
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
+          GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
+          GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
+
         with:
           prefix: github.com/${{ github.repository }}
           debug: true
           coverageLocations: |
-              ${{github.workspace}}/pr/c.out:out
+              ${{github.workspace}}/pr/c.out:gocov
