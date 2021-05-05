@@ -32,9 +32,13 @@ jobs:
       run: |
         echo $GITHUB_HEAD_REF > ./pr/REF
 
-    - name: Save Repository
+    - name: Save repository path
       run: |
-        echo ${{ github.repository }} > ./pr/REPO
+        echo ${{ github.repository }} > ./pr/REPO_PATH
+
+    - name: Save repository name
+      run: |
+        echo ${{ github.repository.name }} > ./pr/REPO_NAME
 
     - name: Create coverage report
       run: |
