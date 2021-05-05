@@ -43,17 +43,17 @@ jobs:
           REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
           OWNER: $(cat ${{github.workspace}}/pr/OWNER)
 
-      - uses: actions/github-script@0.3.0
+      - name: 'Get and set commit time'
+        uses: actions/github-script@0.3.0
         id: author-date
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const commit_details = await github.git.getCommit({owner: process.env.OWNER, repo: process.env.REPOSITORY, commit_sha: process.env.GIT_COMMIT_SHA});
             return commit_details.data.author.date
-      - run: echo $COMMITTED_AT was time committed.
         env:
           COMMITTED_AT: ${{ steps.author-date.outputs.result }}
-      
+      - run: echo $COMMITTED_AT was time committed.
       
       - name: Upload to code climate
         uses: paambaati/codeclimate-action@v2.7.5
