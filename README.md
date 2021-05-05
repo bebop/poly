@@ -8,7 +8,7 @@
 
 Poly is a Go library and command line utility for engineering organisms.
 
-* **Fast:** Poly is fast and scalable.
+* **Fast:** Poly is fast\ and scalable.
 
 * **Modern:** Poly tackles issues that other libraries and utilities just don't. From general codon optimization and primer design to circular sequence hashing. All written in a language that was designed to be fast, scalable, and easy to develop in and maintain. Did we say it was fast?
 
