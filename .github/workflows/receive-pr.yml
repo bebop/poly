@@ -24,9 +24,9 @@ jobs:
         mkdir -p ./pr
         echo ${{ github.sha }} > ./pr/SHA
 
-    - name: Save commit timestamp
+    - name: Save commit owner
       run: |
-        echo $GIT_COMMITTER_DATE > ./pr/TIMESTAMP
+        echo ${{ github.repository_owner }} > ./pr/OWNER
 
     - name: Save REF number
       run: |

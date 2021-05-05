@@ -36,15 +36,29 @@ jobs:
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
-      
-      - name: Upload to code climate
-        uses: paambaati/codeclimate-action@v2.7.5
-        env:
+      - env:           
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
           GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
           GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
           REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
-          GIT_COMMITTED_AT: ${{github.workspace}}/pr/TIMESTAMP)
+          OWNER: $(cat ${{github.workspace}}/pr/OWNER)
+
+      - uses: actions/github-script@0.3.0
+        id: author-date
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const commit_details = await github.git.getCommit({owner: process.env.OWNER, repo: process.env.REPOSITORY, commit_sha: process.env.GIT_COMMIT_SHA});
+            return commit_details.data.author.date
+      - run: echo $COMMITTED_AT was time committed.
+        env:
+          COMMITTED_AT: ${{ steps.author-date.outputs.result }}
+      
+      
+      - name: Upload to code climate
+        uses: paambaati/codeclimate-action@v2.7.5
+        env:
+
         with:
           prefix: github.com/${{ REPOSITORY }}
           debug: true
