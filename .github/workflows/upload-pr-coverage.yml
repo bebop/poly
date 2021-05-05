@@ -35,13 +35,14 @@ jobs:
             });
             var fs = require('fs');
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
+            
       - run: unzip pr.zip
-      - env:           
-          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
+        env:
           GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
           GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
           REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
           OWNER: $(cat ${{github.workspace}}/pr/OWNER)
+
 
       - name: 'Get and set commit time'
         uses: actions/github-script@0.3.0
@@ -58,7 +59,7 @@ jobs:
       - name: Upload to code climate
         uses: paambaati/codeclimate-action@v2.7.5
         env:
-
+          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
         with:
           prefix: github.com/${{ REPOSITORY }}
           debug: true
