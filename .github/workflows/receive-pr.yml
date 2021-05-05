@@ -24,6 +24,11 @@ jobs:
         mkdir -p ./pr
         echo ${{ github.sha }} > ./pr/SHA
 
+    - name: Save commit timestamp
+      run: |
+        mkdir -p ./pr
+        echo ${{github.event.head_commit.timestamp}} > ./pr/TIMESTAMP
+
     - name: Save REF number
       run: |
         echo $GITHUB_HEAD_REF > ./pr/REF

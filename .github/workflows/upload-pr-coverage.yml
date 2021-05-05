@@ -44,7 +44,7 @@ jobs:
           GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
           GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
           REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
-
+          GIT_COMMITTED_AT: ${{github.workspace}}/pr/TIMESTAMP)
         with:
           prefix: github.com/${{ REPOSITORY }}
           debug: true
