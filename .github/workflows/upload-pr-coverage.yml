@@ -43,9 +43,10 @@ jobs:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
           GIT_COMMIT_SHA: $(cat ${{github.workspace}}/pr/SHA)
           GIT_BRANCH: $(cat ${{github.workspace}}/pr/REF)
+          REPOSITORY: $(cat ${{github.workspace}}/pr/REPO)
 
         with:
-          prefix: github.com/${{ github.repository }}
+          prefix: github.com/${{ REPOSITORY }}
           debug: true
           coverageLocations: |
               ${{github.workspace}}/pr/c.out:gocov
