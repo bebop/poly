@@ -48,7 +48,9 @@ jobs:
           script: |
             var fs = require('fs');
             console.log(process.cwd())
-            console.log(process.env.PWD)
+            fs.readdirSync(${{github.workspace}}).forEach(file => {
+              console.log(file);
+            });
             var commit_sha = Number(fs.readFileSync('${{github.workspace}}/pr/SHA'));
             var owner = String(fs.readFileSync('${{github.workspace}}/pr/OWNER'));
             var repo_name = String(fs.readFileSync('${{github.workspace}}/pr/REPO_NAME'));
