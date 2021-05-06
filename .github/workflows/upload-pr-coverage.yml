@@ -37,8 +37,8 @@ jobs:
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
             
       - run: unzip pr.zip
-      - run: pwd
-      - run: tree
+
+
 
       - name: 'Get and set commit time'
         uses: actions/github-script@0.3.0
@@ -47,29 +47,29 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             var fs = require('fs');
-            console.log(process.cwd())
-            fs.readdirSync(${{github.workspace}}).forEach(file => {
-              console.log(file);
-            });
-            var commit_sha = Number(fs.readFileSync('${{github.workspace}}/pr/SHA'));
-            var owner = String(fs.readFileSync('${{github.workspace}}/pr/OWNER'));
-            var repo_name = String(fs.readFileSync('${{github.workspace}}/pr/REPO_NAME'));
+            var commit_sha = String(fs.readFileSync('${{github.workspace}}/SHA', "utf8")).replace(/(\r\n|\n|\r)/gm, "");
+            var owner = String(fs.readFileSync('${{github.workspace}}/OWNER', "utf8")).replace(/(\r\n|\n|\r)/gm, "");
+            var repo = String(fs.readFileSync('${{github.workspace}}/REPO', "utf8")).replace(/(\r\n|\n|\r)/gm, "").split("/").pop();
+            const commit_details = await github.git.getCommit({owner:owner, repo:repo , commit_sha:commit_sha});
+            fs.writeFileSync('${{github.workspace}}/COMMITTED_AT', commit_details.data.author.date, { flag: 'w+' })
+            console.log(commit_details.data.author.date)
+            return new Date(commit_details.data.author.date).getTime() / 1000
+             
+      - run: echo ${{ steps.author-date.outputs.result }} was time committed.
 
-            const commit_details = await github.git.getCommit({owner: owner, repo: repo_name , commit_sha: commit_sha});
-            fs.writeFileSync('${{github.workspace}}/pr/COMMITTED_AT', commit_details.data.author.date)
-            return commit_details.data.author.date
-        env:
-          COMMITTED_AT: ${{ steps.author-date.outputs.result }}
-      - run: echo $COMMITTED_AT was time committed.
-      
+      - name: Set ENV for codeclimate 
+        run: |
+          echo "GIT_BRANCH=$(cat ${{github.workspace}}/REF)" >> $GITHUB_ENV
+          echo "GIT_COMMIT_SHA=$(cat ${{github.workspace}}/SHA)" >> $GITHUB_ENV
+          echo "GIT_COMMITTED_AT=${{ steps.author-date.outputs.result }}" >> $GITHUB_ENV
+          echo "REPO=$(cat ${{github.workspace}}/REPO)" >> $GITHUB_ENV
+            
       - name: Upload to code climate
         uses: paambaati/codeclimate-action@v2.7.5
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE }}
-          REPO_PATH: $(cat ${{github.workspace}}/pr/REPO_PATH)
-          COMMITTED_AT: ${{ steps.author-date.outputs.result }}
         with:
-          prefix: github.com/${{ env.REPO_PATH }}
+          prefix: github.com/${{ env.REPO }}
           debug: true
           coverageLocations: |
               ${{github.workspace}}/pr/c.out:gocov
