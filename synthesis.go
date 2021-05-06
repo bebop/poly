@@ -198,7 +198,7 @@ func FixCds(sqlitePath string, sequence string, codontable CodonTable, problemat
 	}
 
 	var err error
-	// For a maximum of 1000 iterations, see if we can do better
+	// For a maximum of 100 iterations, see if we can do better
 	for i := 1; i < 100; i++ {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
 		// If there are no suggestions, break the iteration!
