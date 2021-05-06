@@ -780,20 +780,33 @@ type Rhea2Uniprot struct {
 	UniprotID string
 }
 
-func ParseRhea2UniprotTsv(r io.Reader, lines chan<- Rhea2Uniprot) {
-	start := true
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		// We skip the header line
-		if start {
-			start = false
-			continue
-		}
+//func ParseRhea2UniprotTsv(r io.Reader, lines chan<- Rhea2Uniprot) {
+//	start := true
+//	scanner := bufio.NewScanner(r)
+//	for scanner.Scan() {
+//		// We skip the header line
+//		if start {
+//			start = false
+//			continue
+//		}
+//
+//		// Get the line from the scanner
+//		line := scanner.Text()
+//
+//		// Split the line between tabs
+//		lineSplit := strings.Split(line, "\t")
+//	}
+//}
 
-		// Get the line from the scanner
-		line := scanner.Text()
+/******************************************************************************
 
-		// Split the line between tabs
-		lineSplit := strings.Split(line, "\t")
-	}
+GraphRhea takes a top-down approach to searching Rhea. We begin with a targetCompound,
+which will give you a list of reactions that could be used to make that targetCompound.
+Those are set into targetReactions map.
+
+Existing compounds are put into
+
+******************************************************************************/
+
+func GraphRhea(targetCompound string, existingCompounds []string) [][]string {
 }
