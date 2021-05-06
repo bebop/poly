@@ -34,11 +34,7 @@ jobs:
 
     - name: Save repository path
       run: |
-        echo ${{ github.repository }} > ./pr/REPO_PATH
-
-    - name: Save repository name
-      run: |
-        echo ${{ github.repository.name }} > ./pr/REPO_NAME
+        echo ${{ github.repository }} > ./pr/REPO
 
     - name: Create coverage report
       run: |
