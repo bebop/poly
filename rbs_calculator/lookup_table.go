@@ -1,13 +1,37 @@
 package rbs_calculator
 
+// package main
+
 import (
 	"encoding/csv"
 	"io"
-	"log"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 )
+
+var csv_files []string
+
+func GetFileName(s string, d fs.DirEntry, e error) error {
+	if e != nil {
+		return e
+	}
+	if !d.IsDir() {
+		csv_files = append(csv_files, s)
+	}
+	return nil
+}
+
+func PopulateCsvFiles() {
+	// Walks DATA_DIR and adds name of files to global var csv_files
+	filepath.WalkDir(DATA_DIR, GetFileName)
+
+	// Filter to remove non .csv files
+	re := regexp.MustCompile(`.*\.csv`)
+	csv_files = Filter(csv_files, re.MatchString)
+}
 
 var DATA_DIR string = "./data"
 var lookup_table map[string](map[string]float64)
@@ -27,24 +51,6 @@ func Map(list []string, f func(string) string) []string {
 		result[i] = f(item)
 	}
 	return result
-}
-
-func getCsvsInDataDir() []string {
-	// get file names from DATA_DIR
-	file, err := os.Open(DATA_DIR)
-	if err != nil {
-		log.Fatalf("failed opening directory: %s", err)
-	}
-	defer file.Close()
-	files, _ := file.Readdirnames(0)
-
-	// Filter to remove non .csv files
-	re := regexp.MustCompile(`.*\.csv`)
-	csvs := Filter(files, re.MatchString)
-
-	// Add relative path to filename
-	csvs = Map(csvs, func(file string) string { return DATA_DIR + "/" + file })
-	return csvs
 }
 
 func parseValues(file string) error {
@@ -84,8 +90,8 @@ func parseValues(file string) error {
 
 func Initalize() (map[string]map[string]float64, error) {
 	lookup_table = make(map[string]map[string]float64)
-	csvs := getCsvsInDataDir()
-	for _, csv := range csvs {
+	PopulateCsvFiles()
+	for _, csv := range csv_files {
 		err := parseValues(csv)
 		if err != nil {
 			return nil, err
