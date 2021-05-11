@@ -391,9 +391,26 @@ func Parse(sequence string) (string, float64) {
 				// for nucj put H(j, j_next) into H[j_next]
 				jnext := next_pair[nucj][j]
 
+				/*
+					vivek: The original repo has a no_sharp_turn flag that's enabled by
+					default. It wasn't explained in the paper nor in the source code.
+					I emailed Liang Huang about this and this was the explanation he gave
+					me:
+					"—sharpturn means it allows hairpins with less than 3 unpaired
+					nucleotides, e.g.,
+
+					((()))
+					(((.)))
+					(((..)))
+
+					These three structures are not allowed by default, unless —sharpturn
+					is turned on."
+				*/
+				// if (no_sharp_turn) {
 				for jnext-j < 4 && jnext != -1 {
 					jnext = next_pair[nucj][jnext]
 				}
+				// }
 
 				if jnext != -1 {
 					nucjnext := nucs[jnext]
@@ -902,6 +919,8 @@ func BeamPrune(beamstep *map[int]*State) float64 {
 	return threshold
 }
 
+// ------------- nucs based scores -------------
+
 func score_hairpin(i, j, nuci, nuci1, nucj_1, nucj int) float64 {
 	return hairpin_length[Min(j-i-1, HAIRPIN_MAX_LEN)] +
 		score_junction_B(i, j, nuci, nuci1, nucj_1, nucj)
@@ -911,10 +930,12 @@ func score_junction_B(i, j, nuci, nuci1, nucj_1, nucj int) float64 {
 	return helix_closing_score(nuci, nucj) + terminal_mismatch_score(nuci, nuci1, nucj_1, nucj)
 }
 
+// parameters: nucs[i], nucs[j]
 func helix_closing_score(nuci, nucj int) float64 {
 	return helix_closing[nuci*NOTON+nucj]
 }
 
+// parameters: nucs[i], nucs[i+1], nucs[j-1], nucs[j]
 func terminal_mismatch_score(nuci, nuci1, nucj_1, nucj int) float64 {
 	return terminal_mismatch[nuci*NOTONT+nucj*NOTOND+nuci1*NOTON+nucj_1]
 }
@@ -975,10 +996,12 @@ func score_multi_unpaired(i, j int) float64 {
 	return (float64(j) - float64(i) + 1) * multi_unpaired
 }
 
+// parameters: nucs[i], nucs[j]
 func base_pair_score(nuci, nucj int) float64 {
 	return base_pair[nucj*NOTON+nuci]
 }
 
+// parameters: nucs[i], nucs[i+1], nucs[j]
 func dangle_left_score(nuci, nuci1, nucj int) float64 {
 	return dangle_left[nuci*NOTOND+nucj*NOTON+nuci1]
 }
@@ -1024,7 +1047,6 @@ func sortM(threshold float64, beamstep *map[int]*State, sorted_stepM []Pair) {
 		}
 	}
 
-	// sort.Sort()
 	sort.Slice(sorted_stepM, func(i, j int) bool {
 		return sorted_stepM[i].first.(float64) > sorted_stepM[j].first.(float64)
 	})
@@ -1324,6 +1346,7 @@ func score_single_nuc(i, j, p, q, nucp_1, nucq1 int) float64 {
 	return 0
 }
 
+// parameter: nucs[i]
 func bulge_nuc_score(nuci int) float64 {
 	return bulge_0x1_nucleotides[nuci]
 }
