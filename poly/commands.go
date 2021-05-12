@@ -60,9 +60,12 @@ parse them, and then spit out a similiarly named file with the .json extension.
 ******************************************************************************/
 
 func convertCommand(c *cli.Context) error {
+
+	var fileType string
 	if isPipe(c) {
 
 		sequence := parseStdin(c)
+		fileType = "." + c.String("i")
 
 		output := buildStdOut(c, sequence)
 
@@ -80,13 +83,6 @@ func convertCommand(c *cli.Context) error {
 
 		// TODO write basic check for redundancy. I.E converting gff to gff, etc.
 
-		var extensionOverride string
-		if c.String("i") != "" {
-			extensionOverride = "." + c.String("i")
-		} else {
-			extensionOverride = ""
-		}
-
 		// declaring wait group outside loop
 		var wg sync.WaitGroup
 
@@ -98,7 +94,8 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(match, extensionOverride)
+				fileType = filepath.Ext(match)
+				sequence := fileParser(match, fileType)
 				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
@@ -145,22 +142,16 @@ parse them, and then spit out a similiarly named file with the .json extension a
 ******************************************************************************/
 func hashCommand(c *cli.Context) error {
 
+	var fileType string
 	if isPipe(c) {
 		sequence := parseStdin(c) // get sequence from stdin
 		hash, _ := sequence.Hash()
 		printHash(c, hash, "-")
-
+		fileType = "." + c.String("i")
 	} else {
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
-
-		var extensionOverride string
-		if c.String("i") != "" {
-			extensionOverride = "." + c.String("i")
-		} else {
-			extensionOverride = ""
-		}
 
 		// declaring wait group outside loop
 		var wg sync.WaitGroup
@@ -173,7 +164,8 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(match, extensionOverride)
+				fileType = filepath.Ext(match)
+				sequence := fileParser(match, fileType)
 				hash, _ := sequence.Hash()
 				printHash(c, hash, match)
 
@@ -288,19 +280,15 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 }
 
 // function to parse whatever file is at a matched path.
-func fileParser(match string, extensionOverride string) poly.Sequence {
-	extension := filepath.Ext(match)
+func fileParser(match string, fileType string) poly.Sequence {
 	var sequence poly.Sequence
 
-	if extensionOverride != "" {
-		extension = extensionOverride
-	}
-	if !strings.HasPrefix(extension, ".") {
-		extension = "." + extension
+	if !strings.HasPrefix(fileType, ".") {
+		fileType = "." + fileType
 	}
 
 	// determining which reader to use and parse into Sequence struct.
-	switch extension {
+	switch fileType {
 	case ".gff":
 		sequence = poly.ReadGff(match)
 	case ".gbk":

@@ -57,7 +57,7 @@ func TestConvertPipe(t *testing.T) {
 		}
 
 		// getting test sequence from non-pipe io to compare against io to stdout
-		baseTestSequence := fileParser(match, "")
+		baseTestSequence := fileParser(match, filepath.Ext(match))
 
 		pipeOutputTestSequence := poly.ParseJSON(writeBuffer.Bytes())
 
@@ -115,9 +115,9 @@ func TestConvertWriteFile(t *testing.T) {
 		}
 
 		// getting test sequence from non-pipe io to compare against io to stdout
-		baseTestSequence := fileParser(match, "")
+		baseTestSequence := fileParser(match, extension)
 
-		outputSequence := fileParser(testOutputPath, "")
+		outputSequence := fileParser(testOutputPath, extension)
 		os.Remove(testOutputPath)
 
 		if diff := cmp.Diff(baseTestSequence, outputSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
@@ -260,15 +260,12 @@ func TestHashPipe(t *testing.T) {
 }
 
 func TestFileParser(t *testing.T) {
-	jsonSequence := fileParser("../data/sample.json", "")
-	mislabelledSequence := fileParser("../data/mislabelledJson.txt", ".json")
-	missingPeriod := fileParser("../data/misllabeledJson.txt", "json")
+	jsonSequence := fileParser("../data/sample.json", ".json")
+	missingPeriod := fileParser("../data/sample.json", "json")
 
 	jsonHash, _ := jsonSequence.Hash()
-	mislabelledHash, _ := mislabelledSequence.Hash()
 	missingPeriodHash, _ := missingPeriod.Hash()
-	if !(jsonHash == mislabelledHash &&
-		mislabelledHash == missingPeriodHash) {
+	if !(jsonHash == missingPeriodHash) {
 		t.Error("Sequences should all be equal.")
 	}
 }
