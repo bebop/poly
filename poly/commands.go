@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/TimothyStiles/poly"
@@ -77,7 +78,14 @@ func convertCommand(c *cli.Context) error {
 
 		// TODO write basic check to see if input flag or all paths have accepted file extensions.
 
-		// TODO write basic check for reduduncy. I.E converting gff to gff, etc.
+		// TODO write basic check for redundancy. I.E converting gff to gff, etc.
+
+		var extensionOverride string
+		if c.String("i") != "" {
+			extensionOverride = "." + c.String("i")
+		} else {
+			extensionOverride = ""
+		}
 
 		// declaring wait group outside loop
 		var wg sync.WaitGroup
@@ -90,7 +98,7 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := fileParser(match, extensionOverride)
 				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
@@ -147,6 +155,13 @@ func hashCommand(c *cli.Context) error {
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
 
+		var extensionOverride string
+		if c.String("i") != "" {
+			extensionOverride = "." + c.String("i")
+		} else {
+			extensionOverride = ""
+		}
+
 		// declaring wait group outside loop
 		var wg sync.WaitGroup
 
@@ -158,7 +173,7 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := fileParser(match, extensionOverride)
 				hash, _ := sequence.Hash()
 				printHash(c, hash, match)
 
@@ -273,18 +288,28 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 }
 
 // function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) poly.Sequence {
+func fileParser(match string, extensionOverride string) poly.Sequence {
 	extension := filepath.Ext(match)
 	var sequence poly.Sequence
 
+	if extensionOverride != "" {
+		extension = extensionOverride
+	}
+	if !strings.HasPrefix(extension, ".") {
+		extension = "." + extension
+	}
+
 	// determining which reader to use and parse into Sequence struct.
-	if extension == ".gff" || c.String("i") == "gff" {
+	switch extension {
+	case ".gff":
 		sequence = poly.ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
+	case ".gbk":
 		sequence = poly.ReadGbk(match)
-	} else if extension == ".json" || c.String("i") == "json" {
+	case ".gb":
+		sequence = poly.ReadGbk(match)
+	case ".json":
 		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" || c.String("i") == "fasta" {
+	case ".fasta":
 		sequence = poly.ReadFASTA(match)
 	}
 	// TODO put default error handling here.
@@ -340,21 +365,4 @@ func printHash(c *cli.Context, hash string, path string) {
 
 func formatHashOutput(hash string, path string) string {
 	return hash + "  " + path + "\n"
-}
-
-func parseExt(match string) poly.Sequence {
-	extension := filepath.Ext(match)
-	var sequence poly.Sequence
-
-	// determining which reader to use and parse into Sequence struct.
-	if extension == ".gff" {
-		sequence = poly.ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" {
-		sequence = poly.ReadGbk(match)
-	} else if extension == ".json" {
-		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" {
-		sequence = poly.ReadFASTA(match)
-	}
-	return sequence
 }
