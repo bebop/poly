@@ -1,0 +1,193 @@
+{
+ "Meta": {
+  "Name": "",
+  "GffVersion": "",
+  "RegionStart": 0,
+  "RegionEnd": 0,
+  "Size": 0,
+  "Type": "",
+  "GenbankDivision": "",
+  "Date": "",
+  "Definition": "Saccharomyces cerevisiae TCP1-beta gene, partial cds, and Axl2p (AXL2) and Rev7p (REV7) genes, complete cds.",
+  "Accession": "U49845",
+  "Version": "U49845.1  GI:1293613",
+  "Keywords": ".",
+  "Organism": "Saccharomyces cerevisiae Eukaryota; Fungi; Ascomycota; Saccharomycotina; Saccharomycetes; Saccharomycetales; Saccharomycetaceae; Saccharomyces.",
+  "Source": "Saccharomyces cerevisiae (baker's yeast)",
+  "Origin": "",
+  "Locus": {
+   "Name": "SCU49845",
+   "SequenceLength": "5028",
+   "MoleculeType": "DNA",
+   "GenBankDivision": "PLN",
+   "ModDate": "21-JUN-1999",
+   "SequenceCoding": "bp",
+   "Circular": false
+  },
+  "References": [
+   {
+    "Index": "1",
+    "Authors": "Torpey,L.E., Gibbs,P.E., Nelson,J. and Lawrence,C.W.",
+    "Title": "Cloning and sequence of REV7, a gene whose function is required for DNA damage-induced mutagenesis in Saccharomyces cerevisiae",
+    "Journal": "Yeast 10 (11), 1503-1509 (1994)",
+    "PubMed": "7871890",
+    "Remark": "",
+    "Range": "(bases 1 to 5028)"
+   },
+   {
+    "Index": "2",
+    "Authors": "Roemer,T., Madden,K., Chang,J. and Snyder,M.",
+    "Title": "Selection of axial growth sites in yeast requires Axl2p, a novel plasma membrane glycoprotein",
+    "Journal": "Genes Dev. 10 (7), 777-793 (1996)",
+    "PubMed": "8846915",
+    "Remark": "",
+    "Range": "(bases 1 to 5028)"
+   },
+   {
+    "Index": "3",
+    "Authors": "Roemer,T.",
+    "Title": "Direct Submission",
+    "Journal": "Submitted (22-FEB-1996) Terry Roemer, Biology, Yale University, New Haven, CT, USA",
+    "PubMed": "",
+    "Remark": "",
+    "Range": "(bases 1 to 5028)"
+   }
+  ],
+  "Primaries": null
+ },
+ "Features": [
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "source",
+   "Start": 1,
+   "End": 5028,
+   "Complement": false,
+   "FivePrimePartial": false,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "chromosome": "IX",
+    "db_xref": "taxon:4932",
+    "map": "9",
+    "organism": "Saccharomyces cerevisiae"
+   },
+   "Location": "1..5028",
+   "Sequence": ""
+  },
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "CDS",
+   "Start": 1,
+   "End": 206,
+   "Complement": false,
+   "FivePrimePartial": true,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "codon_start": "3",
+    "db_xref": "GI:1293614",
+    "product": "TCP1-beta",
+    "protein_id": "AAA98665.1",
+    "translation": "SSIYNGISTSGLDLNNGTIADMRQLGIVESYKLKRAVVSSASEAAEVLLRVDNIIRARPRTANRQHM"
+   },
+   "Location": "\u003c1..206",
+   "Sequence": ""
+  },
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "gene",
+   "Start": 687,
+   "End": 3158,
+   "Complement": false,
+   "FivePrimePartial": false,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "gene": "AXL2"
+   },
+   "Location": "687..3158",
+   "Sequence": ""
+  },
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "CDS",
+   "Start": 687,
+   "End": 3158,
+   "Complement": false,
+   "FivePrimePartial": false,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "codon_start": "1",
+    "db_xref": "GI:1293615",
+    "function": "required for axial budding pattern of S.cerevisiae",
+    "gene": "AXL2",
+    "note": "plasma membrane glycoprotein",
+    "product": "Axl2p",
+    "protein_id": "AAA98666.1",
+    "translation": "MTQLQISLLLTATISLLHLVVATPYEAYPIGKQYPPVARVNESFTFQISNDTYKSSVDKTAQITYNCFDLPSWLSFDSSSRTFSGEPSSDLLSDANTTLYFNVILEGTDSADSTSLNNTYQFVVTNRPSISLSSDFNLLALLKNYGYTNGKNALKLDPNEVFNVTFDRSMFTNEESIVSYYGRSQLYNAPLPNWLFFDSGELKFTGTAPVINSAIAPETSYSFVIIATDIEGFSAVEVEFELVIGAHQLTTSIQNSLIINVTDTGNVSYDLPLNYVYLDDDPISSDKLGSINLLDAPDWVALDNATISGSVPDELLGKNSNPANFSVSIYDTYGDVIYFNFEVVSTTDLFAISSLPNINATRGEWFSYYFLPSQFTDYVNTNVSLEFTNSSQDHDWVKFQSSNLTLAGEVPKNFDKLSLGLKANQGSQSQELYFNIIGMDSKITHSNHSANATSTRSSHHSTSTSSYTSSTYTAKISSTSAAATSSAPAALPAANKTSSHNKKAVAIACGVAIPLGVILVALICFLIFWRRRRENPDDENLPHAISGPDLNNPANKPNQENATPLNNPFDDDASSYDDTSIARRLAALNTLKLDNHSATESDISSVDEKRDSLSGMNTYNDQFQSQSKEELLAKPPVQPPESPFFDPQNRSSSVYMDSEPAVNKSWRYTGNLSPVSDIVRDSYGSQKTVDTEKLFDLEAPEKEKRTSRDVTMSSLDPWNSNISPSPVRKSVTPSPYNVTKHRNRHLQNIQDSQSGKNGITPTTMSTSSSDDFVPVKDGENFCWVHSMEPDRRPSKKRLVDFSNKSNVNVGQVKDIHGRIPEML"
+   },
+   "Location": "687..3158",
+   "Sequence": ""
+  },
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "gene",
+   "Start": 3300,
+   "End": 4037,
+   "Complement": true,
+   "FivePrimePartial": false,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "gene": "REV7"
+   },
+   "Location": "complement(3300..4037)",
+   "Sequence": ""
+  },
+  {
+   "Name": "",
+   "Source": "",
+   "Type": "CDS",
+   "Start": 3300,
+   "End": 4037,
+   "Complement": true,
+   "FivePrimePartial": false,
+   "ThreePrimePartial": false,
+   "Score": "",
+   "Strand": "",
+   "Phase": "",
+   "Attributes": {
+    "codon_start": "1",
+    "db_xref": "GI:1293616",
+    "gene": "REV7",
+    "product": "Rev7p",
+    "protein_id": "AAA98667.1",
+    "translation": "MNRWVEKWLRVYLKCYINLILFYRNVYPPQSFDYTTYQSFNLPQFVPINRHPALIDYIEELILDVLSKLTHVYRFSICIINKKNDLCIEKYVLDFSELQHVDKDDQIITETEVFDEFRSSLNSLIMHLEKLPKVNDDTITFEAVINAIELELGHKLDRNRRVDSLEEKAEIERDSNWVKCQEDENLPDNNGFQPPKIKLTSLVGSDVGPLIIHQFSEKLISGDDKILNGVYSQYEEGESIFGSLF"
+   },
+   "Location": "complement(3300..4037)",
+   "Sequence": ""
+  }
+ ],
+ "Sequence": {
+  "Description": "",
+  "Hash": "",
+  "HashFunction": "",
+  "Sequence": "gatcctccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaacatatttaggatatacctcgaaaataataaaccgccacactgtcattattataattagaaacagaacgcaaaaattatccactatataattcaaagacgcgaaaaaaaaagaacaacgcgtcatagaacttttggcaattcgcgtcacaaataaattttggcaacttatgtttcctcttcgagcagtactcgagccctgtctcaagaatgtaataatacccatcgtaggtatggttaaagatagcatctccacaacctcaaagctccttgccgagagtcgccctcctttgtcgagtaattttcacttttcatatgagaacttattttcttattctttactctcacatcctgtagtgattgacactgcaacagccaccatcactagaagaacagaacaattacttaatagaaaaattatatcttcctcgaaacgatttcctgcttccaacatctacgtatatcaagaagcattcacttaccatgacacagcttcagatttcattattgctgacagctactatatcactactccatctagtagtggccacgccctatgaggcatatcctatcggaaaacaataccccccagtggcaagagtcaatgaatcgtttacatttcaaatttccaatgatacctataaatcgtctgtagacaagacagctcaaataacatacaattgcttcgacttaccgagctggctttcgtttgactctagttctagaacgttctcaggtgaaccttcttctgacttactatctgatgcgaacaccacgttgtatttcaatgtaatactcgagggtacggactctgccgacagcacgtctttgaacaatacataccaatttgttgttacaaaccgtccatccatctcgctatcgtcagatttcaatctattggcgttgttaaaaaactatggttatactaacggcaaaaacgctctgaaactagatcctaatgaagtcttcaacgtgacttttgaccgttcaatgttcactaacgaagaatccattgtgtcgtattacggacgttctcagttgtataatgcgccgttacccaattggctgttcttcgattctggcgagttgaagtttactgggacggcaccggtgataaactcggcgattgctccagaaacaagctacagttttgtcatcatcgctacagacattgaaggattttctgccgttgaggtagaattcgaattagtcatcggggctcaccagttaactacctctattcaaaatagtttgataatcaacgttactgacacaggtaacgtttcatatgacttacctctaaactatgtttatctcgatgacgatcctatttcttctgataaattgggttctataaacttattggatgctccagactgggtggcattagataatgctaccatttccgggtctgtcccagatgaattactcggtaagaactccaatcctgccaatttttctgtgtccatttatgatacttatggtgatgtgatttatttcaacttcgaagttgtctccacaacggatttgtttgccattagttctcttcccaatattaacgctacaaggggtgaatggttctcctactattttttgccttctcagtttacagactacgtgaatacaaacgtttcattagagtttactaattcaagccaagaccatgactgggtgaaattccaatcatctaatttaacattagctggagaagtgcccaagaatttcgacaagctttcattaggtttgaaagcgaaccaaggttcacaatctcaagagctatattttaacatcattggcatggattcaaagataactcactcaaaccacagtgcgaatgcaacgtccacaagaagttctcaccactccacctcaacaagttcttacacatcttctacttacactgcaaaaatttcttctacctccgctgctgctacttcttctgctccagcagcgctgccagcagccaataaaacttcatctcacaataaaaaagcagtagcaattgcgtgcggtgttgctatcccattaggcgttatcctagtagctctcatttgcttcctaatattctggagacgcagaagggaaaatccagacgatgaaaacttaccgcatgctattagtggacctgatttgaataatcctgcaaataaaccaaatcaagaaaacgctacacctttgaacaacccctttgatgatgatgcttcctcgtacgatgatacttcaatagcaagaagattggctgctttgaacactttgaaattggataaccactctgccactgaatctgatatttccagcgtggatgaaaagagagattctctatcaggtatgaatacatacaatgatcagttccaatcccaaagtaaagaagaattattagcaaaacccccagtacagcctccagagagcccgttctttgacccacagaataggtcttcttctgtgtatatggatagtgaaccagcagtaaataaatcctggcgatatactggcaacctgtcaccagtctctgatattgtcagagacagttacggatcacaaaaaactgttgatacagaaaaacttttcgatttagaagcaccagagaaggaaaaacgtacgtcaagggatgtcactatgtcttcactggacccttggaacagcaatattagcccttctcccgtaagaaaatcagtaacaccatcaccatataacgtaacgaagcatcgtaaccgccacttacaaaatattcaagactctcaaagcggtaaaaacggaatcactcccacaacaatgtcaacttcatcttctgacgattttgttccggttaaagatggtgaaaatttttgctgggtccatagcatggaaccagacagaagaccaagtaagaaaaggttagtagatttttcaaataagagtaatgtcaatgttggtcaagttaaggacattcacggacgcatcccagaaatgctgtgattatacgcaacgatattttgcttaattttattttcctgttttattttttattagtggtttacagataccctatattttatttagtttttatacttagagacatttaattttaattccattcttcaaatttcatttttgcacttaaaacaaagatccaaaaatgctctcgccctcttcatattgagaatacactccattcaaaattttgtcgtcaccgctgattaatttttcactaaactgatgaataatcaaaggccccacgtcagaaccgactaaagaagtgagttttattttaggaggttgaaaaccattattgtctggtaaattttcatcttcttgacatttaacccagtttgaatccctttcaatttctgctttttcctccaaactatcgaccctcctgtttctgtccaacttatgtcctagttccaattcgatcgcattaataactgcttcaaatgttattgtgtcatcgttgactttaggtaatttctccaaatgcataatcaaactatttaaggaagatcggaattcgtcgaacacttcagtttccgtaatgatctgatcgtctttatccacatgttgtaattcactaaaatctaaaacgtatttttcaatgcataaatcgttctttttattaataatgcagatggaaaatctgtaaacgtgcgttaatttagaaagaacatccagtataagttcttctatatagtcaattaaagcaggatgcctattaatgggaacgaactgcggcaagttgaatgactggtaagtagtgtagtcgaatgactgaggtgggtatacatttctataaaataaaatcaaattaatgtagcattttaagtataccctcagccacttctctacccatctattcataaagctgacgcaacgattactattttttttttcttcttggatctcagtcgtcgcaaaaacgtataccttctttttccgaccttttttttagctttctggaaaagtttatattagttaaacagggtctagtcttagtgtgaaagctagtggtttcgattgactgatattaagaaagtggaaattaaattagtagtgtagacgtatatgcatatgtatttctcgcctgtttatgtttctacgtacttttgatttatagcaaggggaaaagaaatacatactattttttggtaaaggtgaaagcataatgtaaaagctagaataaaatggacgaaataaagagaggcttagttcatcttttttccaaaaagcacccaatgataataactaaaatgaaaaggatttgccatctgtcagcaacatcagttgtgtgagcaataataaaatcatcacctccgttgcctttagcgcgtttgtcgtttgtatcttccgtaattttagtcttatcaatgggaatcataaattttccaatgaattagcaatttcgtccaattctttttgagcttcttcatatttgctttggaattcttcgcacttcttttcccattcatctctttcttcttccaaagcaacgatccttctacccatttgctcagagttcaaatcggcctctttcagtttatccattgcttccttcagtttggcttcactgtcttctagctgttgttctagatcctggtttttcttggtgtagttctcattattagatctcaagttattggagtcttcagccaattgctttgtatcagacaattgactctctaacttctccacttcactgtcgagttgctcgtttttagcggacaaagatttaatctcgttttctttttcagtgttagattgctctaattctttgagctgttctctcagctcctcatatttttcttgccatgactcagattctaattttaagctattcaatttctctttgatc"
+ }
+}
