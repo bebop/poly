@@ -95,7 +95,7 @@ func application() *cli.App {
 					&cli.StringFlag{
 						Name:  "i",
 						Value: "",
-						Usage: "Specify file input type. Options are Gff, gbk/gb, and json. Defaults to none.",
+						Usage: "Specify file input type. Options are gff, gbk/gb, fasta, and json. Defaults to none. For use with pipes.",
 					},
 				},
 				// where we provide the actual function that is called by the subcommand.

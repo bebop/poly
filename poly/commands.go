@@ -75,8 +75,6 @@ func convertCommand(c *cli.Context) error {
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
 
-		// TODO write basic check to see if input flag or all paths have accepted file extensions.
-
 		// TODO write basic check for reduduncy. I.E converting gff to gff, etc.
 
 		// declaring wait group outside loop
