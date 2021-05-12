@@ -90,7 +90,7 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := parseExt(match)
 				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
@@ -158,7 +158,7 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := parseExt(match)
 				hash, _ := sequence.Hash()
 				printHash(c, hash, match)
 
@@ -270,25 +270,6 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 
 	return us
 
-}
-
-// function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) poly.Sequence {
-	extension := filepath.Ext(match)
-	var sequence poly.Sequence
-
-	// determining which reader to use and parse into Sequence struct.
-	if extension == ".gff" || c.String("i") == "gff" {
-		sequence = poly.ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-		sequence = poly.ReadGbk(match)
-	} else if extension == ".json" || c.String("i") == "json" {
-		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" || c.String("i") == "fasta" {
-		sequence = poly.ReadFASTA(match)
-	}
-	// TODO put default error handling here.
-	return sequence
 }
 
 func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
