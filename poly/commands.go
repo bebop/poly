@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,6 +34,8 @@ TTFN,
 Tim
 
 ******************************************************************************/
+
+var errIllegalFlag error = errors.New("the '-i' flag can only be used with pipes")
 
 /******************************************************************************
 
@@ -71,6 +74,9 @@ func convertCommand(c *cli.Context) error {
 		fmt.Fprint(c.App.Writer, string(output))
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
@@ -141,6 +147,9 @@ func hashCommand(c *cli.Context) error {
 		printHash(c, hash, "-")
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)

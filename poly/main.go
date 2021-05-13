@@ -114,7 +114,7 @@ func application() *cli.App {
 
 					&cli.StringFlag{
 						Name:  "i",
-						Value: "json",
+						Value: "",
 						Usage: "Specify file input type. For use with pipes.",
 					},
 				},
