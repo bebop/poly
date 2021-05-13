@@ -35,7 +35,7 @@ Tim
 
 ******************************************************************************/
 
-var errIllegalFlag error = errors.New("the '-i' flag can only be used with pipes")
+var errIllegalInputFlag error = errors.New("the '-i' flag can only be used with pipes")
 
 /******************************************************************************
 
@@ -75,7 +75,7 @@ func convertCommand(c *cli.Context) error {
 
 	} else {
 		if c.String("i") != "" {
-			return errIllegalFlag
+			return errIllegalInputFlag
 		}
 
 		// gets glob pattern matches to determine which files to use.
@@ -148,7 +148,7 @@ func hashCommand(c *cli.Context) error {
 
 	} else {
 		if c.String("i") != "" {
-			return errIllegalFlag
+			return errIllegalInputFlag
 		}
 
 		// gets glob pattern matches to determine which files to use.
