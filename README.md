@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
 
-Poly is a Go library and command line utility for engineering organisms.
+Poly is a Go libraryfor engineering organisms.
 
 * **Fast:** Poly is fast and scalable.
 
