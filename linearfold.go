@@ -307,10 +307,6 @@ func NewState(score float64, manner int) *State {
 	return &State{score: score, manner: manner}
 }
 
-// func NewState() *State {
-// 	return &State{score: math.MinFloat64, manner: MANNER_NONE}
-// }
-
 func update_if_better(s *State, newscore float64, manner int) {
 	if s.score < newscore {
 		s.Set(newscore, manner)
@@ -324,7 +320,6 @@ func update_if_better2(s *State, newscore float64, manner int, l1 rune, l2 int) 
 
 func update_if_better3(s *State, newscore float64, manner int, split int) {
 	if s.score < newscore || s.manner == MANNER_NONE {
-		// ++ nos_set_update;
 		s.Set3(newscore, manner, split)
 	}
 }
@@ -405,6 +400,7 @@ func Parse(sequence string) (string, float64) {
 
 	seq_length := len(sequence)
 
+	// TODO: Replace "nucs" with nucleotides
 	nucs := make([]int, seq_length)
 
 	bestC = make([]*State, seq_length)
@@ -429,16 +425,49 @@ func Parse(sequence string) (string, float64) {
 	// vector to store the scores at each beam temporarily for beam pruning
 	scores = make([]Pair, seq_length)
 
-	// Convert from ACGU to integers
-	for i := 0; i < seq_length; i++ {
-		nucs[i] = GET_ACGU_NUM((rune)(sequence[i]))
+	// Make a nucleotide rune -> int map
+	nucleotideRuneMap := make(map[rune]int, 4)
+	nucleotideRuneMap['A'] = 0
+	nucleotideRuneMap['C'] = 1
+	nucleotideRuneMap['G'] = 2
+	nucleotideRuneMap['U'] = 3
+
+	// Make a nucleotide to nucleotide binding map
+	nucleotidePairing := [5][4]bool{}
+	nucleotidePairing[0][nucleotideRuneMap[3]] = true // A binds U
+	nucleotidePairing[1][nucleotideRuneMap[2]] = true // C binds G
+	nucleotidePairing[2][nucleotideRuneMap[1]] = true // G binds C
+	nucleotidePairing[3][nucleotideRuneMap[0]] = true // U binds A
+	nucleotidePairing[2][nucleotideRuneMap[3]] = true // G binds U
+	nucleotidePairing[3][nucleotideRuneMap[2]] = true // U binds G
+
+	// Convert from ACGU to integers. These are easier to work with than just runes.
+	for i, basePair := range sequence {
+		nucs[i] = nucleotideRuneMap[basePair]
 	}
 
-	// What is next_pair?
-	// int *next_pair = new int[NOTON * seq_length]{-1};
+	// next_pair represents the next possible binding base pair.
 	next_pair := make([][]int, NOTON)
 
 	// Iterate through ACGU
+	for nucleotideInteger := 0; nucleotideInteger < 5; nucleotideInteger++ {
+		next_pair[nucleotideInteger] = make([]int, seq_length)
+
+		// Set default next_pair to -1
+		for i := range next_pair[nucleotideInteger] {
+			next_pair[nucleotideInteger][i] = -1
+		}
+
+		// For each starting nucleotide, find the next possible binding nucleotide.
+		next := -1
+		for j := seq_length - 1; j >= 0; j-- {
+			next_pair[nucleotideInteger][j] = next
+			if nucleotidePairing[nucleotideInteger][nucs[j]] {
+				next = j
+			}
+		}
+
+	}
 	for nuci := 0; nuci < NOTON; nuci++ {
 		next_pair[nuci] = make([]int, seq_length)
 		for j := 0; j < seq_length; j++ {
