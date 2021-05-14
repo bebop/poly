@@ -396,6 +396,9 @@ func (h *PairHeap) Pop() interface{} {
 }
 
 func Parse(sequence string) (string, float64) {
+	/*********************
+	Step 1: Variable setup
+	*********************/
 
 	// number of states
 	var nos_H, nos_P, nos_M2, nos_M, nos_C, nos_Multi uint64 = 0, 0, 0, 0, 0, 0
@@ -448,7 +451,7 @@ func Parse(sequence string) (string, float64) {
 		nucs[i] = nucleotideRuneMap[basePair]
 	}
 
-	// next_pair represents the next possible binding base pair.
+	// next_pair represents an integer distance from a give base pair to its next complement.
 	next_pair := make([][]int, NOTON)
 
 	// Iterate through ACGU
@@ -476,14 +479,19 @@ func Parse(sequence string) (string, float64) {
 	bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
 	nos_C++
 
-	// from left to right
+	/****************
+	Step 2: Iteration
+	****************/
 	for j := range sequence {
+		// Set current nucleotide in sequence
 		currentNucleotide := nucs[j]
-		currentNucleotide1 := 0
+
+		// Set next nucleotide in sequence
+		var nextNucleotide int
 		if (j + 1) < seq_length {
-			currentNucleotide1 = nucs[j+1]
+			nextNucleotide = nucs[j+1]
 		} else {
-			currentNucleotide1 = -1
+			nextNucleotide = -1
 		}
 
 		var beamstepH *map[int]*State = &bestH[j]
@@ -494,92 +502,84 @@ func Parse(sequence string) (string, float64) {
 		var beamstepC *State = bestC[j]
 
 		// beam of H
-		{
-			if beam_size > 0 && len(*beamstepH) > beam_size {
-				BeamPrune(beamstepH)
+		if beam_size > 0 && len(*beamstepH) > beam_size {
+			BeamPrune(beamstepH)
+		}
+
+		// Get distance to the next complementing base pair
+		distanceToComplement := next_pair[currentNucleotide][j]
+
+		for distanceToComplement-j < 4 && distanceToComplement != -1 {
+			distanceToComplement = next_pair[currentNucleotide][distanceToComplement]
+		}
+
+		if distanceToComplement != -1 {
+			currentNucleotidenext := nucs[distanceToComplement]
+			var currentNucleotidenext_1 int
+			if (distanceToComplement - 1) > -1 {
+				currentNucleotidenext_1 = nucs[distanceToComplement-1]
+			} else {
+				currentNucleotidenext_1 = -1
 			}
+			var newscore float64
+			newscore = score_hairpin(j, distanceToComplement, currentNucleotide, nextNucleotide, currentNucleotidenext_1, currentNucleotidenext)
 
-			{
-				// for currentNucleotide put H(j, j_next) into H[j_next]
-				jnext := next_pair[currentNucleotide][j]
-
-				for jnext-j < 4 && jnext != -1 {
-					jnext = next_pair[currentNucleotide][jnext]
-				}
-
-				if jnext != -1 {
-					currentNucleotidenext := nucs[jnext]
-					var currentNucleotidenext_1 int
-					if (jnext - 1) > -1 {
-						currentNucleotidenext_1 = nucs[jnext-1]
-					} else {
-						currentNucleotidenext_1 = -1
-					}
-					var newscore float64
-					newscore = score_hairpin(j, jnext, currentNucleotide, currentNucleotide1, currentNucleotidenext_1, currentNucleotidenext)
-
-					// this candidate must be the best one at [j, jnext]
-					// so no need to check the score
-					if bestH[jnext][j] == nil {
-						bestH[jnext][j] = NewState(VALUE_MIN, MANNER_NONE)
-					}
-					// fmt.Printf("Going to try to update bestH. jnext = %v, j = %v\n", jnext, j)
-					// fmt.Printf("newscore: %v\n", newscore)
-					update_if_better(bestH[jnext][j], newscore, MANNER_H)
-					// fmt.Printf("Score after update: %v\n", bestH[jnext][j].score)
-					nos_H++
-				}
+			// this candidate must be the best one at [j, distanceToComplement]
+			// so no need to check the score
+			if bestH[distanceToComplement][j] == nil {
+				bestH[distanceToComplement][j] = NewState(VALUE_MIN, MANNER_NONE)
 			}
+			// fmt.Printf("Going to try to update bestH. distanceToComplement = %v, j = %v\n", distanceToComplement, j)
+			// fmt.Printf("newscore: %v\n", newscore)
+			update_if_better(bestH[distanceToComplement][j], newscore, MANNER_H)
+			// fmt.Printf("Score after update: %v\n", bestH[distanceToComplement][j].score)
+			nos_H++
+		}
 
-			{
-				// for every state h in H[j]
-				//   1. extend h(i, j) to h(i, jnext)
-				//   2. generate p(i, j)
-				for i, state := range *beamstepH {
-					nuci := nucs[i]
-					jnext := next_pair[nuci][j]
+		// for every state h in H[j]
+		//   1. extend h(i, j) to h(i, distanceToComplement)
+		//   2. generate p(i, j)
+		for i, state := range *beamstepH {
+			nuci := nucs[i]
+			distanceToComplement := next_pair[nuci][j]
 
-					// 2. generate p(i, j)
-					// lisiz, change the order because of the constriants
-					{
-						if (*beamstepP)[i] == nil {
-							(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
-						}
-						update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
-						nos_P++
-					}
+			// 2. generate p(i, j)
+			// lisiz, change the order because of the constriants
+			if (*beamstepP)[i] == nil {
+				(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
+			}
+			update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
+			nos_P++
 
-					if jnext != -1 {
-						var nuci1 int
-						if (i + 1) < seq_length {
-							nuci1 = nucs[i+1]
-						} else {
-							nuci1 = -1
-						}
-
-						currentNucleotidenext := nucs[jnext]
-
-						var currentNucleotidenext_1 int
-						if (jnext - 1) > -1 {
-							currentNucleotidenext_1 = nucs[jnext-1]
-						} else {
-							currentNucleotidenext_1 = -1
-						}
-
-						// 1. extend h(i, j) to h(i, jnext)
-						var newscore float64
-
-						newscore = score_hairpin(i, jnext, nuci, nuci1, currentNucleotidenext_1, currentNucleotidenext)
-						// this candidate must be the best one at [i, jnext]
-						// so no need to check the score
-
-						if bestH[jnext][i] == nil {
-							bestH[jnext][i] = NewState(VALUE_MIN, MANNER_NONE)
-						}
-						update_if_better(bestH[jnext][i], newscore, MANNER_H)
-						nos_H++
-					}
+			if distanceToComplement != -1 {
+				var nuci1 int
+				if (i + 1) < seq_length {
+					nuci1 = nucs[i+1]
+				} else {
+					nuci1 = -1
 				}
+
+				currentNucleotidenext := nucs[distanceToComplement]
+
+				var currentNucleotidenext_1 int
+				if (distanceToComplement - 1) > -1 {
+					currentNucleotidenext_1 = nucs[distanceToComplement-1]
+				} else {
+					currentNucleotidenext_1 = -1
+				}
+
+				// 1. extend h(i, j) to h(i, distanceToComplement)
+				var newscore float64
+
+				newscore = score_hairpin(i, distanceToComplement, nuci, nuci1, currentNucleotidenext_1, currentNucleotidenext)
+				// this candidate must be the best one at [i, distanceToComplement]
+				// so no need to check the score
+
+				if bestH[distanceToComplement][i] == nil {
+					bestH[distanceToComplement][i] = NewState(VALUE_MIN, MANNER_NONE)
+				}
+				update_if_better(bestH[distanceToComplement][i], newscore, MANNER_H)
+				nos_H++
 			}
 		}
 
@@ -594,13 +594,13 @@ func Parse(sequence string) (string, float64) {
 			}
 
 			// for every state in Multi[j]
-			//   1. extend (i, j) to (i, jnext)
+			//   1. extend (i, j) to (i, distanceToComplement)
 			//   2. generate P (i, j)
 			for i, state := range *beamstepMulti {
 
 				nuci := nucs[i]
 				nuci1 := nucs[i+1]
-				jnext := next_pair[nuci][j]
+				distanceToComplement := next_pair[nuci][j]
 
 				// 2. generate P (i, j)
 				// lisiz, change the order because of the constraits
@@ -614,20 +614,20 @@ func Parse(sequence string) (string, float64) {
 					nos_P++
 				}
 
-				// 1. extend (i, j) to (i, jnext)
+				// 1. extend (i, j) to (i, distanceToComplement)
 				{
 					new_l1 := state.trace.paddings.l1
-					new_l2 := state.trace.paddings.l2 + jnext - j
-					// if (jnext != -1 && new_l1 + new_l2 <= SINGLE_MAX_LEN) {
-					if jnext != -1 {
-						// 1. extend (i, j) to (i, jnext)
-						newscore := state.score + score_multi_unpaired(j, jnext-1)
-						// this candidate must be the best one at [i, jnext]
+					new_l2 := state.trace.paddings.l2 + distanceToComplement - j
+					// if (distanceToComplement != -1 && new_l1 + new_l2 <= SINGLE_MAX_LEN) {
+					if distanceToComplement != -1 {
+						// 1. extend (i, j) to (i, distanceToComplement)
+						newscore := state.score + score_multi_unpaired(j, distanceToComplement-1)
+						// this candidate must be the best one at [i, distanceToComplement]
 						// so no need to check the score
-						if bestMulti[jnext][i] == nil {
-							bestMulti[jnext][i] = NewState(VALUE_MIN, MANNER_NONE)
+						if bestMulti[distanceToComplement][i] == nil {
+							bestMulti[distanceToComplement][i] = NewState(VALUE_MIN, MANNER_NONE)
 						}
-						update_if_better2(bestMulti[jnext][i], newscore, MANNER_MULTI_eq_MULTI_plus_U,
+						update_if_better2(bestMulti[distanceToComplement][i], newscore, MANNER_MULTI_eq_MULTI_plus_U,
 							new_l1,
 							new_l2)
 						nos_Multi++
@@ -660,7 +660,7 @@ func Parse(sequence string) (string, float64) {
 
 				// 2. M = P
 				if i > 0 && j < seq_length-1 {
-					newscore := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
+					newscore := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, nextNucleotide, seq_length) + state.score
 					if (*beamstepM)[i] == nil {
 						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
@@ -672,7 +672,7 @@ func Parse(sequence string) (string, float64) {
 				if !use_cube_pruning {
 					k := i - 1
 					if k > 0 && len(bestM[k]) != 0 {
-						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
+						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, nextNucleotide, seq_length) + state.score
 						// candidate list
 						// bestM2_iter := (*beamstepM2)[i]
 						for newi, state := range bestM[k] {
@@ -699,7 +699,7 @@ func Parse(sequence string) (string, float64) {
 							nuck1 := nuci
 
 							newscore := score_external_paired(k+1, j, nuck, nuck1,
-								currentNucleotide, currentNucleotide1, seq_length) + prefix_C.score + state.score
+								currentNucleotide, nextNucleotide, seq_length) + prefix_C.score + state.score
 
 							if beamstepC == nil {
 								beamstepC = NewState(VALUE_MIN, MANNER_NONE)
@@ -709,7 +709,7 @@ func Parse(sequence string) (string, float64) {
 						}
 					} else {
 						newscore := score_external_paired(0, j, -1, nucs[0],
-							currentNucleotide, currentNucleotide1, seq_length) + state.score
+							currentNucleotide, nextNucleotide, seq_length) + state.score
 						if beamstepC == nil {
 							beamstepC = NewState(VALUE_MIN, MANNER_NONE)
 						}
@@ -722,7 +722,7 @@ func Parse(sequence string) (string, float64) {
 				// 1. generate new helix / single_branch
 				// new state is of shape p..i..j..q
 				if i > 0 && j < seq_length-1 {
-					var precomputed float64 = score_junction_B(j, i, currentNucleotide, currentNucleotide1, nuci_1, nuci)
+					var precomputed float64 = score_junction_B(j, i, currentNucleotide, nextNucleotide, nuci_1, nuci)
 					for p := i - 1; p >= Max(i-SINGLE_MAX_LEN, 0); p-- {
 						nucp := nucs[p]
 						nucp1 := nucs[p+1]
@@ -746,7 +746,7 @@ func Parse(sequence string) (string, float64) {
 								var newscore float64 = score_junction_B(p, q, nucp, nucp1, nucq_1, nucq) +
 									precomputed +
 									score_single_without_junctionB(p, q, i, j,
-										nuci_1, nuci, currentNucleotide, currentNucleotide1) +
+										nuci_1, nuci, currentNucleotide, nextNucleotide) +
 									state.score
 
 								if bestP[q][p] == nil {
@@ -785,7 +785,7 @@ func Parse(sequence string) (string, float64) {
 							panic("bestM size != sorted_bestM size")
 						}
 
-						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
+						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, nextNucleotide, seq_length) + state.score
 
 						// bestM2_iter = beamstepM2[i]
 
@@ -1088,8 +1088,8 @@ func dangle_right_score(nuci, currentNucleotide_1, currentNucleotide int) float6
 	return dangle_right[nuci*NOTOND+currentNucleotide*NOTON+currentNucleotide_1]
 }
 
-func score_external_paired(i, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, len int) float64 {
-	return score_junction_A(j, i, currentNucleotide, currentNucleotide1, nuci_1, nuci, len) +
+func score_external_paired(i, j, nuci_1, nuci, currentNucleotide, nextNucleotide, len int) float64 {
+	return score_junction_A(j, i, currentNucleotide, nextNucleotide, nuci_1, nuci, len) +
 		external_paired + base_pair_score(nuci, currentNucleotide)
 }
 
@@ -1301,9 +1301,9 @@ func get_parentheses(seq string) string {
 				// {
 				// 		int nuck = k > -1 ? nucs[k] : -1;
 				// 		int nuck1 = nucs[k + 1], currentNucleotide = nucs[j];
-				// 		int currentNucleotide1 = (j + 1) < seq_length ? nucs[j + 1] : -1;
+				// 		int nextNucleotide = (j + 1) < seq_length ? nucs[j + 1] : -1;
 				// 		external_energy += -v_score_external_paired(k + 1, j, nuck, nuck1,
-				// 																								currentNucleotide, currentNucleotide1, seq_length);
+				// 																								currentNucleotide, nextNucleotide, seq_length);
 				// }
 			}
 		default: // MANNER_NONE or other cases
