@@ -356,9 +356,6 @@ func LinearFold(sequence string) (string, float64) {
 
 	// TODO: Add check for larger than 1
 
-	// lhuang: moved inside loop, fixing an obscure but crucial bug in initialization
-	// BeamCKYParser parser(beam_size);
-	// BeamCKYParser::DecoderResult result = parser.parse(seq, NULL);
 	return Parse(sequence)
 }
 
@@ -366,15 +363,6 @@ type Pair struct {
 	first, second interface{}
 }
 
-// ByFirst implements sort.Interface for []Pair based on
-// the First field.
-// type ByFirst []Pair
-
-// func (a ByFirst) Len() int           { return len(a) }
-// func (a ByFirst) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-// func (a ByFirst) Less(i, j int) bool { return a[i].first < a[j].first }
-
-// An IntHeap is a min-heap of ints.
 type PairHeap []Pair
 
 func (h PairHeap) Len() int           { return len(h) }
@@ -399,9 +387,6 @@ func Parse(sequence string) (string, float64) {
 	/*********************
 	Step 1: Variable setup
 	*********************/
-
-	// number of states
-	var nos_H, nos_P, nos_M2, nos_M, nos_C, nos_Multi uint64 = 0, 0, 0, 0, 0, 0
 
 	seq_length := len(sequence)
 
@@ -477,7 +462,6 @@ func Parse(sequence string) (string, float64) {
 	// TODO: What does this do?
 	bestC[0].Set(ScoreExternalUnpaired(0, 0), MANNER_C_eq_C_plus_U)
 	bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
-	nos_C++
 
 	/****************
 	Step 2: Iteration
@@ -531,11 +515,11 @@ func Parse(sequence string) (string, float64) {
 			if bestH[distanceToComplement][j] == nil {
 				bestH[distanceToComplement][j] = NewState(VALUE_MIN, MANNER_NONE)
 			}
-			// fmt.Printf("Going to try to update bestH. distanceToComplement = %v, j = %v\n", distanceToComplement, j)
-			// fmt.Printf("newscore: %v\n", newscore)
-			update_if_better(bestH[distanceToComplement][j], newscore, MANNER_H)
-			// fmt.Printf("Score after update: %v\n", bestH[distanceToComplement][j].score)
-			nos_H++
+			if bestH[distanceToComplement][j].score < newscore {
+				bestH[distanceToComplement][j].manner = MANNER_H
+				bestH[distanceToComplement][j].score = newscore
+
+			}
 		}
 
 		// for every state h in H[j]
@@ -551,7 +535,6 @@ func Parse(sequence string) (string, float64) {
 				(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
 			}
 			update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
-			nos_P++
 
 			if distanceToComplement != -1 {
 				var nuci1 int
@@ -581,7 +564,6 @@ func Parse(sequence string) (string, float64) {
 					bestH[distanceToComplement][i] = NewState(VALUE_MIN, MANNER_NONE)
 				}
 				update_if_better(bestH[distanceToComplement][i], newscore, MANNER_H)
-				nos_H++
 			}
 		}
 
@@ -613,7 +595,6 @@ func Parse(sequence string) (string, float64) {
 						(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
 					update_if_better((*beamstepP)[i], newscore, MANNER_P_eq_MULTI)
-					nos_P++
 				}
 
 				// 1. extend (i, j) to (i, distanceToComplement)
@@ -632,7 +613,6 @@ func Parse(sequence string) (string, float64) {
 						update_if_better2(bestMulti[distanceToComplement][i], newscore, MANNER_MULTI_eq_MULTI_plus_U,
 							new_l1,
 							new_l2)
-						nos_Multi++
 					}
 				}
 			}
@@ -667,7 +647,6 @@ func Parse(sequence string) (string, float64) {
 						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
 					update_if_better((*beamstepM)[i], newscore, MANNER_M_eq_P)
-					nos_M++
 				}
 
 				// 3. M2 = M + P
@@ -685,8 +664,6 @@ func Parse(sequence string) (string, float64) {
 							}
 							update_if_better3((*beamstepM2)[newi], newscore, MANNER_M2_eq_M_plus_P, k)
 							//update_if_better(bestM[j][newi], newscore, MANNER_M_eq_M_plus_P, k);
-							nos_M2++
-							//++nos_M;
 						}
 					}
 				}
@@ -707,7 +684,6 @@ func Parse(sequence string) (string, float64) {
 								beamstepC = NewState(VALUE_MIN, MANNER_NONE)
 							}
 							update_if_better3(beamstepC, newscore, MANNER_C_eq_C_plus_P, k)
-							nos_C++
 						}
 					} else {
 						newscore := score_external_paired(0, j, -1, nucs[0],
@@ -716,7 +692,6 @@ func Parse(sequence string) (string, float64) {
 							beamstepC = NewState(VALUE_MIN, MANNER_NONE)
 						}
 						update_if_better3(beamstepC, newscore, MANNER_C_eq_C_plus_P, -1)
-						nos_C++
 					}
 				}
 				//printf(" C = C + P at %d\n", j); fflush(stdout);
@@ -741,7 +716,6 @@ func Parse(sequence string) (string, float64) {
 									bestP[q][p] = NewState(VALUE_MIN, MANNER_NONE)
 								}
 								update_if_better(bestP[q][p], newscore, MANNER_HELIX)
-								nos_P++
 							} else {
 								// single branch
 
@@ -756,7 +730,6 @@ func Parse(sequence string) (string, float64) {
 								}
 								update_if_better2(bestP[q][p], newscore, MANNER_SINGLE,
 									rune(i-p), q-j)
-								nos_P++
 							}
 							q = next_pair[nucp][q]
 						}
@@ -843,7 +816,6 @@ func Parse(sequence string) (string, float64) {
 							(*beamstepM2)[newi] = NewState(VALUE_MIN, MANNER_NONE)
 						}
 						update_if_better3((*beamstepM2)[newi], newscore, MANNER_M2_eq_M_plus_P, k)
-						nos_M2++
 					} else {
 						if !((*beamstepM2)[newi].score > newscore-1e-8) {
 							panic("beamstepM2[newi].score <= newscore - 1e-8")
@@ -897,7 +869,6 @@ func Parse(sequence string) (string, float64) {
 						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
 					update_if_better((*beamstepM)[i], state.score, MANNER_M_eq_M2)
-					nos_M++
 				}
 
 				// 1. multi-loop
@@ -917,7 +888,6 @@ func Parse(sequence string) (string, float64) {
 							update_if_better2(bestMulti[q][p], newscore, MANNER_MULTI,
 								rune(i-p),
 								q-j)
-							nos_Multi++
 							//q = next_pair[nucp][q];
 						}
 					}
@@ -943,7 +913,6 @@ func Parse(sequence string) (string, float64) {
 						bestM[j+1][i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
 					update_if_better(bestM[j+1][i], newscore, MANNER_M_eq_M_plus_U)
-					nos_M++
 				}
 			}
 		}
@@ -957,7 +926,6 @@ func Parse(sequence string) (string, float64) {
 					bestC[j+1] = NewState(VALUE_MIN, MANNER_NONE)
 				}
 				update_if_better(bestC[j+1], newscore, MANNER_C_eq_C_plus_U)
-				nos_C++
 			}
 		}
 	} // end of for-loo j
@@ -1306,79 +1274,12 @@ func get_parentheses(seq string) string {
 			}
 		default: // MANNER_NONE or other cases
 			fmt.Printf("wrong manner at %d, %d: manner %d\n", i, j, state.manner)
-			// fflush(stdout);
-			// assert(false);
 			panic("wrong manner")
 		}
 	}
 
-	// 	if (is_verbose)
-	// 	{
-	// 			for (auto item : multi_todo)
-	// 			{
-	// 					int i = item.first;
-	// 					int j = item.second;
-	// 					int nuci = nucs[i], nuci1 = nucs[i + 1], currentNucleotide_1 = nucs[j - 1], currentNucleotide = nucs[j];
-	// 					value_type multi_energy = -v_score_multi(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, seq_length);
-	// 					int num_unpaired = 0;
-	// 					for (int k = i + 1; k < j; ++k)
-	// 					{
-	// 							if (result[k] == '.')
-	// 									num_unpaired += 1;
-	// 							else if (result[k] == '(')
-	// 							{
-	// 									int p = k, q = mbp[k];
-	// 									int nucp_1 = nucs[p - 1], nucp = nucs[p], nucq = nucs[q], nucq1 = nucs[q + 1];
-
-	// 									multi_energy += -v_score_M1(p, q, q, nucp_1, nucp, nucq, nucq1, seq_length);
-	// 									k = q;
-	// 							}
-	// 					}
-	// 					multi_energy += -v_score_multi_unpaired(1, num_unpaired);
-
-	// 					printf("Multi loop ( %d, %d) %c%c : %.2f\n", i + 1, j + 1, seq[i], seq[j], multi_energy / -100.0);
-	// 					total_energy += multi_energy;
-	// 			}
-
-	// 			printf("External loop : %.2f\n", external_energy / -100.0);
-	// 			total_energy += external_energy;
-
-	// #ifndef lv
-	// 			printf("Energy(kcal/mol): %.2f\n", total_energy / -100.0);
-	// #endif
-	// 	}
-
 	return string(result)
 }
-
-// func v_score_hairpin(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, tetra_hex_tri_index int) int {
-// 	size, type, si1, sj1 := j-i-1, NUM_TO_PAIR(nuci, currentNucleotide), NUM_TO_NUC(nuci1), NUM_TO_NUC(currentNucleotide_1)
-// 	var energy int
-// 	if(size <= 30) {
-// 		energy = hairpin37[size]
-// 	} else {
-// 		energy = hairpin37[30] + (int)(lxc37*log((size)/30.))
-// 	}
-
-// 	if(size < 3) return energy; /* should only be the case when folding alignments */
-// #ifdef SPECIAL_HP
-// 	// if(special_hp){
-// 			if (size == 4 && tetra_hex_tri_index > -1)
-// 					return Tetraloop37[tetra_hex_tri_index];
-// 			else if (size == 6 && tetra_hex_tri_index > -1)
-// 					return Hexaloop37[tetra_hex_tri_index];
-// 			else if (size == 3) {
-// 					if (tetra_hex_tri_index > -1)
-// 							return Triloop37[tetra_hex_tri_index];
-// 					return (energy + (type>2 ? TerminalAU37 : 0));
-// 			}
-// 	// }
-// #endif
-
-// 	energy += mismatchH37[type][si1][sj1];
-
-// 	return energy;
-// }
 
 func NUM_TO_NUC(x int) int {
 	switch x {
