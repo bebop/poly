@@ -433,13 +433,13 @@ func Parse(sequence string) (string, float64) {
 	nucleotideRuneMap['U'] = 3
 
 	// Make a nucleotide to nucleotide binding map
-	nucleotidePairing := [5][4]bool{}
-	nucleotidePairing[0][nucleotideRuneMap[3]] = true // A binds U
-	nucleotidePairing[1][nucleotideRuneMap[2]] = true // C binds G
-	nucleotidePairing[2][nucleotideRuneMap[1]] = true // G binds C
-	nucleotidePairing[3][nucleotideRuneMap[0]] = true // U binds A
-	nucleotidePairing[2][nucleotideRuneMap[3]] = true // G binds U
-	nucleotidePairing[3][nucleotideRuneMap[2]] = true // U binds G
+	nucleotidePairing := [5][5]bool{}
+	nucleotidePairing[0][3] = true // A binds U
+	nucleotidePairing[1][2] = true // C binds G
+	nucleotidePairing[2][1] = true // G binds C
+	nucleotidePairing[3][0] = true // U binds A
+	nucleotidePairing[2][3] = true // G binds U
+	nucleotidePairing[3][2] = true // U binds G
 
 	// Convert from ACGU to integers. These are easier to work with than just runes.
 	for i, basePair := range sequence {
@@ -467,20 +467,6 @@ func Parse(sequence string) (string, float64) {
 			}
 		}
 
-	}
-	for nuci := 0; nuci < NOTON; nuci++ {
-		next_pair[nuci] = make([]int, seq_length)
-		for j := 0; j < seq_length; j++ {
-			next_pair[nuci][j] = -1
-		}
-
-		next := -1
-		for j := seq_length - 1; j >= 0; j-- {
-			next_pair[nuci][j] = next
-			if _allowed_pairs[nuci][nucs[j]] {
-				next = j
-			}
-		}
 	}
 
 	if seq_length > 0 {
