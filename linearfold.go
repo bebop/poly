@@ -354,6 +354,8 @@ func LinearFold(sequence string) (string, float64) {
 	// convert T to U
 	sequence = strings.Replace(sequence, "T", "U", -1)
 
+	// TODO: Add check for larger than 1
+
 	// lhuang: moved inside loop, fixing an obscure but crucial bug in initialization
 	// BeamCKYParser parser(beam_size);
 	// BeamCKYParser::DecoderResult result = parser.parse(seq, NULL);
@@ -469,24 +471,19 @@ func Parse(sequence string) (string, float64) {
 
 	}
 
-	if seq_length > 0 {
-		bestC[0].Set(ScoreExternalUnpaired(0, 0), MANNER_C_eq_C_plus_U)
-	}
-
-	if seq_length > 1 {
-		bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
-	}
-
+	// TODO: What does this do?
+	bestC[0].Set(ScoreExternalUnpaired(0, 0), MANNER_C_eq_C_plus_U)
+	bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
 	nos_C++
 
 	// from left to right
-	for j := 0; j < seq_length; j++ {
-		nucj := nucs[j]
-		nucj1 := 0
+	for j := range sequence {
+		currentNucleotide := nucs[j]
+		currentNucleotide1 := 0
 		if (j + 1) < seq_length {
-			nucj1 = nucs[j+1]
+			currentNucleotide1 = nucs[j+1]
 		} else {
-			nucj1 = -1
+			currentNucleotide1 = -1
 		}
 
 		var beamstepH *map[int]*State = &bestH[j]
@@ -503,23 +500,23 @@ func Parse(sequence string) (string, float64) {
 			}
 
 			{
-				// for nucj put H(j, j_next) into H[j_next]
-				jnext := next_pair[nucj][j]
+				// for currentNucleotide put H(j, j_next) into H[j_next]
+				jnext := next_pair[currentNucleotide][j]
 
 				for jnext-j < 4 && jnext != -1 {
-					jnext = next_pair[nucj][jnext]
+					jnext = next_pair[currentNucleotide][jnext]
 				}
 
 				if jnext != -1 {
-					nucjnext := nucs[jnext]
-					var nucjnext_1 int
+					currentNucleotidenext := nucs[jnext]
+					var currentNucleotidenext_1 int
 					if (jnext - 1) > -1 {
-						nucjnext_1 = nucs[jnext-1]
+						currentNucleotidenext_1 = nucs[jnext-1]
 					} else {
-						nucjnext_1 = -1
+						currentNucleotidenext_1 = -1
 					}
 					var newscore float64
-					newscore = score_hairpin(j, jnext, nucj, nucj1, nucjnext_1, nucjnext)
+					newscore = score_hairpin(j, jnext, currentNucleotide, currentNucleotide1, currentNucleotidenext_1, currentNucleotidenext)
 
 					// this candidate must be the best one at [j, jnext]
 					// so no need to check the score
@@ -560,19 +557,19 @@ func Parse(sequence string) (string, float64) {
 							nuci1 = -1
 						}
 
-						nucjnext := nucs[jnext]
+						currentNucleotidenext := nucs[jnext]
 
-						var nucjnext_1 int
+						var currentNucleotidenext_1 int
 						if (jnext - 1) > -1 {
-							nucjnext_1 = nucs[jnext-1]
+							currentNucleotidenext_1 = nucs[jnext-1]
 						} else {
-							nucjnext_1 = -1
+							currentNucleotidenext_1 = -1
 						}
 
 						// 1. extend h(i, j) to h(i, jnext)
 						var newscore float64
 
-						newscore = score_hairpin(i, jnext, nuci, nuci1, nucjnext_1, nucjnext)
+						newscore = score_hairpin(i, jnext, nuci, nuci1, currentNucleotidenext_1, currentNucleotidenext)
 						// this candidate must be the best one at [i, jnext]
 						// so no need to check the score
 
@@ -609,7 +606,7 @@ func Parse(sequence string) (string, float64) {
 				// lisiz, change the order because of the constraits
 				{
 					var newscore float64
-					newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], nucj, seq_length)
+					newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
 					if (*beamstepP)[i] == nil {
 						(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
@@ -663,7 +660,7 @@ func Parse(sequence string) (string, float64) {
 
 				// 2. M = P
 				if i > 0 && j < seq_length-1 {
-					newscore := score_M1(i, j, j, nuci_1, nuci, nucj, nucj1, seq_length) + state.score
+					newscore := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
 					if (*beamstepM)[i] == nil {
 						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
 					}
@@ -675,7 +672,7 @@ func Parse(sequence string) (string, float64) {
 				if !use_cube_pruning {
 					k := i - 1
 					if k > 0 && len(bestM[k]) != 0 {
-						M1_score := score_M1(i, j, j, nuci_1, nuci, nucj, nucj1, seq_length) + state.score
+						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
 						// candidate list
 						// bestM2_iter := (*beamstepM2)[i]
 						for newi, state := range bestM[k] {
@@ -702,7 +699,7 @@ func Parse(sequence string) (string, float64) {
 							nuck1 := nuci
 
 							newscore := score_external_paired(k+1, j, nuck, nuck1,
-								nucj, nucj1, seq_length) + prefix_C.score + state.score
+								currentNucleotide, currentNucleotide1, seq_length) + prefix_C.score + state.score
 
 							if beamstepC == nil {
 								beamstepC = NewState(VALUE_MIN, MANNER_NONE)
@@ -712,7 +709,7 @@ func Parse(sequence string) (string, float64) {
 						}
 					} else {
 						newscore := score_external_paired(0, j, -1, nucs[0],
-							nucj, nucj1, seq_length) + state.score
+							currentNucleotide, currentNucleotide1, seq_length) + state.score
 						if beamstepC == nil {
 							beamstepC = NewState(VALUE_MIN, MANNER_NONE)
 						}
@@ -725,7 +722,7 @@ func Parse(sequence string) (string, float64) {
 				// 1. generate new helix / single_branch
 				// new state is of shape p..i..j..q
 				if i > 0 && j < seq_length-1 {
-					var precomputed float64 = score_junction_B(j, i, nucj, nucj1, nuci_1, nuci)
+					var precomputed float64 = score_junction_B(j, i, currentNucleotide, currentNucleotide1, nuci_1, nuci)
 					for p := i - 1; p >= Max(i-SINGLE_MAX_LEN, 0); p-- {
 						nucp := nucs[p]
 						nucp1 := nucs[p+1]
@@ -749,7 +746,7 @@ func Parse(sequence string) (string, float64) {
 								var newscore float64 = score_junction_B(p, q, nucp, nucp1, nucq_1, nucq) +
 									precomputed +
 									score_single_without_junctionB(p, q, i, j,
-										nuci_1, nuci, nucj, nucj1) +
+										nuci_1, nuci, currentNucleotide, currentNucleotide1) +
 									state.score
 
 								if bestP[q][p] == nil {
@@ -788,7 +785,7 @@ func Parse(sequence string) (string, float64) {
 							panic("bestM size != sorted_bestM size")
 						}
 
-						M1_score := score_M1(i, j, j, nuci_1, nuci, nucj, nucj1, seq_length) + state.score
+						M1_score := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, seq_length) + state.score
 
 						// bestM2_iter = beamstepM2[i]
 
@@ -1005,21 +1002,21 @@ func BeamPrune(beamstep *map[int]*State) float64 {
 	return threshold
 }
 
-func score_hairpin(i, j, nuci, nuci1, nucj_1, nucj int) float64 {
+func score_hairpin(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
 	return hairpin_length[Min(j-i-1, HAIRPIN_MAX_LEN)] +
-		score_junction_B(i, j, nuci, nuci1, nucj_1, nucj)
+		score_junction_B(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide)
 }
 
-func score_junction_B(i, j, nuci, nuci1, nucj_1, nucj int) float64 {
-	return helix_closing_score(nuci, nucj) + terminal_mismatch_score(nuci, nuci1, nucj_1, nucj)
+func score_junction_B(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
+	return helix_closing_score(nuci, currentNucleotide) + terminal_mismatch_score(nuci, nuci1, currentNucleotide_1, currentNucleotide)
 }
 
-func helix_closing_score(nuci, nucj int) float64 {
-	return helix_closing[nuci*NOTON+nucj]
+func helix_closing_score(nuci, currentNucleotide int) float64 {
+	return helix_closing[nuci*NOTON+currentNucleotide]
 }
 
-func terminal_mismatch_score(nuci, nuci1, nucj_1, nucj int) float64 {
-	return terminal_mismatch[nuci*NOTONT+nucj*NOTOND+nuci1*NOTON+nucj_1]
+func terminal_mismatch_score(nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
+	return terminal_mismatch[nuci*NOTONT+currentNucleotide*NOTOND+nuci1*NOTON+currentNucleotide_1]
 }
 
 // in-place quick-select
@@ -1063,13 +1060,13 @@ func score_M1(i, j, k, nuci_1, nuci, nuck, nuck1, len int) float64 {
 		score_multi_unpaired(k+1, j) + base_pair_score(nuci, nuck) + multi_paired
 }
 
-func score_junction_A(i, j, nuci, nuci1, nucj_1, nucj, len int) float64 {
-	var result float64 = helix_closing_score(nuci, nucj)
+func score_junction_A(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len int) float64 {
+	var result float64 = helix_closing_score(nuci, currentNucleotide)
 	if i < len-1 {
-		result += dangle_left_score(nuci, nuci1, nucj)
+		result += dangle_left_score(nuci, nuci1, currentNucleotide)
 	}
 	if j > 0 {
-		result += dangle_right_score(nuci, nucj_1, nucj)
+		result += dangle_right_score(nuci, currentNucleotide_1, currentNucleotide)
 	}
 	return result
 }
@@ -1078,31 +1075,31 @@ func score_multi_unpaired(i, j int) float64 {
 	return (float64(j) - float64(i) + 1) * multi_unpaired
 }
 
-func base_pair_score(nuci, nucj int) float64 {
-	return base_pair[nucj*NOTON+nuci]
+func base_pair_score(nuci, currentNucleotide int) float64 {
+	return base_pair[currentNucleotide*NOTON+nuci]
 }
 
-func dangle_left_score(nuci, nuci1, nucj int) float64 {
-	return dangle_left[nuci*NOTOND+nucj*NOTON+nuci1]
+func dangle_left_score(nuci, nuci1, currentNucleotide int) float64 {
+	return dangle_left[nuci*NOTOND+currentNucleotide*NOTON+nuci1]
 }
 
 // parameters: nucs[i], nucs[j-1], nucs[j]
-func dangle_right_score(nuci, nucj_1, nucj int) float64 {
-	return dangle_right[nuci*NOTOND+nucj*NOTON+nucj_1]
+func dangle_right_score(nuci, currentNucleotide_1, currentNucleotide int) float64 {
+	return dangle_right[nuci*NOTOND+currentNucleotide*NOTON+currentNucleotide_1]
 }
 
-func score_external_paired(i, j, nuci_1, nuci, nucj, nucj1, len int) float64 {
-	return score_junction_A(j, i, nucj, nucj1, nuci_1, nuci, len) +
-		external_paired + base_pair_score(nuci, nucj)
+func score_external_paired(i, j, nuci_1, nuci, currentNucleotide, currentNucleotide1, len int) float64 {
+	return score_junction_A(j, i, currentNucleotide, currentNucleotide1, nuci_1, nuci, len) +
+		external_paired + base_pair_score(nuci, currentNucleotide)
 }
 
-func score_helix(nuci, nuci1, nucj_1, nucj int) float64 {
-	return helix_stacking_score(nuci, nuci1, nucj_1, nucj) + base_pair_score(nuci1, nucj_1)
+func score_helix(nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
+	return helix_stacking_score(nuci, nuci1, currentNucleotide_1, currentNucleotide) + base_pair_score(nuci1, currentNucleotide_1)
 }
 
 // parameters: nucs[i], nucs[i+1], nucs[j-1], nucs[j]
-func helix_stacking_score(nuci, nuci1, nucj_1, nucj int) float64 {
-	return helix_stacking[nuci*NOTONT+nucj*NOTOND+nuci1*NOTON+nucj_1]
+func helix_stacking_score(nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
+	return helix_stacking[nuci*NOTONT+currentNucleotide*NOTOND+nuci1*NOTON+currentNucleotide_1]
 }
 
 func sortM(threshold float64, beamstep *map[int]*State, sorted_stepM []Pair) {
@@ -1190,7 +1187,7 @@ func get_parentheses(seq string) string {
 				// 	} else if (j - i - 1 == 3) {
 				// 		// 5:tri
 				// 		tetra_hex_tri = if_triloops[i]
-				// 		var nuci, nucj int = nucs[i], nucs[j]
+				// 		var nuci, currentNucleotide int = nucs[i], nucs[j]
 
 				// 		var nuci1 int
 				// 		if (i + 1) < seq_length {
@@ -1199,14 +1196,14 @@ func get_parentheses(seq string) string {
 				// 			nuci1 = -1
 				// 		}
 
-				// 		var nucj_1 int
+				// 		var currentNucleotide_1 int
 				// 		if (j - 1) > -1 {
-				// 			nucj_1 = nucs[j - 1]
+				// 			currentNucleotide_1 = nucs[j - 1]
 				// 		} else {
-				// 			nucj_1 = -1
+				// 			currentNucleotide_1 = -1
 				// 		}
 
-				// 		var newscore float64 = -v_score_hairpin(i, j, nuci, nuci1, nucj_1, nucj, tetra_hex_tri);
+				// 		var newscore float64 = -v_score_hairpin(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, tetra_hex_tri);
 				// 		fmt.Printf("Hairpin loop ( %d, %d) %c%c : %.2f\n", i + 1, j + 1, seq[i], seq[j], newscore / -100.0);
 				// 		total_energy += newscore;
 				// 	}
@@ -1221,10 +1218,10 @@ func get_parentheses(seq string) string {
 				stk = append(stk, Tuple{p, q, bestP[q][p]})
 				// if (is_verbose)
 				// {
-				// 		int nuci = nucs[i], nuci1 = nucs[i + 1], nucj_1 = nucs[j - 1], nucj = nucs[j];
+				// 		int nuci = nucs[i], nuci1 = nucs[i + 1], currentNucleotide_1 = nucs[j - 1], currentNucleotide = nucs[j];
 				// 		int nucp_1 = nucs[p - 1], nucp = nucs[p], nucq = nucs[q], nucq1 = nucs[q + 1];
 
-				// 		value_type newscore = -v_score_single(i, j, p, q, nuci, nuci1, nucj_1, nucj,
+				// 		value_type newscore = -v_score_single(i, j, p, q, nuci, nuci1, currentNucleotide_1, currentNucleotide,
 				// 																					nucp_1, nucp, nucq, nucq1);
 				// 		printf("Interior loop ( %d, %d) %c%c; ( %d, %d) %c%c : %.2f\n", i + 1, j + 1, seq[i], seq[j], p + 1, q + 1, seq[p], seq[q], newscore / -100.0);
 				// 		total_energy += newscore;
@@ -1239,10 +1236,10 @@ func get_parentheses(seq string) string {
 				// {
 				// 		p = i + 1;
 				// 		q = j - 1;
-				// 		int nuci = nucs[i], nuci1 = nucs[i + 1], nucj_1 = nucs[j - 1], nucj = nucs[j];
+				// 		int nuci = nucs[i], nuci1 = nucs[i + 1], currentNucleotide_1 = nucs[j - 1], currentNucleotide = nucs[j];
 				// 		int nucp_1 = nucs[p - 1], nucp = nucs[p], nucq = nucs[q], nucq1 = nucs[q + 1];
 
-				// 		value_type newscore = -v_score_single(i, j, p, q, nuci, nuci1, nucj_1, nucj,
+				// 		value_type newscore = -v_score_single(i, j, p, q, nuci, nuci1, currentNucleotide_1, currentNucleotide,
 				// 																					nucp_1, nucp, nucq, nucq1);
 				// 		printf("Interior loop ( %d, %d) %c%c; ( %d, %d) %c%c : %.2f\n", i + 1, j + 1, seq[i], seq[j], p + 1, q + 1, seq[p], seq[q], newscore / -100.0);
 				// 		total_energy += newscore;
@@ -1303,10 +1300,10 @@ func get_parentheses(seq string) string {
 				// if (is_verbose)
 				// {
 				// 		int nuck = k > -1 ? nucs[k] : -1;
-				// 		int nuck1 = nucs[k + 1], nucj = nucs[j];
-				// 		int nucj1 = (j + 1) < seq_length ? nucs[j + 1] : -1;
+				// 		int nuck1 = nucs[k + 1], currentNucleotide = nucs[j];
+				// 		int currentNucleotide1 = (j + 1) < seq_length ? nucs[j + 1] : -1;
 				// 		external_energy += -v_score_external_paired(k + 1, j, nuck, nuck1,
-				// 																								nucj, nucj1, seq_length);
+				// 																								currentNucleotide, currentNucleotide1, seq_length);
 				// }
 			}
 		default: // MANNER_NONE or other cases
@@ -1323,8 +1320,8 @@ func get_parentheses(seq string) string {
 	// 			{
 	// 					int i = item.first;
 	// 					int j = item.second;
-	// 					int nuci = nucs[i], nuci1 = nucs[i + 1], nucj_1 = nucs[j - 1], nucj = nucs[j];
-	// 					value_type multi_energy = -v_score_multi(i, j, nuci, nuci1, nucj_1, nucj, seq_length);
+	// 					int nuci = nucs[i], nuci1 = nucs[i + 1], currentNucleotide_1 = nucs[j - 1], currentNucleotide = nucs[j];
+	// 					value_type multi_energy = -v_score_multi(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, seq_length);
 	// 					int num_unpaired = 0;
 	// 					for (int k = i + 1; k < j; ++k)
 	// 					{
@@ -1356,8 +1353,8 @@ func get_parentheses(seq string) string {
 	return string(result)
 }
 
-// func v_score_hairpin(i, j, nuci, nuci1, nucj_1, nucj, tetra_hex_tri_index int) int {
-// 	size, type, si1, sj1 := j-i-1, NUM_TO_PAIR(nuci, nucj), NUM_TO_NUC(nuci1), NUM_TO_NUC(nucj_1)
+// func v_score_hairpin(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, tetra_hex_tri_index int) int {
+// 	size, type, si1, sj1 := j-i-1, NUM_TO_PAIR(nuci, currentNucleotide), NUM_TO_NUC(nuci1), NUM_TO_NUC(currentNucleotide_1)
 // 	var energy int
 // 	if(size <= 30) {
 // 		energy = hairpin37[size]
@@ -1433,8 +1430,8 @@ func NUM_TO_PAIR(x, y int) int {
 	}
 }
 
-func score_multi(i, j, nuci, nuci1, nucj_1, nucj, len int) float64 {
-	return score_junction_A(i, j, nuci, nuci1, nucj_1, nucj, len) +
+func score_multi(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len int) float64 {
+	return score_junction_A(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len) +
 		multi_paired + multi_base
 }
 
@@ -1461,6 +1458,6 @@ func bulge_nuc_score(nuci int) float64 {
 }
 
 // parameters: nucs[i], nucs[j]
-func internal_nuc_score(nuci, nucj int) float64 {
-	return internal_1x1_nucleotides[nuci*NOTON+nucj]
+func internal_nuc_score(nuci, currentNucleotide int) float64 {
+	return internal_1x1_nucleotides[nuci*NOTON+currentNucleotide]
 }
