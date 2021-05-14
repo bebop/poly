@@ -303,8 +303,8 @@ type State struct {
 	}
 }
 
-func NewState(score float64, manner int) *State {
-	return &State{score: score, manner: manner}
+func NewState() *State {
+	return &State{score: VALUE_MIN, manner: MANNER_NONE}
 }
 
 func update_if_better(s *State, newscore float64, manner int) {
@@ -393,9 +393,11 @@ func Parse(sequence string) (string, float64) {
 	// TODO: Replace "nucs" with nucleotides
 	nucs := make([]int, seq_length)
 
+	// TODO: Replace "bestC" with something better
+	// bestC represents the optimal states
 	bestC = make([]*State, seq_length)
 	for i := 0; i < seq_length; i++ {
-		bestC[i] = NewState(VALUE_MIN, MANNER_NONE)
+		bestC[i] = NewState()
 	}
 	bestH = make([](map[int]*State), seq_length)
 	bestP = make([](map[int]*State), seq_length)
@@ -513,7 +515,7 @@ func Parse(sequence string) (string, float64) {
 			// this candidate must be the best one at [j, distanceToComplement]
 			// so no need to check the score
 			if bestH[distanceToComplement][j] == nil {
-				bestH[distanceToComplement][j] = NewState(VALUE_MIN, MANNER_NONE)
+				bestH[distanceToComplement][j] = NewState()
 			}
 			if bestH[distanceToComplement][j].score < newscore {
 				bestH[distanceToComplement][j].manner = MANNER_H
@@ -532,7 +534,7 @@ func Parse(sequence string) (string, float64) {
 			// 2. generate p(i, j)
 			// lisiz, change the order because of the constriants
 			if (*beamstepP)[i] == nil {
-				(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
+				(*beamstepP)[i] = NewState()
 			}
 			update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
 
@@ -561,7 +563,7 @@ func Parse(sequence string) (string, float64) {
 				// so no need to check the score
 
 				if bestH[distanceToComplement][i] == nil {
-					bestH[distanceToComplement][i] = NewState(VALUE_MIN, MANNER_NONE)
+					bestH[distanceToComplement][i] = NewState()
 				}
 				update_if_better(bestH[distanceToComplement][i], newscore, MANNER_H)
 			}
@@ -592,7 +594,7 @@ func Parse(sequence string) (string, float64) {
 					var newscore float64
 					newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
 					if (*beamstepP)[i] == nil {
-						(*beamstepP)[i] = NewState(VALUE_MIN, MANNER_NONE)
+						(*beamstepP)[i] = NewState()
 					}
 					update_if_better((*beamstepP)[i], newscore, MANNER_P_eq_MULTI)
 				}
@@ -608,7 +610,7 @@ func Parse(sequence string) (string, float64) {
 						// this candidate must be the best one at [i, distanceToComplement]
 						// so no need to check the score
 						if bestMulti[distanceToComplement][i] == nil {
-							bestMulti[distanceToComplement][i] = NewState(VALUE_MIN, MANNER_NONE)
+							bestMulti[distanceToComplement][i] = NewState()
 						}
 						update_if_better2(bestMulti[distanceToComplement][i], newscore, MANNER_MULTI_eq_MULTI_plus_U,
 							new_l1,
@@ -644,7 +646,7 @@ func Parse(sequence string) (string, float64) {
 				if i > 0 && j < seq_length-1 {
 					newscore := score_M1(i, j, j, nuci_1, nuci, currentNucleotide, nextNucleotide, seq_length) + state.score
 					if (*beamstepM)[i] == nil {
-						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
+						(*beamstepM)[i] = NewState()
 					}
 					update_if_better((*beamstepM)[i], newscore, MANNER_M_eq_P)
 				}
@@ -660,7 +662,7 @@ func Parse(sequence string) (string, float64) {
 							// eq. to first convert P to M1, then M2/M = M + M1
 							newscore := M1_score + state.score
 							if (*beamstepM2)[newi] == nil {
-								(*beamstepM2)[newi] = NewState(VALUE_MIN, MANNER_NONE)
+								(*beamstepM2)[newi] = NewState()
 							}
 							update_if_better3((*beamstepM2)[newi], newscore, MANNER_M2_eq_M_plus_P, k)
 							//update_if_better(bestM[j][newi], newscore, MANNER_M_eq_M_plus_P, k);
@@ -681,7 +683,7 @@ func Parse(sequence string) (string, float64) {
 								currentNucleotide, nextNucleotide, seq_length) + prefix_C.score + state.score
 
 							if beamstepC == nil {
-								beamstepC = NewState(VALUE_MIN, MANNER_NONE)
+								beamstepC = NewState()
 							}
 							update_if_better3(beamstepC, newscore, MANNER_C_eq_C_plus_P, k)
 						}
@@ -689,7 +691,7 @@ func Parse(sequence string) (string, float64) {
 						newscore := score_external_paired(0, j, -1, nucs[0],
 							currentNucleotide, nextNucleotide, seq_length) + state.score
 						if beamstepC == nil {
-							beamstepC = NewState(VALUE_MIN, MANNER_NONE)
+							beamstepC = NewState()
 						}
 						update_if_better3(beamstepC, newscore, MANNER_C_eq_C_plus_P, -1)
 					}
@@ -713,7 +715,7 @@ func Parse(sequence string) (string, float64) {
 								// helix
 								var newscore float64 = score_helix(nucp, nucp1, nucq_1, nucq) + state.score
 								if bestP[q][p] == nil {
-									bestP[q][p] = NewState(VALUE_MIN, MANNER_NONE)
+									bestP[q][p] = NewState()
 								}
 								update_if_better(bestP[q][p], newscore, MANNER_HELIX)
 							} else {
@@ -726,7 +728,7 @@ func Parse(sequence string) (string, float64) {
 									state.score
 
 								if bestP[q][p] == nil {
-									bestP[q][p] = NewState(VALUE_MIN, MANNER_NONE)
+									bestP[q][p] = NewState()
 								}
 								update_if_better2(bestP[q][p], newscore, MANNER_SINGLE,
 									rune(i-p), q-j)
@@ -813,7 +815,7 @@ func Parse(sequence string) (string, float64) {
 					if (*beamstepM2)[newi].manner == MANNER_NONE {
 						filled++
 						if (*beamstepM2)[newi] == nil {
-							(*beamstepM2)[newi] = NewState(VALUE_MIN, MANNER_NONE)
+							(*beamstepM2)[newi] = NewState()
 						}
 						update_if_better3((*beamstepM2)[newi], newscore, MANNER_M2_eq_M_plus_P, k)
 					} else {
@@ -866,7 +868,7 @@ func Parse(sequence string) (string, float64) {
 				// 2. M = M2
 				{
 					if (*beamstepM)[i] == nil {
-						(*beamstepM)[i] = NewState(VALUE_MIN, MANNER_NONE)
+						(*beamstepM)[i] = NewState()
 					}
 					update_if_better((*beamstepM)[i], state.score, MANNER_M_eq_M2)
 				}
@@ -883,7 +885,7 @@ func Parse(sequence string) (string, float64) {
 								score_multi_unpaired(j+1, q-1) + state.score
 
 							if bestMulti[q][p] == nil {
-								bestMulti[q][p] = NewState(VALUE_MIN, MANNER_NONE)
+								bestMulti[q][p] = NewState()
 							}
 							update_if_better2(bestMulti[q][p], newscore, MANNER_MULTI,
 								rune(i-p),
@@ -910,7 +912,7 @@ func Parse(sequence string) (string, float64) {
 				if j < seq_length-1 {
 					var newscore float64 = score_multi_unpaired(j+1, j+1) + state.score
 					if bestM[j+1][i] == nil {
-						bestM[j+1][i] = NewState(VALUE_MIN, MANNER_NONE)
+						bestM[j+1][i] = NewState()
 					}
 					update_if_better(bestM[j+1][i], newscore, MANNER_M_eq_M_plus_U)
 				}
@@ -923,7 +925,7 @@ func Parse(sequence string) (string, float64) {
 			if j < seq_length-1 {
 				var newscore float64 = score_external_unpaired(j+1, j+1) + beamstepC.score
 				if bestC[j+1] == nil {
-					bestC[j+1] = NewState(VALUE_MIN, MANNER_NONE)
+					bestC[j+1] = NewState()
 				}
 				update_if_better(bestC[j+1], newscore, MANNER_C_eq_C_plus_U)
 			}
