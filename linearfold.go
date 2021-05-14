@@ -521,6 +521,8 @@ func Parse(sequence string) (string, float64) {
 			} else {
 				currentNucleotidenext_1 = -1
 			}
+
+			// Screen for hairpins
 			var newscore float64
 			newscore = score_hairpin(j, distanceToComplement, currentNucleotide, nextNucleotide, currentNucleotidenext_1, currentNucleotidenext)
 
@@ -1008,11 +1010,7 @@ func score_hairpin(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide int
 }
 
 func score_junction_B(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
-	return helix_closing_score(nuci, currentNucleotide) + terminal_mismatch_score(nuci, nuci1, currentNucleotide_1, currentNucleotide)
-}
-
-func helix_closing_score(nuci, currentNucleotide int) float64 {
-	return helix_closing[nuci*NOTON+currentNucleotide]
+	return helix_closing[nuci*NOTON+currentNucleotide] + terminal_mismatch_score(nuci, nuci1, currentNucleotide_1, currentNucleotide)
 }
 
 func terminal_mismatch_score(nuci, nuci1, currentNucleotide_1, currentNucleotide int) float64 {
@@ -1061,7 +1059,7 @@ func score_M1(i, j, k, nuci_1, nuci, nuck, nuck1, len int) float64 {
 }
 
 func score_junction_A(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len int) float64 {
-	var result float64 = helix_closing_score(nuci, currentNucleotide)
+	var result float64 = helix_closing[nuci*NOTON+currentNucleotide]
 	if i < len-1 {
 		result += dangle_left_score(nuci, nuci1, currentNucleotide)
 	}
