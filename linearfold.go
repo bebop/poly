@@ -468,6 +468,7 @@ func Parse(sequence string) (string, float64) {
 	/****************
 	Step 2: Iteration
 	****************/
+	var newscore float64
 	for j := range sequence {
 		// Set current nucleotide in sequence
 		currentNucleotide := nucs[j]
@@ -509,7 +510,6 @@ func Parse(sequence string) (string, float64) {
 			}
 
 			// Screen for hairpins
-			var newscore float64
 			newscore = score_hairpin(j, distanceToComplement, currentNucleotide, nextNucleotide, currentNucleotidenext_1, currentNucleotidenext)
 
 			// this candidate must be the best one at [j, distanceToComplement]
@@ -556,8 +556,6 @@ func Parse(sequence string) (string, float64) {
 				}
 
 				// 1. extend h(i, j) to h(i, distanceToComplement)
-				var newscore float64
-
 				newscore = score_hairpin(i, distanceToComplement, nuci, nuci1, currentNucleotidenext_1, currentNucleotidenext)
 				// this candidate must be the best one at [i, distanceToComplement]
 				// so no need to check the score
@@ -591,7 +589,6 @@ func Parse(sequence string) (string, float64) {
 				// 2. generate P (i, j)
 				// lisiz, change the order because of the constraits
 				{
-					var newscore float64
 					newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
 					if (*beamstepP)[i] == nil {
 						(*beamstepP)[i] = NewState()
@@ -713,7 +710,7 @@ func Parse(sequence string) (string, float64) {
 
 							if p == i-1 && q == j+1 {
 								// helix
-								var newscore float64 = score_helix(nucp, nucp1, nucq_1, nucq) + state.score
+								newscore = score_helix(nucp, nucp1, nucq_1, nucq) + state.score
 								if bestP[q][p] == nil {
 									bestP[q][p] = NewState()
 								}
@@ -721,7 +718,7 @@ func Parse(sequence string) (string, float64) {
 							} else {
 								// single branch
 
-								var newscore float64 = score_junction_B(p, q, nucp, nucp1, nucq_1, nucq) +
+								newscore = score_junction_B(p, q, nucp, nucp1, nucq_1, nucq) +
 									precomputed +
 									score_single_without_junctionB(p, q, i, j,
 										nuci_1, nuci, currentNucleotide, nextNucleotide) +
@@ -881,7 +878,7 @@ func Parse(sequence string) (string, float64) {
 
 						if q != -1 && ((i - p - 1) <= SINGLE_MAX_LEN) {
 							// the current shape is p..i M2 j ..q
-							var newscore float64 = score_multi_unpaired(p+1, i-1) +
+							newscore = score_multi_unpaired(p+1, i-1) +
 								score_multi_unpaired(j+1, q-1) + state.score
 
 							if bestMulti[q][p] == nil {
@@ -910,7 +907,7 @@ func Parse(sequence string) (string, float64) {
 			//   1. M = M + unpaired
 			for i, state := range *beamstepM {
 				if j < seq_length-1 {
-					var newscore float64 = score_multi_unpaired(j+1, j+1) + state.score
+					newscore = score_multi_unpaired(j+1, j+1) + state.score
 					if bestM[j+1][i] == nil {
 						bestM[j+1][i] = NewState()
 					}
@@ -923,7 +920,7 @@ func Parse(sequence string) (string, float64) {
 		{
 			// C = C + U
 			if j < seq_length-1 {
-				var newscore float64 = score_external_unpaired(j+1, j+1) + beamstepC.score
+				newscore = score_external_unpaired(j+1, j+1) + beamstepC.score
 				if bestC[j+1] == nil {
 					bestC[j+1] = NewState()
 				}
