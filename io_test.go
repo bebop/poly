@@ -58,7 +58,7 @@ func ExampleBuildGff() {
 }
 
 func ExampleWriteGff() {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -78,7 +78,7 @@ func ExampleWriteGff() {
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -162,7 +162,7 @@ func ExampleBuildGbk() {
 }
 
 func ExampleWriteGbk() {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -180,7 +180,7 @@ func ExampleWriteGbk() {
 }
 
 func TestGbkIO(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -198,7 +198,7 @@ func TestGbkIO(t *testing.T) {
 }
 
 func TestGbkLocationStringBuilder(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -223,7 +223,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 }
 
 func TestGbLocationStringBuilder(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -328,7 +328,7 @@ func ExampleParseJSON() {
 }
 
 func ExampleWriteJSON() {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -346,7 +346,7 @@ func ExampleWriteJSON() {
 }
 
 func TestGbkToJSON(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -365,7 +365,7 @@ func TestGbkToJSON(t *testing.T) {
 }
 
 func TestGffToJSON(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -421,7 +421,7 @@ func ExampleBuildFASTA() {
 }
 
 func ExampleWriteFASTA() {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -439,7 +439,7 @@ func ExampleWriteFASTA() {
 }
 
 func TestFASTAIO(t *testing.T) {
-	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
