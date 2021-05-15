@@ -59,6 +59,7 @@ func ExampleBuildGff() {
 
 func ExampleWriteGff() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -67,7 +68,6 @@ func ExampleWriteGff() {
 
 	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
 	WriteGff(sequence, tmpGffFilePath)
-	defer os.Remove(tmpGffFilePath)
 
 	testSequence := ReadGff(tmpGffFilePath)
 
@@ -79,6 +79,7 @@ func ExampleWriteGff() {
 
 func TestGffIO(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -88,7 +89,6 @@ func TestGffIO(t *testing.T) {
 
 	testSequence := ReadGff(testInputPath)
 	WriteGff(testSequence, tmpGffFilePath)
-	defer os.Remove(tmpGffFilePath)
 
 	readTestSequence := ReadGff(tmpGffFilePath)
 
@@ -163,6 +163,7 @@ func ExampleBuildGbk() {
 
 func ExampleWriteGbk() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -171,7 +172,6 @@ func ExampleWriteGbk() {
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
 	WriteGbk(sequence, tmpGbkFilePath)
-	defer os.Remove(tmpGbkFilePath)
 
 	testSequence := ReadGbk(tmpGbkFilePath)
 
@@ -181,6 +181,7 @@ func ExampleWriteGbk() {
 
 func TestGbkIO(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -189,7 +190,6 @@ func TestGbkIO(t *testing.T) {
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
 	WriteGbk(gbk, tmpGbkFilePath)
-	defer os.Remove(tmpGbkFilePath)
 
 	writeTestGbk := ReadGbk(tmpGbkFilePath)
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
@@ -199,6 +199,7 @@ func TestGbkIO(t *testing.T) {
 
 func TestGbkLocationStringBuilder(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -212,7 +213,6 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
 	WriteGbk(scrubbedGbk, tmpGbkFilePath)
-	defer os.Remove(tmpGbkFilePath)
 
 	testInputGbk := ReadGbk("data/sample.gbk")
 	testOutputGbk := ReadGbk(tmpGbkFilePath)
@@ -224,6 +224,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 
 func TestGbLocationStringBuilder(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -236,7 +237,6 @@ func TestGbLocationStringBuilder(t *testing.T) {
 
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
 	WriteGbk(scrubbedGb, tmpGbFilePath)
-	defer os.Remove(tmpGbFilePath)
 
 	testInputGb := ReadGbk("data/t4_intron.gb")
 	testOutputGb := ReadGbk(tmpGbFilePath)
@@ -329,6 +329,7 @@ func ExampleParseJSON() {
 
 func ExampleWriteJSON() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -337,7 +338,6 @@ func ExampleWriteJSON() {
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
 	WriteJSON(sequence, tmpJSONFilePath)
-	defer os.Remove(tmpJSONFilePath)
 
 	testSequence := ReadJSON(tmpJSONFilePath)
 
@@ -347,6 +347,7 @@ func ExampleWriteJSON() {
 
 func TestGbkToJSON(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -355,7 +356,6 @@ func TestGbkToJSON(t *testing.T) {
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "puc19.json")
 	WriteJSON(testSequence, tmpJSONFilePath)
-	defer os.Remove(tmpJSONFilePath)
 
 	readTestSequence := ReadJSON(tmpJSONFilePath)
 
@@ -366,6 +366,7 @@ func TestGbkToJSON(t *testing.T) {
 
 func TestGffToJSON(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -374,7 +375,6 @@ func TestGffToJSON(t *testing.T) {
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.json")
 	WriteJSON(gffTestSequence, tmpJSONFilePath)
-	defer os.Remove(tmpJSONFilePath)
 
 	gffReadTestSequence := ReadJSON(tmpJSONFilePath)
 
@@ -422,6 +422,7 @@ func ExampleBuildFASTA() {
 
 func ExampleWriteFASTA() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -430,7 +431,6 @@ func ExampleWriteFASTA() {
 
 	tmpFASTAFilePath := filepath.Join(tmpDataDir, "base.fasta")
 	WriteFASTA(sequence, tmpFASTAFilePath) // write it out again
-	defer os.Remove(tmpFASTAFilePath)      // getting rid of test file
 
 	testSequence := ReadFASTA(tmpFASTAFilePath) // read it in again
 
@@ -440,6 +440,7 @@ func ExampleWriteFASTA() {
 
 func TestFASTAIO(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	defer os.RemoveAll(tmpDataDir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -452,7 +453,6 @@ func TestFASTAIO(t *testing.T) {
 
 	// write FASTA file
 	WriteFASTA(testSequence, tmpFASTAFilePath)
-	defer os.Remove(tmpFASTAFilePath)
 
 	// read back and diff
 	readTestSequence := ReadFASTA(tmpFASTAFilePath)
