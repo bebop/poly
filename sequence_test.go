@@ -74,7 +74,7 @@ func TestLocationParser(t *testing.T) {
 func TestLocationParser(t *testing.T) {
 	testSeq := "ATN"
 	testVariants := []string{"ATG", "ATA", "ATT", "ATC"}
-	testVariantsIUPAC := allIUPAC(testSeq)
+	testVariantsIUPAC := AllVariantsIUPAC(testSeq)
 	if featureComplementJoin != seqComplementJoin {
 		t.Errorf("IUPAC variant has changed on test 'allIUPAC('ATN')'. Got this:\n%s instead of \n%s", testVariantsIUPAC, testVariants)
 	}
