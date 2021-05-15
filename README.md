@@ -5,7 +5,7 @@
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
 
-Poly is a Go library for engineering organisms.
+Poly is a Go package for engineering organisms.
 
 * **Fast:** Poly is fast and scalable.
 
