@@ -945,6 +945,11 @@ const qualifierIndex = 21
 
 func quickMetaCheck(line string) bool {
 	flag := false
+	// Without line length check, this function
+	// panics on Genbank flat files - KG 19 Dec 2020
+	if len(line) == 0 {
+		return flag
+	}
 	if string(line[metaIndex]) != " " && string(line[0:2]) != "//" {
 		flag = true
 	}
@@ -953,7 +958,11 @@ func quickMetaCheck(line string) bool {
 
 func quickSubMetaCheck(line string) bool {
 	flag := false
-
+	// Without line length check, this function
+	// panics on Genbank flat files - KG 19 Dec 2020
+	if len(line) == 0 {
+		return flag
+	}
 	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " " {
 		flag = true
 	}
@@ -1207,6 +1216,8 @@ func getFeatures(lines []string) []Feature {
 			attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
 			attributeLabel := strings.TrimSpace(attributeSplit[0])
 			var attributeValue string
+			// This if-statement is not tested, and panics when run. Not sure why
+			// it is still here - KG 19 Dec 2020
 			if len(attributeSplit) < 2 {
 				attributeValue = ""
 			} else {
@@ -1239,13 +1250,17 @@ func getSequence(subLines []string) string {
 func parseGbkLocation(locationString string) Location {
 	var location Location
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
-		partialRegex, _ := regexp.Compile("<|>")
-		startEndSplit := strings.Split(locationString, "..")
-		start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
-		end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
-
-		location = Location{Start: start - 1, End: end}
+		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
+			position, _ := strconv.Atoi(locationString)
+			location = Location{Start: position, End: position}
+		} else {
+			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
+			partialRegex, _ := regexp.Compile("<|>")
+			startEndSplit := strings.Split(locationString, "..")
+			start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
+			end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
+			location = Location{Start: start - 1, End: end}
+		}
 
 	} else {
 		firstOuterParentheses := strings.Index(locationString, "(")
