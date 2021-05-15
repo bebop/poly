@@ -3,7 +3,6 @@ package poly
 import (
 	"bytes"
 	"strings"
-	"sync"
 )
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
@@ -94,49 +93,51 @@ func getFeatureSequence(feature Feature, location Location) string {
 	return sequenceString
 }
 
-// the following functions Iter and iter, derive from github.com/schwarmco/go-cartesian-product
-// which uses interfaces, so I modified it to use runes
-func Iter(params ...[]rune) chan []rune {
-	// create channel
-	c := make(chan []rune)
-	// create waitgroup
-	var wg sync.WaitGroup
-	// call iterator
-	wg.Add(1)
-	iterate(&wg, c, []rune{}, params...)
-	// call channel-closing go-func
-	go func() { wg.Wait(); close(c) }()
-	// return channel
-	return c
+func cartRune(inList ...[]rune) [][]rune {
+	// An iteratitive approach to calculate Cartesian product of two or more lists
+	// Adapted from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
+	// supposedly "minimizes allocations and computes and fills the result sequentially"
+
+	var possibleVariants int = 1 // a counter used to determine the possible number of variants
+	for _, inList := range inList {
+		possibleVariants *= len(inList)
+	}
+	if possibleVariants == 0 {
+		return nil // in the future this could be part of an error return?
+	}
+	allVariants := make([][]rune, possibleVariants)              // this is the 2D slice where all variants will be stored
+	variantHolders := make([]rune, possibleVariants*len(inList)) // this is an empty slice with a length totaling the size of all input characters
+	variantChoices := make([]int, len(inList))                   // these will be all the possible variants
+	start := 0
+	for variant := range allVariants {
+		end := start + len(inList) // define end point
+		variantHolder := variantHolders[start:end]
+
+		allVariants[variant] = variantHolder
+
+		start = end // start at end point
+
+		for variantChoicesIndex, variantChoice := range variantChoices {
+			variantHolder[variantChoicesIndex] = inList[variantChoicesIndex][variantChoice]
+		}
+		for variantChoicesIndex := len(variantChoices) - 1; variantChoicesIndex >= 0; variantChoicesIndex-- {
+			variantChoices[variantChoicesIndex]++
+			if variantChoices[variantChoicesIndex] < len(inList[variantChoicesIndex]) {
+				break
+			}
+			variantChoices[variantChoicesIndex] = 0
+		}
+	}
+	return allVariants
 }
 
-// private, recursive Iteration-Function
-func iterate(wg *sync.WaitGroup, channel chan []rune, result []rune, params ...[]rune) {
-	// dec WaitGroup when finished
-	defer wg.Done()
-	// no more params left?
-	if len(params) == 0 {
-		// send result to channel
-		channel <- result
-		return
-	}
-	// shift first param
-	p, params := params[0], params[1:]
-	// iterate over it
-	for i := 0; i < len(p); i++ {
-		// inc WaitGroup
-		wg.Add(1)
-		// create copy of result
-		resultCopy := append([]rune{}, result...)
-		// call self with remaining params
-		go iterate(wg, channel, append(resultCopy, p[i]), params...)
-	}
-}
+func AllVariantsIUPAC(seq string) []string {
+	//AllVariantsIUPAC( seq string) takes a string as input
+	// and returns all iupac variants as output
+	seqVariantList := [][]rune{}
+	seqVariants := []string{}
 
-func allVariantsIUPAC(seq string) []string {
-	var allVariants = []string{}
-	var iupacList = [][]rune{}
-	iupac := map[rune][]rune{
+	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
 		'G': []rune{'G'},
 		'A': []rune{'A'},
 		'T': []rune{'T'},
@@ -153,15 +154,15 @@ func allVariantsIUPAC(seq string) []string {
 		'D': []rune{'G', 'A', 'T'},
 		'N': []rune{'G', 'A', 'T', 'C'},
 	}
+
 	for _, s := range seq {
-		iupacList = append(iupacList, iupac[s])
+		seqVariantList = append(seqVariantList, iupac[s])
 	}
 
-	cartesianProducts := Iter(iupacList...)
-	for product := range cartesianProducts {
-		allVariants = append(allVariants, string(product))
+	cartesianProducts := cartRune(seqVariantList...)
+	for _, product := range cartesianProducts {
+		seqVariants = append(seqVariants, string(product))
 	}
-
-	return allVariants
+	return seqVariants
 
 }
