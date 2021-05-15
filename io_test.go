@@ -322,7 +322,7 @@ func TestJSONIO(t *testing.T) {
 	os.Remove("data/test.json")
 
 	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
-		// t.Errorf(" mismatch (-want +got):\n%s", diff)
+		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
 
 }

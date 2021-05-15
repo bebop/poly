@@ -167,10 +167,10 @@ func ParseGff(file []byte) Sequence {
 			continue
 		} else if line[0:2] == "##" {
 			continue
-		} else if fastaFlag == true && line[0:1] != ">" {
+		} else if fastaFlag && line[0:1] != ">" {
 			// sequence.Sequence = sequence.Sequence + line
 			sequenceBuffer.WriteString(line)
-		} else if fastaFlag == true && line[0:1] == ">" {
+		} else if fastaFlag && line[0:1] == ">" {
 			sequence.Description = line
 		} else {
 			record := Feature{}
@@ -327,8 +327,7 @@ func BuildGff(sequence Sequence) []byte {
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGff(file)
+	sequence := ParseGff(file)
 	return sequence
 }
 
@@ -353,7 +352,7 @@ JSON specific IO related things begin here.
 // ParseJSON parses an Sequence JSON file and adds appropriate pointers to struct.
 func ParseJSON(file []byte) Sequence {
 	var sequence Sequence
-	json.Unmarshal([]byte(file), &sequence)
+	_ = json.Unmarshal([]byte(file), &sequence)
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 
@@ -540,7 +539,7 @@ func ParseGbk(file []byte) Sequence {
 		// Break has to be in scope and can't be called within switch statement.
 		// Otherwise it will just break the switch which is redundant.
 		sequenceBreakFlag := false
-		if sequenceBreakFlag == true {
+		if sequenceBreakFlag {
 			break
 		}
 
@@ -707,8 +706,7 @@ func BuildGbk(sequence Sequence) []byte {
 // ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
 func ReadGbk(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGbk(file)
+	sequence := ParseGbk(file)
 	return sequence
 }
 
@@ -766,176 +764,6 @@ var genbankTopLevelFeatures = []string{
 	"REFERENCE",
 	"FEATURES",
 	"ORIGIN",
-}
-
-// used in feature check functions.
-var genbankSubLevelFeatures = []string{
-	"ORGANISM",
-	"AUTHORS",
-	"TITLE",
-	"JOURNAL",
-	"PUBMED",
-	"REMARK",
-}
-
-// all gene feature types in genbank
-var genbankGeneFeatureTypes = []string{
-	"assembly_gap",
-	"C_region",
-	"CDS",
-	"centromere",
-	"D-loop",
-	"D_segment",
-	"exon",
-	"gap",
-	"gene",
-	"iDNA",
-	"intron",
-	"J_segment",
-	"mat_peptide",
-	"misc_binding",
-	"misc_difference",
-	"misc_feature",
-	"misc_recomb",
-	"misc_RNA",
-	"misc_structure",
-	"mobile_element",
-	"modified_base",
-	"mRNA",
-	"ncRNA",
-	"N_region",
-	"old_sequence",
-	"operon",
-	"oriT",
-	"polyA_site",
-	"precursor_RNA",
-	"prim_transcript",
-	"primer_bind",
-	"propeptide",
-	"protein_bind",
-	"regulatory",
-	"repeat_region",
-	"rep_origin",
-	"rRNA",
-	"S_region",
-	"sig_peptide",
-	"source",
-	"stem_loop",
-	"STS",
-	"telomere",
-	"tmRNA",
-	"transit_peptide",
-	"tRNA",
-	"unsure",
-	"V_region",
-	"V_segment",
-	"variation",
-	"3'UTR",
-	"5'UTR",
-}
-
-// all genbank feature qualifiers
-var genbankGeneQualifierTypes = []string{
-	"/allele=",
-	"/altitude=",
-	"/anticodon=",
-	"/artificial_location",
-	"/bio_material=",
-	"/bound_moiety=",
-	"/cell_line=",
-	"/cell_type=",
-	"/chromosome=",
-	"/citation=",
-	"/clone=",
-	"/clone_lib=",
-	"/codon_start=",
-	"/collected_by=",
-	"/collection_date=",
-	"/compare=",
-	"/country=",
-	"/cultivar=",
-	"/culture_collection=",
-	"/db_xref=",
-	"/dev_stage=",
-	"/direction=",
-	"/EC_number=",
-	"/ecotype=",
-	"/environmental_sample",
-	"/estimated_length=",
-	"/exception=",
-	"/experiment=",
-	"/focus",
-	"/frequency=",
-	"/function=",
-	"/gap_type=",
-	"/gene=",
-	"/gene_synonym=",
-	"/germline",
-	"/haplogroup=",
-	"/haplotype=",
-	"/host=",
-	"/identified_by=",
-	"/inference=",
-	"/isolate=",
-	"/isolation_source=",
-	"/lab_host=",
-	"/lat_lon=",
-	"/linkage_evidence=",
-	"/locus_tag=",
-	"/macronuclear",
-	"/map=",
-	"/mating_type=",
-	"/metagenome_source",
-	"/mobile_element_type=",
-	"/mod_base=",
-	"/mol_type=",
-	"/ncRNA_class=",
-	"/note=",
-	"/number=",
-	"/old_locus_tag=",
-	"/operon=",
-	"/organelle=",
-	"/organism=",
-	"/partial",
-	"/PCR_conditions=",
-	"/PCR_primers=",
-	"/phenotype=",
-	"/plasmid=",
-	"/pop_variant=",
-	"/product=",
-	"/protein_id=",
-	"/proviral",
-	"/pseudo",
-	"/pseudogene=",
-	"/rearranged",
-	"/replace=",
-	"/ribosomal_slippage",
-	"/rpt_family=",
-	"/rpt_type=",
-	"/rpt_unit_range=",
-	"/rpt_unit_seq=",
-	"/satellite=",
-	"/segment=",
-	"/serotype=",
-	"/serovar=",
-	"/sex=",
-	"/specimen_voucher=",
-	"/standard_name=",
-	"/strain=",
-	"/sub_clone=",
-	"/submitter_seqid=",
-	"/sub_species=",
-	"/sub_strain=",
-	"/tag_peptide=",
-	"/tissue_lib=",
-	"/tissue_type=",
-	"/transgenic",
-	"/translation=",
-	"/transl_except=",
-	"/transl_table=",
-	"/trans_splicing",
-	"/type_material=",
-	"/variety=",
 }
 
 // indeces for random points of interests on a gbk line.
@@ -1305,7 +1133,7 @@ func parseGbkLocation(locationString string) Location {
 	}
 
 	// if excess root node then trim node. Maybe should just be handled with second arg?
-	if location.Start == 0 && location.End == 0 && location.Join == false && location.Complement == false {
+	if location.Start == 0 && location.End == 0 && !location.Join && !location.Complement {
 		location = location.SubLocations[0]
 	}
 

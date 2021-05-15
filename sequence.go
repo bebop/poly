@@ -2,6 +2,8 @@ package poly
 
 import (
 	"bytes"
+	"errors"
+	"math/rand"
 	"strings"
 )
 
@@ -68,29 +70,69 @@ func ComplementBase(basePair rune) rune {
 	return complementBaseRuneMap[basePair]
 }
 
-// getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) string {
-	var sequenceBuffer bytes.Buffer
-	var sequenceString string
-	parentSequence := feature.ParentSequence.Sequence
+//RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
+func RandomProteinSequence(length int, seed int64) (string, error) {
+	//The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons
+	if length <= 2 {
+		err := errors.New("The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. Please select a higher length in RandomProteinSequence function")
+		return "", err
+	}
 
-	if len(location.SubLocations) == 0 {
-		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
-	} else {
+	// https://en.wikipedia.org/wiki/Amino_acid#Table_of_standard_amino_acid_abbreviations_and_properties
+	var aminoAcidsAlphabet = []rune("ACDEFGHIJLMNPQRSTVWY")
+	rand.Seed(seed)
 
-		for _, subLocation := range location.SubLocations {
-			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
+	randomSequence := make([]rune, length)
+
+	for peptide := range randomSequence {
+		if peptide == 0 {
+			//M is the standard abbreviation for the Methionine aminoacid. A protein sequence start with M because the start codon is translated to Methionine
+			randomSequence[peptide] = 'M'
+		} else if peptide == length-1 {
+			//* is the standard abbreviation for the stop codon. That's a signal for the ribosome to stop the translation and because of that a protein sequence is finished with *
+			randomSequence[peptide] = '*'
+		} else {
+			randomIndex := rand.Intn(len(aminoAcidsAlphabet))
+			randomSequence[peptide] = aminoAcidsAlphabet[randomIndex]
 		}
 	}
 
-	// reverse complements resulting string if needed.
-	if location.Complement {
-		sequenceString = ReverseComplement(sequenceBuffer.String())
-	} else {
-		sequenceString = sequenceBuffer.String()
+	return string(randomSequence), nil
+}
+
+// AllVariantsIUPAC takes a string as input
+// and returns all iupac variants as output
+func AllVariantsIUPAC(seq string) []string {
+	seqVariantList := [][]rune{}
+	seqVariants := []string{}
+
+	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
+		'G': []rune{'G'},
+		'A': []rune{'A'},
+		'T': []rune{'T'},
+		'C': []rune{'C'},
+		'R': []rune{'G', 'A'},
+		'Y': []rune{'T', 'C'},
+		'M': []rune{'A', 'C'},
+		'K': []rune{'G', 'T'},
+		'S': []rune{'G', 'C'},
+		'W': []rune{'A', 'T'},
+		'H': []rune{'A', 'C', 'T'},
+		'B': []rune{'G', 'T', 'C'},
+		'V': []rune{'G', 'C', 'A'},
+		'D': []rune{'G', 'A', 'T'},
+		'N': []rune{'G', 'A', 'T', 'C'},
 	}
 
-	return sequenceString
+	for _, s := range seq {
+		seqVariantList = append(seqVariantList, iupac[s])
+	}
+
+	cartesianProducts := cartRune(seqVariantList...)
+	for _, product := range cartesianProducts {
+		seqVariants = append(seqVariants, string(product))
+	}
+	return seqVariants
 }
 
 func cartRune(inList ...[]rune) [][]rune {
@@ -131,38 +173,27 @@ func cartRune(inList ...[]rune) [][]rune {
 	return allVariants
 }
 
-func AllVariantsIUPAC(seq string) []string {
-	//AllVariantsIUPAC( seq string) takes a string as input
-	// and returns all iupac variants as output
-	seqVariantList := [][]rune{}
-	seqVariants := []string{}
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) string {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
 
-	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
-		'G': []rune{'G'},
-		'A': []rune{'A'},
-		'T': []rune{'T'},
-		'C': []rune{'C'},
-		'R': []rune{'G', 'A'},
-		'Y': []rune{'T', 'C'},
-		'M': []rune{'A', 'C'},
-		'K': []rune{'G', 'T'},
-		'S': []rune{'G', 'C'},
-		'W': []rune{'A', 'T'},
-		'H': []rune{'A', 'C', 'T'},
-		'B': []rune{'G', 'T', 'C'},
-		'V': []rune{'G', 'C', 'A'},
-		'D': []rune{'G', 'A', 'T'},
-		'N': []rune{'G', 'A', 'T', 'C'},
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequenceBuffer.WriteString(getFeatureSequence(feature, subLocation))
+		}
 	}
 
-	for _, s := range seq {
-		seqVariantList = append(seqVariantList, iupac[s])
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
 	}
 
-	cartesianProducts := cartRune(seqVariantList...)
-	for _, product := range cartesianProducts {
-		seqVariants = append(seqVariants, string(product))
-	}
-	return seqVariants
-
+	return sequenceString
 }

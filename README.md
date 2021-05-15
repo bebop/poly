@@ -3,10 +3,9 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
 
-Poly is a Go library and command line utility for engineering organisms.
+Poly is a Go package for engineering organisms.
 
 * **Fast:** Poly is fast and scalable.
 
@@ -16,14 +15,13 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, open a pull request, or [sponsor the project](https://github.com/sponsors/TimothyStiles).
 
-
 ## Documentation
 
-* **[Installation](https://timothystiles.github.io/poly/docs/)**
+* **[Installation](https://github.com/TimothyStiles/poly/blob/prime/docs/installation.md)**
 * **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
 * **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
 * **[Roadmap](https://github.com/TimothyStiles/poly/blob/prime/docs/ROADMAP.md)**
-
+* **[Learning Synbio](https://github.com/TimothyStiles/how-to-synbio)**
 
 ## Community
 
@@ -40,7 +38,7 @@ Poly is a Go library and command line utility for engineering organisms.
 * **[Sponsor](https://github.com/sponsors/TimothyStiles):** 🤘 Thanks for your support 🤘
 
 ## License
+
 * [MIT](LICENSE)
 
 * Copyright (c) 2020 Timothy Stiles
-
