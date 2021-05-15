@@ -14,7 +14,7 @@ func ExampleTranslate() {
 
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	testTranslation := Translate(gfpDnaSequence, GetCodonTable(11)) // need to specify which codons map to which amino acids per NCBI table
+	testTranslation, _ := Translate(gfpDnaSequence, GetCodonTable(11)) // need to specify which codons map to which amino acids per NCBI table
 
 	fmt.Println(gfpTranslation == testTranslation)
 	// output: true
@@ -23,10 +23,28 @@ func ExampleTranslate() {
 func TestTranslation(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	if got := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
+
+	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
 		t.Errorf("TestTranslation has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 
+}
+func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
+	emtpyCodonTable := CodonTable{}
+	_, err := Optimize("A", emtpyCodonTable)
+
+	if err != errEmtpyCodonTable {
+		t.Error("Translation should return an error if given an empty codon table")
+	}
+}
+
+func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
+	nonEmptyCodonTable := GetCodonTable(1)
+	_, err := Optimize("", nonEmptyCodonTable)
+
+	if err != errEmtpyAminoAcidString {
+		t.Error("Translation should return an error if given an empty sequence string")
+	}
 }
 
 func TestTranslationMixedCase(t *testing.T) {
@@ -58,8 +76,8 @@ func ExampleOptimize() {
 
 	optimizationTable := sequence.GetOptimizationTable(codonTable)
 
-	optimizedSequence := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation := Translate(optimizedSequence, optimizationTable)
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
 
 	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
 	// output: true
@@ -73,13 +91,30 @@ func TestOptimize(t *testing.T) {
 
 	optimizationTable := sequence.GetOptimizationTable(codonTable)
 
-	optimizedSequence := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation := Translate(optimizedSequence, optimizationTable)
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
 
 	if optimizedSequenceTranslation != gfpTranslation {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
 	}
+}
 
+func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
+	emtpyCodonTable := CodonTable{}
+	_, err := Optimize("A", emtpyCodonTable)
+
+	if err != errEmtpyCodonTable {
+		t.Error("Optimize should return an error if given an empty codon table")
+	}
+}
+
+func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
+	nonEmptyCodonTable := GetCodonTable(1)
+	_, err := Optimize("", nonEmptyCodonTable)
+
+	if err != errEmtpyAminoAcidString {
+		t.Error("Optimize should return an error if given an empty amino acid string")
+	}
 }
 
 func TestGetCodonFrequency(t *testing.T) {
