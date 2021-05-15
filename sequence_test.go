@@ -92,6 +92,7 @@ func ExampleRandomProteinSequence() {
 	// RandomProteinSequence builds a Protein Sequence by only passing through arguments a length and a seed that will be use to generate a randomly the sequence. The length needs to be greater than two because every sequence already have a start and stop codon. Seed makes this test deterministic.
 	randomProtein, _ := RandomProteinSequence(15, 2)
 	fmt.Println(randomProtein)
+
 	// Output: MHHPAFRMFNTMYG*
 }
 
