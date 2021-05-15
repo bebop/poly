@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -57,11 +58,18 @@ func ExampleBuildGff() {
 }
 
 func ExampleWriteGff() {
-	sequence := ReadGff("data/ecoli-mg1655-short.gff")
-	WriteGff(sequence, "data/test.gff")
-	testSequence := ReadGff("data/test.gff")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
-	os.Remove("data/test.gff")
+	sequence := ReadGff("data/ecoli-mg1655-short.gff")
+
+	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
+	WriteGff(sequence, tmpGffFilePath)
+	defer os.Remove(tmpGffFilePath)
+
+	testSequence := ReadGff(tmpGffFilePath)
 
 	fmt.Println(testSequence.Meta.Name)
 	// Output: U00096.3
@@ -70,32 +78,35 @@ func ExampleWriteGff() {
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+
 	testInputPath := "data/ecoli-mg1655-short.gff"
-	testOutputPath := "data/test.gff"
+	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
 
 	testSequence := ReadGff(testInputPath)
-	WriteGff(testSequence, testOutputPath)
+	WriteGff(testSequence, tmpGffFilePath)
+	defer os.Remove(tmpGffFilePath)
 
-	readTestSequence := ReadGff(testOutputPath)
+	readTestSequence := ReadGff(tmpGffFilePath)
 
 	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGff() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
 
 	original, _ := ioutil.ReadFile(testInputPath)
-	builtOutput, _ := ioutil.ReadFile(testOutputPath)
+	builtOutput, _ := ioutil.ReadFile(tmpGffFilePath)
 	gffDiff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(string(original)),
 		B:        difflib.SplitLines(string(builtOutput)),
 		FromFile: testInputPath,
-		ToFile:   testOutputPath,
+		ToFile:   tmpGffFilePath,
 		Context:  3,
 	}
 
 	gffDiffText, _ := difflib.GetUnifiedDiffString(gffDiff)
-
-	// cleaning up test data.
-	os.Remove(testOutputPath)
 
 	if gffDiffText != "" {
 		t.Errorf("BuildGff() does not output the same file as was input through ReadGff(). Got this diff:\n%s", gffDiffText)
@@ -151,27 +162,47 @@ func ExampleBuildGbk() {
 }
 
 func ExampleWriteGbk() {
-	sequence := ReadGbk("data/puc19.gbk")
-	WriteGbk(sequence, "data/test.gbk")
-	testSequence := ReadGbk("data/test.gbk")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
-	os.Remove("data/test.gbk")
+	sequence := ReadGbk("data/puc19.gbk")
+
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
+	WriteGbk(sequence, tmpGbkFilePath)
+	defer os.Remove(tmpGbkFilePath)
+
+	testSequence := ReadGbk(tmpGbkFilePath)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
 func TestGbkIO(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+
 	gbk := ReadGbk("data/puc19.gbk")
-	WriteGbk(gbk, "data/puc19gbktest.gbk")
-	writeTestGbk := ReadGbk("data/puc19gbktest.gbk")
-	os.Remove("data/puc19gbktest.gbk")
+
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
+	WriteGbk(gbk, tmpGbkFilePath)
+	defer os.Remove(tmpGbkFilePath)
+
+	writeTestGbk := ReadGbk(tmpGbkFilePath)
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
 }
 
 func TestGbkLocationStringBuilder(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+
 	scrubbedGbk := ReadGbk("data/sample.gbk")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
@@ -179,35 +210,40 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
 	}
 
-	WriteGbk(scrubbedGbk, "data/sample_test.gbk")
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
+	WriteGbk(scrubbedGbk, tmpGbkFilePath)
+	defer os.Remove(tmpGbkFilePath)
 
 	testInputGbk := ReadGbk("data/sample.gbk")
-	testOutputGbk := ReadGbk("data/sample_test.gbk")
-
-	os.Remove("data/sample_test.gbk")
+	testOutputGbk := ReadGbk(tmpGbkFilePath)
 
 	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
+}
 
-	scrubbedGbk = ReadGbk("data/t4_intron.gb")
+func TestGbLocationStringBuilder(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+	scrubbedGb := ReadGbk("data/t4_intron.gb")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
-	for featureIndex := range scrubbedGbk.Features {
-		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
+	for featureIndex := range scrubbedGb.Features {
+		scrubbedGb.Features[featureIndex].GbkLocationString = ""
 	}
 
-	WriteGbk(scrubbedGbk, "data/t4_intron_test.gb")
+	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
+	WriteGbk(scrubbedGb, tmpGbFilePath)
+	defer os.Remove(tmpGbFilePath)
 
-	testInputGbk = ReadGbk("data/t4_intron.gbk")
-	testOutputGbk = ReadGbk("data/t4_intron_test.gbk")
+	testInputGb := ReadGbk("data/t4_intron.gb")
+	testOutputGb := ReadGbk(tmpGbFilePath)
 
-	os.Remove("data/t4_intron_test.gbk")
-
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
 	}
-
 }
 
 func TestPartialLocationParseRegression(t *testing.T) {
@@ -292,34 +328,55 @@ func ExampleParseJSON() {
 }
 
 func ExampleWriteJSON() {
-	sequence := ReadJSON("data/sample.json")
-	WriteJSON(sequence, "data/test.json")
-	testSequence := ReadJSON("data/test.json")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
-	os.Remove("data/test.json")
+	sequence := ReadJSON("data/sample.json")
+
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
+	WriteJSON(sequence, tmpJSONFilePath)
+	defer os.Remove(tmpJSONFilePath)
+
+	testSequence := ReadJSON(tmpJSONFilePath)
 
 	fmt.Println(testSequence.Meta.Source)
 	//output: Saccharomyces cerevisiae (baker's yeast)
 }
 
-func TestJSONIO(t *testing.T) {
-	testSequence := ReadGbk("data/puc19.gbk")
-	WriteJSON(testSequence, "data/test.json")
-	readTestSequence := ReadJSON("data/test.json")
+func TestGbkToJSON(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
 
-	// cleaning up test data
-	os.Remove("data/test.json")
+	testSequence := ReadGbk("data/puc19.gbk")
+
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "puc19.json")
+	WriteJSON(testSequence, tmpJSONFilePath)
+	defer os.Remove(tmpJSONFilePath)
+
+	readTestSequence := ReadJSON(tmpJSONFilePath)
 
 	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestGffToJSON(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
 
 	gffTestSequence := ReadGff("data/ecoli-mg1655-short.gff")
-	WriteJSON(gffTestSequence, "data/testGff.json")
-	gffReadTestSequence := ReadJSON("data/testGff.json")
 
-	// cleaning up test data
-	os.Remove("data/test.json")
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.json")
+	WriteJSON(gffTestSequence, tmpJSONFilePath)
+	defer os.Remove(tmpJSONFilePath)
+
+	gffReadTestSequence := ReadJSON(tmpJSONFilePath)
 
 	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
@@ -364,31 +421,41 @@ func ExampleBuildFASTA() {
 }
 
 func ExampleWriteFASTA() {
-	sequence := ReadFASTA("data/base.fasta")     // get example data
-	WriteFASTA(sequence, "data/test.fasta")      // write it out again
-	testSequence := ReadFASTA("data/test.fasta") // read it in again
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
-	os.Remove("data/test.fasta") // getting rid of test file
+	sequence := ReadFASTA("data/base.fasta") // get example data
+
+	tmpFASTAFilePath := filepath.Join(tmpDataDir, "base.fasta")
+	WriteFASTA(sequence, tmpFASTAFilePath) // write it out again
+	defer os.Remove(tmpFASTAFilePath)      // getting rid of test file
+
+	testSequence := ReadFASTA(tmpFASTAFilePath) // read it in again
 
 	fmt.Println(testSequence.Features[0].Description)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
 
 func TestFASTAIO(t *testing.T) {
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+
 	inputFilename := "data/base.fasta"
-	testOutputFilename := "data/test.fasta"
+	tmpFASTAFilePath := filepath.Join(tmpDataDir, "test.fasta")
 
 	// read FASTA file
 	testSequence := ReadFASTA(inputFilename)
 
 	// write FASTA file
-	WriteFASTA(testSequence, testOutputFilename)
+	WriteFASTA(testSequence, tmpFASTAFilePath)
+	defer os.Remove(tmpFASTAFilePath)
 
 	// read back and diff
-	readTestSequence := ReadFASTA(testOutputFilename)
-
-	// cleanup
-	os.Remove(testOutputFilename)
+	readTestSequence := ReadFASTA(tmpFASTAFilePath)
 
 	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
