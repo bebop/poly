@@ -482,7 +482,6 @@ func Parse(sequence string) (string, float64) {
 		}
 
 		// For this nucleotide, let's define some of the beams
-		var beamstepH *map[int]*State = &bestH[j]
 		var beamstepMulti *map[int]*State = &bestMulti[j]
 		var beamstepP *map[int]*State = &bestP[j]
 		var beamstepM2 *map[int]*State = &bestM2[j]
@@ -490,8 +489,8 @@ func Parse(sequence string) (string, float64) {
 		var beamstepC *State = bestC[j]
 
 		// beam of H
-		if beam_size > 0 && len(*beamstepH) > beam_size {
-			BeamPrune(beamstepH)
+		if beam_size > 0 && len(bestH[j]) > beam_size {
+			BeamPrune(&bestH[j])
 		}
 
 		// Get distance to the next complementing base pair
@@ -533,7 +532,9 @@ func Parse(sequence string) (string, float64) {
 		// for every state h in H[j]
 		//   1. extend h(i, j) to h(i, nextComplement)
 		//   2. generate p(i, j)
-		for i, state := range *beamstepH {
+		//fmt.Println(beamstepH)
+		//for i, state := range *beamstepH {
+		for i, state := range bestH[j] {
 			nuci := nucs[i]
 			nextComplement := next_pair[nuci][j]
 
@@ -701,7 +702,6 @@ func Parse(sequence string) (string, float64) {
 						update_if_better3(beamstepC, newscore, MANNER_C_eq_C_plus_P, -1)
 					}
 				}
-				//printf(" C = C + P at %d\n", j); fflush(stdout);
 
 				// 1. generate new helix / single_branch
 				// new state is of shape p..i..j..q
