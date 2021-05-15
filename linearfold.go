@@ -1205,54 +1205,6 @@ func get_parentheses(seq string) string {
 	return string(result)
 }
 
-func NUM_TO_NUC(x int) int {
-	switch x {
-	case -1:
-		return -1
-	case 4:
-		return 0
-	default:
-		return x + 1
-	}
-}
-
-func NUM_TO_PAIR(x, y int) int {
-	switch x {
-	case 0:
-		if y == 3 {
-			return 5
-		} else {
-			return 0
-		}
-	case 1:
-		if y == 2 {
-			return 1
-		} else {
-			return 0
-		}
-	case 2:
-		if y == 1 {
-			return 2
-		} else {
-			if y == 3 {
-				return 3
-			} else {
-				return 0
-			}
-		}
-	case 3:
-		if y == 2 {
-			return 4
-		} else if y == 0 {
-			return 6
-		} else {
-			return 0
-		}
-	default:
-		return 0
-	}
-}
-
 func score_multi(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len int) float64 {
 	return score_junction_A(i, j, nuci, nuci1, currentNucleotide_1, currentNucleotide, len) +
 		multi_paired + multi_base
