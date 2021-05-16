@@ -13,6 +13,12 @@ func ExampleLinearFold() {
 	// Output: result: ....................... , score: -0.22376699999999988
 }
 
+func ExampleCalcMfe() {
+	mfe, err := CalculateMfe("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..")
+	fmt.Println(fmt.Sprintf("mfe: %v", mfe))
+	// Output: mfe: .......................
+}
+
 func TestLinearFold(t *testing.T) {
 	var result string
 	var score float64
