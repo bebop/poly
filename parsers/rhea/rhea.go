@@ -364,28 +364,10 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 
 		for _, subclass := range description.Subclass {
 			switch subclass.Resource {
-			case "http://rdf.rhea-db.org/DirectionalReaction":
+			case "http://rdf.rhea-db.org/BidirectionalReaction", "http://rdf.rhea-db.org/DirectionalReaction":
 				newReaction := Reaction{
 					ID:                   description.ID,
-					Directional:          true,
-					Accession:            description.Accession,
-					Status:               description.Status.Resource,
-					Comment:              description.Comment,
-					Equation:             description.Equation,
-					HTMLEquation:         description.HTMLEquation,
-					IsChemicallyBalanced: description.IsChemicallyBalanced,
-					IsTransport:          description.IsTransport,
-					Ec:                   description.EC.Resource,
-					Citations:            description.CitationStrings(),
-					Substrates:           description.SubstrateStrings(),
-					Products:             description.ProductStrings(),
-					SubstrateOrProducts:  description.SubstrateOrProductStrings(),
-					Location:             description.Location.Resource}
-				rhea.Reactions = append(rhea.Reactions, newReaction)
-			case "http://rdf.rhea-db.org/BidirectionalReaction":
-				newReaction := Reaction{
-					ID:                   description.ID,
-					Directional:          false,
+					Directional:          subclass.Resource == "http://rdf.rhea-db.org/DirectionalReaction",
 					Accession:            description.Accession,
 					Status:               description.Status.Resource,
 					Comment:              description.Comment,
@@ -807,6 +789,3 @@ Those are set into targetReactions map.
 Existing compounds are put into
 
 ******************************************************************************/
-
-func GraphRhea(targetCompound string, existingCompounds []string) [][]string {
-}
