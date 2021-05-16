@@ -14,7 +14,7 @@ var rhea Rhea
 
 func TestMain(m *testing.M) {
 	// Read the Compressed Rhea XML to bytes
-	rheaBytes, err := ReadRhea("data/rhea.rdf.gz")
+	rheaBytes, err := ReadGzippedXml("data/rhea.rdf.gz")
 	if err != nil {
 		log.Fatalf("Failed to read rhea")
 	}
@@ -46,12 +46,7 @@ func TestInsertRheaSqlite(t *testing.T) {
 		t.Fatalf("Could not connect to in-memory sqlite database")
 	}
 
-	err = CreateRheaSqlite(db)
-	if err != nil {
-		log.Fatalf("CreateDatabase() Failed: %s", err)
-	}
-
-	err = InsertRheaSqlite(db, rhea)
+	err = RheaSqlite(db, rhea)
 	if err != nil {
 		log.Fatalf("InsertRhea Failed: %s", err)
 	}

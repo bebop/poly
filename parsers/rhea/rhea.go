@@ -2,7 +2,6 @@ package rhea
 
 import (
 	"compress/gzip"
-	"database/sql"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -35,7 +34,7 @@ type Description struct {
 	XMLName              xml.Name             `xml:"Description"`
 	About                string               `xml:"about,attr"`
 	ID                   int                  `xml:"id"`
-	Accession            string               `xml:"accession"`
+	Accession            string               `xml:"accession"` // Accession refers to a Rhea accession number
 	Equation             string               `xml:"equation"`
 	HTMLEquation         string               `xml:"htmlEquation"`
 	IsChemicallyBalanced bool                 `xml:"isChemicallyBalanced"`
@@ -67,7 +66,7 @@ type Description struct {
 	HTMLName string   `xml:"htmlName"`
 	Formula  string   `xml:"formula"`
 	Charge   string   `xml:"charge"`
-	Chebi    ChebiXML `xml:"chebi"`
+	ChEBI    ChEBIXML `xml:"chebi"`
 
 	// Generic Compound
 	ReactivePartXML ReactivePartXML `xml:"reactivePart"`
@@ -76,7 +75,7 @@ type Description struct {
 	Position string `xml:"position"`
 
 	// Polymer
-	UnderlyingChebi     UnderlyingChebi `xml:"underlyingChebi"`
+	UnderlyingChEBI     UnderlyingChEBI `xml:"underlyingChEBI"`
 	PolymerizationIndex string          `xml:"polymerizationIndex"`
 
 	// Transport
@@ -92,8 +91,8 @@ func (d *Description) CitationStrings() []string {
 	return output
 }
 
-// SubstrateStrings gives a list of substrate accessions from a description.
-func (d *Description) SubstrateStrings() []string {
+// SubstrateAccessionIDs gives a list of substrate accessions from a description.
+func (d *Description) SubstrateAccessionIDs() []string {
 	var output []string
 	for _, x := range d.Substrates {
 		output = append(output, x.Resource)
@@ -101,8 +100,8 @@ func (d *Description) SubstrateStrings() []string {
 	return output
 }
 
-// ProductStrings gives a list of product accessions from a description.
-func (d *Description) ProductStrings() []string {
+// ProductAccessionIDs gives a list of product accessions from a description.
+func (d *Description) ProductAccessionIDs() []string {
 	var output []string
 	for _, x := range d.Products {
 		output = append(output, x.Resource)
@@ -110,8 +109,8 @@ func (d *Description) ProductStrings() []string {
 	return output
 }
 
-// SubstrateOrProductStrings gives a list of substrateOrProduct accessions from a description.
-func (d *Description) SubstrateOrProductStrings() []string {
+// SubstrateOrProductAccessionIDs gives a list of substrateOrProduct accessions from a description.
+func (d *Description) SubstrateOrProductAccessionIDs() []string {
 	var output []string
 	for _, x := range d.SubstrateOrProducts {
 		output = append(output, x.Resource)
@@ -209,15 +208,15 @@ type ContainsX struct {
 	Content string `xml:"resource,attr"`
 }
 
-// ChebiXML is an XML representation of a Chebi.
-type ChebiXML struct {
+// ChEBIXML is an XML representation of a ChEBI.
+type ChEBIXML struct {
 	XMLName  xml.Name `xml:"chebi"`
 	Resource string   `xml:"resource,attr"`
 }
 
-// UnderlyingChebi is an XML representation of Chebi that builds a Polymer.
-type UnderlyingChebi struct {
-	XMLName  xml.Name `xml:"underlyingChebi"`
+// UnderlyingChEBI is an XML representation of ChEBI that builds a Polymer.
+type UnderlyingChEBI struct {
+	XMLName  xml.Name `xml:"underlyingChEBI"`
 	Resource string   `xml:"resource,attr"`
 }
 
@@ -284,8 +283,8 @@ type Compound struct {
 	HTMLName            string `json:"htmlName" db:"htmlname"`
 	Formula             string `json:"formula" db:"formula"`
 	Charge              string `json:"charge" db:"charge"`
-	Chebi               string `json:"chebi" db:"chebi"`
-	SubclassOfChebi     string `json:"subclassOfChebi"`
+	ChEBI               string `json:"chebi" db:"chebi"`
+	SubclassOfChEBI     string `json:"subclassOfChEBI"`
 	PolymerizationIndex string `json:"polymerizationIndex" db:"polymerizationindex"`
 	CompoundID          int    `json:"id" db:"compoundid"`
 	CompoundAccession   string `json:"accession" db:"compoundaccession"`
@@ -377,9 +376,9 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 					IsTransport:          description.IsTransport,
 					Ec:                   description.EC.Resource,
 					Citations:            description.CitationStrings(),
-					Substrates:           description.SubstrateStrings(),
-					Products:             description.ProductStrings(),
-					SubstrateOrProducts:  description.SubstrateOrProductStrings(),
+					Substrates:           description.SubstrateAccessionIDs(),
+					Products:             description.ProductAccessionIDs(),
+					SubstrateOrProducts:  description.SubstrateOrProductAccessionIDs(),
 					Location:             description.Location.Resource}
 				rhea.Reactions = append(rhea.Reactions, newReaction)
 			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer":
@@ -392,7 +391,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 					HTMLName:  description.HTMLName,
 					Formula:   description.Formula,
 					Charge:    description.Charge,
-					Chebi:     description.Chebi.Resource,
+					ChEBI:     description.ChEBI.Resource,
 
 					CompoundID:        description.ID,
 					CompoundAccession: description.Accession,
@@ -400,12 +399,12 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 					CompoundHTMLName:  description.HTMLName,
 					CompoundType:      compoundType}
 				if compoundType == "Polymer" {
-					newCompound.Chebi = description.UnderlyingChebi.Resource
+					newCompound.ChEBI = description.UnderlyingChEBI.Resource
 				}
-				// Add subclass Chebi
+				// Add subclass ChEBI
 				for _, sc := range description.Subclass {
 					if strings.Contains(sc.Resource, "CHEBI") {
-						newCompound.SubclassOfChebi = sc.Resource
+						newCompound.SubclassOfChEBI = sc.Resource
 					}
 				}
 				// Add new reactive parts and new compounds to rhea
@@ -427,8 +426,7 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 	// Go back and get the ReactiveParts
 	for _, description := range rdf.Descriptions {
 		for _, subclass := range description.Subclass {
-			switch subclass.Resource {
-			case "http://rdf.rhea-db.org/ReactivePart":
+			if subclass.Resource == "http://rdf.rhea-db.org/ReactivePart" {
 				newCompound, ok := compoundMap[compoundParticipantMap[description.About]]
 				if ok != true {
 					return Rhea{}, errors.New("Could not find " + description.About)
@@ -440,74 +438,75 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 				newCompound.HTMLName = description.HTMLName
 				newCompound.Formula = description.Formula
 				newCompound.Charge = description.Charge
-				newCompound.Chebi = description.Chebi.Resource
+				newCompound.ChEBI = description.ChEBI.Resource
 				rhea.Compounds = append(rhea.Compounds, newCompound)
 			}
 		}
 		for _, containsx := range description.ContainsX {
-			if strings.Contains(containsx.XMLName.Local, "contains") {
-				// Get reaction sides
-				// gzip -d -k -c rhea.rdf.gz | grep -o -P '(?<=contains).*(?= rdf)' | tr ' ' '\n' | sort -u | tr '\n' ' '
-				// The exceptions to numeric contains are 2n, N, Nminus1, and Nplus1
-				var newReactionParticipant ReactionParticipant
-				switch containsx.XMLName.Local {
-				case "containsN":
-					newReactionParticipant = ReactionParticipant{
-						ReactionSide: description.About,
-						Contains:     1,
-						ContainsN:    true,
-						Minus:        false,
-						Plus:         false,
-						Accession:    containsx.Content}
-				case "contains2n":
-					newReactionParticipant = ReactionParticipant{
-						ReactionSide: description.About,
-						Contains:     2,
-						ContainsN:    true,
-						Minus:        false,
-						Plus:         false,
-						Accession:    containsx.Content}
-				case "containsNminus1":
-					newReactionParticipant = ReactionParticipant{
-						ReactionSide: description.About,
-						Contains:     1,
-						ContainsN:    true,
-						Minus:        true,
-						Plus:         false,
-						Accession:    containsx.Content}
-				case "containsNplus1":
-					newReactionParticipant = ReactionParticipant{
-						ReactionSide: description.About,
-						Contains:     1,
-						ContainsN:    true,
-						Minus:        false,
-						Plus:         true,
-						Accession:    containsx.Content}
-				default:
-					i, err := strconv.Atoi(containsx.XMLName.Local[8:])
-					if err != nil {
-						return Rhea{}, err
-					}
-					newReactionParticipant = ReactionParticipant{
-						ReactionSide: description.About,
-						Contains:     i,
-						ContainsN:    false,
-						Minus:        false,
-						Plus:         false,
-						Accession:    containsx.Content}
-				}
-				newReactionParticipant.Compound = compoundParticipantMap[description.About]
-				rhea.ReactionParticipants = append(rhea.ReactionParticipants, newReactionParticipant)
+			if !strings.Contains(containsx.XMLName.Local, "contains") {
+				continue
 			}
+			// Get reaction sides
+			// gzip -d -k -c rhea.rdf.gz | grep -o -P '(?<=contains).*(?= rdf)' | tr ' ' '\n' | sort -u | tr '\n' ' '
+			// The exceptions to numeric contains are 2n, N, Nminus1, and Nplus1
+			var newReactionParticipant ReactionParticipant
+			switch containsx.XMLName.Local {
+			case "containsN":
+				newReactionParticipant = ReactionParticipant{
+					ReactionSide: description.About,
+					Contains:     1,
+					ContainsN:    true,
+					Minus:        false,
+					Plus:         false,
+					Accession:    containsx.Content}
+			case "contains2n":
+				newReactionParticipant = ReactionParticipant{
+					ReactionSide: description.About,
+					Contains:     2,
+					ContainsN:    true,
+					Minus:        false,
+					Plus:         false,
+					Accession:    containsx.Content}
+			case "containsNminus1":
+				newReactionParticipant = ReactionParticipant{
+					ReactionSide: description.About,
+					Contains:     1,
+					ContainsN:    true,
+					Minus:        true,
+					Plus:         false,
+					Accession:    containsx.Content}
+			case "containsNplus1":
+				newReactionParticipant = ReactionParticipant{
+					ReactionSide: description.About,
+					Contains:     1,
+					ContainsN:    true,
+					Minus:        false,
+					Plus:         true,
+					Accession:    containsx.Content}
+			default:
+				i, err := strconv.Atoi(containsx.XMLName.Local[8:])
+				if err != nil {
+					return Rhea{}, err
+				}
+				newReactionParticipant = ReactionParticipant{
+					ReactionSide: description.About,
+					Contains:     i,
+					ContainsN:    false,
+					Minus:        false,
+					Plus:         false,
+					Accession:    containsx.Content}
+			}
+			newReactionParticipant.Compound = compoundParticipantMap[description.About]
+			rhea.ReactionParticipants = append(rhea.ReactionParticipants, newReactionParticipant)
 		}
 	}
 	return rhea, nil
 }
 
 // ReadRhea reads in a a gzip'd Rhea dump (https://www.rhea-db.org/help/download) into bytes.
-func ReadRhea(gzipPath string) ([]byte, error) {
+func ReadGzippedXml(gzipPath string) ([]byte, error) {
 	// Get gz'd file bytes
-	xmlFile, err := os.Open("data/rhea.rdf.gz")
+	xmlFile, err := os.Open(gzipPath)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -524,188 +523,6 @@ func ReadRhea(gzipPath string) ([]byte, error) {
 		return []byte{}, err
 	}
 	return rheaBytes, nil
-}
-
-/******************************************************************************
-
-Database functions
-
-These functions take in the rhea.rdf.gz dump file and import them into an sqlite
-database. This database can be used locally for mapping functions, but more importantly,
-it is used because it can enforce the relationships between each part of Rhea and alert
-the user if the parser is failing to pick up on any of the relationships in the Rhea
-database.
-
-******************************************************************************/
-
-// CreateRheaSqlite initializes a SQLite database with the proper tables to have Rhea inserted using InsertRheaSqlite.
-func CreateRheaSqlite(db *sql.DB) error {
-	schema := `
-	-- Rhea tables --
-	CREATE TABLE chebi (
-		accession TEXT PRIMARY KEY,
-		subclassof TEXT REFERENCES chebi(accession)
-	);
-	
-	CREATE TABLE compound (
-		id INT,
-		accession TEXT PRIMARY KEY,
-		position TEXT,
-		name TEXT,
-		htmlname TEXT,
-		formula TEXT,
-		charge TEXT,
-		chebi TEXT REFERENCES chebi(accession),
-		polymerizationindex TEXT,
-		compoundtype TEXT NOT NULL CHECK(compoundtype IN ('SmallMolecule', 'Polymer', 'GenericPolypeptide', 'GenericPolynucleotide', 'GenericHeteropolysaccharide'))
-	);
-	
-	CREATE TABLE reactivepart (
-		id INT,
-		accession TEXT PRIMARY KEY,
-		name TEXT,
-		htmlname TEXT,
-		compound TEXT NOT NULL REFERENCES compound(accession)
-	);
-	
-	CREATE TABLE reaction (
-		id INT,
-		directional BOOL NOT NULL DEFAULT false,
-		accession TEXT PRIMARY KEY,
-		status TEXT,
-		comment TEXT,
-		equation TEXT,
-		htmlequation TEXT,
-		ischemicallybalanced BOOL NOT NULL DEFAULT true,
-		istransport BOOL NOT NULL DEFAULT false,
-		ec TEXT,
-		location TEXT
-	);
-	
-	CREATE TABLE reactionside (
-		accession TEXT PRIMARY KEY
-	);
-	
-	CREATE TABLE reactionsidereaction (
-		reaction TEXT NOT NULL REFERENCES reaction(accession),
-		reactionside TEXT NOT NULL REFERENCES reactionside(accession),
-		substrateorproduct BOOL NOT NULL DEFAULT false, -- If set to true, disregard substrate below
-	        substrate BOOL NOT NULL DEFAULT false -- If substrateOrProduct is false, "substrate = true" means this is a substrate and "substrate = false" means this is a product
-	);
-	
-	CREATE TABLE reactionparticipant (
-		compound TEXT REFERENCES compound(accession),
-	        reactionside TEXT NOT NULL REFERENCES reactionside(accession),
-	        contains INTEGER,
-	        containsn BOOL NOT NULL DEFAULT false,
-	        minus BOOL NOT NULL DEFAULT false,
-	        plus BOOL NOT NULL DEFAULT false
-	);
-	`
-	_, err := db.Exec(schema)
-	if err != nil {
-		return errors.New("Failed to exec schema. Failed on: " + err.Error())
-	}
-	return nil
-}
-
-// InsertRheaSqlite inserts the Rhea database into an SQLite database with proper normalization for advanced queries.
-func InsertRheaSqlite(db *sql.DB, rhea Rhea) error {
-	// Start transaction with database for insertion. This ensures if there are any problems, they are seamlessly rolled back
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// First, insert Chebis and Compounds
-	compoundKeys := make(map[string]bool)
-	for _, compound := range rhea.Compounds {
-		// Insert root chebi. Ie, what this current compound's subclass is
-		_, err = tx.Exec("INSERT OR IGNORE INTO chebi(accession) VALUES (?)", compound.SubclassOfChebi)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		// Insert the chebi of the current compound. If it is already inserted, update the subclassification
-		_, err = tx.Exec("INSERT INTO chebi(accession, subclassof) VALUES (?, ?) ON CONFLICT (accession) DO UPDATE SET subclassof = ?", compound.Chebi, compound.SubclassOfChebi, compound.SubclassOfChebi)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		// Insert the compound itself
-		_, err = tx.Exec("INSERT INTO compound(id, accession, position, name, htmlname, formula, charge, chebi, polymerizationindex, compoundtype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", compound.ID, compound.Accession, compound.Position, compound.Name, compound.HTMLName, compound.Formula, compound.Charge, compound.Chebi, compound.PolymerizationIndex, compound.CompoundType)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		// If the compound isn't a small molecule or polymer, that means it would be a reactive part of a larger compound. So we add it in
-		if (compound.CompoundType != "SmallMolecule") && (compound.CompoundType != "Polymer") {
-			_, err = tx.Exec("INSERT INTO reactivepart(id, accession, name, htmlname, compound) VALUES (?, ?, ?, ?, ?)", compound.CompoundID, compound.CompoundAccession, compound.CompoundName, compound.CompoundHTMLName, compound.Accession)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-		// Add compound.Access to the compoundKeys map
-		compoundKeys[compound.Accession] = true
-	}
-
-	// Next, insert the ReactionSides and ReactionParticipants
-	for _, reactionParticipant := range rhea.ReactionParticipants {
-		// Insert ReactionSide, which is needed to insert the ReactionParticipant
-		_, err = tx.Exec("INSERT INTO reactionside(accession) VALUES (?) ON CONFLICT DO NOTHING", reactionParticipant.ReactionSide)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		// Insert the ReactionParticipants
-		_, err = tx.Exec("INSERT INTO reactionparticipant(reactionside, contains, containsn, minus, plus, compound) VALUES (?, ?, ?, ?, ?, ?)", reactionParticipant.ReactionSide, reactionParticipant.Contains, reactionParticipant.ContainsN, reactionParticipant.Minus, reactionParticipant.Plus, reactionParticipant.Compound)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	// Insert the Reactions themselves
-	for _, reaction := range rhea.Reactions {
-		// Insert Reaction
-		_, err = tx.Exec("INSERT INTO reaction(id, directional, accession, status, comment, equation, htmlequation, ischemicallybalanced, istransport, ec, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", reaction.ID, reaction.Directional, reaction.Accession, reaction.Status, reaction.Comment, reaction.Equation, reaction.HTMLEquation, reaction.IsChemicallyBalanced, reaction.IsTransport, reaction.Ec, reaction.Location)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		// Insert ReactionsideReaction. Basically, these represent the substrates, products, or substratesOrProducts of a given reaction
-		for _, substrate := range reaction.Substrates {
-			_, err = tx.Exec("INSERT INTO reactionsidereaction(reaction, reactionside, substrate) VALUES (?, ?, true)", reaction.Accession, substrate)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-		for _, product := range reaction.Products {
-			_, err = tx.Exec("INSERT INTO reactionsidereaction(reaction, reactionside) VALUES (?, ?)", reaction.Accession, product)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-		for _, substrateorproduct := range reaction.SubstrateOrProducts {
-			_, err = tx.Exec("INSERT INTO reactionsidereaction(reaction, reactionside, substrateorproduct) VALUES (?, ?, true)", reaction.Accession, substrateorproduct)
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-		}
-
-	}
-
-	// Commit
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 /******************************************************************************
