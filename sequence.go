@@ -102,7 +102,7 @@ func RandomProteinSequence(length int, seed int64) (string, error) {
 
 // AllVariantsIUPAC takes a string as input
 // and returns all iupac variants as output
-func AllVariantsIUPAC(seq string) []string {
+func AllVariantsIUPAC(seq string) ([]string, error) {
 	seqVariantList := [][]rune{}
 	seqVariants := []string{}
 
@@ -124,17 +124,22 @@ func AllVariantsIUPAC(seq string) []string {
 		'N': []rune{'G', 'A', 'T', 'C'},
 	}
 
-	for _, s := range seq {
-		seqVariantList = append(seqVariantList, iupac[s])
+	for _, s := range strings.ToUpper(seq) {
+		variantsIUPAC, ok := iupac[s]
+		if ok {
+			seqVariantList = append(seqVariantList, variantsIUPAC)
+		} else {
+			return seqVariants, errors.New("Error:" + string(s) + " is not a supported IUPAC character")
+		}
+
 	}
 
 	cartesianProducts := cartRune(seqVariantList...)
 	for _, product := range cartesianProducts {
 		seqVariants = append(seqVariants, string(product))
 	}
-	return seqVariants
+	return seqVariants, nil
 }
-
 func cartRune(inList ...[]rune) [][]rune {
 	// An iteratitive approach to calculate Cartesian product of two or more lists
 	// Adapted from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
