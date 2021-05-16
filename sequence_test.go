@@ -2,6 +2,7 @@ package poly
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"testing"
@@ -76,7 +77,10 @@ func TestLocationParser(t *testing.T) {
 func TestIUPAC(t *testing.T) {
 	testSeq := "ATN"
 	testVariants := []string{"ATG", "ATA", "ATT", "ATC"}
-	testVariantsIUPAC := AllVariantsIUPAC(testSeq)
+	testVariantsIUPAC, err := AllVariantsIUPAC(testSeq)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	sort.Strings(testVariants)
 	sort.Strings(testVariantsIUPAC)
