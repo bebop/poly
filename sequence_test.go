@@ -92,7 +92,7 @@ func TestIUPAC(t *testing.T) {
 	}
 }
 
-func ExampleIUPAC() {
+func ExampleAllVariantsIUPAC() {
 	// AllVariantsIUPAC takes a string as input
 	// and returns all iupac variants as output
 	mendelIUPAC := "ATGGARAAYGAYGARCTN"
