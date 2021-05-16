@@ -334,6 +334,123 @@ which contains all of the higher level structs
 
 ******************************************************************************/
 
+// NewReaction returns a Reaction.
+func NewReaction(description Description, subclass Subclass) Reaction {
+	return Reaction{
+		ID:                   description.ID,
+		Directional:          subclass.Resource == "http://rdf.rhea-db.org/DirectionalReaction",
+		Accession:            description.Accession,
+		Status:               description.Status.Resource,
+		Comment:              description.Comment,
+		Equation:             description.Equation,
+		HTMLEquation:         description.HTMLEquation,
+		IsChemicallyBalanced: description.IsChemicallyBalanced,
+		IsTransport:          description.IsTransport,
+		Ec:                   description.EC.Resource,
+		Citations:            description.CitationStrings(),
+		Substrates:           description.SubstrateAccessionIDs(),
+		Products:             description.ProductAccessionIDs(),
+		SubstrateOrProducts:  description.SubstrateOrProductAccessionIDs(),
+		Location:             description.Location.Resource}
+}
+
+// NewCompound returns a Compound.
+func NewCompound(description Description, subclass Subclass) Compound {
+	var newCompound Compound
+	compoundType := subclass.Resource[23:]
+	switch subclass.Resource {
+	case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer":
+		newCompound = Compound{
+			ID:        description.ID,
+			Accession: description.About,
+			Position:  description.Position,
+			Name:      description.Name,
+			HTMLName:  description.HTMLName,
+			Formula:   description.Formula,
+			Charge:    description.Charge,
+			ChEBI:     description.ChEBI.Resource,
+
+			CompoundID:        description.ID,
+			CompoundAccession: description.Accession,
+			CompoundName:      description.Name,
+			CompoundHTMLName:  description.HTMLName,
+			CompoundType:      compoundType}
+		if compoundType == "Polymer" {
+			newCompound.ChEBI = description.UnderlyingChEBI.Resource
+		}
+		// Add subclass ChEBI
+		for _, sc := range description.Subclass {
+			if strings.Contains(sc.Resource, "CHEBI") {
+				newCompound.SubclassOfChEBI = sc.Resource
+			}
+		}
+	case "http://rdf.rhea-db.org/GenericPolypeptide", "http://rdf.rhea-db.org/GenericPolynucleotide", "http://rdf.rhea-db.org/GenericHeteropolysaccharide":
+		newCompound = Compound{
+			Accession:        description.About,
+			CompoundID:       description.ID,
+			CompoundName:     description.Name,
+			CompoundHTMLName: description.HTMLName,
+			CompoundType:     compoundType}
+	}
+	return newCompound
+}
+
+// NewReactionParticipant returns a ReactionParticipant.
+func NewReactionParticipant(description Description, containsx ContainsX, compoundParticipantMap map[string]string) (ReactionParticipant, error) {
+	// Get reaction sides
+	// gzip -d -k -c rhea.rdf.gz | grep -o -P '(?<=contains).*(?= rdf)' | tr ' ' '\n' | sort -u | tr '\n' ' '
+	// The exceptions to numeric contains are 2n, N, Nminus1, and Nplus1
+	var newReactionParticipant ReactionParticipant
+	switch containsx.XMLName.Local {
+	case "containsN":
+		newReactionParticipant = ReactionParticipant{
+			ReactionSide: description.About,
+			Contains:     1,
+			ContainsN:    true,
+			Minus:        false,
+			Plus:         false,
+			Accession:    containsx.Content}
+	case "contains2n":
+		newReactionParticipant = ReactionParticipant{
+			ReactionSide: description.About,
+			Contains:     2,
+			ContainsN:    true,
+			Minus:        false,
+			Plus:         false,
+			Accession:    containsx.Content}
+	case "containsNminus1":
+		newReactionParticipant = ReactionParticipant{
+			ReactionSide: description.About,
+			Contains:     1,
+			ContainsN:    true,
+			Minus:        true,
+			Plus:         false,
+			Accession:    containsx.Content}
+	case "containsNplus1":
+		newReactionParticipant = ReactionParticipant{
+			ReactionSide: description.About,
+			Contains:     1,
+			ContainsN:    true,
+			Minus:        false,
+			Plus:         true,
+			Accession:    containsx.Content}
+	default:
+		i, err := strconv.Atoi(containsx.XMLName.Local[8:])
+		if err != nil {
+			return ReactionParticipant{}, err
+		}
+		newReactionParticipant = ReactionParticipant{
+			ReactionSide: description.About,
+			Contains:     i,
+			ContainsN:    false,
+			Minus:        false,
+			Plus:         false,
+			Accession:    containsx.Content}
+	}
+	newReactionParticipant.Compound = compoundParticipantMap[description.About]
+	return newReactionParticipant, nil
+}
+
 // ParseRhea parses a list of bytes into a higher-level Rhea Struct.
 func ParseRhea(rheaBytes []byte) (Rhea, error) {
 	var err error
@@ -364,61 +481,16 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 		for _, subclass := range description.Subclass {
 			switch subclass.Resource {
 			case "http://rdf.rhea-db.org/BidirectionalReaction", "http://rdf.rhea-db.org/DirectionalReaction":
-				newReaction := Reaction{
-					ID:                   description.ID,
-					Directional:          subclass.Resource == "http://rdf.rhea-db.org/DirectionalReaction",
-					Accession:            description.Accession,
-					Status:               description.Status.Resource,
-					Comment:              description.Comment,
-					Equation:             description.Equation,
-					HTMLEquation:         description.HTMLEquation,
-					IsChemicallyBalanced: description.IsChemicallyBalanced,
-					IsTransport:          description.IsTransport,
-					Ec:                   description.EC.Resource,
-					Citations:            description.CitationStrings(),
-					Substrates:           description.SubstrateAccessionIDs(),
-					Products:             description.ProductAccessionIDs(),
-					SubstrateOrProducts:  description.SubstrateOrProductAccessionIDs(),
-					Location:             description.Location.Resource}
+				newReaction := NewReaction(description, subclass)
 				rhea.Reactions = append(rhea.Reactions, newReaction)
-			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer":
-				compoundType := subclass.Resource[23:]
-				newCompound := Compound{
-					ID:        description.ID,
-					Accession: description.About,
-					Position:  description.Position,
-					Name:      description.Name,
-					HTMLName:  description.HTMLName,
-					Formula:   description.Formula,
-					Charge:    description.Charge,
-					ChEBI:     description.ChEBI.Resource,
-
-					CompoundID:        description.ID,
-					CompoundAccession: description.Accession,
-					CompoundName:      description.Name,
-					CompoundHTMLName:  description.HTMLName,
-					CompoundType:      compoundType}
-				if compoundType == "Polymer" {
-					newCompound.ChEBI = description.UnderlyingChEBI.Resource
+			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer", "http://rdf.rhea-db.org/GenericPolypeptide", "http://rdf.rhea-db.org/GenericPolynucleotide", "http://rdf.rhea-db.org/GenericHeteropolysaccharide":
+				newCompound := NewCompound(description, subclass)
+				if subclass.Resource == "http://rdf.rhea-db.org/SmallMolecule" || subclass.Resource == "http://rdf.rhea-db.org/Polymer" {
+					rhea.Compounds = append(rhea.Compounds, newCompound)
+				} else {
+					compoundMap[description.About] = newCompound
+					compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
 				}
-				// Add subclass ChEBI
-				for _, sc := range description.Subclass {
-					if strings.Contains(sc.Resource, "CHEBI") {
-						newCompound.SubclassOfChEBI = sc.Resource
-					}
-				}
-				// Add new reactive parts and new compounds to rhea
-				rhea.Compounds = append(rhea.Compounds, newCompound)
-			case "http://rdf.rhea-db.org/GenericPolypeptide", "http://rdf.rhea-db.org/GenericPolynucleotide", "http://rdf.rhea-db.org/GenericHeteropolysaccharide":
-				compoundType := subclass.Resource[23:]
-				newCompound := Compound{
-					Accession:        description.About,
-					CompoundID:       description.ID,
-					CompoundName:     description.Name,
-					CompoundHTMLName: description.HTMLName,
-					CompoundType:     compoundType}
-				compoundMap[description.About] = newCompound
-				compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
 			}
 		}
 	}
@@ -446,57 +518,10 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 			if !strings.Contains(containsx.XMLName.Local, "contains") {
 				continue
 			}
-			// Get reaction sides
-			// gzip -d -k -c rhea.rdf.gz | grep -o -P '(?<=contains).*(?= rdf)' | tr ' ' '\n' | sort -u | tr '\n' ' '
-			// The exceptions to numeric contains are 2n, N, Nminus1, and Nplus1
-			var newReactionParticipant ReactionParticipant
-			switch containsx.XMLName.Local {
-			case "containsN":
-				newReactionParticipant = ReactionParticipant{
-					ReactionSide: description.About,
-					Contains:     1,
-					ContainsN:    true,
-					Minus:        false,
-					Plus:         false,
-					Accession:    containsx.Content}
-			case "contains2n":
-				newReactionParticipant = ReactionParticipant{
-					ReactionSide: description.About,
-					Contains:     2,
-					ContainsN:    true,
-					Minus:        false,
-					Plus:         false,
-					Accession:    containsx.Content}
-			case "containsNminus1":
-				newReactionParticipant = ReactionParticipant{
-					ReactionSide: description.About,
-					Contains:     1,
-					ContainsN:    true,
-					Minus:        true,
-					Plus:         false,
-					Accession:    containsx.Content}
-			case "containsNplus1":
-				newReactionParticipant = ReactionParticipant{
-					ReactionSide: description.About,
-					Contains:     1,
-					ContainsN:    true,
-					Minus:        false,
-					Plus:         true,
-					Accession:    containsx.Content}
-			default:
-				i, err := strconv.Atoi(containsx.XMLName.Local[8:])
-				if err != nil {
-					return Rhea{}, err
-				}
-				newReactionParticipant = ReactionParticipant{
-					ReactionSide: description.About,
-					Contains:     i,
-					ContainsN:    false,
-					Minus:        false,
-					Plus:         false,
-					Accession:    containsx.Content}
+			newReactionParticipant, err := NewReactionParticipant(description, containsx, compoundParticipantMap)
+			if err != nil {
+				return Rhea{}, err
 			}
-			newReactionParticipant.Compound = compoundParticipantMap[description.About]
 			rhea.ReactionParticipants = append(rhea.ReactionParticipants, newReactionParticipant)
 		}
 	}
