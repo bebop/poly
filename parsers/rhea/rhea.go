@@ -1,10 +1,12 @@
 package rhea
 
 import (
+	"bufio"
 	"compress/gzip"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -375,7 +377,7 @@ RHEA_ID DIRECTION       MASTER_ID       ID
 
 ******************************************************************************/
 
-// Rhea2Uniprot represents a single line of the TSV file
+// Rhea2Uniprot represents a single line of the TSV file.
 type Rhea2Uniprot struct {
 	RheaID    int
 	Direction string
@@ -383,30 +385,46 @@ type Rhea2Uniprot struct {
 	UniprotID string
 }
 
-//func ParseRhea2UniprotTsv(r io.Reader, lines chan<- Rhea2Uniprot) {
-//	start := true
-//	scanner := bufio.NewScanner(r)
-//	for scanner.Scan() {
-//		// We skip the header line
-//		if start {
-//			start = false
-//			continue
-//		}
-//
-//		// Get the line from the scanner
-//		line := scanner.Text()
-//
-//		// Split the line between tabs
-//		lineSplit := strings.Split(line, "\t")
-//	}
-//}
+// ParseRhea2UniprotTsv parses a rhea2uniprot TSV file and sends values to a channel.
+func ParseRhea2UniprotTsv(r io.Reader, lines chan<- Rhea2Uniprot) {
+	start := true
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		// We skip the header line
+		if start {
+			start = false
+			continue
+		}
 
-/******************************************************************************
+		// Get the line from the scanner
+		line := scanner.Text()
 
-GraphRhea takes a top-down approach to searching Rhea. We begin with a targetCompound,
-which will give you a list of reactions that could be used to make that targetCompound.
-Those are set into targetReactions map.
+		// Split the line between tabs
+		lineSplit := strings.Split(line, "\t")
 
-Existing compounds are put into
+		// Send line to lines channel
+		rheaId, err := strconv.Atoi(lineSplit[0])
+		if err != nil {
+			panic(err)
+		}
+		masterId, err := strconv.Atoi(lineSplit[2])
+		if err != nil {
+			panic(err)
+		}
+		lines <- Rhea2Uniprot{RheaID: rheaId, Direction: lineSplit[1], MasterID: masterId, UniprotID: lineSplit[3]}
+	}
+	close(lines)
+}
 
-******************************************************************************/
+// ReadRhea2UniprotSprot reads in the rhea2uniprot sprot TSV file (not gzipped) and sends values into a channel.
+func ReadRhea2UniprotSprot(path string, lines chan Rhea2Uniprot) {
+	file, _ := os.Open(path)
+	go ParseRhea2UniprotTsv(file, lines)
+}
+
+// ReadRhea2UniprotTrembl reads in the rhea2uniprot trembl TSV file (gzipped) and sends values into channel.
+func ReadRhea2UniprotTrembl(path string, lines chan Rhea2Uniprot) {
+	file, _ := os.Open(path)
+	r, _ := gzip.NewReader(file)
+	go ParseRhea2UniprotTsv(r, lines)
+}
