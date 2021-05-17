@@ -56,6 +56,10 @@ type Rhea struct {
 
 // Compound is a struct of a Rhea compound. These are chemicals - sometimes they are
 // complicated chemicals like proteins or polymers, but often they are simple molecules.
+// When Compounds are complicated molecules, like proteins, they can have reactiveParts
+// that actually do the reactions. Compound, as defined here, is a pair containing a
+// macro-molecule and a reactivePart. When building into a database, you will have to
+// split this pairing for normalization.
 type Compound struct {
 	ID                  int    `json:"id" db:"id"`
 	Accession           string `json:"accession" db:"accession"`
