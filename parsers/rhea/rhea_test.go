@@ -51,3 +51,30 @@ func TestInsertRheaSqlite(t *testing.T) {
 		log.Fatalf("InsertRhea Failed: %s", err)
 	}
 }
+
+func TestReadRhea2Uniprot(t *testing.T) {
+	lines := make(chan Rhea2Uniprot, 100)
+	go ReadRhea2UniprotTrembl("data/rhea2uniprot_sprot_minimized.tsv.gz", lines)
+
+	var line Rhea2Uniprot
+	for l := range lines {
+		line = l
+	}
+
+	if line.UniprotID != "P06106" {
+		log.Fatalf("Got wrong uniprotId. Expected P06106, got %s", line.UniprotID)
+	}
+}
+
+func ExampleReadRhea2UniprotSprot() {
+	lines := make(chan Rhea2Uniprot, 100)
+	go ReadRhea2UniprotSprot("data/rhea2uniprot_sprot_minimized.tsv", lines)
+
+	var line Rhea2Uniprot
+	for l := range lines {
+		line = l
+	}
+
+	fmt.Println(line)
+	// Output: {10048 UN 10048 P06106}
+}
