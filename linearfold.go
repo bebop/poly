@@ -147,7 +147,6 @@ var beam_size int = 100
 var VALUE_MIN float64 = -math.MaxFloat64
 
 // Can we remove these or init them here?
-var _allowed_pairs [NOTON][NOTON]bool
 var _helix_stacking [NOTON][NOTON][NOTON][NOTON]bool
 var cache_single [SINGLE_MAX_LEN + 1][SINGLE_MAX_LEN + 1]float64
 var scores []Pair
@@ -175,13 +174,6 @@ func GET_ACGU_NUM(x rune) int {
 }
 
 func initialize() {
-	_allowed_pairs[GET_ACGU_NUM('A')][GET_ACGU_NUM('U')] = true
-	_allowed_pairs[GET_ACGU_NUM('U')][GET_ACGU_NUM('A')] = true
-	_allowed_pairs[GET_ACGU_NUM('C')][GET_ACGU_NUM('G')] = true
-	_allowed_pairs[GET_ACGU_NUM('G')][GET_ACGU_NUM('C')] = true
-	_allowed_pairs[GET_ACGU_NUM('G')][GET_ACGU_NUM('U')] = true
-	_allowed_pairs[GET_ACGU_NUM('U')][GET_ACGU_NUM('G')] = true
-
 	SET_HELIX_STACKING('A', 'U', 'A', 'U', true)
 	SET_HELIX_STACKING('A', 'U', 'C', 'G', true)
 	SET_HELIX_STACKING('A', 'U', 'G', 'C', true)
