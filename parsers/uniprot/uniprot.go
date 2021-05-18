@@ -7,14 +7,14 @@ import (
 	"os"
 )
 
-// ReadUniprot reads a gzipped Uniprot XML dump
+// ReadUniprot reads a gzipped Uniprot XML dump.
 func ReadUniprot(path string, entries chan Entry) {
 	xmlFile, _ := os.Open(path)
 	r, _ := gzip.NewReader(xmlFile)
 	go ParseUniprot(r, entries)
 }
 
-// ParseUniprot parses Uniprot entries into a channel
+// ParseUniprot parses Uniprot entries into a channel.
 func ParseUniprot(r io.Reader, entries chan<- Entry) {
 	decoder := xml.NewDecoder(r)
 	for {
