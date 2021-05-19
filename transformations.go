@@ -88,7 +88,7 @@ func Translate(sequence string, codonTable CodonTable) string {
 
 		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
 		if currentCodon.Len() == 3 {
-			aminoAcids.WriteString(translationTable[currentCodon.String()])
+			aminoAcids.WriteString(translationTable[strings.ToUpper(currentCodon.String())])
 
 			// reset codon string builder for next codon.
 			currentCodon.Reset()
