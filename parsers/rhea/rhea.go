@@ -268,14 +268,13 @@ func ParseRhea(rheaBytes []byte) (Rhea, error) {
 			case "http://rdf.rhea-db.org/BidirectionalReaction", "http://rdf.rhea-db.org/DirectionalReaction":
 				newReaction := NewReaction(description, subclass)
 				rhea.Reactions = append(rhea.Reactions, newReaction)
-			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer", "http://rdf.rhea-db.org/GenericPolypeptide", "http://rdf.rhea-db.org/GenericPolynucleotide", "http://rdf.rhea-db.org/GenericHeteropolysaccharide":
+			case "http://rdf.rhea-db.org/SmallMolecule", "http://rdf.rhea-db.org/Polymer":
 				newCompound := NewCompound(description, subclass)
-				if subclass.Resource == "http://rdf.rhea-db.org/SmallMolecule" || subclass.Resource == "http://rdf.rhea-db.org/Polymer" {
-					rhea.Compounds = append(rhea.Compounds, newCompound)
-				} else {
-					compoundMap[description.About] = newCompound
-					compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
-				}
+				rhea.Compounds = append(rhea.Compounds, newCompound)
+			case "http://rdf.rhea-db.org/GenericPolypeptide", "http://rdf.rhea-db.org/GenericPolynucleotide", "http://rdf.rhea-db.org/GenericHeteropolysaccharide":
+				newCompound := NewCompound(description, subclass)
+				compoundMap[description.About] = newCompound
+				compoundParticipantMap[description.ReactivePartXML.Resource] = description.About
 			}
 		}
 	}
