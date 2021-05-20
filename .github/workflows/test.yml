@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - prime
+  pull_request:
 name: Test
 jobs:
   test:
@@ -15,4 +21,4 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Test
-      run: go build && go install && go test -v ./...
+      run: go test -v ./...
