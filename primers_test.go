@@ -91,7 +91,7 @@ func ExampleDeBruijn() {
 
 func ExampleUniqueSequence() {
 	uniqueSequences := make(chan string)
-	go UniqueSequence(c, 20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
+	go UniqueSequence(uniqueSequences, 20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
 	var output string
 	for uniqueSeq := range uniqueSequences {
 		output = uniqueSeq
