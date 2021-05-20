@@ -1451,39 +1451,39 @@ func vrna_nucleotide_encode(c rune) int {
 * Sets the `strand_order`, `strand_start`, `strand_end` and `strand_number` fields
 * of `fc`.
  */
-func vrna_sequence_prepare(fc *vrna_fold_compound_t) {
-	var strand_number, i uint32
+// func vrna_sequence_prepare(fc *vrna_fold_compound_t) {
+// 	var strand_number, i uint32
 
-	fc.strand_order = nil
-	fc.strand_start = nil
-	fc.strand_end = nil
-	fc.strand_number = make([]uint32, fc.length+2)
+// 	fc.strand_order = nil
+// 	fc.strand_start = nil
+// 	fc.strand_end = nil
+// 	fc.strand_number = make([]uint32, fc.length+2)
 
-	/* 1. store initial strand order */
-	fc.strand_order = make([]uint32, fc.strands+1)
-	for strand_number = 0; strand_number < fc.strands; strand_number++ {
-		fc.strand_order[strand_number] = strand_number
-	}
-	// log.Printf("strand_order: %v", fc.strand_order)
+// 	/* 1. store initial strand order */
+// 	fc.strand_order = make([]uint32, fc.strands+1)
+// 	for strand_number = 0; strand_number < fc.strands; strand_number++ {
+// 		fc.strand_order[strand_number] = strand_number
+// 	}
+// 	// log.Printf("strand_order: %v", fc.strand_order)
 
-	/* 2. mark start and end positions of sequences */
-	fc.strand_start = make([]uint32, fc.strands+1)
-	fc.strand_end = make([]uint32, fc.strands+1)
+// 	/* 2. mark start and end positions of sequences */
+// 	fc.strand_start = make([]uint32, fc.strands+1)
+// 	fc.strand_end = make([]uint32, fc.strands+1)
 
-	fc.strand_start[0] = 1
-	fc.strand_end[0] = fc.strand_start[0] + fc.seq_struct.length - 1
+// 	fc.strand_start[0] = 1
+// 	fc.strand_end[0] = fc.strand_start[0] + fc.seq_struct.length - 1
 
-	for strand_number = 1; strand_number < fc.strands; strand_number++ {
-		fc.strand_start[strand_number] = fc.strand_end[strand_number-1] + 1
-		fc.strand_end[strand_number] = fc.strand_start[strand_number] + fc.seq_struct.length - 1
-		for i = fc.strand_start[strand_number]; i <= fc.strand_end[strand_number]; i++ {
-			fc.strand_number[i] = strand_number
-		}
-	}
+// 	for strand_number = 1; strand_number < fc.strands; strand_number++ {
+// 		fc.strand_start[strand_number] = fc.strand_end[strand_number-1] + 1
+// 		fc.strand_end[strand_number] = fc.strand_start[strand_number] + fc.seq_struct.length - 1
+// 		for i = fc.strand_start[strand_number]; i <= fc.strand_end[strand_number]; i++ {
+// 			fc.strand_number[i] = strand_number
+// 		}
+// 	}
 
-	/* this sets pos. n + 1 as well */
-	fc.strand_number[fc.length+1] = fc.strands - 1
-}
+// 	/* this sets pos. n + 1 as well */
+// 	fc.strand_number[fc.length+1] = fc.strands - 1
+// }
 
 /*
 * Calculate the energy contribution of
