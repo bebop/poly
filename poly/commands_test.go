@@ -255,5 +255,23 @@ func TestHashPipe(t *testing.T) {
 	if hashOutputString != testHashString {
 		t.Errorf("TestHashPipe has failed. Returned %q, want %q", hashOutputString, puc19GbkBlake3Hash)
 	}
+}
+func TestInputParameterForConvertErrorsIfNotPipe(t *testing.T) {
+	app := application()
+	args := append(os.Args[0:1], "convert", "-i", "json", "../data/puc19.gbk")
+	err := app.Run(args)
 
+	if err != errIllegalInputFlag {
+		t.Fatal("passing '-i' should throw an error if we are not reading from a pipe")
+	}
+}
+
+func TestInputParameterForHashErrorsIfNotPipe(t *testing.T) {
+	app := application()
+	args := append(os.Args[0:1], "hash", "-i", "json", "../data/puc19.gbk")
+	err := app.Run(args)
+
+	if err != errIllegalInputFlag {
+		t.Fatal("passing '-i' should throw an error if we are not reading from a pipe")
+	}
 }
