@@ -19,191 +19,20 @@ import (
 /**
  *  @brief  The most basic data structure required by many functions throughout the RNAlib
  *
- *  @warning  Reading/Writing from/to attributes that are not within the scope of the current type usually result
- *  in undefined behavior!
- *
- *  @see  #vrna_fold_compound_t.type, vrna_fold_compound(), vrna_fold_compound_comparative(), vrna_fold_compound_free(),
- *        #VRNA_FC_TYPE_SINGLE, #VRNA_FC_TYPE_COMPARATIVE
  */
 type vrna_fold_compound_t struct {
 	length uint32 /**<  @brief  The length of the sequence (or sequence alignment). vivek: In ViennaRNA, length is stored as unsigned int (a primitive C type which ranges from 0 to 4,294,967,295). uint32 is the equivalent type in Go. */
-	// cutpoint int    /*  @brief  The position of the (cofold) cutpoint within the provided sequence. If there is no cutpoint, this field will be set to -1 */
-
-	/*
-	* @brief  The strand number a particular nucleotide is associated with
-	* vivek:
-	* size of this array is `len(sequence) + 2`
-	* [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-	 */
-	strand_number []uint32
-	/*
-	* @brief  The strand order, i.e. permutation of current concatenated sequence
-	* vivek:
-	* size is `strands` + 1 (The list is zero-indexed)
-	* [0 0]
-	 */
-	strand_order []uint32
-
-	/*
-	* @brief  The start position of a particular strand within the current concatenated sequence
-	* vivek:
-	* size is `strands` + 1 (The list is zero-indexed)
-	* [1 0]
-	 */
-	strand_start []uint32
-
-	/*
-	* @brief  The end (last) position of a particular strand within the current concatenated sequence
-	* vivek:
-	* size is `strands` + 1 (The list is zero-indexed)
-	* [30 0]
-	 */
-	strand_end []uint32
 
 	/* vivek: The number of strands in this folding compound. Since we only calculate MFE for one compound, this is generally one.*/
 	strands    uint32
 	seq_struct *vrna_seq_t
-	// nucleotides []vrna_seq_t /* */
-	// alignment   *vrna_msa_t
-
-	// hc *vrna_hc_t /**<  @brief  The hard constraints data structure used for structure prediction */
-
-	// matrices *vrna_mx_mfe_t /**<  @brief  The MFE DP matrices */
-	// exp_matrices *vrna_mx_pf_t  /**<  @brief  The PF DP matrices  */
-
 	params *vrna_param_t /**<  @brief  The precomputed free energy contributions for each type of loop */
-	// exp_params *vrna_exp_param_t    /**<  @brief  The precomputed free energy contributions as Boltzmann factors  */
-
-	// iindx []int /**<  @brief  DP matrix accessor  */
-	// jindx []int /**<  @brief  DP matrix accessor  */
-
-	/**
-	 *  @}
-	 *
-	 *  @name Secondary Structure Decomposition (grammar) related data fields
-	 *  @{
-	 */
-
-	/* data structure to adjust additional structural domains, such as G-quadruplexes */
-	// domains_struc *vrna_sd_t             /**<  @brief  Additional structured domains */
-
-	/* data structure to adjust additional contributions to unpaired stretches, e.g. due to protein binding */
-	// domains_up     *vrna_ud_                /**<  @brief  Additional unstructured domains */
-
-	/**
-	 *  @}
-	 */
-
-	/**
-	 *  @name Data fields available for single/hybrid structure prediction
-	 *  @{
-	 */
 	sequence          string /* The input sequence string */
 	sequence_encoding []int  /**<  @brief  Numerical encoding of the input sequence
 	 *    @see    vrna_sequence_encode()
 	 */
 	sequence_encoding2 []int
-	// pair_type              string
-	/**<  @brief  Pair type array
-	 *
-	 *    Contains the numerical encoding of the pair type for each pair (i,j) used
-	 *    in MFE, Partition function and Evaluation computations.
-	 *    @note This array is always indexed via jindx, in contrast to previously
-	 *    different indexing between mfe and pf variants!
-	 *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_SINGLE @endverbatim
-	 *    @see    vrna_idx_col_wise(), vrna_ptypes()
-	 */
-
-	// sc *vrna_sc_t
-	/**<  @brief  The soft constraints for usage in structure prediction and evaluation
-	 *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_SINGLE @endverbatim
-	 */
-
-	/**
-	 *  @}
-	 */
-
-	// /**
-	//  *  @name Data fields for consensus structure prediction
-	//  *  @{
-	//  */
-	//     sequences []string        /**<  @brief  The aligned sequences
-	//                                        *    @note   The end of the alignment is indicated by a NULL pointer in the second dimension
-	//                                        *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     n_seq uint32              /**<  @brief  The number of sequences in the alignment
-	//                                        *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     cons_seq string          /**<  @brief  The consensus sequence of the aligned sequences
-	//                                        *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     S_cons []int           /**<  @brief  Numerical encoding of the consensus sequence
-	//                                        *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     S   [][]int            /**<  @brief  Numerical encoding of the sequences in the alignment
-	//                                        *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     S5  [][]int             /**<  @brief    S5[s][i] holds next base 5' of i in sequence s
-	//                                        *    @warning  Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	//     S3  [][]int             /**<  @brief    Sl[s][i] holds next base 3' of i in sequence s
-	//                                        *    @warning  Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                        */
-	// 		Ss []string
-	// 		a2s [][]uint32
-	//     pscore []int              /**<  @brief  Precomputed array of pair types expressed as pairing scores
-	//                                          *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                          */
-	//     pscore_local [][]int       /**<  @brief  Precomputed array of pair types expressed as pairing scores
-	//                                          *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                          */
-	//     pscore_pf_compat []int    /**<  @brief  Precomputed array of pair types expressed as pairing scores indexed via iindx
-	//                                          *    @deprecated  This attribute will vanish in the future!
-	//                                          *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                          */
-	//     scs []*vrna_sc_t                /**<  @brief  A set of soft constraints (for each sequence in the alignment)
-	//                                          *    @warning   Only available if @verbatim type==VRNA_FC_TYPE_COMPARATIVE @endverbatim
-	//                                          */
-	// 		oldAliEn int
-
-	/**
-	 *  @}
-	 */
-
-	/**
-	 *  @name Additional data fields for Distance Class Partitioning
-	 *
-	 *  These data fields are typically populated with meaningful data only if used in the context of Distance Class Partitioning
-	 *  @{
-	 */
-	// maxD1         uint32 /**<  @brief  Maximum allowed base pair distance to first reference */
-	// maxD2         uint32 /**<  @brief  Maximum allowed base pair distance to second reference */
-	// reference_pt1 []int  /**<  @brief  A pairtable of the first reference structure */
-	// reference_pt2 []int  /**<  @brief  A pairtable of the second reference structure */
-
-	// referenceBPs1 []uint32 /**<  @brief  Matrix containing number of basepairs of reference structure1 in interval [i,j] */
-	// referenceBPs2 []uint32 /**<  @brief  Matrix containing number of basepairs of reference structure2 in interval [i,j] */
-	// bpdist        []uint32 /**<  @brief  Matrix containing base pair distance of reference structure 1 and 2 on interval [i,j] */
-
-	// mm1 []uint32 /**<  @brief  Maximum matching matrix, reference struct 1 disallowed */
-	// mm2 []uint32 /**<  @brief  Maximum matching matrix, reference struct 2 disallowed */
-
-	/**
-	 *  @}
-	 */
-
-	/**
-	 *  @name Additional data fields for local folding
-	 *
-	 *  These data fields are typically populated with meaningful data only if used in the context of local folding
-	 *  @{
-	 */
 	window_size int /**<  @brief  window size for local folding sliding window approach */
-	// ptype_local []string /**<  @brief  Pair type array (for local folding) */
-
-	/**
-	 *  @}
-	 */
 }
 
 /* vivek:
@@ -216,10 +45,6 @@ func default_vrna_fold_compound_t() *vrna_fold_compound_t {
 		length:  0,
 		strands: 0,
 		// cutpoint:      -1,
-		strand_number: nil,
-		strand_order:  nil,
-		strand_start:  nil,
-		strand_end:    nil,
 		seq_struct:    nil,
 		// nucleotides:  nil,
 		// alignment:     nil,
@@ -1215,41 +1040,11 @@ func sanitize_bp_span(fc *vrna_fold_compound_t) {
 }
 
 func set_fold_compound(fc *vrna_fold_compound_t) {
-	// VRNA_OPTION_MFE | VRNA_OPTION_EVAL_ONLY
 	var sequence string = fc.sequence
-	// var sequences []string
-	// var length, s int
-	// var md_p *vrna_md_t
 
-	// md_p = fc.params.model_details
 	fc.sequence = ""
 	fc.length = 0
-
-	/* split input sequences at default delimiter '&' */
-	// sequences = vrna_strsplit(sequence, NULL);
-
 	vrna_sequence_add(fc, sequence)
-
-	// if fc.strands > 1 {
-	// 	fc.cutpoint = int(fc.nucleotides[0].length) + 1
-
-	// 	if md_p.min_loop_size == TURN {
-	// 		md_p.min_loop_size = 0 /* is it safe to set this here? */
-	// 	}
-	// }
-
-	// if !(options & VRNA_OPTION_EVAL_ONLY) {
-	// 	fc.ptype = (aux & WITH_PTYPE) ? vrna_ptypes(fc.sequence_encoding2, md_p) : NULL;
-	// 	/* backward compatibility ptypes */
-	// 	fc.ptype_pf_compat =
-	// 			(aux & WITH_PTYPE_COMPAT) ? get_ptypes(fc.sequence_encoding2, md_p, 1) : NULL;
-	// }
-
-	vrna_sequence_prepare(fc)
-
-	// fc.iindx = vrna_idx_row_wise(fc.length)
-	// fc.jindx = vrna_idx_col_wise(fc.length)
-
 }
 
 /*
@@ -1262,81 +1057,33 @@ func vrna_sequence_add(fc *vrna_fold_compound_t, sequence string) {
 	// VRNA_SEQUENCE_RNA
 	var add_length uint32 = uint32(len(sequence))
 
-	/* add the sequence to the nucleotides container */
-	// fc.nucleotides = (vrna_seq_t *)vrna_realloc(vc.nucleotides,
-	// 																							sizeof(vrna_seq_t) *
-	// 																							(vc.strands + 1));
-	// fc.nucleotides = make([]vrna_seq_t, fc.strands+1)
 
 	fc.seq_struct = &vrna_seq_t{
 		sequence: strings.ToUpper(sequence),
 		length:   uint32(len(sequence)),
 		encoding: vrna_seq_encode(sequence),
 	}
-	// fc.seq_struct = set_sequence(sequence,
-	// 	fc.params.model_details)
 
 	/* increase strands counter */
 	fc.strands++
 
-	/* add new sequence to initial order of all strands */
-	// fc.sequence = (char *)vrna_realloc(vc.sequence,
-	// 																		sizeof(char) *
-	// 																		(vc.length + add_length + 1));
-	// vivek: should we add an ampersand between sequences?
 	fc.sequence = sequence
 
-	/* add encoding for new strand */
-	// fc.sequence_encoding = make([]int, fc.length+add_length+2)
-
-	// fc.sequence_encoding = fc.sequence_encoding + '\0' + fc.nucleotides[fc.strands - 1].encoding
-	// log.Printf("struct encodinggg: %v", fc.seq_struct.encoding)
 	fc.sequence_encoding = make([]int, len(sequence)+2)
 	fc.sequence_encoding = append([]int{0}, fc.seq_struct.encoding[1:]...)
-	// log.Printf("sequence encoding: %v", fc.sequence_encoding)
 	fc.sequence_encoding[len(sequence)+1] = fc.sequence_encoding[1]
 	fc.sequence_encoding[0] = fc.sequence_encoding[len(sequence)]
-	// log.Printf("circular encoding: %v", fc.sequence_encoding)
-	// fc.sequence_encoding[1:] = fc.seq_struct.encoding[1:]
-
-	// fc.sequence_encoding = append(fc.sequence_encoding, fc.seq_struct.encoding[1:]...)
-
-	/* restore circular encoding */
-	// fc.sequence_encoding = append(fc.sequence_encoding, fc.sequence_encoding[1])
-	// fmt.Println(len(fc.sequence_encoding))
-	// fc.sequence_encoding[0] = fc.sequence_encoding[len(fc.sequence_encoding)-1]
-
-	/* add encoding2 (simple encoding) for new strand */
-	// fc.sequence_encoding2 = make([]int, fc.length+add_length+2)
 
 	fc.sequence_encoding2 = make([]int, len(sequence)+2)
 	enc := vrna_seq_encode_simple(fc.seq_struct.sequence)
 	fc.sequence_encoding2 = append([]int{0}, enc[1:]...)
 	fc.sequence_encoding2[len(sequence)+1] = fc.sequence_encoding2[1]
 	fc.sequence_encoding2[0] = len(sequence)
-	// log.Printf("circulaencoding2: %v", fc.sequence_encoding2)
-	// fc.sequence_encoding2[1:] = enc[1:]
-	// panic(fmt.Sprintf("%v", fc.sequence_encoding2))
-	// fc.sequence_encoding2[fc.length+1:] = enc[1 : 1+add_length]
-	// memcpy(vc.sequence_encoding2 + vc.length + 1,
-	// 				enc + 1,
-	// 				add_length * sizeof(short))
-
-	// fc.sequence_encoding2[len(fc.sequence_encoding2)-1] = fc.sequence_encoding2[1]
-	// fc.sequence_encoding2[0] = int(fc.length + add_length)
 
 	/* finally, increase length property of the fold compound */
 	fc.length = add_length
 }
 
-/* vivek:
-* Setting of the `encoding` field is explained in the docs of `vrna_seq_encode`.
-*
-* The original repo has additional functionality for a circular sequence which has been omitted from this function.
- */
-// func set_sequence(sequence string, md *vrna_md_t) *vrna_seq_t {
-// 	return
-// }
 
 /* vivek:
 * manipulates the encoded sequence of `sequence` (see doc of `vrna_seq_encode_simple` for more
@@ -1354,19 +1101,9 @@ func vrna_seq_encode(sequence string) []int {
 	var S []int
 
 	if sequence != "" {
-		// S[1:len(sequence)+1] contains the encoding of sequence
-		// S[0] is the lenght of sequence
-		// S[len(sequence)+1] = S[1]
 		S = vrna_seq_encode_simple(sequence)
 
 		l = uint32(len(sequence))
-		// log.Printf("here")
-		// log.Printf("%v", S)
-		// for i = 1; i <= l; i++ {
-		// 	/* _  A  C  G  U  X  K  I */
-		// 	S[i] = md.alias[S[i]]
-		// }
-		// log.Printf("%v", S)
 
 		S[l+1] = S[1]
 		S[0] = S[l]
@@ -1422,11 +1159,6 @@ func vrna_nucleotide_encode(c rune) int {
 
 	c = unicode.ToUpper(c)
 
-	// if md != nil {
-	// vivek: md.energy_set defaults to 0
-	// if md.energy_set > 0 {
-	// 	code = int(c-'A') + 1
-	// } else {
 	pos := strings.Index(Law_and_Order, string(c))
 	if pos == -1 {
 		code = 0
@@ -1441,49 +1173,10 @@ func vrna_nucleotide_encode(c rune) int {
 	if code > 4 {
 		code-- /* make T and U equivalent */
 	}
-	// }
-	// }
 
 	return code
 }
 
-/* vivek:
-* Sets the `strand_order`, `strand_start`, `strand_end` and `strand_number` fields
-* of `fc`.
- */
-// func vrna_sequence_prepare(fc *vrna_fold_compound_t) {
-// 	var strand_number, i uint32
-
-// 	fc.strand_order = nil
-// 	fc.strand_start = nil
-// 	fc.strand_end = nil
-// 	fc.strand_number = make([]uint32, fc.length+2)
-
-// 	/* 1. store initial strand order */
-// 	fc.strand_order = make([]uint32, fc.strands+1)
-// 	for strand_number = 0; strand_number < fc.strands; strand_number++ {
-// 		fc.strand_order[strand_number] = strand_number
-// 	}
-// 	// log.Printf("strand_order: %v", fc.strand_order)
-
-// 	/* 2. mark start and end positions of sequences */
-// 	fc.strand_start = make([]uint32, fc.strands+1)
-// 	fc.strand_end = make([]uint32, fc.strands+1)
-
-// 	fc.strand_start[0] = 1
-// 	fc.strand_end[0] = fc.strand_start[0] + fc.seq_struct.length - 1
-
-// 	for strand_number = 1; strand_number < fc.strands; strand_number++ {
-// 		fc.strand_start[strand_number] = fc.strand_end[strand_number-1] + 1
-// 		fc.strand_end[strand_number] = fc.strand_start[strand_number] + fc.seq_struct.length - 1
-// 		for i = fc.strand_start[strand_number]; i <= fc.strand_end[strand_number]; i++ {
-// 			fc.strand_number[i] = strand_number
-// 		}
-// 	}
-
-// 	/* this sets pos. n + 1 as well */
-// 	fc.strand_number[fc.length+1] = fc.strands - 1
-// }
 
 /*
 * Calculate the energy contribution of
@@ -1890,22 +1583,18 @@ func E_IntLoop(n1, n2 int, type_1, type_2 uint32, si1, sj1, sp1, sq1 int, P *vrn
  *  @param  j   3'-position of the base pair
  *  @returns    Free energy of the hairpin loop closed by @f$ (i,j) @f$ in deka-kal/mol
  */
-func vrna_eval_hp_loop(fc *vrna_fold_compound_t, i, j int) int {
+func vrna_eval_hp_loop(fc *vrna_fold_compound_t, pair_open_idx, pair_close_idx int) int {
 	var u, e int
-	var type_1 uint32
 	var P *vrna_param_t
 	var md *vrna_md_t
 
 	P = fc.params
 	md = P.model_details
-	e = INF
 
-	u = j - i - 1
-	type_1 = vrna_get_pair_type_md(fc.sequence_encoding2[i], fc.sequence_encoding2[j], md)
+	u = pair_close_idx - pair_open_idx - 1
+	pair_type := vrna_get_pair_type_md(fc.sequence_encoding2[pair_open_idx], fc.sequence_encoding2[pair_close_idx], md)
 
-	if !((type_1 == 3) || (type_1 == 4)) {
-		e = E_Hairpin(u, type_1, fc.sequence_encoding[i+1], fc.sequence_encoding[j-1], fc.sequence[i-1:], P)
-	}
+	e = E_Hairpin(u, pair_type, fc.sequence_encoding[pair_open_idx+1], fc.sequence_encoding[pair_close_idx-1], fc.sequence[pair_open_idx-1:], P)
 
 	return e
 }

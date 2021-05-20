@@ -12,41 +12,41 @@ REFERENCE   1  (bases 1 to 3334)
            https://www.snapgene.com
 FEATURES             Location/Qualifiers
      source          1..3334
-                     /mol_type="genomic DNA"
-                     /db_xref="taxon:10665"
                      /organism="Escherichia virus T4"
                      /host="Escherichia coli"
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:10665"
      gene            1..243
                      /locus_tag="T4p240"
                      /label="frd.1"
                      /db_xref="GeneID:1258741"
                      /gene="frd.1"
      CDS             1..243
-                     /db_xref="GeneID:1258741"
                      /codon_start="1"
+                     /locus_tag="T4p240"
+                     /label="frd.1"
+                     /db_xref="GeneID:1258741"
                      /transl_table="11"
                      /gene="frd.1"
-                     /locus_tag="T4p240"
                      /product="Frd.1 conserved hypothetical protein"
-                     /label="frd.1"
                      /protein_id="NP_049851.1"
                      /translation="MRLQRQSIKDSEVRGKWYFNIIGKDSELVEKAEHLLRDMGWEDECDGCPLYEDGESAGFWIYHSDVEQFKADWKIVKKSV"
      gene            join(complement(315..330),complement(339..896))
+                     /db_xref="GeneID:1258671"
                      /gene="frd"
                      /locus_tag="T4p239"
                      /label="frd"
-                     /db_xref="GeneID:1258671"
      CDS             315..896
-                     /protein_id="NP_049850.1"
-                     /transl_table="11"
-                     /gene="frd"
-                     /label="frd"
+                     /codon_start="1"
                      /note="product is methyl donor used by dTMP synthase"
                      /db_xref="GeneID:1258671"
-                     /codon_start="1"
+                     /translation="MIKLVFRYSPTKTVDGFNELAFGLGDGLPWGRVKKDLQNFKARTEGTIMIMGAKTFQSLPTLLPGRSHIVVCDLARDYPVTKDGDLAHFYITWEQYITYISGGEIQVSSPNAPFETMLDQNSKVSVIGGPALLYAALPYADEVVVSRIVKRHRVNSTVQLDASFLDDISKREMVETHWYKIDEVTTLTESVYK"
+                     /transl_table="11"
+                     /gene="frd"
                      /locus_tag="T4p239"
                      /product="Frd dihydrofolate reductase"
-                     /translation="MIKLVFRYSPTKTVDGFNELAFGLGDGLPWGRVKKDLQNFKARTEGTIMIMGAKTFQSLPTLLPGRSHIVVCDLARDYPVTKDGDLAHFYITWEQYITYISGGEIQVSSPNAPFETMLDQNSKVSVIGGPALLYAALPYADEVVVSRIVKRHRVNSTVQLDASFLDDISKREMVETHWYKIDEVTTLTESVYK"
+                     /label="frd"
+                     /protein_id="NP_049850.1"
      gene            complement(join(893..1098,1101..2770))
                      /gene="td"
                      /locus_tag="T4p237"
@@ -55,12 +55,12 @@ FEATURES             Location/Qualifiers
      CDS             join(893..1441,2459..2770)
                      /gene="td"
                      /locus_tag="T4p237"
+                     /protein_id="NP_049848.1"
+                     /translation="MKQYQDLIKDIFENGYETDDRTGTGTIALFGSKLRWDLTKGFPAVTTKKLAWKACIAELIWFLSGSTNVNDLRLIQHDSLIQGKTVWDENYENQAKDLGYHSGELGPIYGKQWRDFGGVDQIIEVIDRIKKLPNDRRQIVSAWNPAELKYMALPPCHMFYQFNVRNGYLDLQWYQRSVDVFLGLPFNIASYATLVHIVAKMCNLIPGDLIFSGGNTHIYMNHVEQCKEILRREPKELCELVISGLPYKFRYLSTKEQLKYVLKLRPKDFVLNNYVSHPPIKGKMAV"
+                     /transl_table="11"
                      /product="dTMP (thymidylate) synthase"
                      /label="td"
-                     /protein_id="NP_049848.1"
-                     /transl_table="11"
                      /db_xref="GeneID:1258770"
-                     /translation="MKQYQDLIKDIFENGYETDDRTGTGTIALFGSKLRWDLTKGFPAVTTKKLAWKACIAELIWFLSGSTNVNDLRLIQHDSLIQGKTVWDENYENQAKDLGYHSGELGPIYGKQWRDFGGVDQIIEVIDRIKKLPNDRRQIVSAWNPAELKYMALPPCHMFYQFNVRNGYLDLQWYQRSVDVFLGLPFNIASYATLVHIVAKMCNLIPGDLIFSGGNTHIYMNHVEQCKEILRREPKELCELVISGLPYKFRYLSTKEQLKYVLKLRPKDFVLNNYVSHPPIKGKMAV"
                      /codon_start="1"
      intron          1442..2458
                      /locus_tag="T4p237"
@@ -73,46 +73,46 @@ FEATURES             Location/Qualifiers
                      /label="I-TevI"
                      /db_xref="GeneID:1258722"
      CDS             1574..2311
-                     /product="I-TevI homing endonuclease"
-                     /label="I-TevI"
-                     /note="DNA endonuclease encoded by group 1A intron in td;  GIY-YIG family"
                      /translation="MKSGIYQIKNTLNNKVYVGSAKDFEKRWKRHFKDLEKGCHSSIKLQRSFNKHGNVFECSILEEIPYEKDLIIERENFWIKELNSKINGYNIADATFGDTCSTHPLKEEIIKKRSETVKAKMLKLGPDGRKALYSKPGSKNGRWNPETHKFCKCGVRIQTSAYTCSKCRNRSGENNSFFNHKHSDITKSKISEKMKGKKPSNIKKISCDGVIFDCAADAARHFKISSGLVTYRVKSDKWNWFYINA"
-                     /codon_start="1"
                      /transl_table="11"
                      /gene="I-TevI"
-                     /locus_tag="T4p238"
-                     /db_xref="GeneID:1258722"
+                     /product="I-TevI homing endonuclease"
+                     /label="I-TevI"
                      /protein_id="NP_049849.3"
+                     /codon_start="1"
+                     /locus_tag="T4p238"
+                     /note="DNA endonuclease encoded by group 1A intron in td;  GIY-YIG family"
+                     /db_xref="GeneID:1258722"
      gene            complement(2791..3054)
+                     /gene="nrdA.2"
                      /locus_tag="T4p236"
                      /label="nrdA.2"
                      /db_xref="GeneID:1258679"
-                     /gene="nrdA.2"
      CDS             2791..3054
                      /transl_table="11"
+                     /db_xref="GeneID:1258679"
+                     /protein_id="NP_049847.1"
+                     /translation="MILRFKDTSGVVLFTLPNPSELEVPGPEQPITIYGKKYYTHKMTREYFDNKISTVKTSSDCYYDITVLTEKQYDELFQRGPSMPGSE"
+                     /codon_start="1"
                      /gene="nrdA.2"
                      /locus_tag="T4p236"
                      /product="NrdA.2 conserved hypothetical protein"
                      /label="nrdA.2"
-                     /db_xref="GeneID:1258679"
-                     /translation="MILRFKDTSGVVLFTLPNPSELEVPGPEQPITIYGKKYYTHKMTREYFDNKISTVKTSSDCYYDITVLTEKQYDELFQRGPSMPGSE"
-                     /codon_start="1"
-                     /protein_id="NP_049847.1"
      gene            3008..3334
-                     /db_xref="GeneID:1258707"
                      /gene="nrdA.1"
                      /locus_tag="T4p235"
                      /label="nrdA.1"
+                     /db_xref="GeneID:1258707"
      CDS             3008..3334
-                     /product="NrdA.1 conserved hypothetical protein"
-                     /label="nrdA.1"
-                     /protein_id="NP_049846.1"
                      /db_xref="GeneID:1258707"
                      /translation="MTNYSSVGRLCRVVNKYKSDFDVNIHRGTFWGNYVGKDAGSREAAIELFKKDFIRRIKSGEITKAHLEPLRGMRLGCTCKPKPCHGDIIAHIVNRLFKDDFQVEDLCN"
                      /codon_start="1"
+                     /product="NrdA.1 conserved hypothetical protein"
+                     /locus_tag="T4p235"
+                     /label="nrdA.1"
+                     /protein_id="NP_049846.1"
                      /transl_table="11"
                      /gene="nrdA.1"
-                     /locus_tag="T4p235"
      gene            3325..3334
                      /label="nrdA"
                      /db_xref="GeneID:1258795"
