@@ -1,9 +1,11 @@
 package poly
 
 import (
+	"fmt"
+	"log"
+	"sort"
+	"strconv"
 	"testing"
-        "strconv"
-        "fmt"
 )
 
 func TestGetSequenceMethods(t *testing.T) {
@@ -72,40 +74,68 @@ func TestLocationParser(t *testing.T) {
 	}
 }
 
+func TestIUPAC(t *testing.T) {
+	testSeq := "ATN"
+	testVariants := []string{"ATG", "ATA", "ATT", "ATC"}
+	testVariantsIUPAC, err := AllVariantsIUPAC(testSeq)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sort.Strings(testVariants)
+	sort.Strings(testVariantsIUPAC)
+
+	for index := range testVariants {
+		if testVariants[index] != testVariantsIUPAC[index] {
+			t.Errorf("IUPAC variant has changed on test 'allIUPAC('ATN')'. Got this:\n%s instead of \n%s", testVariantsIUPAC, testVariants)
+		}
+	}
+}
+
+func ExampleAllVariantsIUPAC() {
+	// AllVariantsIUPAC takes a string as input
+	// and returns all iupac variants as output
+	mendelIUPAC := "ATGGARAAYGAYGARCTN"
+	// ambiguous IUPAC codes for most of the sequences that code for the protein MENDEL
+	mendelIUPACvariants, _ := AllVariantsIUPAC(mendelIUPAC)
+	fmt.Println(mendelIUPACvariants)
+	// Output: [ATGGAGAATGATGAGCTG ATGGAGAATGATGAGCTA ATGGAGAATGATGAGCTT ATGGAGAATGATGAGCTC ATGGAGAATGATGAACTG ATGGAGAATGATGAACTA ATGGAGAATGATGAACTT ATGGAGAATGATGAACTC ATGGAGAATGACGAGCTG ATGGAGAATGACGAGCTA ATGGAGAATGACGAGCTT ATGGAGAATGACGAGCTC ATGGAGAATGACGAACTG ATGGAGAATGACGAACTA ATGGAGAATGACGAACTT ATGGAGAATGACGAACTC ATGGAGAACGATGAGCTG ATGGAGAACGATGAGCTA ATGGAGAACGATGAGCTT ATGGAGAACGATGAGCTC ATGGAGAACGATGAACTG ATGGAGAACGATGAACTA ATGGAGAACGATGAACTT ATGGAGAACGATGAACTC ATGGAGAACGACGAGCTG ATGGAGAACGACGAGCTA ATGGAGAACGACGAGCTT ATGGAGAACGACGAGCTC ATGGAGAACGACGAACTG ATGGAGAACGACGAACTA ATGGAGAACGACGAACTT ATGGAGAACGACGAACTC ATGGAAAATGATGAGCTG ATGGAAAATGATGAGCTA ATGGAAAATGATGAGCTT ATGGAAAATGATGAGCTC ATGGAAAATGATGAACTG ATGGAAAATGATGAACTA ATGGAAAATGATGAACTT ATGGAAAATGATGAACTC ATGGAAAATGACGAGCTG ATGGAAAATGACGAGCTA ATGGAAAATGACGAGCTT ATGGAAAATGACGAGCTC ATGGAAAATGACGAACTG ATGGAAAATGACGAACTA ATGGAAAATGACGAACTT ATGGAAAATGACGAACTC ATGGAAAACGATGAGCTG ATGGAAAACGATGAGCTA ATGGAAAACGATGAGCTT ATGGAAAACGATGAGCTC ATGGAAAACGATGAACTG ATGGAAAACGATGAACTA ATGGAAAACGATGAACTT ATGGAAAACGATGAACTC ATGGAAAACGACGAGCTG ATGGAAAACGACGAGCTA ATGGAAAACGACGAGCTT ATGGAAAACGACGAGCTC ATGGAAAACGACGAACTG ATGGAAAACGACGAACTA ATGGAAAACGACGAACTT ATGGAAAACGACGAACTC]
+
+}
+
 func ExampleRandomProteinSequence() {
-        // RandomProteinSequence builds a Protein Sequence by only passing through arguments a length and a seed that will be use to generate a randomly the sequence. The length needs to be greater than two because every sequence already have a start and stop codon. Seed makes this test deterministic.
+	// RandomProteinSequence builds a Protein Sequence by only passing through arguments a length and a seed that will be use to generate a randomly the sequence. The length needs to be greater than two because every sequence already have a start and stop codon. Seed makes this test deterministic.
 	randomProtein, _ := RandomProteinSequence(15, 2)
 	fmt.Println(randomProtein)
+
 	// Output: MHHPAFRMFNTMYG*
 }
 
 func TestRandomProteinSequence(t *testing.T) {
-        const length = 10
-        const seed = 2
-        sequence, _ := RandomProteinSequence(length, seed)
+	const length = 10
+	const seed = 2
+	sequence, _ := RandomProteinSequence(length, seed)
 
-        if sequence[0] != 'M' {
-            t.Errorf("Random sequence doesn't have the correct initial aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[0]), "M")
-        }
+	if sequence[0] != 'M' {
+		t.Errorf("Random sequence doesn't have the correct initial aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[0]), "M")
+	}
 
-        if sequence[len(sequence)-1] != '*' {
-            t.Errorf("Random sequence doesn't have correct last aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[len(sequence)-1]), "*")
-        }
+	if sequence[len(sequence)-1] != '*' {
+		t.Errorf("Random sequence doesn't have correct last aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[len(sequence)-1]), "*")
+	}
 
-        if len(sequence) != length {
-            t.Errorf("Random sequence doesn't have the sequence size equal parameter passed through n 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
-        }
+	if len(sequence) != length {
+		t.Errorf("Random sequence doesn't have the sequence size equal parameter passed through n 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
+	}
 }
-
 
 // Write a new case of test when you have a n inferior than 3
-func TestRandomProteinSequenceError (t *testing.T) {
-        const length = 2
-        const seed = 4
-        sequence, _ := RandomProteinSequence(length, seed)
+func TestRandomProteinSequenceError(t *testing.T) {
+	const length = 2
+	const seed = 4
+	sequence, _ := RandomProteinSequence(length, seed)
 
-        if len(sequence) != 0 {
-            t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
-        }
+	if len(sequence) != 0 {
+		t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
+	}
 }
-
