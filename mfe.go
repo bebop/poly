@@ -44,15 +44,11 @@ func CalculateMfe(seq, structure string) (float64, error) {
 		return 0, errors.New("lengths of sequence and structure cannot be 0")
 	}
 
-	/*
-	 * ALWAYS provide regular energy parameters
-	 * remove previous parameters if present and they differ from current model
-	 */
 	fc := &vrna_fold_compound_t{
 		length:            len(seq),
 		params:            vrna_params(),
 		sequence:          seq,
-		sequence_encoding: vrna_seq_encode(seq),
+		sequence_encoding: encodeSequence(seq),
 	}
 
 	energy, err := vrna_eval_structure_cstr(fc, structure)
@@ -442,59 +438,36 @@ func vrna_cstr_print_eval_ext_loop(energy int) {
 }
 
 /* vivek:
+* encodes `sequence` based on `encodeNucelotide` into `S[1:len(sequence)-1]`
+* `S[0]` is the length of `sequence`
+* `S[len(sequence) + 1]` (or `S[-1]`) == `S[1]` which makes the sequence circular
+* not sure why the orig repo makes the sequence cirular
+* Contains the numerical encoding of the pair type for each pair (i,j) used
+
 * manipulates the encoded sequence of `sequence` (see doc of `vrna_seq_encode_simple` for more
 * details of the encoding process) by setting `S[0]` to `S[len(sequence)]`
 * If a sequence is axxx...xxxb where a and b are the first and last nucleotides
-* of the sequence, and AXXX...XXXB is the encoded `sequence`, `vrna_seq_encode`
+* of the sequence, and AXXX...XXXB is the encoded `sequence`, `encodeSequence`
 * returns BAXXX...XXXBA.
 * thinking out loud:
 * * could be done to make the sequence circular
 * * may be needed in functions that require the previous and next values to
 * compute a value
+
+* Encodes a sequence into its numerical representation (see `encodeNucelotide`
+* for the rune to int mapping) into `S[1:len(sequence)-1]`.
+
  */
-func vrna_seq_encode(sequence string) []int {
-	var l int
-	var S []int
+func encodeSequence(sequence string) []int {
+	var l int = len(sequence)
+	var S []int = make([]int, l+1)
 
-	if sequence != "" {
-		S = vrna_seq_encode_simple(sequence)
-
-		l = len(sequence)
-
-		S[l+1] = S[1]
-		S[0] = S[l]
-		// log.Printf("%v", S)
+	for i := 1; i <= l; i++ { /* make numerical encoding of sequence */
+		S[i] = encodeNucelotide(([]rune(sequence))[i-1])
 	}
 
-	return S
-}
+	S[0] = S[l]
 
-// vivek:
-// encodes `sequence` based on `vrna_nucleotide_encode` into `S[1:len(sequence)-1]`
-// `S[0]` is the length of `sequence`
-// `S[len(sequence) + 1]` (or `S[-1]`) == `S[1]` which makes the sequence circular
-// not sure why the orig repo makes the sequence cirular
-
-/* Contains the numerical encoding of the pair type for each pair (i,j) used
- *    @note This array is always indexed via jindx
- */
-func vrna_seq_encode_simple(sequence string) []int {
-	var i, l int
-	var S []int
-
-	if sequence != "" {
-		l = len(sequence)
-		S = make([]int, l+2)
-
-		for i = 1; i <= l; i++ { /* make numerical encoding of sequence */
-			S[i] = vrna_nucleotide_encode(([]rune(sequence))[i-1])
-		}
-
-		S[l+1] = S[1]
-		S[0] = int(l)
-	}
-
-	// panic(fmt.Sprintf("%v", S))
 	return S
 }
 
@@ -509,7 +482,7 @@ var Law_and_Order string = "_ACGUTXKI"
 * G -> 3
 * T / U -> 4
  */
-func vrna_nucleotide_encode(c rune) int {
+func encodeNucelotide(c rune) int {
 	/* return numerical representation of nucleotide used e.g. in vrna_md_t.pair[][] */ //
 	var code int = -1
 
