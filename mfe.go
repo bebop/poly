@@ -21,481 +21,39 @@ import (
  *
  */
 type vrna_fold_compound_t struct {
-	length uint32 /**<  @brief  The length of the sequence (or sequence alignment). vivek: In ViennaRNA, length is stored as unsigned int (a primitive C type which ranges from 0 to 4,294,967,295). uint32 is the equivalent type in Go. */
+	length int /**<  @brief  The length of the sequence (or sequence alignment). vivek: In ViennaRNA, length is stored as unsigned int (a primitive C type which ranges from 0 to 4,294,967,295). uint32 is the equivalent type in Go. */
 
-	/* vivek: The number of strands in this folding compound. Since we only calculate MFE for one compound, this is generally one.*/
-	strands    uint32
-	seq_struct *vrna_seq_t
-	params *vrna_param_t /**<  @brief  The precomputed free energy contributions for each type of loop */
-	sequence          string /* The input sequence string */
-	sequence_encoding []int  /**<  @brief  Numerical encoding of the input sequence
-	 *    @see    vrna_sequence_encode()
+	params            *vrna_param_t /**<  @brief  The precomputed free energy contributions for each type of loop */
+	sequence          string        /* The input sequence string */
+	sequence_encoding []int         /**<  @brief  Numerical encoding of the input sequence
+	*    @see    vrna_sequence_encode()
 	 */
-	sequence_encoding2 []int
-	window_size int /**<  @brief  window size for local folding sliding window approach */
 }
 
-/* vivek:
-* Returns a vrna_fold_compound_t with default options set for its variables.
-* See the doc of `vrna_fold_compound_t` for explaination of the variables of the
-* struct.
- */
-func default_vrna_fold_compound_t() *vrna_fold_compound_t {
-	return &vrna_fold_compound_t{
-		length:  0,
-		strands: 0,
-		// cutpoint:      -1,
-		seq_struct:    nil,
-		// nucleotides:  nil,
-		// alignment:     nil,
-
-		// hc:       nil,
-		// matrices: nil,
-		// exp_matrices: nil,
-		params: nil,
-		// exp_params:   nil,
-		// iindx: nil,
-		// jindx: nil,
-
-		// stat_cb:      nil,
-		// auxdata:      nil,
-		// free_auxdata: nil,
-
-		// domains_struc: nil,
-		// domains_up:    nil,
-		// aux_grammar:   nil,
-
-		sequence:           "",
-		sequence_encoding:  make([]int, 0),
-		sequence_encoding2: nil,
-		// ptype:              "",
-		// sc: nil,
-
-		// axD1:          0,
-		// axD2:          0,
-		// reference_pt1: nil,
-		// reference_pt2: nil,
-		// referenceBPs1: nil,
-		// referenceBPs2: nil,
-		// bpdist:        nil,
-		// mm1:           nil,
-		// mm2:           nil,
-
-		window_size: -1,
-		// ptype_local: nil,
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
+	return b
 }
-
-/**
- *  @brief  Data structure representing a nucleotide sequence
- */
-type vrna_seq_t struct {
-	sequence string /**< @brief The string representation of the sequence */
-	encoding []int  /**< @brief The integer representation of the sequence */
-	// encoding5 []int  /* vivek: no documentation of this variable given in the orig repo, and not used for mfe calculation so commented out */
-	// encoding3 []int  /* vivek: no documentation of this variable given in the orig repo, and not used for mfe calculation so commented out */
-	length uint32 /**< @brief The length of the sequence */
-}
-
-// type vrna_msa_t struct {
-// 	n_seq        uint32
-// 	sequences    []vrna_seq_t
-// 	gapfree_seq  []string
-// 	gapfree_size []int    /* for MAF alignment coordinates */
-// 	genome_size  []uint32 /* for MAF alignment coordinates */
-// 	start        []uint32 /* for MAF alignment coordinates */
-// 	orientation  string   /* for MAF alignment coordinates */
-// 	a2s          [][]uint32
-// }
-
-// type vrna_hc_t struct {
-// 	n uint32
-
-// 	state rune
-
-// 	mx []rune
-
-// 	matrix_local [][]rune
-
-// 	up_ext []int /**<  @brief  A linear array that holds the number of allowed
-// 	 *            unpaired nucleotides in an exterior loop
-// 	 */
-// 	up_hp []int /**<  @brief  A linear array that holds the number of allowed
-// 	 *            unpaired nucleotides in a hairpin loop
-// 	 */
-// 	up_int []int /**<  @brief  A linear array that holds the number of allowed
-// 	 *            unpaired nucleotides in an interior loop
-// 	 */
-// 	up_ml []int /**<  @brief  A linear array that holds the number of allowed
-// 	 *            unpaired nucleotides in a multi branched loop
-// 	 */
-// }
-
-/**
- *  @brief  Minimum Free Energy (MFE) Dynamic Programming (DP) matrices data structure required within the #vrna_fold_compound_t
- */
-// type vrna_mx_mfe_t struct {
-// 	/** @name Common fields for MFE matrices
-// 	 *  @{
-// 	 */
-
-// 	length uint32 /**<  @brief  Length of the sequence, therefore an indicator of the size of the DP matrices */
-// 	/**
-// 	 *  @}
-// 	 */
-
-// 	/** @name Default DP matrices
-// 	 *  @note These data fields are available if
-// 	 *        @code vrna_mx_mfe_t.type == VRNA_MX_DEFAULT @endcode
-// 	 * @{
-// 	 */
-// 	c   []int /**<  @brief  Energy array, given that i-j pair */
-// 	f5  []int /**<  @brief  Energy of 5' end */
-// 	f3  []int /**<  @brief  Energy of 3' end */
-// 	fc  []int /**<  @brief  Energy from i to cutpoint (and vice versa if i>cut) */
-// 	fML []int /**<  @brief  Multi-loop auxiliary energy array */
-// 	fM1 []int /**<  @brief  Second ML array, only for unique multibrnach loop decomposition */
-// 	fM2 []int /**<  @brief  Energy for a multibranch loop region with exactly two stems, extending to 3' end */
-// 	ggg []int /**<  @brief  Energies of g-quadruplexes */
-// 	Fc  int   /**<  @brief  Minimum Free Energy of entire circular RNA */
-// 	FcH int
-// 	FcI int
-// 	FcM int
-// 	/**
-// 	 * @}
-// 	 */
-
-// 	/** @name Local Folding DP matrices using window approach
-// 	 *  @note These data fields are available if
-// 	 *        @code vrna_mx_mfe_t.type == VRNA_MX_WINDOW @endcode
-// 	 * @{
-// 	 */
-// 	c_local   [][]int /**<  @brief  Energy array, given that i-j pair */
-// 	f3_local  []int   /**<  @brief  Energy of 5' end */
-// 	fML_local [][]int /**<  @brief  Multi-loop auxiliary energy array */
-// 	ggg_local [][]int /**<  @brief  Energies of g-quadruplexes */
-// 	/**
-// 	 * @}
-// 	 */
-
-// 	/** @name Distance Class DP matrices
-// 	 *  @note These data fields are available if
-// 	 *        @code vrna_mx_mfe_t.type == VRNA_MX_2DFOLD @endcode
-// 	 * @{
-// 	 */
-// 	E_F5     [][][]int
-// 	l_min_F5 [][]int
-// 	l_max_F5 [][]int
-// 	k_min_F5 []int
-// 	k_max_F5 []int
-
-// 	E_F3     [][][]int
-// 	l_min_F3 [][]int
-// 	l_max_F3 [][]int
-// 	k_min_F3 []int
-// 	k_max_F3 []int
-
-// 	E_C     [][][]int
-// 	l_min_C [][]int
-// 	l_max_C [][]int
-// 	k_min_C []int
-// 	k_max_C []int
-
-// 	E_M     [][][]int
-// 	l_min_M [][]int
-// 	l_max_M [][]int
-// 	k_min_M []int
-// 	k_max_M []int
-
-// 	E_M1     [][][]int
-// 	l_min_M1 [][]int
-// 	l_max_M1 [][]int
-// 	k_min_M1 []int
-// 	k_max_M1 []int
-
-// 	E_M2     [][][]int
-// 	l_min_M2 [][]int
-// 	l_max_M2 [][]int
-// 	k_min_M2 []int
-// 	k_max_M2 []int
-
-// 	E_Fc     [][]int
-// 	l_min_Fc []int
-// 	l_max_Fc []int
-// 	k_min_Fc int
-// 	k_max_Fc int
-
-// 	E_FcH     [][]int
-// 	l_min_FcH []int
-// 	l_max_FcH []int
-// 	k_min_FcH int
-// 	k_max_FcH int
-
-// 	E_FcI     [][]int
-// 	l_min_FcI []int
-// 	l_max_FcI []int
-// 	k_min_FcI int
-// 	k_max_FcI int
-
-// 	E_FcM     [][]int
-// 	l_min_FcM []int
-// 	l_max_FcM []int
-// 	k_min_FcM int
-// 	k_max_FcM int
-
-// 	/* auxilary arrays for remaining set of coarse graining (k,l) > (k_max, l_max) */
-// 	E_F5_rem []int
-// 	E_F3_rem []int
-// 	E_C_rem  []int
-// 	E_M_rem  []int
-// 	E_M1_rem []int
-// 	E_M2_rem []int
-
-// 	E_Fc_rem  int
-// 	E_FcH_rem int
-// 	E_FcI_rem int
-// 	E_FcM_rem int
-
-// 	// #ifdef COUNT_STATES
-// 	//   unsigned long ***N_F5;
-// 	//   unsigned long ***N_C;
-// 	//   unsigned long ***N_M;
-// 	//   unsigned long ***N_M1;
-// 	// #endif
-
-// 	/**
-// 	 * @}
-// 	 */
-// }
-
-/**
- *  @brief  A base pair constraint
- */
-// type vrna_sc_bp_storage_t struct {
-// 	interval_start, interval_end uint32
-// 	e                            int
-// }
-
-/**
- *  @brief  The soft constraints data structure
- *
- *  @ingroup soft_constraints
- */
-// type vrna_sc_t struct {
-// 	n uint32
-
-// 	state rune
-
-// 	energy_up     [][]int     /**<  @brief Energy contribution for stretches of unpaired nucleotides */
-// 	exp_energy_up [][]float64 /**<  @brief Boltzmann Factors of the energy contributions for unpaired sequence stretches */
-
-// 	up_storage []int /**<  @brief  Storage container for energy contributions per unpaired nucleotide */
-// 	// bp_storage [][]vrna_sc_bp_storage_t /**<  @brief  Storage container for energy contributions per base pair */
-
-// 	energy_bp     []int     /**<  @brief Energy contribution for base pairs */
-// 	exp_energy_bp []float64 /**<  @brief Boltzmann Factors of the energy contribution for base pairs */
-
-// 	energy_bp_local     [][]int     /**<  @brief Energy contribution for base pairs (sliding window approach) */
-// 	exp_energy_bp_local [][]float64 /**<  @brief Boltzmann Factors of the energy contribution for base pairs (sliding window approach) */
-
-// 	energy_stack     []int     /**<  @brief Pseudo Energy contribution per base pair involved in a stack */
-// 	exp_energy_stack []float64 /**<  @brief Boltzmann weighted pseudo energy contribution per nucleotide involved in a stack */
-
-// 	// /* generic soft contraints below */
-// 	// vrna_callback_sc_energy     *f;     /**<  @brief  A function pointer used for pseudo
-// 	//                                      *            energy contribution in MFE calculations
-// 	//                                      *    @see    vrna_sc_add_f()
-// 	//                                      */
-
-// 	// vrna_callback_sc_backtrack  *bt;    /**<  @brief  A function pointer used to obtain backtraced
-// 	//                                      *            base pairs in loop regions that were altered
-// 	//                                      *            by soft constrained pseudo energy contributions
-// 	//                                      *    @see    vrna_sc_add_bt()
-// 	//                                      */
-
-// 	// vrna_callback_sc_exp_energy *exp_f; /**<  @brief  A function pointer used for pseudo energy
-// 	//                                      *            contribution boltzmann factors in PF
-// 	//                                      *            calculations
-// 	//                                      *    @see    vrna_sc_add_exp_f()
-// 	//                                      */
-
-// 	// void                        *data;  /**<  @brief  A pointer to the data object provided for
-// 	//                                      *            for pseudo energy contribution functions of the
-// 	//                                      *            generic soft constraints feature
-// 	//                                      */
-// 	// vrna_callback_free_auxdata  *free_data;
-// }
-
-/**
- *  @brief  A base pair constraint
- */
-
-// /**
-//  *  @brief  Partition function (PF) Dynamic Programming (DP) matrices data structure required within the #vrna_fold_compound_t
-//  */
-// type vrna_mx_pf_t struct {
-//   /** @name Common fields for DP matrices
-//    *  @{
-//    */
-
-//   length uint32
-//   scale []float64
-//   expMLbase []float64
-
-//   /**
-//    *  @}
-//    */
-
-//   /** @name Default PF matrices
-//    *  @note These data fields are available if
-//    *        @code vrna_mx_pf_t.type == VRNA_MX_DEFAULT @endcode
-//    *  @{
-//    */
-//   q []float64
-//   qb []float64
-//   qm []float64
-//   qm1 []float64
-//   probs []float64
-//   q1k []float64
-//   qln []float64
-//   G []float64
-
-//   qo float64
-//   qm2 []float64
-//   qho float64
-//   qio float64
-//   qmo float64
-
-//   /**
-//    *  @}
-//    */
-
-// /** @name Local Folding DP matrices using window approach
-//    *  @note These data fields are available if
-//    *        @code vrna_mx_mfe_t.type == VRNA_MX_WINDOW @endcode
-//    * @{
-//    */
-// 	 q_local [][]float64
-// 	 qb_local [][]float64
-// 	 qm_local [][]float64
-// 	 pR [][]float64
-// 	 qm2_local [][]float64
-// 	 QI5 [][]float64
-// 	 q2l [][]float64
-// 	 qmb [][]float64
-// 	 G_local [][]float64
-// 	 /**
-// 		*  @}
-// 		*/
-
-// 	 /** @name Distance Class DP matrices
-// 		*  @note These data fields are available if
-// 		*        @code vrna_mx_pf_t.type == VRNA_MX_2DFOLD @endcode
-// 		*  @{
-// 		*/
-// 	 Q [][][]float64
-// 	 l_min_Q [][]int
-// 	 l_max_Q [][]int
-// 	 int *k_min_Q;
-// 	 int *k_max_Q;
-
-// 	 Q_B [][][]float64
-// 	 l_min_Q_B [][]int
-// 	 l_max_Q_B [][]int
-// 	 int *k_min_Q_B;
-// 	 int *k_max_Q_B;
-
-// 	 Q_M [][][]float64
-// 	 l_min_Q_M [][]int
-// 	 l_max_Q_M [][]int
-// 	 int *k_min_Q_M;
-// 	 int *k_max_Q_M;
-
-// 	 Q_M1 [][][]float64
-// 	 l_min_Q_M1 [][]int
-// 	 l_max_Q_M1 [][]int
-// 	 int *k_min_Q_M1;
-// 	 int *k_max_Q_M1;
-
-// 	 Q_M2 [][][]float64
-// 	 l_min_Q_M2 [][]int
-// 	 l_max_Q_M2 [][]int
-// 	 int *k_min_Q_M2;
-// 	 int *k_max_Q_M2;
-
-// 	 Q_c [][]float64
-// 	 int *l_min_Q_c;
-// 	 int *l_max_Q_c;
-// 	 int k_min_Q_c;
-// 	 int k_max_Q_c;
-
-// 	 Q_cH [][]float64
-// 	 int *l_min_Q_cH;
-// 	 int *l_max_Q_cH;
-// 	 int k_min_Q_cH;
-// 	 int k_max_Q_cH;
-
-// 	 Q_cI [][]float64
-// 	 int *l_min_Q_cI;
-// 	 int *l_max_Q_cI;
-// 	 int k_min_Q_cI;
-// 	 int k_max_Q_cI;
-
-// 	 Q_cM [][]float64
-// 	 int *l_min_Q_cM;
-// 	 int *l_max_Q_cM;
-// 	 int k_min_Q_cM;
-// 	 int k_max_Q_cM;
-
-// 	 /* auxilary arrays for remaining set of coarse graining (k,l) > (k_max, l_max) */
-// 	 FLT_OR_DBL *Q_rem;
-// 	 FLT_OR_DBL *Q_B_rem;
-// 	 FLT_OR_DBL *Q_M_rem;
-// 	 FLT_OR_DBL *Q_M1_rem;
-// 	 FLT_OR_DBL *Q_M2_rem;
-
-// 	 FLT_OR_DBL Q_c_rem;
-// 	 FLT_OR_DBL Q_cH_rem;
-// 	 FLT_OR_DBL Q_cI_rem;
-// 	 FLT_OR_DBL Q_cM_rem;
-// 	 /**
-// 		*  @}
-// 		*/
-
-//  #ifndef VRNA_DISABLE_C11_FEATURES
-// 	 /* C11 support for unnamed unions/structs */
-//  };
-//  };
-//  #endif
-//  };
 
 func CalculateMfe(seq, structure string) (float64, error) {
-	// log.Printf("%v", seq)
 	if len(seq) != len(structure) {
 		return 0, fmt.Errorf("length of sequence (%v) != Length of structure (%v)", len(seq), len(structure))
 	} else if len(seq) == 0 {
 		return 0, errors.New("lengths of sequence and structure cannot be 0")
 	}
 
-	// fc is everything with NIL
-	// md is the default model details
-	// add_params(fc, &md, options);
 	/*
 	 * ALWAYS provide regular energy parameters
 	 * remove previous parameters if present and they differ from current model
 	 */
-
-	fc := default_vrna_fold_compound_t()
-	fc.params = vrna_params()
-	fc.sequence = seq
-	fc.length = uint32(len(seq))
-	// fc := &vrna_fold_compound_t{params: vrna_params(), sequence: seq, structure: structure}
-
-	// vrna_params_prepare(fc, options);
-	sanitize_bp_span(fc)
-	set_fold_compound(fc)
-	// log.Printf("%v", fc)
-	// tmp is structure
+	fc := &vrna_fold_compound_t{
+		length:            len(seq),
+		params:            vrna_params(),
+		sequence:          seq,
+		sequence_encoding: vrna_seq_encode(seq),
+	}
 
 	energy, err := vrna_eval_structure_cstr(fc, structure)
 	if err != nil {
@@ -508,11 +66,7 @@ func vrna_params() *vrna_param_t {
 	return get_scaled_params()
 }
 
-func RESCALE_dG_int(dG, dH, dT int) int {
-	return (dH - (dH-dG)*dT)
-}
-
-func RESCALE_dG_float64(dG, dH, dT float64) float64 {
+func rescaleDg(dG, dH, dT int) int {
 	return (dH - (dH-dG)*dT)
 }
 
@@ -524,112 +78,16 @@ var (
 const (
 	MAXALPHA int = 20 /** @brief Maximal length of alphabet */
 	MAXLOOP  int = 30 /** The maximum loop length */
-
 )
 
 type vrna_md_t struct {
-	temperature float64 /**<  @brief  The temperature used to scale the thermodynamic parameters */
-	betaScale   float64 /**<  @brief  A scaling factor for the thermodynamic temperature of the Boltzmann factors */
-	pf_smooth   int     /**<  @brief  A flat specifying whether energies in Boltzmann factors need to be smoothed */
-	// dangles     int
-	/**<  @brief  Specifies the dangle model used in any energy evaluation (0,1,2 or 3)
-	 *
-	 *    If set to 0 no stabilizing energies are assigned to bases adjacent to
-	 *    helices in free ends and multiloops (so called dangling ends). Normally
-	 *    (dangles = 1) dangling end energies are assigned only to unpaired
-	 *    bases and a base cannot participate simultaneously in two dangling ends. In
-	 *    the partition function algorithm vrna_pf() these checks are neglected.
-	 *    To provide comparability between free energy minimization and partition function
-	 *    algorithms, the default setting is 2.
-	 *    This treatment of dangling ends gives more favorable energies to helices
-	 *    directly adjacent to one another, which can be beneficial since such
-	 *    helices often do engage in stabilizing interactions through co-axial
-	 *    stacking.\n
-	 *    If set to 3 co-axial stacking is explicitly included for
-	 *    adjacent helices in multiloops. The option affects only mfe folding
-	 *    and energy evaluation (vrna_mfe() and vrna_eval_structure()), as
-	 *    well as suboptimal folding (vrna_subopt()) via re-evaluation of energies.
-	 *    Co-axial stacking with one intervening mismatch is not considered so far.
-	 *    @note   Some function do not implement all dangle model but only a subset of
-	 *            (0,1,2,3). In particular, partition function algorithms can only handle
-	 *            0 and 2. Read the documentation of the particular recurrences or
-	 *            energy evaluation function for information about the provided dangle
-	 *            model.
-	 */
-	// special_hp     int  /**<  @brief  Include special hairpin contributions for tri, tetra and hexaloops */
-	// noLP           int  /**<  @brief  Only consider canonical structures, i.e. no 'lonely' base pairs */
-	// noGU int /**<  @brief  Do not allow GU pairs */
-	// noGUclosure    int  /**<  @brief  Do not allow loops to be closed by GU pair */
-	// logML          int  /**<  @brief  Use logarithmic scaling for multiloops */
-	circ           int  /**<  @brief  Assume RNA to be circular instead of linear */
-	gquad          int  /**<  @brief  Include G-quadruplexes in structure prediction */
-	uniq_ML        int  /**<  @brief  Flag to ensure unique multi-branch loop decomposition during folding */
-	energy_set     int  /**<  @brief  Specifies the energy set that defines set of compatible base pairs */
-	backtrack      int  /**<  @brief  Specifies whether or not secondary structures should be backtraced */
-	backtrack_type rune /**<  @brief  Specifies in which matrix to backtrack */
-	compute_bpp    int  /**<  @brief  Specifies whether or not backward recursions for base pair probability (bpp) computation will be performed */
-	// nonstandards   [64]rune /**<  @brief  contains allowed non standard bases */
-	max_bp_span int /**<  @brief  maximum allowed base pair span */
-
-	min_loop_size int /**<  @brief  Minimum size of hairpin loops
-	 *    @note The default value for this field is #TURN, however, it may
-	 *    be 0 in cofolding context.
-	 */
-	window_size int                             /**<  @brief  Size of the sliding window for locally optimal structure prediction */
-	oldAliEn    int                             /**<  @brief  Use old alifold energy model */
-	ribo        int                             /**<  @brief  Use ribosum scoring table in alifold energy model */
-	cv_fact     float64                         /**<  @brief  Co-variance scaling factor for consensus structure prediction */
-	nc_fact     float64                         /**<  @brief  Scaling factor to weight co-variance contributions of non-canonical pairs */
-	sfact       float64                         /**<  @brief  Scaling factor for partition function scaling */
-	rtype       [8]int                          /**<  @brief  Reverse base pair type array */
-	alias       [MAXALPHA + 1]int               /**<  @brief  alias of an integer nucleotide representation */
+	temperature float64                         /**<  @brief  The temperature used to scale the thermodynamic parameters */
 	pair        [MAXALPHA + 1][MAXALPHA + 1]int /**<  @brief  Integer representation of a base pair */
 }
 
 var (
 	// Default temperature for structure prediction and free energy evaluation in $^\circ C$
 	VRNA_MODEL_DEFAULT_TEMPERATURE float64 = 37.0
-	VRNA_MODEL_DEFAULT_PF_SMOOTH   int     = 1
-	// Default dangling end model
-	// VRNA_MODEL_DEFAULT_DANGLES int = 2
-	// Default model behavior for lookup of special tri-, tetra-, and hexa-loops
-	// VRNA_MODEL_DEFAULT_SPECIAL_HP int = 1
-	// Default model behavior for so-called 'lonely pairs'
-	VRNA_MODEL_DEFAULT_NO_LP int = 1
-	// Default model behavior for G-U base pairs
-	// VRNA_MODEL_DEFAULT_NO_GU int = 0
-	// Default model behavior for G-U base pairs closing a loop
-	// VRNA_MODEL_DEFAULT_NO_GU_CLOSURE int = 0
-	// Default model behavior on how to evaluate the energy contribution of multi-branch loops
-	VRNA_MODEL_DEFAULT_LOG_ML int = 0
-	// Default model behavior to treat a molecule as a circular RNA (DNA)
-	VRNA_MODEL_DEFAULT_CIRC int = 0
-	// Default model behavior regarding the treatment of G-Quadruplexes
-	// VRNA_MODEL_DEFAULT_GQUAD int = 0
-	// Default behavior of the model regarding unique multi-branch loop decomposition
-	VRNA_MODEL_DEFAULT_UNIQ_ML int = 0
-	// Default model behavior on which energy set to use
-	VRNA_MODEL_DEFAULT_ENERGY_SET int = 0
-	// Default model behavior with regards to backtracking of structures
-	VRNA_MODEL_DEFAULT_BACKTRACK int = 1
-	// Default model behavior on what type of backtracking to perform
-	VRNA_MODEL_DEFAULT_BACKTRACK_TYPE rune = 'F'
-	// Default model behavior with regards to computing base pair probabilities
-	VRNA_MODEL_DEFAULT_COMPUTE_BPP int = 1
-	// Default model behavior for the allowed maximum base pair span
-	VRNA_MODEL_DEFAULT_MAX_BP_SPAN int = -1
-	// The minimum loop length
-	TURN int = 3
-	// Default model behavior for the sliding window approach
-	VRNA_MODEL_DEFAULT_WINDOW_SIZE int = -1
-	// Default model behavior for consensus structure energy evaluation
-	VRNA_MODEL_DEFAULT_ALI_OLD_EN int = 0
-	// Default model behavior for consensus structure co-variance contribution assessment
-	VRNA_MODEL_DEFAULT_ALI_RIBO int = 0
-	// Default model behavior for weighting the co-variance score in consensus structure prediction
-	VRNA_MODEL_DEFAULT_ALI_CV_FACT float64 = 1.0
-	// Default model behavior for weighting the nucleotide conservation? in consensus structure prediction
-	VRNA_MODEL_DEFAULT_ALI_NC_FACT float64 = 1.0
 )
 
 const NBPAIRS = 7 /** The number of distinguishable base pairs */
@@ -637,35 +95,6 @@ const NBPAIRS = 7 /** The number of distinguishable base pairs */
 func DefaultModelDetails() *vrna_md_t {
 	return &vrna_md_t{
 		temperature: VRNA_MODEL_DEFAULT_TEMPERATURE,
-		betaScale:   1.,
-		pf_smooth:   VRNA_MODEL_DEFAULT_PF_SMOOTH,
-		// dangles:        VRNA_MODEL_DEFAULT_DANGLES,
-		// special_hp:     VRNA_MODEL_DEFAULT_SPECIAL_HP,
-		// noLP:           VRNA_MODEL_DEFAULT_NO_LP,
-		// noGU: VRNA_MODEL_DEFAULT_NO_GU,
-		// noGUclosure:    VRNA_MODEL_DEFAULT_NO_GU_CLOSURE,
-		// logML:          VRNA_MODEL_DEFAULT_LOG_ML,
-		circ: VRNA_MODEL_DEFAULT_CIRC,
-		// gquad:          VRNA_MODEL_DEFAULT_GQUAD,
-		uniq_ML:        VRNA_MODEL_DEFAULT_UNIQ_ML,
-		energy_set:     VRNA_MODEL_DEFAULT_ENERGY_SET,
-		backtrack:      VRNA_MODEL_DEFAULT_BACKTRACK,
-		backtrack_type: VRNA_MODEL_DEFAULT_BACKTRACK_TYPE,
-		compute_bpp:    VRNA_MODEL_DEFAULT_COMPUTE_BPP,
-		// nonstandards:   []rune{0},
-		max_bp_span:   VRNA_MODEL_DEFAULT_MAX_BP_SPAN,
-		min_loop_size: TURN,
-		window_size:   VRNA_MODEL_DEFAULT_WINDOW_SIZE,
-		oldAliEn:      VRNA_MODEL_DEFAULT_ALI_OLD_EN,
-		ribo:          VRNA_MODEL_DEFAULT_ALI_RIBO,
-		cv_fact:       VRNA_MODEL_DEFAULT_ALI_CV_FACT,
-		nc_fact:       VRNA_MODEL_DEFAULT_ALI_NC_FACT,
-		sfact:         1.07,
-		rtype:         [8]int{0, 2, 1, 4, 3, 6, 5, 7},
-		alias: [MAXALPHA + 1]int{
-			//   _  A  C  G  U  X  K  I
-			/**/ 0, 1, 2, 3, 4, 3, 2, 0,
-		},
 		// vivek: Why isn't this a symmetric matrix?
 		// I couldn't find anything about this field in their docs
 		pair: [MAXALPHA + 1][MAXALPHA + 1]int{
@@ -703,17 +132,12 @@ type vrna_param_t struct {
 	MLbase, MLclosing, TerminalAU, DuplexInit int
 	MLintern                                  [NBPAIRS + 1]int
 	Tetraloop_E                               [200]int
-	// Tetraloops                                [1401]rune
-	Tetraloops string
-	Triloop_E  [40]int
-	// Triloops                                  [241]rune
-	Triloops   string
-	Hexaloop_E [40]int
-	Hexaloops  string
-	// Hexaloops                                 [1801]rune
+	Tetraloops                                string
+	Triloop_E                                 [40]int
+	Triloops                                  string
+	Hexaloop_E                                [40]int
+	Hexaloops                                 string
 	TripleC, MultipleCA, MultipleCB           int
-	gquad                                     [VRNA_GQUAD_MAX_STACK_SIZE + 1][3*VRNA_GQUAD_MAX_LINKER_LENGTH + 1]int
-	gquadLayerMismatch, gquadLayerMismatchMax int
 	temperature                               float64    /**<  @brief  Temperature used for loop contribution scaling */
 	model_details                             *vrna_md_t /**<  @brief  Model details to be used in the recursions */
 }
@@ -725,37 +149,27 @@ func get_scaled_params() *vrna_param_t {
 	var tempf float64 = (model_details.temperature + K0) / Tmeasure
 
 	var params *vrna_param_t = &vrna_param_t{
-		model_details:         model_details,
-		temperature:           model_details.temperature,
-		lxc:                   lxc37 * tempf,
-		TripleC:               RESCALE_dG_int(TripleC37, TripleCdH, int(tempf)),
-		MultipleCA:            RESCALE_dG_int(MultipleCA37, MultipleCAdH, int(tempf)),
-		MultipleCB:            RESCALE_dG_int(TerminalAU37, TerminalAUdH, int(tempf)),
-		TerminalAU:            RESCALE_dG_int(TerminalAU37, TerminalAUdH, int(tempf)),
-		DuplexInit:            RESCALE_dG_int(DuplexInit37, DuplexInitdH, int(tempf)),
-		MLbase:                RESCALE_dG_int(ML_BASE37, ML_BASEdH, int(tempf)),
-		MLclosing:             RESCALE_dG_int(ML_closing37, ML_closingdH, int(tempf)),
-		gquadLayerMismatch:    RESCALE_dG_int(GQuadLayerMismatch37, GQuadLayerMismatchH, int(tempf)),
-		gquadLayerMismatchMax: GQuadLayerMismatchMax,
+		model_details: model_details,
+		temperature:   model_details.temperature,
+		lxc:           lxc37 * tempf,
+		TripleC:       rescaleDg(TripleC37, TripleCdH, int(tempf)),
+		MultipleCA:    rescaleDg(MultipleCA37, MultipleCAdH, int(tempf)),
+		MultipleCB:    rescaleDg(TerminalAU37, TerminalAUdH, int(tempf)),
+		TerminalAU:    rescaleDg(TerminalAU37, TerminalAUdH, int(tempf)),
+		// DuplexInit:            rescaleDg(DuplexInit37, DuplexInitdH, int(tempf)),
+		MLbase:    rescaleDg(ML_BASE37, ML_BASEdH, int(tempf)),
+		MLclosing: rescaleDg(ML_closing37, ML_closingdH, int(tempf)),
 	}
 
-	params.ninio[2] = RESCALE_dG_int(ninio37, niniodH, int(tempf))
-
-	for i = VRNA_GQUAD_MIN_STACK_SIZE; i <= VRNA_GQUAD_MAX_STACK_SIZE; i++ {
-		for j = 3 * VRNA_GQUAD_MIN_LINKER_LENGTH; j <= 3*VRNA_GQUAD_MAX_LINKER_LENGTH; j++ {
-			var GQuadAlpha_T float64 = float64(RESCALE_dG_int(GQuadAlpha37, GQuadAlphadH, int(tempf)))
-			var GQuadBeta_T float64 = float64(RESCALE_dG_int(GQuadBeta37, GQuadBetadH, int(tempf)))
-			params.gquad[i][j] = int(GQuadAlpha_T)*(i-1) + int(float64(GQuadBeta_T)*math.Log(float64(j)-2.0))
-		}
-	}
+	params.ninio[2] = rescaleDg(ninio37, niniodH, int(tempf))
 
 	for i = 0; i < 31; i++ {
-		params.hairpin[i] = RESCALE_dG_int(hairpin37[i], hairpindH[i], int(tempf))
+		params.hairpin[i] = rescaleDg(hairpin37[i], hairpindH[i], int(tempf))
 	}
 
-	for i = 0; i <= Min(30, MAXLOOP); i++ {
-		params.bulge[i] = RESCALE_dG_int(bulge37[i], bulgedH[i], int(tempf))
-		params.internal_loop[i] = RESCALE_dG_int(internal_loop37[i], internal_loopdH[i], int(tempf))
+	for i = 0; i <= min(30, MAXLOOP); i++ {
+		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], int(tempf))
+		params.internal_loop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], int(tempf))
 	}
 
 	for ; i <= MAXLOOP; i++ {
@@ -767,25 +181,25 @@ func get_scaled_params() *vrna_param_t {
 
 	// This could be 281 or only the amount of chars
 	for i = 0; (i * 7) < len(Tetraloops); i++ {
-		params.Tetraloop_E[i] = RESCALE_dG_int(Tetraloop37[i], TetraloopdH[i], int(tempf))
+		params.Tetraloop_E[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], int(tempf))
 	}
 
 	for i = 0; (i * 5) < len(Triloops); i++ {
-		params.Triloop_E[i] = RESCALE_dG_int(Triloop37[i], TriloopdH[i], int(tempf))
+		params.Triloop_E[i] = rescaleDg(Triloop37[i], TriloopdH[i], int(tempf))
 	}
 
 	for i = 0; (i * 9) < len(Hexaloops); i++ {
-		params.Hexaloop_E[i] = RESCALE_dG_int(Hexaloop37[i], HexaloopdH[i], int(tempf))
+		params.Hexaloop_E[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], int(tempf))
 	}
 
 	for i = 0; i <= NBPAIRS; i++ {
-		params.MLintern[i] = RESCALE_dG_int(ML_intern37, ML_interndH, int(tempf))
+		params.MLintern[i] = rescaleDg(ML_intern37, ML_interndH, int(tempf))
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
 	for i = 0; i <= NBPAIRS; i++ {
 		for j = 0; j <= NBPAIRS; j++ {
-			params.stack[i][j] = RESCALE_dG_int(stack37[i][j],
+			params.stack[i][j] = rescaleDg(stack37[i][j],
 				stackdH[i][j],
 				int(tempf))
 		}
@@ -796,20 +210,20 @@ func get_scaled_params() *vrna_param_t {
 		for j = 0; j < 5; j++ {
 			for k = 0; k < 5; k++ {
 				var mm int
-				params.mismatchI[i][j][k] = RESCALE_dG_int(mismatchI37[i][j][k],
+				params.mismatchI[i][j][k] = rescaleDg(mismatchI37[i][j][k],
 					mismatchIdH[i][j][k],
 					int(tempf))
-				params.mismatchH[i][j][k] = RESCALE_dG_int(mismatchH37[i][j][k],
+				params.mismatchH[i][j][k] = rescaleDg(mismatchH37[i][j][k],
 					mismatchHdH[i][j][k],
 					int(tempf))
-				params.mismatch1nI[i][j][k] = RESCALE_dG_int(mismatch1nI37[i][j][k],
+				params.mismatch1nI[i][j][k] = rescaleDg(mismatch1nI37[i][j][k],
 					mismatch1nIdH[i][j][k],
 					int(tempf))
-				params.mismatch23I[i][j][k] = RESCALE_dG_int(mismatch23I37[i][j][k],
+				params.mismatch23I[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
 					mismatch23IdH[i][j][k],
 					int(tempf))
 				// if model_details.dangles > 0 {
-				mm = RESCALE_dG_int(mismatchM37[i][j][k],
+				mm = rescaleDg(mismatchM37[i][j][k],
 					mismatchMdH[i][j][k],
 					int(tempf))
 				if mm > 0 {
@@ -818,7 +232,7 @@ func get_scaled_params() *vrna_param_t {
 					params.mismatchM[i][j][k] = mm
 				}
 
-				mm = RESCALE_dG_int(mismatchExt37[i][j][k],
+				mm = rescaleDg(mismatchExt37[i][j][k],
 					mismatchExtdH[i][j][k],
 					int(tempf))
 				if mm > 0 {
@@ -838,7 +252,7 @@ func get_scaled_params() *vrna_param_t {
 	for i = 0; i <= NBPAIRS; i++ {
 		for j = 0; j < 5; j++ {
 			var dd int
-			dd = RESCALE_dG_int(dangle5_37[i][j],
+			dd = rescaleDg(dangle5_37[i][j],
 				dangle5_dH[i][j],
 				int(tempf))
 			if dd > 0 {
@@ -847,7 +261,7 @@ func get_scaled_params() *vrna_param_t {
 				params.dangle5[i][j] = dd
 			}
 
-			dd = RESCALE_dG_int(dangle3_37[i][j],
+			dd = rescaleDg(dangle3_37[i][j],
 				dangle3_dH[i][j],
 				int(tempf))
 			if dd > 0 {
@@ -863,7 +277,7 @@ func get_scaled_params() *vrna_param_t {
 		for j = 0; j <= NBPAIRS; j++ {
 			for k = 0; k < 5; k++ {
 				for l = 0; l < 5; l++ {
-					params.int11[i][j][k][l] = RESCALE_dG_int(int11_37[i][j][k][l],
+					params.int11[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
 						int11_dH[i][j][k][l],
 						int(tempf))
 				}
@@ -878,7 +292,7 @@ func get_scaled_params() *vrna_param_t {
 				for l = 0; l < 5; l++ {
 					var m int
 					for m = 0; m < 5; m++ {
-						params.int21[i][j][k][l][m] = RESCALE_dG_int(int21_37[i][j][k][l][m],
+						params.int21[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
 							int21_dH[i][j][k][l][m],
 							int(tempf))
 					}
@@ -895,7 +309,7 @@ func get_scaled_params() *vrna_param_t {
 					var m, n int
 					for m = 0; m < 5; m++ {
 						for n = 0; n < 5; n++ {
-							params.int22[i][j][k][l][m][n] = RESCALE_dG_int(int22_37[i][j][k][l][m][n],
+							params.int22[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
 								int22_dH[i][j][k][l][m][n],
 								int(tempf))
 						}
@@ -930,7 +344,7 @@ func vrna_eval_structure_cstr(fc *vrna_fold_compound_t, structure string) (float
 	return energy, nil
 }
 
-var SHRT_MAX uint32 = 32767
+var SHRT_MAX int = 32767
 
 /* vivek:
 * returns a slice pair_table where pair_table[sequence[i]] returns the index of the
@@ -948,7 +362,7 @@ func vrna_pair_table_from_string(structure string) ([]int, error) {
 	var pair_table []int
 	len_seq := len(structure)
 
-	if uint32(len_seq) > SHRT_MAX {
+	if len_seq > SHRT_MAX {
 		err := fmt.Sprintf("vrna_pair_table_from_string: Structure too long to be converted to pair table (n=%v, max=%v)", len_seq, SHRT_MAX)
 		return nil, errors.New(err)
 	}
@@ -1003,7 +417,6 @@ func vrna_pair_table_from_string(structure string) ([]int, error) {
 *
  */
 func eval_pair_table(fc *vrna_fold_compound_t, pair_table []int) int {
-	// var sn []uint32
 	var i, length, energy int
 
 	length = int(fc.length)
@@ -1028,63 +441,6 @@ func vrna_cstr_print_eval_ext_loop(energy int) {
 	log.Printf("External loop                           : %v\n", energy)
 }
 
-func sanitize_bp_span(fc *vrna_fold_compound_t) {
-	var md *vrna_md_t = fc.params.model_details
-
-	/* non-local fold mode */
-	md.window_size = int(fc.length)
-
-	if md.max_bp_span <= 0 || md.max_bp_span > md.window_size {
-		md.max_bp_span = md.window_size
-	}
-}
-
-func set_fold_compound(fc *vrna_fold_compound_t) {
-	var sequence string = fc.sequence
-
-	fc.sequence = ""
-	fc.length = 0
-	vrna_sequence_add(fc, sequence)
-}
-
-/*
-* Sets the `seq_struct`, `sequence_encoding` and `sequence_encoding2` fields of
-* `fc`.
-* `sequence_encoding` is the set to the same output as `vrna_seq_encode`
-* `sequence_encoding2` is the same as `sequence_encoding`, except `sequence_encoding[0] = len(sequence)`
- */
-func vrna_sequence_add(fc *vrna_fold_compound_t, sequence string) {
-	// VRNA_SEQUENCE_RNA
-	var add_length uint32 = uint32(len(sequence))
-
-
-	fc.seq_struct = &vrna_seq_t{
-		sequence: strings.ToUpper(sequence),
-		length:   uint32(len(sequence)),
-		encoding: vrna_seq_encode(sequence),
-	}
-
-	/* increase strands counter */
-	fc.strands++
-
-	fc.sequence = sequence
-
-	fc.sequence_encoding = make([]int, len(sequence)+2)
-	fc.sequence_encoding = append([]int{0}, fc.seq_struct.encoding[1:]...)
-	fc.sequence_encoding[len(sequence)+1] = fc.sequence_encoding[1]
-	fc.sequence_encoding[0] = fc.sequence_encoding[len(sequence)]
-
-	fc.sequence_encoding2 = make([]int, len(sequence)+2)
-	enc := vrna_seq_encode_simple(fc.seq_struct.sequence)
-	fc.sequence_encoding2 = append([]int{0}, enc[1:]...)
-	fc.sequence_encoding2[len(sequence)+1] = fc.sequence_encoding2[1]
-	fc.sequence_encoding2[0] = len(sequence)
-
-	/* finally, increase length property of the fold compound */
-	fc.length = add_length
-}
-
-
 /* vivek:
 * manipulates the encoded sequence of `sequence` (see doc of `vrna_seq_encode_simple` for more
 * details of the encoding process) by setting `S[0]` to `S[len(sequence)]`
@@ -1097,13 +453,13 @@ func vrna_sequence_add(fc *vrna_fold_compound_t, sequence string) {
 * compute a value
  */
 func vrna_seq_encode(sequence string) []int {
-	var l uint32
+	var l int
 	var S []int
 
 	if sequence != "" {
 		S = vrna_seq_encode_simple(sequence)
 
-		l = uint32(len(sequence))
+		l = len(sequence)
 
 		S[l+1] = S[1]
 		S[0] = S[l]
@@ -1123,11 +479,11 @@ func vrna_seq_encode(sequence string) []int {
  *    @note This array is always indexed via jindx
  */
 func vrna_seq_encode_simple(sequence string) []int {
-	var i, l uint32
+	var i, l int
 	var S []int
 
 	if sequence != "" {
-		l = uint32(len(sequence))
+		l = len(sequence)
 		S = make([]int, l+2)
 
 		for i = 1; i <= l; i++ { /* make numerical encoding of sequence */
@@ -1177,7 +533,6 @@ func vrna_nucleotide_encode(c rune) int {
 	return code
 }
 
-
 /*
 * Calculate the energy contribution of
 * stabilizing dangling-ends/mismatches
@@ -1200,8 +555,8 @@ func energy_of_extLoop_pair_table(fc *vrna_fold_compound_t, i int, pair_table []
 		pair_close_idx := int(pair_table[pair_table_idx])
 
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(fc.sequence_encoding2[pair_table_idx],
-			fc.sequence_encoding2[pair_close_idx],
+		pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_table_idx],
+			fc.sequence_encoding[pair_close_idx],
 			fc.params.model_details)
 
 		// vivek: cryptic variable names. 5 and 3 have to do with the 5' and 3' ends
@@ -1258,7 +613,7 @@ func energy_of_extLoop_pair_table(fc *vrna_fold_compound_t, i int, pair_table []
  * first nucelotide of the sequence (in which case n5d < 0), or the closing bracket
  * is the last nucelotide of the sequence (in which case n3d < 0).
  */
-func vrna_E_ext_stem(pair_type uint32, n5d int, n3d int, p *vrna_param_t) int {
+func vrna_E_ext_stem(pair_type int, n5d int, n3d int, p *vrna_param_t) int {
 	var energy int = 0
 
 	if n5d >= 0 && n3d >= 0 {
@@ -1287,7 +642,7 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 	pair_close_idx := pair_table[pair_open_idx]
 	sequence := fc.sequence
 
-	if fc.params.model_details.pair[fc.sequence_encoding2[pair_open_idx]][fc.sequence_encoding2[pair_close_idx]] == 0 {
+	if fc.params.model_details.pair[fc.sequence_encoding[pair_open_idx]][fc.sequence_encoding[pair_close_idx]] == 0 {
 		panic(fmt.Sprintf("bases %v and %v (%v%v) can't pair!",
 			pair_open_idx, pair_close_idx,
 			string(sequence[pair_open_idx-1]),
@@ -1317,7 +672,7 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 		}
 
 		// vivek: should this be pair[n5p_iterator][n3p_iterator] or is the current order correct?
-		if fc.params.model_details.pair[fc.sequence_encoding2[n3p_iterator]][fc.sequence_encoding2[n5p_iterator]] == 0 {
+		if fc.params.model_details.pair[fc.sequence_encoding[n3p_iterator]][fc.sequence_encoding[n5p_iterator]] == 0 {
 			panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
 				n5p_iterator, n3p_iterator,
 				sequence[n5p_iterator-1],
@@ -1405,15 +760,14 @@ func vrna_cstr_print_eval_mb_loop(i, j int, si, sj byte, energy int) {
  *
  */
 func eval_int_loop(fc *vrna_fold_compound_t, i, j, k, l int) int {
-	// var rtype [8]int = fc.params.model_details.rtype
 	var u1, u2 int
 	energy := 0
 
 	u1 = k - i - 1
 	u2 = j - l - 1
 
-	ij_pair_type := vrna_get_pair_type_md(fc.sequence_encoding2[i], fc.sequence_encoding2[j], fc.params.model_details)
-	kl_pair_type := vrna_get_pair_type_md(fc.sequence_encoding2[l], fc.sequence_encoding2[k], fc.params.model_details)
+	ij_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[i], fc.sequence_encoding[j], fc.params.model_details)
+	kl_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[l], fc.sequence_encoding[k], fc.params.model_details)
 
 	energy = E_IntLoop(u1, u2, ij_pair_type, kl_pair_type, fc.sequence_encoding[i+1], fc.sequence_encoding[j-1], fc.sequence_encoding[k-1], fc.sequence_encoding[l+1], fc.params)
 
@@ -1425,8 +779,8 @@ func eval_int_loop(fc *vrna_fold_compound_t, i, j, k, l int) int {
 * Created an issue to get more info: https://github.com/ViennaRNA/ViennaRNA/issues/124
 * retruns type of base pair (p,q)
  */
-func vrna_get_pair_type_md(i, j int, md *vrna_md_t) uint32 {
-	var tt uint32 = uint32(md.pair[i][j])
+func vrna_get_pair_type_md(i, j int, md *vrna_md_t) int {
+	var tt int = md.pair[i][j]
 
 	if tt == 0 {
 		return 7
@@ -1476,7 +830,7 @@ func vrna_get_pair_type_md(i, j int, md *vrna_md_t) uint32 {
  *  @param  P       The datastructure containing scaled energy parameters
  *  @return The Free energy of the Interior-loop in dcal/mol
  */
-func E_IntLoop(n1, n2 int, type_1, type_2 uint32, si1, sj1, sp1, sq1 int, P *vrna_param_t) int {
+func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_param_t) int {
 	/* compute energy of degree 2 loop (stack bulge or interior) */
 	var nl, ns, u, energy int
 
@@ -1536,7 +890,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 uint32, si1, sj1, sp1, sq1 int, P *vrn
 				} else {
 					energy = P.internal_loop[30] + int(P.lxc*math.Log((float64(nl)+1.0)/30.0))
 				}
-				energy += Min(MAX_NINIO, (nl-ns)*P.ninio[2])
+				energy += min(MAX_NINIO, (nl-ns)*P.ninio[2])
 				energy += P.mismatch1nI[type_1][si1][sj1] + P.mismatch1nI[type_2][sq1][sp1]
 				return energy
 			}
@@ -1561,7 +915,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 uint32, si1, sj1, sp1, sq1 int, P *vrn
 				energy = P.internal_loop[30] + int(P.lxc*math.Log(float64(u)/30.0))
 			}
 
-			energy += Min(MAX_NINIO, (nl-ns)*P.ninio[2])
+			energy += min(MAX_NINIO, (nl-ns)*P.ninio[2])
 
 			energy += P.mismatchI[type_1][si1][sj1] + P.mismatchI[type_2][sq1][sp1]
 		}
@@ -1592,34 +946,10 @@ func vrna_eval_hp_loop(fc *vrna_fold_compound_t, pair_open_idx, pair_close_idx i
 	md = P.model_details
 
 	u = pair_close_idx - pair_open_idx - 1
-	pair_type := vrna_get_pair_type_md(fc.sequence_encoding2[pair_open_idx], fc.sequence_encoding2[pair_close_idx], md)
+	pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_open_idx], fc.sequence_encoding[pair_close_idx], md)
 
 	e = E_Hairpin(u, pair_type, fc.sequence_encoding[pair_open_idx+1], fc.sequence_encoding[pair_close_idx-1], fc.sequence[pair_open_idx-1:], P)
-
-	return e
-}
-
-func eval_hp_loop_fake(fc *vrna_fold_compound_t, i, j int) int {
-	var e int
-	var type_1 uint32
-	var P *vrna_param_t
-	var md *vrna_md_t
-
-	P = fc.params
-	md = P.model_details
-
-	e = INF
-
-	type_1 = vrna_get_pair_type_md(fc.sequence_encoding2[j], fc.sequence_encoding2[i], md)
-
-	/* hairpin-like exterior loop (for cofolding) */
-	var si, sj int
-	si = fc.sequence_encoding[i+1]
-	sj = fc.sequence_encoding[j-1]
-
-
-	e = vrna_E_ext_stem(type_1, sj, si, P)
-
+	// fmt.Printf("hairpin e: %v\n", e)
 	return e
 }
 
@@ -1655,7 +985,7 @@ func eval_hp_loop_fake(fc *vrna_fold_compound_t, i, j int) int {
  *  @param  P     The datastructure containing scaled energy parameters
  *  @return The Free energy of the Hairpin-loop in dcal/mol
  */
-func E_Hairpin(size int, type_1 uint32, si1, sj1 int, sequence string, P *vrna_param_t) int {
+func E_Hairpin(size int, type_1 int, si1, sj1 int, sequence string, P *vrna_param_t) int {
 	var energy int
 
 	if size <= 30 {
@@ -1705,32 +1035,6 @@ func E_Hairpin(size int, type_1 uint32, si1, sj1 int, sequence string, P *vrna_p
 	return energy
 }
 
-func cut_in_loop(pair_open_idx int, pair_table []int, sn []uint32) int {
-	/* walk around the loop;  return 5' pos of first pair after cut if
-	 * cut_point in loop else 0 */
-	var n5p_iterator, pair_close_idx int
-
-	n5p_iterator = pair_table[pair_open_idx]
-	pair_close_idx = pair_table[pair_open_idx]
-
-	for {
-		pair_open_idx = pair_table[n5p_iterator]
-		n5p_iterator = pair_open_idx + 1
-		for pair_table[n5p_iterator] == 0 {
-			n5p_iterator++
-		}
-
-		if n5p_iterator == pair_close_idx {
-			break
-		}
-	}
-	if sn[pair_open_idx] == sn[n5p_iterator] {
-		return 0
-	} else {
-		return n5p_iterator
-	}
-}
-
 /**
  *** pair_open_idx is the 5'-base of the closing pair
  ***
@@ -1777,7 +1081,7 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 		/* p must have a pairing partner */
 		n5p_iterator_close_idx = pair_table[n5p_iterator]
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(vc.sequence_encoding2[n5p_iterator], vc.sequence_encoding2[n5p_iterator_close_idx], vc.params.model_details)
+		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[n5p_iterator], vc.sequence_encoding[n5p_iterator_close_idx], vc.params.model_details)
 
 		mm5 = vc.sequence_encoding[n5p_iterator-1]
 		mm3 = vc.sequence_encoding[n5p_iterator_close_idx+1]
@@ -1795,7 +1099,7 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 
 	if pair_open_idx > 0 {
 		/* actual closing pair */
-		pair_type := vrna_get_pair_type_md(vc.sequence_encoding2[pair_close_idx], vc.sequence_encoding2[pair_open_idx], vc.params.model_details)
+		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[pair_close_idx], vc.sequence_encoding[pair_open_idx], vc.params.model_details)
 		mm5 = vc.sequence_encoding[pair_close_idx-1]
 		mm3 = vc.sequence_encoding[pair_open_idx+1]
 
@@ -1831,7 +1135,7 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
  *  @param  D The datastructure containing scaled energy parameters
  *  @return   The energy contribution of the introduced multiloop stem
  */
-func E_MLstem(type_1 uint32, si1, sj1 int, P *vrna_param_t) int {
+func E_MLstem(type_1 int, si1, sj1 int, P *vrna_param_t) int {
 	var energy int = 0
 
 	if si1 >= 0 && sj1 >= 0 {
