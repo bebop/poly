@@ -380,9 +380,10 @@ func vrna_pair_table_from_string(structure string) ([]int, error) {
 
 	// iterate through structure_char_slice and create pair_table
 	for i := 0; i < len(structure_char_slice); i++ {
+		curr_idx := i + 1
 		if structure_char_slice[i] == open_bracket {
 			// pop index of open bracket onto stack
-			open_bracket_idx_stack[stack_idx] = i + 1
+			open_bracket_idx_stack[stack_idx] = curr_idx
 			stack_idx++
 		} else if structure_char_slice[i] == close_bracket {
 			stack_idx--
@@ -394,9 +395,10 @@ func vrna_pair_table_from_string(structure string) ([]int, error) {
 
 			open_bracket_idx := open_bracket_idx_stack[stack_idx]
 			// current index of one-indexed sequence
-			curr_idx := i + 1
 			pair_table[curr_idx] = open_bracket_idx
 			pair_table[open_bracket_idx] = curr_idx
+		} else {
+			pair_table[curr_idx] = -1
 		}
 	}
 
@@ -422,7 +424,7 @@ func eval_pair_table(fc *vrna_fold_compound_t, pair_table []int) int {
 	vrna_cstr_print_eval_ext_loop(energy)
 	// vivek: assume input is only A, T, C, G, or U
 	for i = 1; i <= length; i++ {
-		if pair_table[i] == 0 {
+		if pair_table[i] == -1 {
 			continue
 		}
 
@@ -519,7 +521,7 @@ func energy_of_extLoop_pair_table(fc *vrna_fold_compound_t, i int, pair_table []
 	pair_table_idx := 1
 
 	/* seek to opening base of first stem (pair) */
-	for pair_table_idx <= length && (pair_table[pair_table_idx] == 0) {
+	for pair_table_idx <= length && (pair_table[pair_table_idx] == -1) {
 		pair_table_idx++
 	}
 
@@ -551,7 +553,7 @@ func energy_of_extLoop_pair_table(fc *vrna_fold_compound_t, i int, pair_table []
 
 		/* seek to the next stem */
 		pair_table_idx = pair_close_idx + 1
-		for pair_table_idx <= length && pair_table[pair_table_idx] == 0 {
+		for pair_table_idx <= length && pair_table[pair_table_idx] == -1 {
 			pair_table_idx++
 		}
 
@@ -630,13 +632,13 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 
 		// seek to opening bracket from 5' end
 		n5p_iterator++
-		for pair_table[n5p_iterator] == 0 {
+		for pair_table[n5p_iterator] == -1 {
 			n5p_iterator++
 		}
 
 		// seek to closing bracket from 3' end
 		n3p_iterator--
-		for pair_table[n3p_iterator] == 0 {
+		for pair_table[n3p_iterator] == -1 {
 			n3p_iterator--
 		}
 
@@ -684,7 +686,7 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 		n5p_iterator = pair_table[n5p_iterator]
 		/* search for next base pair in multiloop */
 		n5p_iterator++
-		for pair_table[n5p_iterator] == 0 {
+		for pair_table[n5p_iterator] == -1 {
 			n5p_iterator++
 		}
 	}
@@ -1043,7 +1045,7 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 	num_unpaired_nucs = 0 /* the total number of unpaired nucleotides */
 	n5p_iterator := pair_open_idx + 1
 
-	for n5p_iterator <= pair_close_idx && pair_table[n5p_iterator] == 0 {
+	for n5p_iterator <= pair_close_idx && pair_table[n5p_iterator] == -1 {
 		n5p_iterator++
 	}
 
@@ -1064,7 +1066,7 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 		/* seek to the next stem */
 		n5p_iterator = n5p_iterator_close_idx + 1
 
-		for n5p_iterator < pair_close_idx && pair_table[n5p_iterator] == 0 {
+		for n5p_iterator < pair_close_idx && pair_table[n5p_iterator] == -1 {
 			n5p_iterator++
 		}
 		num_unpaired_nucs += n5p_iterator - n5p_iterator_close_idx - 1 /* add unpaired nucleotides */
