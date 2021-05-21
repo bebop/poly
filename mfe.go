@@ -364,7 +364,7 @@ func vrna_pair_table_from_string(structure string) ([]int, error) {
 	}
 
 	pair_table = make([]int, len_seq+2)
-	pair_table[0] = len_seq
+	// pair_table[0] = len_seq
 
 	// a slice of the characters in the structure
 	var structure_char_slice []rune = []rune(structure)
@@ -460,13 +460,13 @@ func vrna_cstr_print_eval_ext_loop(energy int) {
  */
 func encodeSequence(sequence string) []int {
 	var l int = len(sequence)
-	var S []int = make([]int, l+1)
+	var S []int = make([]int, l)
 
-	for i := 1; i <= l; i++ { /* make numerical encoding of sequence */
-		S[i] = encodeNucelotide(([]rune(sequence))[i-1])
+	for i := 0; i < l; i++ { /* make numerical encoding of sequence */
+		S[i] = encodeNucelotide(([]rune(sequence))[i])
 	}
 
-	S[0] = S[l]
+	// S[0] = S[l]
 
 	return S
 }
@@ -528,21 +528,21 @@ func energy_of_extLoop_pair_table(fc *vrna_fold_compound_t, i int, pair_table []
 		pair_close_idx := int(pair_table[pair_table_idx])
 
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_table_idx],
-			fc.sequence_encoding[pair_close_idx],
+		pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_table_idx-1],
+			fc.sequence_encoding[pair_close_idx-1],
 			fc.params.model_details)
 
 		// vivek: cryptic variable names. 5 and 3 have to do with the 5' and 3' ends
 		// of a DNA/RNA strand
 		var mm5, mm3 int
 		if pair_table_idx > 1 {
-			mm5 = fc.sequence_encoding[pair_table_idx-1]
+			mm5 = fc.sequence_encoding[pair_table_idx-1-1]
 		} else {
 			mm5 = -1
 		}
 
 		if pair_close_idx < length {
-			mm3 = fc.sequence_encoding[pair_close_idx+1]
+			mm3 = fc.sequence_encoding[pair_close_idx]
 		} else {
 			mm3 = -1
 		}
@@ -615,7 +615,7 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 	pair_close_idx := pair_table[pair_open_idx]
 	sequence := fc.sequence
 
-	if fc.params.model_details.pair[fc.sequence_encoding[pair_open_idx]][fc.sequence_encoding[pair_close_idx]] == 0 {
+	if fc.params.model_details.pair[fc.sequence_encoding[pair_open_idx-1]][fc.sequence_encoding[pair_close_idx-1]] == 0 {
 		panic(fmt.Sprintf("bases %v and %v (%v%v) can't pair!",
 			pair_open_idx, pair_close_idx,
 			string(sequence[pair_open_idx-1]),
@@ -645,7 +645,7 @@ func stack_energy(fc *vrna_fold_compound_t, pair_open_idx int, pair_table []int)
 		}
 
 		// vivek: should this be pair[n5p_iterator][n3p_iterator] or is the current order correct?
-		if fc.params.model_details.pair[fc.sequence_encoding[n3p_iterator]][fc.sequence_encoding[n5p_iterator]] == 0 {
+		if fc.params.model_details.pair[fc.sequence_encoding[n3p_iterator-1]][fc.sequence_encoding[n5p_iterator-1]] == 0 {
 			panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
 				n5p_iterator, n3p_iterator,
 				sequence[n5p_iterator-1],
@@ -739,10 +739,10 @@ func eval_int_loop(fc *vrna_fold_compound_t, i, j, k, l int) int {
 	u1 = k - i - 1
 	u2 = j - l - 1
 
-	ij_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[i], fc.sequence_encoding[j], fc.params.model_details)
-	kl_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[l], fc.sequence_encoding[k], fc.params.model_details)
+	ij_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[i-1], fc.sequence_encoding[j-1], fc.params.model_details)
+	kl_pair_type := vrna_get_pair_type_md(fc.sequence_encoding[l-1], fc.sequence_encoding[k-1], fc.params.model_details)
 
-	energy = E_IntLoop(u1, u2, ij_pair_type, kl_pair_type, fc.sequence_encoding[i+1], fc.sequence_encoding[j-1], fc.sequence_encoding[k-1], fc.sequence_encoding[l+1], fc.params)
+	energy = E_IntLoop(u1, u2, ij_pair_type, kl_pair_type, fc.sequence_encoding[i], fc.sequence_encoding[j-1-1], fc.sequence_encoding[k-1-1], fc.sequence_encoding[l], fc.params)
 
 	return energy
 }
@@ -919,9 +919,9 @@ func vrna_eval_hp_loop(fc *vrna_fold_compound_t, pair_open_idx, pair_close_idx i
 	md = P.model_details
 
 	u = pair_close_idx - pair_open_idx - 1
-	pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_open_idx], fc.sequence_encoding[pair_close_idx], md)
+	pair_type := vrna_get_pair_type_md(fc.sequence_encoding[pair_open_idx-1], fc.sequence_encoding[pair_close_idx-1], md)
 
-	e = E_Hairpin(u, pair_type, fc.sequence_encoding[pair_open_idx+1], fc.sequence_encoding[pair_close_idx-1], fc.sequence[pair_open_idx-1:], P)
+	e = E_Hairpin(u, pair_type, fc.sequence_encoding[pair_open_idx], fc.sequence_encoding[pair_close_idx-1-1], fc.sequence[pair_open_idx-1:], P)
 	// fmt.Printf("hairpin e: %v\n", e)
 	return e
 }
@@ -1054,10 +1054,10 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 		/* p must have a pairing partner */
 		n5p_iterator_close_idx = pair_table[n5p_iterator]
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[n5p_iterator], vc.sequence_encoding[n5p_iterator_close_idx], vc.params.model_details)
+		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[n5p_iterator-1], vc.sequence_encoding[n5p_iterator_close_idx-1], vc.params.model_details)
 
-		mm5 = vc.sequence_encoding[n5p_iterator-1]
-		mm3 = vc.sequence_encoding[n5p_iterator_close_idx+1]
+		mm5 = vc.sequence_encoding[n5p_iterator-1-1]
+		mm3 = vc.sequence_encoding[n5p_iterator_close_idx]
 
 		energy += E_MLstem(pair_type, mm5, mm3, vc.params)
 
@@ -1072,9 +1072,9 @@ func energy_of_ml_pair_table(vc *vrna_fold_compound_t, pair_open_idx int, pair_t
 
 	if pair_open_idx > 0 {
 		/* actual closing pair */
-		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[pair_close_idx], vc.sequence_encoding[pair_open_idx], vc.params.model_details)
-		mm5 = vc.sequence_encoding[pair_close_idx-1]
-		mm3 = vc.sequence_encoding[pair_open_idx+1]
+		pair_type := vrna_get_pair_type_md(vc.sequence_encoding[pair_close_idx-1], vc.sequence_encoding[pair_open_idx-1], vc.params.model_details)
+		mm5 = vc.sequence_encoding[pair_close_idx-1-1]
+		mm3 = vc.sequence_encoding[pair_open_idx]
 
 		energy += E_MLstem(pair_type, mm5, mm3, vc.params)
 	} else {
