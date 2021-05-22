@@ -114,8 +114,8 @@ Start of the De Bruijn stuff
 // https://rosettacode.org/wiki/De_Bruijn_sequences#Go
 // Pulled and adapted from here
 func DeBruijn(n int) string {
-	k := 4
 	alphabet := "ATGC"
+	k := len(alphabet)
 	a := make([]byte, k*n)
 	var seq []byte
 	var db func(int, int) // recursive closure
