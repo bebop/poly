@@ -142,10 +142,10 @@ func DeBruijn(n int) string {
 	return b + b[0:n-1] // as cyclic append first (n-1) digits
 }
 
-// UniqueSequence takes a channel and fills it with Unique sequences
+// CreateBarcodeChannel takes a channel and fills it with Unique sequences
 // which can then be sorted for desired properties (high/low GC,
 // restriction enzyme sites, etc)
-func UniqueSequence(c chan string, length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) {
+func CreateBarcodeChannel(c chan string, length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) {
 	var start int
 	var end int
 	debruijn := DeBruijn(maxSubSequence)
@@ -180,4 +180,15 @@ func UniqueSequence(c chan string, length int, maxSubSequence int, banned []stri
 		c <- debruijn[start:end]
 	}
 	close(c)
+}
+
+// CreateBarcode returns barcodes as a list instead of into a channel.
+func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) []string {
+	barcodesChannel := make(chan string)
+	go CreateBarcodeChannel(barcodesChannel, length, maxSubSequence, banned, bannedFunc)
+	var barcodes []string
+	for barcode := range barcodesChannel {
+		barcodes = append(barcodes, barcode)
+	}
+	return barcodes
 }

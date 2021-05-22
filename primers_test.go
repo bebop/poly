@@ -89,34 +89,25 @@ func ExampleDeBruijn() {
 	// Output: AAAATAAAGAAACAATTAATGAATCAAGTAAGGAAGCAACTAACGAACCATATAGATACATTTATTGATTCATGTATGGATGCATCTATCGATCCAGAGACAGTTAGTGAGTCAGGTAGGGAGGCAGCTAGCGAGCCACACTTACTGACTCACGTACGGACGCACCTACCGACCCTTTTGTTTCTTGGTTGCTTCGTTCCTGTGTCTGGGTGGCTGCGTGCCTCTCGGTCGCTCCGTCCCGGGGCGGCCGCGCCCCAAA
 }
 
-func ExampleUniqueSequence() {
-	uniqueSequences := make(chan string)
-	go UniqueSequence(uniqueSequences, 20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
+func ExampleCreateBarcodes() {
+	barcodes := CreateBarcodes(20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
 
-	// Only we only want 1 output to check against
-	fmt.Println(<-uniqueSequences)
+	fmt.Println(barcodes[0])
 	// Output: AAAATAAAGAAACAATTAAT
 }
 
-func TestUniqueSequence(t *testing.T) {
-	c := make(chan string)
+func TestCreateBarcode(t *testing.T) {
 	testFunc := func(s string) bool {
 		return !strings.Contains(s, "GGCCGCGCCCC")
 	}
-	go UniqueSequence(c, 20, 4, []string{}, []func(string) bool{testFunc})
-	var output string
-	for a := range c {
-		output = a
-	}
+	barcodes := CreateBarcodes(20, 4, []string{}, []func(string) bool{testFunc})
+	output := barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence function should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 
-	b := make(chan string)
-	go UniqueSequence(b, 20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
-	for d := range b {
-		output = d
-	}
+	barcodes = CreateBarcodes(20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
+	output = barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
