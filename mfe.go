@@ -40,7 +40,7 @@ func min(a, b int) int {
  *
  *  This function allows for detailed energy evaluation of a given sequence/structure pair.
  *
- *  @param sequence         A DNA/RNA sequence
+ *  @param sequence         A RNA sequence
  *  @param structure        Secondary structure in dot-bracket notation
  *  @return                 The free energy of the input structure given the input sequence in kcal/mol
  */
@@ -55,7 +55,7 @@ func CalculateMFE(sequence, structure string) (float64, error) {
 	}
 
 	// convert DNA to RNA
-	sequence = strings.ToUpper(strings.ReplaceAll(sequence, "T", "U"))
+	// sequence = strings.ToUpper(strings.ReplaceAll(sequence, "T", "U"))
 
 	// fmt.Println(regexp.MatchString("[^ATCG]+", sequence))
 
@@ -82,9 +82,8 @@ func rescaleDg(dG, dH, dT int) int {
 }
 
 const (
-	NB_PAIRS  int = 7  /** The number of distinguishable base pairs */
-	MAX_ALPHA int = 4  /** @brief Maximal length of alphabet */
-	MAX_LOOP  int = 30 /** The maximum loop length */
+	NB_PAIRS int = 7  /** The number of distinguishable base pairs */
+	maxLoop  int = 30 /** The maximum loop length */
 )
 
 var (
@@ -92,11 +91,47 @@ var (
 	VRNA_MODEL_DEFAULT_TEMPERATURE float64 = 37.0
 )
 
+func defaultPairMap() map[byte]map[byte]int {
+	//   			  _  A  C  G  U
+	// /* _ */ {0, 0, 0, 0, 0},
+	// /* A */ {0, 0, 0, 0, 5},
+	// /* C */ {0, 0, 0, 1, 0},
+	// /* G */ {0, 0, 2, 0, 3},
+	// /* U */ {0, 6, 0, 4, 0},
+
+	nucelotideAPairMap := map[byte]int{
+		'U': 5,
+	}
+
+	nucelotideCPairMap := map[byte]int{
+		'G': 1,
+	}
+
+	nucelotideGPairMap := map[byte]int{
+		'C': 2,
+		'U': 3,
+	}
+
+	nucelotideUPairMap := map[byte]int{
+		'A': 6,
+		'G': 4,
+	}
+
+	pair := map[byte]map[byte]int{
+		'A': nucelotideAPairMap,
+		'C': nucelotideCPairMap,
+		'G': nucelotideGPairMap,
+		'U': nucelotideUPairMap,
+	}
+
+	return pair
+}
+
 type vrna_param_t struct {
 	stack                                     [NB_PAIRS + 1][NB_PAIRS + 1]int
 	hairpin                                   [31]int
-	bulge                                     [MAX_LOOP + 1]int
-	internal_loop                             [MAX_LOOP + 1]int
+	bulge                                     [maxLoop + 1]int
+	internal_loop                             [maxLoop + 1]int
 	mismatchExt                               [NB_PAIRS + 1][5][5]int
 	mismatchI                                 [NB_PAIRS + 1][5][5]int
 	mismatch1nI                               [NB_PAIRS + 1][5][5]int
@@ -119,8 +154,13 @@ type vrna_param_t struct {
 	Hexaloop_E                                [40]int
 	Hexaloops                                 string
 	TripleC, MultipleCA, MultipleCB           int
-	temperature                               float64                           /**<  @brief  Temperature used for loop contribution scaling */
-	pair                                      [MAX_ALPHA + 1][MAX_ALPHA + 1]int /**<  @brief  Integer representation of a base pair */
+	temperature                               float64 /**<  @brief  Temperature used for loop contribution scaling */
+	/* Integer representation of a base pair
+	* vivek: This field was previously in the vrna_md_t struct. However since it
+	* was the only field accessed from that struct, I added it here and removed
+	* that struct
+	 */
+	pair map[byte]map[byte]int
 }
 
 func get_scaled_params() *vrna_param_t {
@@ -140,14 +180,15 @@ func get_scaled_params() *vrna_param_t {
 		MLclosing: rescaleDg(ML_closing37, ML_closingdH, int(tempf)),
 		// vivek: Why isn't this a symmetric matrix?
 		// I couldn't find anything about this field in their docs
-		pair: [MAX_ALPHA + 1][MAX_ALPHA + 1]int{
-			//			 _  A  C  G  U
-			/* _ */ {0, 0, 0, 0, 0},
-			/* A */ {0, 0, 0, 0, 5},
-			/* C */ {0, 0, 0, 1, 0},
-			/* G */ {0, 0, 2, 0, 3},
-			/* U */ {0, 6, 0, 4, 0},
-		},
+		// pair: [MAX_ALPHA + 1][MAX_ALPHA + 1]int{
+		// 	//			 _  A  C  G  U
+		// 	/* _ */ {0, 0, 0, 0, 0},
+		// 	/* A */ {0, 0, 0, 0, 5},
+		// 	/* C */ {0, 0, 0, 1, 0},
+		// 	/* G */ {0, 0, 2, 0, 3},
+		// 	/* U */ {0, 6, 0, 4, 0},
+		// },
+		pair: defaultPairMap(),
 	}
 
 	params.ninio[2] = rescaleDg(ninio37, niniodH, int(tempf))
@@ -156,12 +197,12 @@ func get_scaled_params() *vrna_param_t {
 		params.hairpin[i] = rescaleDg(hairpin37[i], hairpindH[i], int(tempf))
 	}
 
-	for i = 0; i <= min(30, MAX_LOOP); i++ {
+	for i = 0; i <= min(30, maxLoop); i++ {
 		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], int(tempf))
 		params.internal_loop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], int(tempf))
 	}
 
-	for ; i <= MAX_LOOP; i++ {
+	for ; i <= maxLoop; i++ {
 		params.bulge[i] = params.bulge[30] +
 			int(params.lxc*math.Log(float64(i)/30.0))
 		params.internal_loop[i] = params.internal_loop[30] +
@@ -504,8 +545,8 @@ func energy_of_extLoop_pairTable(fc *foldCompound, i int, pairTable []int) int {
 		pair_close_idx := pairTable[pair_open_idx]
 
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(fc.sequenceEncoding[pair_open_idx],
-			fc.sequenceEncoding[pair_close_idx],
+		pair_type := vrna_get_pair_type_md(fc.sequence[pair_open_idx],
+			fc.sequence[pair_close_idx],
 			fc.params)
 
 		// vivek: cryptic variable names. 5 and 3 have to do with the 5' and 3' ends
@@ -591,7 +632,7 @@ func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
 	pair_close_idx := pairTable[pair_open_idx]
 	sequence := fc.sequence
 
-	if fc.params.pair[fc.sequenceEncoding[pair_open_idx]][fc.sequenceEncoding[pair_close_idx]] == 0 {
+	if fc.params.pair[fc.sequence[pair_open_idx]][fc.sequence[pair_close_idx]] == 0 {
 		panic(fmt.Sprintf("bases %v and %v (%v%v) can't pair!",
 			pair_open_idx, pair_close_idx,
 			string(sequence[pair_open_idx]),
@@ -621,7 +662,7 @@ func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
 		}
 
 		// vivek: should this be pair[n5p_iterator][n3p_iterator] or is the current order correct?
-		if fc.params.pair[fc.sequenceEncoding[n3p_iterator]][fc.sequenceEncoding[n5p_iterator]] == 0 {
+		if fc.params.pair[fc.sequence[n3p_iterator]][fc.sequence[n5p_iterator]] == 0 {
 			panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
 				n5p_iterator, n3p_iterator,
 				sequence[n5p_iterator],
@@ -715,8 +756,8 @@ func eval_int_loop(fc *foldCompound, i, j, k, l int) int {
 	u1 = k - i - 1
 	u2 = j - l - 1
 
-	ij_pair_type := vrna_get_pair_type_md(fc.sequenceEncoding[i], fc.sequenceEncoding[j], fc.params)
-	kl_pair_type := vrna_get_pair_type_md(fc.sequenceEncoding[l], fc.sequenceEncoding[k], fc.params)
+	ij_pair_type := vrna_get_pair_type_md(fc.sequence[i], fc.sequence[j], fc.params)
+	kl_pair_type := vrna_get_pair_type_md(fc.sequence[l], fc.sequence[k], fc.params)
 
 	energy = E_IntLoop(u1, u2, ij_pair_type, kl_pair_type, fc.sequenceEncoding[i+1], fc.sequenceEncoding[j-1], fc.sequenceEncoding[k-1], fc.sequenceEncoding[l+1], fc.params)
 
@@ -728,7 +769,7 @@ func eval_int_loop(fc *foldCompound, i, j, k, l int) int {
 * Created an issue to get more info: https://github.com/ViennaRNA/ViennaRNA/issues/124
 * retruns type of base pair (p,q)
  */
-func vrna_get_pair_type_md(i, j int, md *vrna_param_t) int {
+func vrna_get_pair_type_md(i, j byte, md *vrna_param_t) int {
 	var tt int = md.pair[i][j]
 
 	if tt == 0 {
@@ -797,7 +838,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 
 	if ns == 0 {
 		/* bulge */
-		if nl <= MAX_LOOP {
+		if nl <= maxLoop {
 			energy = P.bulge[nl]
 		} else {
 			energy = P.bulge[30] + int(P.lxc*math.Log(float64(nl)/30.0))
@@ -834,7 +875,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 				return energy
 			} else {
 				/* 1xn loop */
-				if nl+1 <= MAX_LOOP {
+				if nl+1 <= maxLoop {
 					energy = P.internal_loop[nl+1]
 				} else {
 					energy = P.internal_loop[30] + int(P.lxc*math.Log((float64(nl)+1.0)/30.0))
@@ -858,7 +899,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 		{
 			/* generic interior loop (no else here!)*/
 			u = nl + ns
-			if u <= MAX_LOOP {
+			if u <= maxLoop {
 				energy = P.internal_loop[u]
 			} else {
 				energy = P.internal_loop[30] + int(P.lxc*math.Log(float64(u)/30.0))
@@ -893,7 +934,7 @@ func vrna_eval_hp_loop(fc *foldCompound, pair_open_idx, pair_close_idx int) int 
 	P = fc.params
 
 	u = pair_close_idx - pair_open_idx - 1
-	pair_type := vrna_get_pair_type_md(fc.sequenceEncoding[pair_open_idx], fc.sequenceEncoding[pair_close_idx], fc.params)
+	pair_type := vrna_get_pair_type_md(fc.sequence[pair_open_idx], fc.sequence[pair_close_idx], fc.params)
 
 	e = E_Hairpin(u, pair_type, fc.sequenceEncoding[pair_open_idx+1], fc.sequenceEncoding[pair_close_idx-1], fc.sequence[pair_open_idx-1:], P)
 	// fmt.Printf("hairpin e: %v\n", e)
@@ -1028,7 +1069,7 @@ func energy_of_ml_pairTable(vc *foldCompound, pair_open_idx int, pairTable []int
 		/* p must have a pairing partner */
 		n5p_iterator_close_idx = pairTable[n5p_iterator]
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(vc.sequenceEncoding[n5p_iterator], vc.sequenceEncoding[n5p_iterator_close_idx], vc.params)
+		pair_type := vrna_get_pair_type_md(vc.sequence[n5p_iterator], vc.sequence[n5p_iterator_close_idx], vc.params)
 
 		mm5 = vc.sequenceEncoding[n5p_iterator-1]
 		mm3 = vc.sequenceEncoding[n5p_iterator_close_idx+1]
@@ -1046,7 +1087,7 @@ func energy_of_ml_pairTable(vc *foldCompound, pair_open_idx int, pairTable []int
 
 	if pair_open_idx > 0 {
 		/* actual closing pair */
-		pair_type := vrna_get_pair_type_md(vc.sequenceEncoding[pair_close_idx], vc.sequenceEncoding[pair_open_idx], vc.params)
+		pair_type := vrna_get_pair_type_md(vc.sequence[pair_close_idx], vc.sequence[pair_open_idx], vc.params)
 		mm5 = vc.sequenceEncoding[pair_close_idx-1]
 		mm3 = vc.sequenceEncoding[pair_open_idx+1]
 
