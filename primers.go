@@ -145,7 +145,7 @@ func DeBruijn(n int) string {
 // CreateBarcodeChannel takes a channel and fills it with Unique sequences
 // which can then be sorted for desired properties (high/low GC,
 // restriction enzyme sites, etc)
-func CreateBarcodeChannel(c chan string, length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) {
+func CreateBarcodeChannel(channel chan string, length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) {
 	var start int
 	var end int
 	debruijn := DeBruijn(maxSubSequence)
@@ -157,7 +157,7 @@ func CreateBarcodeChannel(c chan string, length int, maxSubSequence int, banned 
 			// If the current deBruijn range has the banned sequence, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for strings.Contains(debruijn[start:end], b) {
 				if end+1 > len(debruijn) {
-					close(c)
+					close(channel)
 					return
 				}
 				start++
@@ -169,7 +169,7 @@ func CreateBarcodeChannel(c chan string, length int, maxSubSequence int, banned 
 			// If the function returns False for the deBruijn range, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for !f(debruijn[start:end]) {
 				if end+1 > len(debruijn) {
-					close(c)
+					close(channel)
 					return
 				}
 				start++
@@ -177,9 +177,9 @@ func CreateBarcodeChannel(c chan string, length int, maxSubSequence int, banned 
 				i++
 			}
 		}
-		c <- debruijn[start:end]
+		channel <- debruijn[start:end]
 	}
-	close(c)
+	close(channel)
 }
 
 // CreateBarcode returns barcodes as a list instead of into a channel.
