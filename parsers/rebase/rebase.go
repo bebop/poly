@@ -187,7 +187,7 @@ func ParseRebase(file []byte) map[string]Enzyme {
 			startCommercialParsing = true
 		}
 		// If startCommercialParsing is true, start building the commercial supplier map
-		if startCommercialParsing == true {
+		if startCommercialParsing {
 			// if we start enzyme parsing, break the commercial supplier parsing
 			if strings.Contains(line, "<1>") {
 				commercialParsingLine = 0
