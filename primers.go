@@ -142,10 +142,10 @@ func DeBruijn(n int) string {
 	return b + b[0:n-1] // as cyclic append first (n-1) digits
 }
 
-// CreateBarcodeChannel takes a channel and fills it with Unique sequences
-// which can then be sorted for desired properties (high/low GC,
-// restriction enzyme sites, etc)
-func CreateBarcodeChannel(channel chan string, length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) {
+// CreateBarcodes creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
+// any banned sequences within the barcode, and any functions which may ban sequences within the barcode.
+func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) []string {
+	var barcodes []string
 	var start int
 	var end int
 	debruijn := DeBruijn(maxSubSequence)
@@ -157,8 +157,7 @@ func CreateBarcodeChannel(channel chan string, length int, maxSubSequence int, b
 			// If the current deBruijn range has the banned sequence, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for strings.Contains(debruijn[start:end], b) {
 				if end+1 > len(debruijn) {
-					close(channel)
-					return
+					return barcodes
 				}
 				start++
 				end++
@@ -169,26 +168,14 @@ func CreateBarcodeChannel(channel chan string, length int, maxSubSequence int, b
 			// If the function returns False for the deBruijn range, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for !f(debruijn[start:end]) {
 				if end+1 > len(debruijn) {
-					close(channel)
-					return
+					return barcodes
 				}
 				start++
 				end++
 				i++
 			}
 		}
-		channel <- debruijn[start:end]
-	}
-	close(channel)
-}
-
-// CreateBarcode returns barcodes as a list instead of into a channel.
-func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) []string {
-	barcodesChannel := make(chan string)
-	go CreateBarcodeChannel(barcodesChannel, length, maxSubSequence, banned, bannedFunc)
-	var barcodes []string
-	for barcode := range barcodesChannel {
-		barcodes = append(barcodes, barcode)
+		barcodes = append(barcodes, debruijn[start:end])
 	}
 	return barcodes
 }
