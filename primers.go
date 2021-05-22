@@ -120,10 +120,8 @@ func DeBruijn(n int) string {
 	var seq []byte
 	var db func(int, int) // recursive closure
 	db = func(t, p int) {
-		if t > n {
-			if n%p == 0 {
+		if t > n && n%p == 0 {
 				seq = append(seq, a[1:p+1]...)
-			}
 		} else {
 			a[t] = a[t-p]
 			db(t+1, p)
