@@ -15,7 +15,7 @@ import (
 // 	// -2.9
 // }
 
-func TestCalculateMfe(t *testing.T) {
+func TestCalculateMFE(t *testing.T) {
 	test("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
 		`External loop                           :  -300
@@ -1243,7 +1243,7 @@ func TestCalculateMfe(t *testing.T) {
 
 func test(sequence, structure string, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, _ := CalculateMfe(sequence, structure)
+		mfe, _ := CalculateMFE(sequence, structure)
 		log.Printf("%v", mfe)
 	})
 	output = stripWhiteSpace(output)
