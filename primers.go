@@ -110,43 +110,83 @@ May 23 2021
 
 Start of the De Bruijn stuff
 
-=== Biological context ===
+=== Barcode basics ===
 
 We're rapidly getting better at sequencing a lot of DNA. At their core, most
 DNA sequencing technologies pool together many samples and sequence them all
 at once. For example, let's say we have 2 samples of DNA whose true sequence
 is as follows:
 
-DNA-1: ATGC
-DNA-2: AGGC
+DNA-1 := ATGC
+DNA-2 := AGGC
 
 If we pooled these two samples together into a single tube, and sequenced
 them, we would not be able to tell if ATGC came from DNA-1 or DNA-2. In order
 to tell the difference, we would have to go through the process of DNA
-barcoding. Let's attach two small barcodes to each DNA fragment:
+barcoding. Let's attach two small barcodes to each DNA fragment separately
+in their own tubes and then pool them togehter:
 
 Barcode-1 + DNA-1 = GC + ATGC = GCATGC
 Barcode-2 + DNA-2 = AT + AGGC = ATAGGC
 
-Now, if we pooled these two samples together, we could be able to read the
-first 2 base pairs
+When we sequence this pool together, we will end up with two sequences,
+GCATGC and ATAGGC. If we correlate the first 2 base pairs with the tube
+the sample came from, we can derive DNA-1 is ATGC and DNA-2 is AGGC.
 
 
-=== Our solution ===
+
+=== Redundancy and start sites ===
+
+Now, let's say we have the need for N number of samples to be pooled
+together. The minimal barcode length could be expressed as:
+
+n = number of samples
+b = bases required in a minimal barcode
+
+4^b = n
+OR
+log4n = b
+
+In our perfect case, we would only need 8 base pair barcodes to represent 65536
+different samples. Reality is a little different, however.
+
+1. Failure of DNA sequencers to accurately sequence the barcode, leading for
+   one barcoed to be mistaken for a different barcode
+2. Misalignment of the barcode to the sequence. We cannot guarantee that the
+   DNA sequencer will begin sequencing our fragment at an exact base pair.
+3. Misreading of sequence as barcode. If our barcode is only 8 base pairs, on
+   average, it will occur once within 65536 base pairs, and that occurrence may
+   be misread as a barcode.
+
+These challenges force us to build a barcode that has the following features:
+
+1. Any barcode must be different enough from any other barcode that there will
+   be no misreading, even with mutated base pairs.
+2. Any barcode must be large enough that, on average, it will not occur in a
+   natural piece of DNA.
+
+While the second feature is quite easy (use ~20-30 base pair barcodes), the
+first can be challenging. When developing a large quantity of barcodes, how
+do you guarantee that they are optimally distanced from each other so that
+there will be no cross-talk?
+
+=== Our solution to distanced barcodes ===
 
 De Bruijn sequences are an interesting data structure where every possible
 substring of length N occurs exactly once as a substring(1). For example, a De
 Bruijn sequence of length 3 will only have ATG occur once in the entire
 sequence.
 
-These guarantees are very interesting in the context of DNA barcodes. By
-constructing a DNA De Bruijn sequence with substring length N, we are able to
-guarantee that a substring of length N will only occur once. Therefore, we
-can achieve an approximately optimal distance between barcodes.
+By constructing a nucleobase De Bruijn sequence, and selecting barcodes from
+within that De Bruijn sequence, we can guarantee that each barcode will never
+share any N length substring, since it only occurs once within the whole De
+Bruijn sequence.
 
-This is especially useful in applications that barcode Nanopore DNA. Even if
-there is inaccuracy in the basecalling, the De Bruijn barcode should guarantee
-we are sufficiently far away from another barcode that we can sort them.
+For example, a nucleobase De Bruijn sequence of substring length 6 is 4101
+base pairs long (4^n + (n-1)). You can generate 205 20 base pair barcodes with
+each barcode guaranteed to never share any 6 base pairs. This makes it very
+easy to unambiguously parse which samples came from where, while maintaining
+a guarantee of optimal distancing between your barcodes.
 
 Good luck with barcoding,
 
