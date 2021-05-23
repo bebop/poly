@@ -130,25 +130,25 @@ Keoni
 
 ******************************************************************************/
 
-// DeBruijn generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once.
+// NucleobaseDeBruijnSequence generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once.
 // https://en.wikipedia.org/wiki/De_Bruijn_sequence
 // https://rosettacode.org/wiki/De_Bruijn_sequences#Go
 // Pulled and adapted from here
-func NucleobaseDeBruijnSequence(n int) string {
+func NucleobaseDeBruijnSequence(substringLength int) string {
 	alphabet := "ATGC"
-	k := len(alphabet)
-	a := make([]byte, k*n)
+	alphabetLength := len(alphabet)
+	a := make([]byte, alphabetLength*substringLength)
 	var seq []byte
 	var ConstructDeBruijn func(int, int) // recursive closure
 	ConstructDeBruijn = func(t, p int) {
-		if t > n {
-			if n%p == 0 {
+		if t > substringLength {
+			if substringLength%p == 0 {
 				seq = append(seq, a[1:p+1]...)
 			}
 		} else {
 			a[t] = a[t-p]
 			ConstructDeBruijn(t+1, p)
-			for j := int(a[t-p] + 1); j < k; j++ {
+			for j := int(a[t-p] + 1); j < alphabetLength; j++ {
 				a[t] = byte(j)
 				ConstructDeBruijn(t+1, t)
 			}
@@ -160,7 +160,7 @@ func NucleobaseDeBruijnSequence(n int) string {
 		buf.WriteByte(alphabet[i])
 	}
 	b := buf.String()
-	return b + b[0:n-1] // as cyclic append first (n-1) digits
+	return b + b[0:substringLength-1] // as cyclic append first (n-1) digits
 }
 
 // CreateBarcodes creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
@@ -169,7 +169,7 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 	var barcodes []string
 	var start int
 	var end int
-	debruijn := DeBruijn(maxSubSequence)
+	debruijn := NucleobaseDeBruijnSequence(maxSubSequence)
 	for i := 0; (i*(length-(maxSubSequence-1)))+length < len(debruijn); {
 		start = i * (length - (maxSubSequence - 1))
 		end = start + length
