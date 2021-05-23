@@ -21,10 +21,9 @@ http://rebase.neb.com/rebase/rebase.f31.html
 The actual data dump itself is linked here and updated once a month:
 http://rebase.neb.com/rebase/link_withrefm
 
-In ./data/link_withrefm.txt we have a download of this file from Apr 25, 2021,
-which will be used for testing. From this file, we will extract lists of
-restriction enzymes, which can be used for simulation of restriction enzyme
-cutting and for cloning.
+In ./data/rebase_test.txt we have the first 1002 lines of link_withrefm from
+Apr 25, 2021. From this file, we will extract lists of restriction enzymes,
+which can be used for simulation of restriction enzyme cutting and for cloning.
 
 The header of this file gives a wonderful explanation of its structure. Here is the
 header with the commercial suppliers format and an example enzyme.
@@ -33,7 +32,7 @@ Cheers,
 Keoni Gandall
 
 
-
+```
 REBASE version 104                                              withrefm.104
 
     =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -152,6 +151,7 @@ REBASE codes for commercial sources of enzymes
 <7>
 <8>Tagami, H., Tayama, K., Tohyama, T., Fukaya, M., Okumura, H., Kawamura, Y., Horinouchi, S., Beppu, T., (1988) FEMS Microbiol. Lett., vol. 56, pp. 161-166.
 
+```
 ******************************************************************************/
 
 // Enzyme represents a single enzyme within the Rebase database
