@@ -113,27 +113,27 @@ Start of the De Bruijn stuff
 // https://en.wikipedia.org/wiki/De_Bruijn_sequence
 // https://rosettacode.org/wiki/De_Bruijn_sequences#Go
 // Pulled and adapted from here
-func DeBruijn(n int) string {
+func NucleobaseDeBruijnSequence(n int) string {
 	alphabet := "ATGC"
 	k := len(alphabet)
 	a := make([]byte, k*n)
 	var seq []byte
-	var db func(int, int) // recursive closure
-	db = func(t, p int) {
+	var ConstructDeBruijn func(int, int) // recursive closure
+	ConstructDeBruijn = func(t, p int) {
 		if t > n {
 			if n%p == 0 {
 				seq = append(seq, a[1:p+1]...)
 			}
 		} else {
 			a[t] = a[t-p]
-			db(t+1, p)
+			ConstructDeBruijn(t+1, p)
 			for j := int(a[t-p] + 1); j < k; j++ {
 				a[t] = byte(j)
-				db(t+1, t)
+				ConstructDeBruijn(t+1, t)
 			}
 		}
 	}
-	db(1, 1)
+	ConstructDeBruijn(1, 1)
 	var buf bytes.Buffer
 	for _, i := range seq {
 		buf.WriteByte(alphabet[i])
@@ -144,7 +144,7 @@ func DeBruijn(n int) string {
 
 // CreateBarcodes creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
 // any banned sequences within the barcode, and any functions which may ban sequences within the barcode.
-func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc []func(string) bool) []string {
+func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, bannedFunctions []func(string) bool) []string {
 	var barcodes []string
 	var start int
 	var end int
@@ -153,9 +153,18 @@ func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc 
 		start = i * (length - (maxSubSequence - 1))
 		end = start + length
 		i++
-		for _, b := range banned {
+		for _, bannedSequence := range bannedSequences {
 			// If the current deBruijn range has the banned sequence, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
-			for strings.Contains(debruijn[start:end], b) {
+			for strings.Contains(debruijn[start:end], bannedSequence) {
+				if end+1 > len(debruijn) {
+					return barcodes
+				}
+				start++
+				end++
+				i++
+			}
+			// Check reverse complement as well for the banned sequence
+			for strings.Contains(debruijn[start:end], ReverseComplement(bannedSequence)) {
 				if end+1 > len(debruijn) {
 					return barcodes
 				}
@@ -164,9 +173,9 @@ func CreateBarcodes(length int, maxSubSequence int, banned []string, bannedFunc 
 				i++
 			}
 		}
-		for _, f := range bannedFunc {
+		for _, bannedFunction := range bannedFunctions {
 			// If the function returns False for the deBruijn range, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
-			for !f(debruijn[start:end]) {
+			for !bannedFunction(debruijn[start:end]) {
 				if end+1 > len(debruijn) {
 					return barcodes
 				}
