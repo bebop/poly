@@ -106,7 +106,28 @@ func MeltingTemp(sequence string) float64 {
 }
 
 /******************************************************************************
+May 23 2021
+
 Start of the De Bruijn stuff
+
+De Bruijn sequences are an interesting data structure where every possible
+substring of length N occurs exactly once as a substring. For example, a De
+Bruijn sequence of length 3 will only have ATG occur once in the entire
+sequence.
+
+These guarantees are very interesting in the context of DNA barcodes. By
+constructing a DNA De Bruijn sequence with substring length N, we are able to
+guarantee that a substring of length N will only occur once. Therefore, we
+can achieve an approximately optimal distance between barcodes.
+
+This is especially useful in applications that barcode Nanopore DNA. Even if
+there is inaccuracy in the basecalling, the De Bruijn barcode should guarantee
+we are sufficiently far away from another barcode that we can sort them.
+
+Good luck with barcoding,
+
+Keoni
+
 ******************************************************************************/
 
 // DeBruijn generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once.
