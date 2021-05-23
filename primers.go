@@ -110,8 +110,32 @@ May 23 2021
 
 Start of the De Bruijn stuff
 
+=== Biological context ===
+
+We're rapidly getting better at sequencing a lot of DNA. At their core, most
+DNA sequencing technologies pool together many samples and sequence them all
+at once. For example, let's say we have 2 samples of DNA whose true sequence
+is as follows:
+
+DNA-1: ATGC
+DNA-2: AGGC
+
+If we pooled these two samples together into a single tube, and sequenced
+them, we would not be able to tell if ATGC came from DNA-1 or DNA-2. In order
+to tell the difference, we would have to go through the process of DNA
+barcoding. Let's attach two small barcodes to each DNA fragment:
+
+Barcode-1 + DNA-1 = GC + ATGC = GCATGC
+Barcode-2 + DNA-2 = AT + AGGC = ATAGGC
+
+Now, if we pooled these two samples together, we could be able to read the
+first 2 base pairs
+
+
+=== Our solution ===
+
 De Bruijn sequences are an interesting data structure where every possible
-substring of length N occurs exactly once as a substring. For example, a De
+substring of length N occurs exactly once as a substring(1). For example, a De
 Bruijn sequence of length 3 will only have ATG occur once in the entire
 sequence.
 
@@ -128,12 +152,11 @@ Good luck with barcoding,
 
 Keoni
 
+(1) https://en.wikipedia.org/wiki/De_Bruijn_sequence
+
 ******************************************************************************/
 
-// NucleobaseDeBruijnSequence generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once.
-// https://en.wikipedia.org/wiki/De_Bruijn_sequence
-// https://rosettacode.org/wiki/De_Bruijn_sequences#Go
-// Pulled and adapted from here
+// NucleobaseDeBruijnSequence generates a DNA DeBruijn sequence with alphabet ATGC. DeBruijn sequences are basically a string with all unique substrings of an alphabet represented exactly once. Code is adapted from https://rosettacode.org/wiki/De_Bruijn_sequences#Go
 func NucleobaseDeBruijnSequence(substringLength int) string {
 	alphabet := "ATGC"
 	alphabetLength := len(alphabet)
