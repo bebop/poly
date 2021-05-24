@@ -16,9 +16,10 @@ Apr 25, 2021
 FASTA Parser begins here
 
 Many thanks to Jordan Campbell (https://github.com/0x106) for building the first
-FASTA parser for Poly. This work expands on that work by allowing for concurrent
-FASTA parsing and giving Poly a specific FASTA parser subpackage, as well as few
-bug fixes.
+FASTA parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
+for helping complete that PR. This work expands on the previous work by allowing
+for concurrent FASTA parsing and giving Poly a specific FASTA parser subpackage,
+as well as few bug fixes.
 
 FASTA is a very simple file format for working with DNA, RNA, or protein sequences.
 It was first released in 1985 and is still widely used in bioinformatics.
@@ -112,7 +113,7 @@ Start of FASTA Read functions
 
 ******************************************************************************/
 
-// ReadFASTAGz concurrently reads a gzipped Fasta file into a Fasta channel.
+// ReadFASTAGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
 func ReadFASTAGzConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
 	r, _ := gzip.NewReader(file)
