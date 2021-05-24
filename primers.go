@@ -228,7 +228,7 @@ func NucleobaseDeBruijnSequence(substringLength int) string {
 }
 
 // CreateBarcodes creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
-// any banned sequences within the barcode, and any functions which may ban sequences within the barcode.
+// Sequences may be marked as banned by passing a static list, `bannedSequences`, or, if more flexibility is needed, through a list of `bannedFunctions` that dynamically generates bannedSequences.
 func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, bannedFunctions []func(string) bool) []string {
 	var barcodes []string
 	var start int
