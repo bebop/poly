@@ -64,8 +64,10 @@ func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
 		if decoderToken == nil {
 			break
 		}
-		switch startElement := decoderToken.(type) {
-		case xml.StartElement:
+		//switch startElement := decoderToken.(type) {
+		//case xml.StartElement:
+		startElement, ok := decoderToken.(xml.StartElement)
+		if ok && startElement.Name.Local == "entry" {
 			if startElement.Name.Local == "entry" {
 				var e Entry
 				err = decoder.DecodeElement(&e, &startElement)
