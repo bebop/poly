@@ -415,9 +415,7 @@ func stackEnergy(fc *foldCompound, pairFivePrimeIdx int, energyContributions *([
 			break
 		}
 
-		// vivek: should this be basePairType[fivePrimeIter][threePrimeIter] or is the current order correct?
-		// created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/125
-		if fc.energyParams.basePairEncodedTypeMap[fc.sequence[threePrimeIter]][fc.sequence[fivePrimeIter]] == 0 {
+		if fc.energyParams.basePairEncodedTypeMap[fc.sequence[fivePrimeIter]][fc.sequence[threePrimeIter]] == 0 {
 			panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
 				fivePrimeIter, threePrimeIter,
 				fc.sequence[fivePrimeIter],
