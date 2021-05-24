@@ -1243,17 +1243,18 @@ func TestCalculateMFE(t *testing.T) {
 
 func test(sequence, structure string, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, _ := CalculateMFE(sequence, structure, DefaultTemperature)
+		mfe, energyContributions, _ := CalculateMFE(sequence, structure, DefaultTemperature)
+		logEnergyContributions(energyContributions, sequence)
 		log.Printf("%v", mfe)
 	})
-	output = stripWhiteSpace(output)
-	expected_output = stripWhiteSpace(expected_output)
-	if output != expected_output {
+
+	if stripWhiteSpace(output) != stripWhiteSpace(expected_output) {
 		t.Errorf("\n\nFailed to calcualte mfe for '%v'. \nExpected: \n'%v'\n\nGot: \n'%v'\n\n",
 			sequence, expected_output, output)
 	}
 }
 
+// Captures any logged output from running func `f` and returns it as a string
 func captureOutput(f func()) string {
 	var buf bytes.Buffer
 	log.SetFlags(0)
@@ -1263,6 +1264,7 @@ func captureOutput(f func()) string {
 	return buf.String()
 }
 
+// removes all white space in a string
 func stripWhiteSpace(s string) string {
 	return strings.Join(strings.Fields(s), "")
 }
