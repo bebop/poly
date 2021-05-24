@@ -633,7 +633,6 @@ func evaluateInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				energy = energyParams.interiorLoop[30] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/30.0))
 			}
 
-			// vivek: What does this line mean? Also added above in the 1xn loop
 			energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
 
 			energy += energyParams.mismatchInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatchInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
@@ -712,8 +711,6 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 
 	if size == 4 {
 		tetraloop := sequence[:6]
-		// vivek: this could be a point of failure. Maybe change the above to 7
-		// memcpy(tl, sequence, sizeof(char) * 6);
 		idx := strings.Index(string(energyParams.Tetraloops), tetraloop)
 		if idx != -1 {
 			return energyParams.Tetraloop[idx/7]
