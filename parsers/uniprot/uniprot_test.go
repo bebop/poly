@@ -5,8 +5,7 @@ import (
 )
 
 func ExampleReadUniprot() {
-	entries := make(chan Entry, 100000)
-	go ReadUniprot("data/uniprot_sprot_mini.xml.gz", entries)
+	entries, _, _ := ReadUniprot("data/uniprot_sprot_mini.xml.gz")
 
 	entry := <-entries
 	fmt.Println(entry.Accession[0])

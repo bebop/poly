@@ -38,29 +38,41 @@ Keoni
 ******************************************************************************/
 
 // ReadUniprot reads a gzipped Uniprot XML dump.
-func ReadUniprot(path string, entries chan Entry) {
-	xmlFile, _ := os.Open(path)
-	r, _ := gzip.NewReader(xmlFile)
-	go ParseUniprot(r, entries)
+func ReadUniprot(path string) (chan Entry, chan error, error) {
+	entries := make(chan Entry)
+	errors := make(chan error)
+	xmlFile, err := os.Open(path)
+	if err != nil {
+		return entries, errors, err
+	}
+	r, err := gzip.NewReader(xmlFile)
+	if err != nil {
+		return entries, errors, err
+	}
+	go ParseUniprot(r, entries, errors)
+	return entries, errors, nil
 }
 
 // ParseUniprot parses Uniprot entries into a channel.
-func ParseUniprot(r io.Reader, entries chan<- Entry) {
+func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
 	decoder := xml.NewDecoder(r)
 	for {
-		t, _ := decoder.Token()
-		if t == nil {
+		decoderToken, err := decoder.Token()
+		if err != nil {
+			errors <- err
+		}
+		if decoderToken == nil {
 			break
 		}
-		switch se := t.(type) {
+		switch startElement := decoderToken.(type) {
 		case xml.StartElement:
-			switch se.Name.Local {
-			case "entry":
+			if startElement.Name.Local == "entry" {
 				var e Entry
-				decoder.DecodeElement(&e, &se)
+				decoder.DecodeElement(&e, &startElement)
 				entries <- e
 			}
 		}
 	}
 	close(entries)
+	close(errors)
 }
