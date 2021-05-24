@@ -55,6 +55,10 @@ Tim
 
 ******************************************************************************/
 
+var errEmtpyCodonTable error = errors.New("empty codon table")
+var errEmtpyAminoAcidString error = errors.New("empty amino acid string")
+var errEmtpySequenceString error = errors.New("empty sequence string")
+
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string `json:"triplet"`
@@ -75,7 +79,13 @@ type CodonTable struct {
 }
 
 // Translate translates a codon sequence to an amino acid sequence
-func Translate(sequence string, codonTable CodonTable) string {
+func Translate(sequence string, codonTable CodonTable) (string, error) {
+	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
+		return "", errEmtpyCodonTable
+	}
+	if len(sequence) == 0 {
+		return "", errEmtpySequenceString
+	}
 
 	var aminoAcids strings.Builder
 	var currentCodon strings.Builder
@@ -94,11 +104,17 @@ func Translate(sequence string, codonTable CodonTable) string {
 			currentCodon.Reset()
 		}
 	}
-	return aminoAcids.String()
+	return aminoAcids.String(), nil
 }
 
 // Optimize takes an amino acid sequence and CodonTable and returns an optimized codon sequence
-func Optimize(aminoAcids string, codonTable CodonTable) string {
+func Optimize(aminoAcids string, codonTable CodonTable) (string, error) {
+	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
+		return "", errEmtpyCodonTable
+	}
+	if len(aminoAcids) == 0 {
+		return "", errEmtpyAminoAcidString
+	}
 
 	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -110,7 +126,7 @@ func Optimize(aminoAcids string, codonTable CodonTable) string {
 		aminoAcidString := string(aminoAcid)
 		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
 	}
-	return codons.String()
+	return codons.String(), nil
 }
 
 // GetOptimizationTable is a Sequence method that takes a CodonTable and weights it to be used to optimize inserts.
