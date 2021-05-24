@@ -5,7 +5,7 @@ package poly
 * as they are from the original repo to allow for easy update of the energy
 * parameters. To understand what the variables correspond to, see their usage
 * in `mfe.go`
-*/
+ */
 
 var (
 	mismatchI37 = [nbPairs + 1][5][5]int{
@@ -771,11 +771,10 @@ var (
 	}
 )
 
-
-// 0 deg Celsius in Kelvin
+// K0 is 0 deg Celsius in Kelvin
 var K0 float64 = 273.15
 
-// temperature of param measurements
+// Tmeasure is the temperature of param measurements
 var Tmeasure float64 = 37 + K0
 
 var (
@@ -820,8 +819,8 @@ const (
 )
 
 var (
-	/** Infinity as used in minimization routines */
-	INF             int = 10000000 /* (INT_MAX/10) */
+	// INF is infinity as used in minimization routines (INT_MAX/10)
+	INF             int = 10000000
 	hairpin37           = [31]int{INF, INF, INF, 540, 560, 570, 540, 600, 550, 640, 650, 660, 670, 680, 690, 690, 700, 710, 710, 720, 720, 730, 730, 740, 740, 750, 750, 750, 760, 760, 770}
 	hairpindH           = [31]int{INF, INF, INF, 130, 480, 360, -290, 130, -290, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500}
 	bulge37             = [31]int{INF, 380, 280, 320, 360, 400, 440, 460, 470, 480, 490, 500, 510, 520, 530, 540, 540, 550, 550, 560, 570, 570, 580, 580, 580, 590, 590, 600, 600, 600, 610}
@@ -850,23 +849,6 @@ var (
 		{INF, -560, -830, -880, -320, -320, -680, -320},
 	}
 
-	// There are 40 Tetraloops (each 7 in length) = 280 chars (what's the extra char for? why aren't there 40 Tetraloops here?)
-	// Tetraloops = [281]rune{
-	// 	[]rune("CAACGG ",
-	// "CCAAGG
-	// 		"CCACGG
-	// 		"CCCAGG
-	// 		"CCGAGG
-	// 		"CCGCGG
-	// 		"CCUAGG
-	// 		"CCUCGG
-	// 		"CUAAGG
-	// 		"CUACGG
-	// 		"CUCAGG
-	// 		"CUCCGG
-	// 		"CUGCGG
-	// 		"CUUAGG
-	// 		"CUUCGG CUUUGG ")}
 	Tetraloops  = "CAACGG CCAAGG CCACGG CCCAGG CCGAGG CCGCGG CCUAGG CCUCGG CUAAGG CUACGG CUCAGG CUCCGG CUGCGG CUUAGG CUUCGG CUUUGG "
 	Tetraloop37 = [40]int{550, 330, 370, 340, 350, 360, 370, 250, 360, 280, 370, 270, 280, 350, 370, 370}
 	TetraloopdH = [40]int{690, -1030, -330, -890, -660, -750, -350, -1390, -760, -1070, -660, -1290, -1070, -620, -1530, -680}
@@ -888,7 +870,6 @@ var (
 	Hexaloop37 = [40]int{280, 360, 290, 180}
 	HexaloopdH = [40]int{-1680, -1140, -1280, -1540}
 )
-
 
 var int11_37 = [nbPairs + 1][nbPairs + 1][5][5]int{
 	{
