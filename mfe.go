@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"strings"
-	"unicode"
 )
 
 /*
@@ -16,23 +15,13 @@ import (
 * - ViennaRNA includes the ability to calculate the minimum free energy of co-folded sequences. This implementation keeps it simple and defaults to calculating the mfe of only single sequences.
  */
 
-// Structure that contains the information necessary to compute the minimum free
-// energy of a given folded structure and its sequence.
 type foldCompound struct {
-	length           int           // length of `sequence`
-	params           *vrna_param_t // The precomputed free energy contributions for each type of loop
-	sequence         string        // The input sequence string
-	sequenceEncoding []int         // Numerical encoding of the sequence (see encodeSequence for the nucleotide->int mapping)
-	pairTable        []int         //
+	length          int           // length of `sequence`
+	params          *energyParams // The precomputed free energy contributions for each type of loop
+	sequence        string        // The input sequence string
+	encodedSequence []int         // Numerical encoding of the sequence (see encodeSequence for the nucleotide->int mapping)
+	pairTable       []int         //
 
-}
-
-// Returns the minimum of two ints
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 /**
@@ -65,11 +54,11 @@ func CalculateMFE(sequence, structure string) (float64, error) {
 	}
 
 	fc := &foldCompound{
-		length:           lenSequence,
-		params:           get_scaled_params(),
-		sequence:         sequence,
-		sequenceEncoding: encodeSequence(sequence),
-		pairTable:        pairTable,
+		length:          lenSequence,
+		params:          get_scaled_params(),
+		sequence:        sequence,
+		encodedSequence: encodeSequence(sequence),
+		pairTable:       pairTable,
 	}
 
 	energy := float64(evalFoldCompound(fc)) / 100.0
@@ -82,16 +71,15 @@ func rescaleDg(dG, dH, dT int) int {
 }
 
 const (
-	NB_PAIRS int = 7  /** The number of distinguishable base pairs */
-	maxLoop  int = 30 /** The maximum loop length */
+	nbPairs            int     = 7    /** The number of distinguishable base pairs */
+	maxLoop            int     = 30   /** The maximum loop length */
+	defaultTemperature float64 = 37.0 // Default temperature for structure prediction and free energy evaluation
 )
 
-var (
-	// Default temperature for structure prediction and free energy evaluation
-	VRNA_MODEL_DEFAULT_TEMPERATURE float64 = 37.0
-)
-
-func defaultPairMap() map[byte]map[byte]int {
+/* vivek: No clue what these values correspond to. Why isn't the matrix symmetric?
+* Created issue in original repo to get more info (https://github.com/ViennaRNA/ViennaRNA/issues/124)
+ */
+func defaultBasePairEncodedTypeMap() map[byte]map[byte]int {
 	//   			  _  A  C  G  U
 	// /* _ */ {0, 0, 0, 0, 0},
 	// /* A */ {0, 0, 0, 0, 5},
@@ -99,54 +87,42 @@ func defaultPairMap() map[byte]map[byte]int {
 	// /* G */ {0, 0, 2, 0, 3},
 	// /* U */ {0, 6, 0, 4, 0},
 
-	nucelotideAPairMap := map[byte]int{
-		'U': 5,
-	}
-
-	nucelotideCPairMap := map[byte]int{
-		'G': 1,
-	}
-
-	nucelotideGPairMap := map[byte]int{
-		'C': 2,
-		'U': 3,
-	}
-
-	nucelotideUPairMap := map[byte]int{
-		'A': 6,
-		'G': 4,
-	}
+	nucelotideAEncodedTypeMap := map[byte]int{'U': 5}
+	nucelotideCEncodedTypeMap := map[byte]int{'G': 1}
+	nucelotideGEncodedTypeMap := map[byte]int{'C': 2, 'U': 3}
+	nucelotideUEncodedTypeMap := map[byte]int{'A': 6, 'G': 4}
 
 	pair := map[byte]map[byte]int{
-		'A': nucelotideAPairMap,
-		'C': nucelotideCPairMap,
-		'G': nucelotideGPairMap,
-		'U': nucelotideUPairMap,
+		'A': nucelotideAEncodedTypeMap,
+		'C': nucelotideCEncodedTypeMap,
+		'G': nucelotideGEncodedTypeMap,
+		'U': nucelotideUEncodedTypeMap,
 	}
 
 	return pair
 }
 
-type vrna_param_t struct {
-	stack                                     [NB_PAIRS + 1][NB_PAIRS + 1]int
+// contains all the energy information needed for the free energy calculations
+type energyParams struct {
+	stack                                     [nbPairs + 1][nbPairs + 1]int
 	hairpin                                   [31]int
 	bulge                                     [maxLoop + 1]int
 	internal_loop                             [maxLoop + 1]int
-	mismatchExt                               [NB_PAIRS + 1][5][5]int
-	mismatchI                                 [NB_PAIRS + 1][5][5]int
-	mismatch1nI                               [NB_PAIRS + 1][5][5]int
-	mismatch23I                               [NB_PAIRS + 1][5][5]int
-	mismatchH                                 [NB_PAIRS + 1][5][5]int
-	mismatchM                                 [NB_PAIRS + 1][5][5]int
-	dangle5                                   [NB_PAIRS + 1][5]int
-	dangle3                                   [NB_PAIRS + 1][5]int
-	int11                                     [NB_PAIRS + 1][NB_PAIRS + 1][5][5]int
-	int21                                     [NB_PAIRS + 1][NB_PAIRS + 1][5][5][5]int
-	int22                                     [NB_PAIRS + 1][NB_PAIRS + 1][5][5][5][5]int
+	mismatchExt                               [nbPairs + 1][5][5]int
+	mismatchI                                 [nbPairs + 1][5][5]int
+	mismatch1nI                               [nbPairs + 1][5][5]int
+	mismatch23I                               [nbPairs + 1][5][5]int
+	mismatchH                                 [nbPairs + 1][5][5]int
+	mismatchM                                 [nbPairs + 1][5][5]int
+	dangle5                                   [nbPairs + 1][5]int
+	dangle3                                   [nbPairs + 1][5]int
+	int11                                     [nbPairs + 1][nbPairs + 1][5][5]int
+	int21                                     [nbPairs + 1][nbPairs + 1][5][5][5]int
+	int22                                     [nbPairs + 1][nbPairs + 1][5][5][5][5]int
 	ninio                                     [5]int
 	lxc                                       float64
 	MLbase, MLclosing, TerminalAU, DuplexInit int
-	MLintern                                  [NB_PAIRS + 1]int
+	MLintern                                  [nbPairs + 1]int
 	Tetraloop_E                               [200]int
 	Tetraloops                                string
 	Triloop_E                                 [40]int
@@ -154,238 +130,39 @@ type vrna_param_t struct {
 	Hexaloop_E                                [40]int
 	Hexaloops                                 string
 	TripleC, MultipleCA, MultipleCB           int
-	temperature                               float64 /**<  @brief  Temperature used for loop contribution scaling */
 	/* Integer representation of a base pair
 	* vivek: This field was previously in the vrna_md_t struct. However since it
 	* was the only field accessed from that struct, I added it here and removed
 	* that struct
 	 */
-	pair map[byte]map[byte]int
+	basePairEncodedTypeMap map[byte]map[byte]int
 }
-
-func get_scaled_params() *vrna_param_t {
-	// float64
-	var i, j, k, l int
-	var tempf float64 = (VRNA_MODEL_DEFAULT_TEMPERATURE + K0) / Tmeasure
-
-	var params *vrna_param_t = &vrna_param_t{
-		temperature: VRNA_MODEL_DEFAULT_TEMPERATURE,
-		lxc:         lxc37 * tempf,
-		TripleC:     rescaleDg(TripleC37, TripleCdH, int(tempf)),
-		MultipleCA:  rescaleDg(MultipleCA37, MultipleCAdH, int(tempf)),
-		MultipleCB:  rescaleDg(TerminalAU37, TerminalAUdH, int(tempf)),
-		TerminalAU:  rescaleDg(TerminalAU37, TerminalAUdH, int(tempf)),
-		// DuplexInit:            rescaleDg(DuplexInit37, DuplexInitdH, int(tempf)),
-		MLbase:    rescaleDg(ML_BASE37, ML_BASEdH, int(tempf)),
-		MLclosing: rescaleDg(ML_closing37, ML_closingdH, int(tempf)),
-		// vivek: Why isn't this a symmetric matrix?
-		// I couldn't find anything about this field in their docs
-		// pair: [MAX_ALPHA + 1][MAX_ALPHA + 1]int{
-		// 	//			 _  A  C  G  U
-		// 	/* _ */ {0, 0, 0, 0, 0},
-		// 	/* A */ {0, 0, 0, 0, 5},
-		// 	/* C */ {0, 0, 0, 1, 0},
-		// 	/* G */ {0, 0, 2, 0, 3},
-		// 	/* U */ {0, 6, 0, 4, 0},
-		// },
-		pair: defaultPairMap(),
-	}
-
-	params.ninio[2] = rescaleDg(ninio37, niniodH, int(tempf))
-
-	for i = 0; i < 31; i++ {
-		params.hairpin[i] = rescaleDg(hairpin37[i], hairpindH[i], int(tempf))
-	}
-
-	for i = 0; i <= min(30, maxLoop); i++ {
-		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], int(tempf))
-		params.internal_loop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], int(tempf))
-	}
-
-	for ; i <= maxLoop; i++ {
-		params.bulge[i] = params.bulge[30] +
-			int(params.lxc*math.Log(float64(i)/30.0))
-		params.internal_loop[i] = params.internal_loop[30] +
-			int(params.lxc*math.Log(float64(i)/30.0))
-	}
-
-	// This could be 281 or only the amount of chars
-	for i = 0; (i * 7) < len(Tetraloops); i++ {
-		params.Tetraloop_E[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], int(tempf))
-	}
-
-	for i = 0; (i * 5) < len(Triloops); i++ {
-		params.Triloop_E[i] = rescaleDg(Triloop37[i], TriloopdH[i], int(tempf))
-	}
-
-	for i = 0; (i * 9) < len(Hexaloops); i++ {
-		params.Hexaloop_E[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], int(tempf))
-	}
-
-	for i = 0; i <= NB_PAIRS; i++ {
-		params.MLintern[i] = rescaleDg(ML_intern37, ML_interndH, int(tempf))
-	}
-
-	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j <= NB_PAIRS; j++ {
-			params.stack[i][j] = rescaleDg(stack37[i][j],
-				stackdH[i][j],
-				int(tempf))
-		}
-	}
-
-	/* mismatches */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j < 5; j++ {
-			for k = 0; k < 5; k++ {
-				var mm int
-				params.mismatchI[i][j][k] = rescaleDg(mismatchI37[i][j][k],
-					mismatchIdH[i][j][k],
-					int(tempf))
-				params.mismatchH[i][j][k] = rescaleDg(mismatchH37[i][j][k],
-					mismatchHdH[i][j][k],
-					int(tempf))
-				params.mismatch1nI[i][j][k] = rescaleDg(mismatch1nI37[i][j][k],
-					mismatch1nIdH[i][j][k],
-					int(tempf))
-				params.mismatch23I[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
-					mismatch23IdH[i][j][k],
-					int(tempf))
-				// if model_details.dangles > 0 {
-				mm = rescaleDg(mismatchM37[i][j][k],
-					mismatchMdH[i][j][k],
-					int(tempf))
-				if mm > 0 {
-					params.mismatchM[i][j][k] = 0
-				} else {
-					params.mismatchM[i][j][k] = mm
-				}
-
-				mm = rescaleDg(mismatchExt37[i][j][k],
-					mismatchExtdH[i][j][k],
-					int(tempf))
-				if mm > 0 {
-					params.mismatchExt[i][j][k] = 0
-				} else {
-					params.mismatchExt[i][j][k] = mm
-				}
-				// } else {
-				// 	params.mismatchExt[i][j][k] = 0
-				// 	params.mismatchM[i][j][k] = 0
-				// }
-			}
-		}
-	}
-
-	/* dangles */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j < 5; j++ {
-			var dd int
-			dd = rescaleDg(dangle5_37[i][j],
-				dangle5_dH[i][j],
-				int(tempf))
-			if dd > 0 {
-				params.dangle5[i][j] = 0
-			} else {
-				params.dangle5[i][j] = dd
-			}
-
-			dd = rescaleDg(dangle3_37[i][j],
-				dangle3_dH[i][j],
-				int(tempf))
-			if dd > 0 {
-				params.dangle3[i][j] = 0
-			} else {
-				params.dangle3[i][j] = dd
-			}
-		}
-	}
-
-	/* interior 1x1 loops */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j <= NB_PAIRS; j++ {
-			for k = 0; k < 5; k++ {
-				for l = 0; l < 5; l++ {
-					params.int11[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
-						int11_dH[i][j][k][l],
-						int(tempf))
-				}
-			}
-		}
-	}
-
-	/* interior 2x1 loops */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j <= NB_PAIRS; j++ {
-			for k = 0; k < 5; k++ {
-				for l = 0; l < 5; l++ {
-					var m int
-					for m = 0; m < 5; m++ {
-						params.int21[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
-							int21_dH[i][j][k][l][m],
-							int(tempf))
-					}
-				}
-			}
-		}
-	}
-
-	/* interior 2x2 loops */
-	for i = 0; i <= NB_PAIRS; i++ {
-		for j = 0; j <= NB_PAIRS; j++ {
-			for k = 0; k < 5; k++ {
-				for l = 0; l < 5; l++ {
-					var m, n int
-					for m = 0; m < 5; m++ {
-						for n = 0; n < 5; n++ {
-							params.int22[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
-								int22_dH[i][j][k][l][m][n],
-								int(tempf))
-						}
-					}
-				}
-			}
-		}
-	}
-
-	params.Tetraloops = Tetraloops
-	params.Triloops = Triloops
-	params.Hexaloops = Hexaloops
-
-	return params
-}
-
-var SHRT_MAX int = 32767
 
 /* vivek:
-* returns a slice pairTable where pairTable[sequence[i]] returns the index of the
-* of the paired opening/closing bracket of i if i is an opening/closing bracket,
-* else 0.
-* Note: If indexes in pairTable are 1-indexed as 0 is used as the default value
+* returns a slice `pairTable` where `pairTable[i]`` returns the index of the
+* nucleotide that that the nucelotide at `i` is paired with, else -1.
 * Examples -
-* Input:    ". .  (  (  (  ( . . . ) ) ) ) . . .  (  ( . . . . . . . .  )  ) . ."
-* Output:[30 0 0 13 12 11 10 0 0 0 6 5 4 3 0 0 0 28 27 0 0 0 0 0 0 0 0 18 17 0 0 0]
+* Index:   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+* Input: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
+* Output:[-1 -1 12 11 10  9 -1 -1 -1  5  4  3  2 -1 -1 -1 27 26 -1 -1 -1 -1 -1 -1 -1 -1 17 16 -1 -1]
 *
-* Input:    "(  .  (  (  (  ( . . . ) ) ) ) . . .  (  ( . . . . . . . .  )  ) . )"
-* Output:[30 30 0 13 12 11 10 0 0 0 6 5 4 3 0 0 0 28 27 0 0 0 0 0 0 0 0 18 17 0 1 0]
+* Index:   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+* Input: " (  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  )"
+* Output:[29 -1 12 11 10  9 -1 -1 -1  5  4  3  2 -1 -1 -1 27 26 -1 -1 -1 -1 -1 -1 -1 -1 17 16 -1  0]
  */
-func pairTable(structure_str string) ([]int, error) {
+func pairTable(structure string) ([]int, error) {
 	var pairTable []int
-	len_seq := len(structure_str)
+	len_seq := len(structure)
 
-	if len_seq > SHRT_MAX {
-		err := fmt.Sprintf("pairTable: Structure too long to be converted to pair table (n=%v, max=%v)", len_seq, SHRT_MAX)
-		return nil, errors.New(err)
-	}
+	// if len_seq > SHRT_MAX {
+	// 	err := fmt.Sprintf("pairTable: Structure too long to be converted to pair table (n=%v, max=%v)", len_seq, SHRT_MAX)
+	// 	return nil, errors.New(err)
+	// }
 
 	pairTable = make([]int, len_seq)
 
-	// a slice of the characters in the structure
-	var structure []rune = []rune(structure_str)
-
 	// the characters of the opening and closing brackets
-	var open_bracket, close_bracket rune = '(', ')'
+	var open_bracket, close_bracket byte = '(', ')'
 
 	// keeps track of the indexes of open brackets. indexes of open brackets are pushed onto stack
 	// and poped off when a closing bracket is encountered
@@ -403,7 +180,7 @@ func pairTable(structure_str string) ([]int, error) {
 			stack_idx--
 
 			if stack_idx < 0 {
-				return nil, fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs", structure_str,
+				return nil, fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs", structure,
 					open_bracket, close_bracket)
 			}
 
@@ -417,7 +194,7 @@ func pairTable(structure_str string) ([]int, error) {
 	}
 
 	if stack_idx != 0 {
-		return nil, fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs", structure_str,
+		return nil, fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs", structure,
 			open_bracket, close_bracket)
 	}
 
@@ -432,95 +209,46 @@ func evalFoldCompound(fc *foldCompound) int {
 	pairTable := fc.pairTable
 	var i, length, energy int
 
-	length = int(fc.length)
+	length = fc.length
 
-	energy = energy_of_extLoop_pairTable(fc, 0, pairTable)
+	energy = externalLoopEnergy(fc)
+	logExternalLoopEnergy(energy)
 
-	vrna_cstr_print_eval_ext_loop(energy)
-	// vivek: assume input is only A, T, C, G, or U
 	for i = 0; i < length; i++ {
 		if pairTable[i] == -1 {
 			continue
 		}
 
-		energy += stack_energy(fc, i, pairTable)
+		energy += stack_energy(fc, i)
 		i = pairTable[i]
 	}
 
 	return energy
 }
 
-func vrna_cstr_print_eval_ext_loop(energy int) {
+func logExternalLoopEnergy(energy int) {
 	log.Printf("External loop                           : %v\n", energy)
 }
 
-/* vivek:
-* encodes `sequence` based on `encodeNucelotide` into `S[1:len(sequence)-1]`
-* `S[0]` is the length of `sequence`
-* `S[len(sequence) + 1]` (or `S[-1]`) == `S[1]` which makes the sequence circular
-* not sure why the orig repo makes the sequence cirular
-* Contains the numerical encoding of the pair type for each pair (i,j) used
-
-* manipulates the encoded sequence of `sequence` (see doc of `vrna_seq_encode_simple` for more
-* details of the encoding process) by setting `S[0]` to `S[len(sequence)]`
-* If a sequence is axxx...xxxb where a and b are the first and last nucleotides
-* of the sequence, and AXXX...XXXB is the encoded `sequence`, `encodeSequence`
-* returns BAXXX...XXXBA.
-* thinking out loud:
-* * could be done to make the sequence circular
-* * may be needed in functions that require the previous and next values to
-* compute a value
-
-* Encodes a sequence into its numerical representation (see `encodeNucelotide`
-* for the rune to int mapping) into `S[1:len(sequence)-1]`.
-
- */
+// encodes a sequence into its numerical representaiton
 func encodeSequence(sequence string) []int {
-	var l int = len(sequence)
-	var S []int = make([]int, l)
-
-	for i := 0; i < l; i++ { /* make numerical encoding of sequence */
-		S[i] = encodeNucelotide(([]rune(sequence))[i])
+	// Make a nucleotide byte -> int map
+	nucleotideRuneMap := map[byte]int{
+		'A': 1,
+		'C': 2,
+		'G': 3,
+		'U': 4,
 	}
 
-	// S[0] = S[l]
+	len_sequence := len(sequence)
+	encodedSequence := make([]int, len_sequence)
 
-	return S
-}
-
-// vivek: I don't know if this variable name is a joke or not...
-// var Law_and_Order []rune = []rune("_ACGUTXKI")
-var Law_and_Order string = "_ACGUTXKI"
-
-/* vivek:
-* Maps:
-*	A -> 1
-* C -> 2
-* G -> 3
-* T / U -> 4
- */
-func encodeNucelotide(c rune) int {
-	/* return numerical representation of nucleotide used e.g. in vrna_md_t.pair[][] */ //
-	var code int = -1
-
-	c = unicode.ToUpper(c)
-
-	pos := strings.Index(Law_and_Order, string(c))
-	if pos == -1 {
-		code = 0
-	} else {
-		code = pos
+	// encode the sequence based on nucleotideRuneMap
+	for i := 0; i < len_sequence; i++ {
+		encodedSequence[i] = nucleotideRuneMap[sequence[i]]
 	}
 
-	if code > 5 {
-		code = 0
-	}
-
-	if code > 4 {
-		code-- /* make T and U equivalent */
-	}
-
-	return code
+	return encodedSequence
 }
 
 /*
@@ -528,54 +256,48 @@ func encodeNucelotide(c rune) int {
 * stabilizing dangling-ends/mismatches
 * for all stems branching off the exterior
 * loop
-* vivek: What is `i`?
  */
-func energy_of_extLoop_pairTable(fc *foldCompound, i int, pairTable []int) int {
+func externalLoopEnergy(fc *foldCompound) int {
+	pairTable := fc.pairTable
 	var energy int = 0
-	length := int(fc.length)
-	pair_open_idx := 0
+	length := fc.length
+	pairOpenIdx := 0
 
 	/* seek to opening base of first stem (pair) */
-	for pair_open_idx < length && (pairTable[pair_open_idx] == -1) {
-		pair_open_idx++
+	for pairOpenIdx < length && pairTable[pairOpenIdx] == -1 {
+		pairOpenIdx++
 	}
 
-	for pair_open_idx < length {
-		/* pairTable_idx  must have a pairing partner */
-		pair_close_idx := pairTable[pair_open_idx]
+	for pairOpenIdx < length {
+		/* pairOpenIdx must have a pairing partner */
+		pairCloseIdx := pairTable[pairOpenIdx]
 
-		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(fc.sequence[pair_open_idx],
-			fc.sequence[pair_close_idx],
-			fc.params)
+		/* get type of base pair (pairOpenIdx, pairCloseIdx) */
+		basePairType := encodeBasePairType(fc.sequence[pairOpenIdx],
+			fc.sequence[pairCloseIdx],
+			fc.params.basePairEncodedTypeMap)
 
 		// vivek: cryptic variable names. 5 and 3 have to do with the 5' and 3' ends
 		// of a DNA/RNA strand
-		var mm5, mm3 int
-		if pair_open_idx > 0 {
-			mm5 = fc.sequenceEncoding[pair_open_idx-1]
+		var fivePrimeMismatch, threePrimeMismatch int
+		if pairOpenIdx > 0 {
+			fivePrimeMismatch = fc.encodedSequence[pairOpenIdx-1]
 		} else {
-			mm5 = -1
+			fivePrimeMismatch = -1
 		}
 
-		if pair_close_idx < length-1 {
-			mm3 = fc.sequenceEncoding[pair_close_idx+1]
+		if pairCloseIdx < length-1 {
+			threePrimeMismatch = fc.encodedSequence[pairCloseIdx+1]
 		} else {
-			mm3 = -1
+			threePrimeMismatch = -1
 		}
 
-		energy += vrna_E_ext_stem(pair_type, mm5, mm3, fc.params)
+		energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.params)
 
 		/* seek to the next stem */
-		pair_open_idx = pair_close_idx + 1
-		for pair_open_idx < length && pairTable[pair_open_idx] == -1 {
-			pair_open_idx++
-		}
-
-		// vivek: is this a bug? should it be >= instead?
-		// Is it likely that pairTable_idx == i given we seek to next stem above?
-		if i != 0 && pair_open_idx == i {
-			break /* cut was in loop */
+		pairOpenIdx = pairCloseIdx + 1
+		for pairOpenIdx < length && pairTable[pairOpenIdx] == -1 {
+			pairOpenIdx++
 		}
 	}
 
@@ -588,36 +310,30 @@ func energy_of_extLoop_pairTable(fc *foldCompound, i int, pairTable []int) int {
  *  Given a base pair (i,j) encoded by type, compute the energy contribution
  *  including dangling-end/terminal-mismatch contributions. Instead of returning the
  *  energy contribution per-se, this function returns the corresponding Boltzmann factor.
- *  If either of the adjacent nucleotides i - 1 (`n5d`) and j + 1 (`n3d`) must not
+ *  If either of the adjacent nucleotides i - 1 (`fivePrimeAdjacent`) and j + 1 (`threePrimeAdjacent`) must not
  *  contribute stacking energy, the corresponding encoding must be -1.
  *
- *  @see vrna_E_exp_stem()
- *
- *  @param  type  The base pair encoding
- *  @param  n5d   The encoded nucleotide directly adjacent at the 5' side of the base pair (may be -1)
- *  @param  n3d   The encoded nucleotide directly adjacent at the 3' side of the base pair (may be -1)
+ *  @param  basePairType  The base pair type encoding (see `basePairType()`)
+ *  @param  fivePrimeAdjacent   The encoded nucleotide directly adjacent at the 5' side of the base pair (may be -1 if index of i is 0)
+ *  @param  threePrimeAdjacent   The encoded nucleotide directly adjacent at the 3' side of the base pair (may be -1 if index of j is len(sequence) - 1)
  *  @param  p     The pre-computed energy parameters
  *  @return       The energy contribution of the introduced exterior-loop stem
- *
- * vivek: `n5d` and `n3d` are always positive unless the opening bracket is the
- * first nucelotide of the sequence (in which case n5d < 0), or the closing bracket
- * is the last nucelotide of the sequence (in which case n3d < 0).
  */
-func vrna_E_ext_stem(pair_type int, n5d int, n3d int, p *vrna_param_t) int {
+func exteriorStemEnergy(encodedBasePairType int, fivePrimeAdjacent int, threePrimeAdjacent int, energyParams *energyParams) int {
 	var energy int = 0
 
-	if n5d >= 0 && n3d >= 0 {
-		energy += p.mismatchExt[pair_type][n5d][n3d]
-	} else if n5d >= 0 {
-		// only occurs in the case opening bracket of pair is first nucelotide of sequence
-		energy += p.dangle5[pair_type][n5d]
-	} else if n3d >= 0 {
-		// only occurs in the case closing bracket of pair is last nucelotide of sequence
-		energy += p.dangle3[pair_type][n3d]
+	if fivePrimeAdjacent >= 0 && threePrimeAdjacent >= 0 {
+		energy += energyParams.mismatchExt[encodedBasePairType][fivePrimeAdjacent][threePrimeAdjacent]
+	} else if fivePrimeAdjacent >= 0 {
+		// `j` is the last nucleotide of the sequence
+		energy += energyParams.dangle5[encodedBasePairType][fivePrimeAdjacent]
+	} else if threePrimeAdjacent >= 0 {
+		// `i` is the first nucleotide of the sequence
+		energy += energyParams.dangle3[encodedBasePairType][threePrimeAdjacent]
 	}
 
-	if pair_type > 2 {
-		energy += p.TerminalAU
+	if encodedBasePairType > 2 {
+		energy += energyParams.TerminalAU
 	}
 
 	return energy
@@ -626,21 +342,22 @@ func vrna_E_ext_stem(pair_type int, n5d int, n3d int, p *vrna_param_t) int {
 /* vivek:
 *	what is i? what is stack_energy?
  */
-func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
-	/* recursively calculate energy of substructure enclosed by (pair_open_idx, pair_close_idx) */
+func stack_energy(fc *foldCompound, pairOpenIdx int) int {
+	/* recursively calculate energy of substructure enclosed by (pairOpenIdx, pairCloseIdx) */
+	pairTable := fc.pairTable
 	energy := 0
-	pair_close_idx := pairTable[pair_open_idx]
+	pairCloseIdx := pairTable[pairOpenIdx]
 	sequence := fc.sequence
 
-	if fc.params.pair[fc.sequence[pair_open_idx]][fc.sequence[pair_close_idx]] == 0 {
+	if fc.params.basePairEncodedTypeMap[fc.sequence[pairOpenIdx]][fc.sequence[pairCloseIdx]] == 0 {
 		panic(fmt.Sprintf("bases %v and %v (%v%v) can't pair!",
-			pair_open_idx, pair_close_idx,
-			string(sequence[pair_open_idx]),
-			string(sequence[pair_close_idx])))
+			pairOpenIdx, pairCloseIdx,
+			string(sequence[pairOpenIdx]),
+			string(sequence[pairCloseIdx])))
 	}
 
-	n5p_iterator := pair_open_idx
-	n3p_iterator := pair_close_idx
+	n5p_iterator := pairOpenIdx
+	n3p_iterator := pairCloseIdx
 
 	for n5p_iterator < n3p_iterator {
 		/* process all stacks and interior loops */
@@ -661,24 +378,24 @@ func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
 			break
 		}
 
-		// vivek: should this be pair[n5p_iterator][n3p_iterator] or is the current order correct?
-		if fc.params.pair[fc.sequence[n3p_iterator]][fc.sequence[n5p_iterator]] == 0 {
+		// vivek: should this be basePairType[n5p_iterator][n3p_iterator] or is the current order correct?
+		if fc.params.basePairEncodedTypeMap[fc.sequence[n3p_iterator]][fc.sequence[n5p_iterator]] == 0 {
 			panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
 				n5p_iterator, n3p_iterator,
 				sequence[n5p_iterator],
 				sequence[n3p_iterator]))
 		}
 
-		ee := eval_int_loop(fc, pair_open_idx, pair_close_idx, n5p_iterator, n3p_iterator)
+		ee := eval_int_loop(fc, pairOpenIdx, pairCloseIdx, n5p_iterator, n3p_iterator)
 		energy += ee
 
-		vrna_cstr_print_eval_int_loop(pair_open_idx, pair_close_idx,
-			sequence[pair_open_idx], sequence[pair_close_idx],
+		vrna_cstr_print_eval_int_loop(pairOpenIdx, pairCloseIdx,
+			sequence[pairOpenIdx], sequence[pairCloseIdx],
 			n5p_iterator, n3p_iterator,
 			sequence[n5p_iterator], sequence[n3p_iterator], ee)
 
-		pair_open_idx = n5p_iterator
-		pair_close_idx = n3p_iterator
+		pairOpenIdx = n5p_iterator
+		pairCloseIdx = n3p_iterator
 	} /* end while */
 
 	/* n5p_iterator, n3p_iterator don't pair must have found hairpin or multiloop */
@@ -686,18 +403,18 @@ func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
 	if n5p_iterator > n3p_iterator {
 		/* hairpin */
 
-		ee := vrna_eval_hp_loop(fc, pair_open_idx, pair_close_idx)
+		ee := vrna_eval_hp_loop(fc, pairOpenIdx, pairCloseIdx)
 		energy += ee
 
-		vrna_cstr_print_eval_hp_loop(pair_open_idx, pair_close_idx, sequence[pair_open_idx], sequence[pair_close_idx], ee)
+		vrna_cstr_print_eval_hp_loop(pairOpenIdx, pairCloseIdx, sequence[pairOpenIdx], sequence[pairCloseIdx], ee)
 
 		return energy
 	}
 
-	/* (pair_open_idx, pair_close_idx) is exterior pair of multiloop */
-	for n5p_iterator < pair_close_idx {
+	/* (pairOpenIdx, pairCloseIdx) is exterior pair of multiloop */
+	for n5p_iterator < pairCloseIdx {
 		/* add up the contributions of the substructures of the ML */
-		energy += stack_energy(fc, n5p_iterator, pairTable)
+		energy += stack_energy(fc, n5p_iterator)
 		n5p_iterator = pairTable[n5p_iterator]
 		/* search for next base pair in multiloop */
 		n5p_iterator++
@@ -709,14 +426,14 @@ func stack_energy(fc *foldCompound, pair_open_idx int, pairTable []int) int {
 	var ee int = 0
 	var err error
 
-	ee, err = energy_of_ml_pairTable(fc, pair_open_idx, pairTable)
+	ee, err = energy_of_ml_pairTable(fc, pairOpenIdx, pairTable)
 	if err != nil {
 		panic(err)
 	}
 
 	energy += ee
 
-	vrna_cstr_print_eval_mb_loop(pair_open_idx, pair_close_idx, sequence[pair_open_idx], sequence[pair_close_idx], ee)
+	vrna_cstr_print_eval_mb_loop(pairOpenIdx, pairCloseIdx, sequence[pairOpenIdx], sequence[pairCloseIdx], ee)
 
 	return energy
 }
@@ -756,10 +473,10 @@ func eval_int_loop(fc *foldCompound, i, j, k, l int) int {
 	u1 = k - i - 1
 	u2 = j - l - 1
 
-	ij_pair_type := vrna_get_pair_type_md(fc.sequence[i], fc.sequence[j], fc.params)
-	kl_pair_type := vrna_get_pair_type_md(fc.sequence[l], fc.sequence[k], fc.params)
+	ij_basePairType := encodeBasePairType(fc.sequence[i], fc.sequence[j], fc.params.basePairEncodedTypeMap)
+	kl_basePairType := encodeBasePairType(fc.sequence[l], fc.sequence[k], fc.params.basePairEncodedTypeMap)
 
-	energy = E_IntLoop(u1, u2, ij_pair_type, kl_pair_type, fc.sequenceEncoding[i+1], fc.sequenceEncoding[j-1], fc.sequenceEncoding[k-1], fc.sequenceEncoding[l+1], fc.params)
+	energy = E_IntLoop(u1, u2, ij_basePairType, kl_basePairType, fc.encodedSequence[i+1], fc.encodedSequence[j-1], fc.encodedSequence[k-1], fc.encodedSequence[l+1], fc.params)
 
 	return energy
 }
@@ -769,21 +486,20 @@ func eval_int_loop(fc *foldCompound, i, j, k, l int) int {
 * Created an issue to get more info: https://github.com/ViennaRNA/ViennaRNA/issues/124
 * retruns type of base pair (p,q)
  */
-func vrna_get_pair_type_md(i, j byte, md *vrna_param_t) int {
-	var tt int = md.pair[i][j]
+func encodeBasePairType(i, j byte, basePairEncodedTypeMap map[byte]map[byte]int) int {
+	var encodedType int = basePairEncodedTypeMap[i][j]
 
-	if tt == 0 {
+	if encodedType == 0 {
 		return 7
 	} else {
-		return tt
+		return encodedType
 	}
 }
 
 /**
- *  <H2>Compute the Energy of an interior-loop</H2>
- *  This function computes the free energy @f$\Delta G@f$ of an interior-loop with the
- *  following structure: <BR>
- *  <PRE>
+ *  Compute the Energy of an interior-loop
+ *  This function computes the free energy of an interior-loop with the
+ *  following structure:
  *        3'  5'
  *        |   |
  *        U - V
@@ -795,10 +511,12 @@ func vrna_get_pair_type_md(i, j byte, md *vrna_param_t) int {
  *        X - Y
  *        |   |
  *        5'  3'
- *  </PRE>
  *  This general structure depicts an interior-loop that is closed by the base pair (X,Y).
  *  The enclosed base pair is (V,U) which leaves the unpaired bases a_1-a_n and b_1-b_n
- *  that constitute the loop. In this example, the length of the interior-loop is @f$(n+m)@f$
+ *  that constitute the loop.
+ *  The base pair (X,Y) will be refered to as `closingBasePair`, and the base pair
+ *  (U,V) will be refered to as `enclosedBasePair`.
+ *  In this example, the length of the interior-loop is `n+m`
  *  where n or m may be 0 resulting in a bulge-loop or base pair stack.
  *  The mismatching nucleotides for the closing pair (X,Y) are:
  *  5'-mismatch: a_1
@@ -806,34 +524,36 @@ func vrna_get_pair_type_md(i, j byte, md *vrna_param_t) int {
  *  and for the enclosed base pair (V,U):
  *  5'-mismatch: b_1
  *  3'-mismatch: a_n
- *  @note Base pairs are always denoted in 5'->3' direction. Thus the enclosed base pair
+ *  @note Base pairs are always denoted in 5'->3' direction. Thus the `enclosedBasePair`
  *  must be 'turned arround' when evaluating the free energy of the interior-loop
  *
- *  @param  n1      The size of the 'left'-loop (number of unpaired nucleotides)
- *  @param  n2      The size of the 'right'-loop (number of unpaired nucleotides)
- *  @param  type    The pair type of the base pair closing the interior loop
- *  @param  type_2  The pair type of the enclosed base pair
- *  @param  si1     The 5'-mismatching nucleotide of the closing pair
- *  @param  sj1     The 3'-mismatching nucleotide of the closing pair
- *  @param  sp1     The 3'-mismatching nucleotide of the enclosed pair
- *  @param  sq1     The 5'-mismatching nucleotide of the enclosed pair
+ *  @param  nbUnpairedLeftLoop      The size of the 'left'-loop (number of unpaired nucleotides)
+ *  @param  nbUnpairedRightLoop     The size of the 'right'-loop (number of unpaired nucleotides)
+ *  @param  closingBasePairType    	The encoded type of the closing base pair of the interior loop
+ *  @param  enclosedBasePairType    The encoded type of the enclosed base pair
+ *  @param  cbpFivePrimeMismatch     The 5'-mismatching nucleotide of the closing pair
+ *  @param  cbpThreePrimeMismatch     The 3'-mismatching nucleotide of the closing pair
+ *  @param  ebpThreePrimeMismatch     The 3'-mismatching nucleotide of the enclosed pair
+ *  @param  ebpFivePrimeMismatch     The 5'-mismatching nucleotide of the enclosed pair
  *  @param  P       The datastructure containing scaled energy parameters
  *  @return The Free energy of the Interior-loop in dcal/mol
  */
-func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_param_t) int {
+func E_IntLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
+	closingBasePairType, enclosedBasePairType int,
+	cbpFivePrimeMismatch, cbpThreePrimeMismatch, ebpThreePrimeMismatch, ebpFivePrimeMismatch int, P *energyParams) int {
 	/* compute energy of degree 2 loop (stack bulge or interior) */
 	var nl, ns, u, energy int
 
-	if n1 > n2 {
-		nl = n1
-		ns = n2
+	if nbUnpairedLeftLoop > nbUnpairedRightLoop {
+		nl = nbUnpairedLeftLoop
+		ns = nbUnpairedRightLoop
 	} else {
-		nl = n2
-		ns = n1
+		nl = nbUnpairedRightLoop
+		ns = nbUnpairedLeftLoop
 	}
 
 	if nl == 0 {
-		return P.stack[type_1][type_2] /* stack */
+		return P.stack[closingBasePairType][enclosedBasePairType] /* stack */
 	}
 
 	if ns == 0 {
@@ -845,13 +565,13 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 		}
 
 		if nl == 1 {
-			energy += P.stack[type_1][type_2]
+			energy += P.stack[closingBasePairType][enclosedBasePairType]
 		} else {
-			if type_1 > 2 {
+			if closingBasePairType > 2 {
 				energy += P.TerminalAU
 			}
 
-			if type_2 > 2 {
+			if enclosedBasePairType > 2 {
 				energy += P.TerminalAU
 			}
 		}
@@ -862,15 +582,15 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 		if ns == 1 {
 			if nl == 1 {
 				/* 1x1 loop */
-				return P.int11[type_1][type_2][si1][sj1]
+				return P.int11[closingBasePairType][enclosedBasePairType][cbpFivePrimeMismatch][cbpThreePrimeMismatch]
 			}
 
 			if nl == 2 {
 				/* 2x1 loop */
-				if n1 == 1 {
-					energy = P.int21[type_1][type_2][si1][sq1][sj1]
+				if nbUnpairedLeftLoop == 1 {
+					energy = P.int21[closingBasePairType][enclosedBasePairType][cbpFivePrimeMismatch][ebpFivePrimeMismatch][cbpThreePrimeMismatch]
 				} else {
-					energy = P.int21[type_2][type_1][sq1][si1][sp1]
+					energy = P.int21[enclosedBasePairType][closingBasePairType][ebpFivePrimeMismatch][cbpFivePrimeMismatch][ebpThreePrimeMismatch]
 				}
 				return energy
 			} else {
@@ -881,17 +601,17 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 					energy = P.internal_loop[30] + int(P.lxc*math.Log((float64(nl)+1.0)/30.0))
 				}
 				energy += min(MAX_NINIO, (nl-ns)*P.ninio[2])
-				energy += P.mismatch1nI[type_1][si1][sj1] + P.mismatch1nI[type_2][sq1][sp1]
+				energy += P.mismatch1nI[closingBasePairType][cbpFivePrimeMismatch][cbpThreePrimeMismatch] + P.mismatch1nI[enclosedBasePairType][ebpFivePrimeMismatch][ebpThreePrimeMismatch]
 				return energy
 			}
 		} else if ns == 2 {
 			if nl == 2 {
 				/* 2x2 loop */
-				return P.int22[type_1][type_2][si1][sp1][sq1][sj1]
+				return P.int22[closingBasePairType][enclosedBasePairType][cbpFivePrimeMismatch][ebpThreePrimeMismatch][ebpFivePrimeMismatch][cbpThreePrimeMismatch]
 			} else if nl == 3 {
 				/* 2x3 loop */
 				energy = P.internal_loop[5] + P.ninio[2]
-				energy += P.mismatch23I[type_1][si1][sj1] + P.mismatch23I[type_2][sq1][sp1]
+				energy += P.mismatch23I[closingBasePairType][cbpFivePrimeMismatch][cbpThreePrimeMismatch] + P.mismatch23I[enclosedBasePairType][ebpFivePrimeMismatch][ebpThreePrimeMismatch]
 				return energy
 			}
 		}
@@ -907,7 +627,7 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
 
 			energy += min(MAX_NINIO, (nl-ns)*P.ninio[2])
 
-			energy += P.mismatchI[type_1][si1][sj1] + P.mismatchI[type_2][sq1][sp1]
+			energy += P.mismatchI[closingBasePairType][cbpFivePrimeMismatch][cbpThreePrimeMismatch] + P.mismatchI[enclosedBasePairType][ebpFivePrimeMismatch][ebpThreePrimeMismatch]
 		}
 	}
 
@@ -927,16 +647,16 @@ func E_IntLoop(n1, n2 int, type_1, type_2 int, si1, sj1, sp1, sq1 int, P *vrna_p
  *  @param  j   3'-position of the base pair
  *  @returns    Free energy of the hairpin loop closed by @f$ (i,j) @f$ in deka-kal/mol
  */
-func vrna_eval_hp_loop(fc *foldCompound, pair_open_idx, pair_close_idx int) int {
+func vrna_eval_hp_loop(fc *foldCompound, pairOpenIdx, pairCloseIdx int) int {
 	var u, e int
-	var P *vrna_param_t
+	var P *energyParams
 
 	P = fc.params
 
-	u = pair_close_idx - pair_open_idx - 1
-	pair_type := vrna_get_pair_type_md(fc.sequence[pair_open_idx], fc.sequence[pair_close_idx], fc.params)
+	u = pairCloseIdx - pairOpenIdx - 1
+	basePairType := encodeBasePairType(fc.sequence[pairOpenIdx], fc.sequence[pairCloseIdx], fc.params.basePairEncodedTypeMap)
 
-	e = E_Hairpin(u, pair_type, fc.sequenceEncoding[pair_open_idx+1], fc.sequenceEncoding[pair_close_idx-1], fc.sequence[pair_open_idx-1:], P)
+	e = E_Hairpin(u, basePairType, fc.encodedSequence[pairOpenIdx+1], fc.encodedSequence[pairCloseIdx-1], fc.sequence[pairOpenIdx-1:], P)
 	// fmt.Printf("hairpin e: %v\n", e)
 	return e
 }
@@ -961,7 +681,7 @@ func vrna_eval_hp_loop(fc *foldCompound, pair_open_idx, pair_close_idx int) int 
  *  alphabet if the loop size is below 7. This is useful for unusually stable tri-, tetra- and hexa-loops
  *  which are treated differently (based on experimental data) if they are tabulated.
  *  @see scale_parameters()
- *  @see vrna_param_t
+ *  @see energyParams
  *  @warning Not (really) thread safe! A threadsafe implementation will replace this function in a future release!\n
  *  Energy evaluation may change due to updates in global variable "tetra_loop"
  *
@@ -973,7 +693,7 @@ func vrna_eval_hp_loop(fc *foldCompound, pair_open_idx, pair_close_idx int) int 
  *  @param  P     The datastructure containing scaled energy parameters
  *  @return The Free energy of the Hairpin-loop in dcal/mol
  */
-func E_Hairpin(size int, type_1 int, si1, sj1 int, sequence string, P *vrna_param_t) int {
+func E_Hairpin(size int, type_1 int, si1, sj1 int, sequence string, P *energyParams) int {
 	var energy int
 
 	if size <= 30 {
@@ -1024,7 +744,7 @@ func E_Hairpin(size int, type_1 int, si1, sj1 int, sequence string, P *vrna_para
 }
 
 /**
- *** pair_open_idx is the 5'-base of the closing pair
+ *** pairOpenIdx is the 5'-base of the closing pair
  ***
  *** since each helix can coaxially stack with at most one of its
  *** neighbors we need an auxiliarry variable  cx_energy
@@ -1034,64 +754,64 @@ func E_Hairpin(size int, type_1 int, si1, sj1 int, sequence string, P *vrna_para
  *** We don't allow the last helix to stack with the first, thus we have to
  *** walk around the Loop twice with two starting points and take the minimum
  ***/
-func energy_of_ml_pairTable(vc *foldCompound, pair_open_idx int, pairTable []int) (int, error) {
+func energy_of_ml_pairTable(vc *foldCompound, pairOpenIdx int, pairTable []int) (int, error) {
 
 	var energy int
-	var pair_close_idx, n5p_iterator_close_idx, num_unpaired_nucs, mm5, mm3 int
+	var pairCloseIdx, n5p_iterator_close_idx, num_unpaired_nucs, fivePrimeMismatch, threePrimeMismatch int
 
 	length := int(vc.length)
 
 	bonus := 0
 
-	if pair_open_idx >= pairTable[pair_open_idx] {
-		return INF, errors.New("energy_of_ml_pairTable: pair_open_idx is not 5' base of a closing pair")
+	if pairOpenIdx >= pairTable[pairOpenIdx] {
+		return INF, errors.New("energy_of_ml_pairTable: pairOpenIdx is not 5' base of a closing pair")
 	}
 
-	if pair_open_idx == 0 {
-		pair_close_idx = length
+	if pairOpenIdx == 0 {
+		pairCloseIdx = length
 	} else {
-		pair_close_idx = pairTable[pair_open_idx]
+		pairCloseIdx = pairTable[pairOpenIdx]
 	}
 
 	/* init the variables */
 	energy = 0
 	num_unpaired_nucs = 0 /* the total number of unpaired nucleotides */
-	n5p_iterator := pair_open_idx + 1
+	n5p_iterator := pairOpenIdx + 1
 
-	for n5p_iterator <= pair_close_idx && pairTable[n5p_iterator] == -1 {
+	for n5p_iterator <= pairCloseIdx && pairTable[n5p_iterator] == -1 {
 		n5p_iterator++
 	}
 
 	/* add bonus energies for first stretch of unpaired nucleotides */
-	num_unpaired_nucs += n5p_iterator - pair_open_idx - 1
+	num_unpaired_nucs += n5p_iterator - pairOpenIdx - 1
 
-	for n5p_iterator < pair_close_idx {
+	for n5p_iterator < pairCloseIdx {
 		/* p must have a pairing partner */
 		n5p_iterator_close_idx = pairTable[n5p_iterator]
 		/* get type of base pair (p,q) */
-		pair_type := vrna_get_pair_type_md(vc.sequence[n5p_iterator], vc.sequence[n5p_iterator_close_idx], vc.params)
+		basePairType := encodeBasePairType(vc.sequence[n5p_iterator], vc.sequence[n5p_iterator_close_idx], vc.params.basePairEncodedTypeMap)
 
-		mm5 = vc.sequenceEncoding[n5p_iterator-1]
-		mm3 = vc.sequenceEncoding[n5p_iterator_close_idx+1]
+		fivePrimeMismatch = vc.encodedSequence[n5p_iterator-1]
+		threePrimeMismatch = vc.encodedSequence[n5p_iterator_close_idx+1]
 
-		energy += E_MLstem(pair_type, mm5, mm3, vc.params)
+		energy += E_MLstem(basePairType, fivePrimeMismatch, threePrimeMismatch, vc.params)
 
 		/* seek to the next stem */
 		n5p_iterator = n5p_iterator_close_idx + 1
 
-		for n5p_iterator < pair_close_idx && pairTable[n5p_iterator] == -1 {
+		for n5p_iterator < pairCloseIdx && pairTable[n5p_iterator] == -1 {
 			n5p_iterator++
 		}
 		num_unpaired_nucs += n5p_iterator - n5p_iterator_close_idx - 1 /* add unpaired nucleotides */
 	}
 
-	if pair_open_idx > 0 {
+	if pairOpenIdx > 0 {
 		/* actual closing pair */
-		pair_type := vrna_get_pair_type_md(vc.sequence[pair_close_idx], vc.sequence[pair_open_idx], vc.params)
-		mm5 = vc.sequenceEncoding[pair_close_idx-1]
-		mm3 = vc.sequenceEncoding[pair_open_idx+1]
+		basePairType := encodeBasePairType(vc.sequence[pairCloseIdx], vc.sequence[pairOpenIdx], vc.params.basePairEncodedTypeMap)
+		fivePrimeMismatch = vc.encodedSequence[pairCloseIdx-1]
+		threePrimeMismatch = vc.encodedSequence[pairOpenIdx+1]
 
-		energy += E_MLstem(pair_type, mm5, mm3, vc.params)
+		energy += E_MLstem(basePairType, fivePrimeMismatch, threePrimeMismatch, vc.params)
 	} else {
 		/* virtual closing pair */
 		energy += E_MLstem(0, -1, -1, vc.params)
@@ -1123,7 +843,7 @@ func energy_of_ml_pairTable(vc *foldCompound, pair_open_idx int, pairTable []int
  *  @param  D The datastructure containing scaled energy parameters
  *  @return   The energy contribution of the introduced multiloop stem
  */
-func E_MLstem(type_1 int, si1, sj1 int, P *vrna_param_t) int {
+func E_MLstem(type_1 int, si1, sj1 int, P *energyParams) int {
 	var energy int = 0
 
 	if si1 >= 0 && sj1 >= 0 {
@@ -1141,4 +861,192 @@ func E_MLstem(type_1 int, si1, sj1 int, P *vrna_param_t) int {
 	energy += P.MLintern[type_1]
 
 	return energy
+}
+
+// Returns the minimum of two ints
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func get_scaled_params() *energyParams {
+	var tempf int = int((defaultTemperature + K0) / Tmeasure)
+
+	var params *energyParams = &energyParams{
+		lxc:                    lxc37 * float64(tempf),
+		TripleC:                rescaleDg(TripleC37, TripleCdH, tempf),
+		MultipleCA:             rescaleDg(MultipleCA37, MultipleCAdH, tempf),
+		MultipleCB:             rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		TerminalAU:             rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		MLbase:                 rescaleDg(ML_BASE37, ML_BASEdH, tempf),
+		MLclosing:              rescaleDg(ML_closing37, ML_closingdH, tempf),
+		basePairEncodedTypeMap: defaultBasePairEncodedTypeMap(),
+	}
+
+	params.ninio[2] = rescaleDg(ninio37, niniodH, tempf)
+
+	for i := 0; i < 31; i++ {
+		params.hairpin[i] = rescaleDg(hairpin37[i], hairpindH[i], tempf)
+	}
+
+	var i int
+	for i = 0; i <= min(30, maxLoop); i++ {
+		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], tempf)
+		params.internal_loop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], tempf)
+	}
+
+	for ; i <= maxLoop; i++ {
+		params.bulge[i] = params.bulge[30] +
+			int(params.lxc*math.Log(float64(i)/30.0))
+		params.internal_loop[i] = params.internal_loop[30] +
+			int(params.lxc*math.Log(float64(i)/30.0))
+	}
+
+	// This could be 281 or only the amount of chars
+	for i := 0; (i * 7) < len(Tetraloops); i++ {
+		params.Tetraloop_E[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], tempf)
+	}
+
+	for i := 0; (i * 5) < len(Triloops); i++ {
+		params.Triloop_E[i] = rescaleDg(Triloop37[i], TriloopdH[i], tempf)
+	}
+
+	for i := 0; (i * 9) < len(Hexaloops); i++ {
+		params.Hexaloop_E[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], tempf)
+	}
+
+	for i := 0; i <= nbPairs; i++ {
+		params.MLintern[i] = rescaleDg(ML_intern37, ML_interndH, tempf)
+	}
+
+	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j <= nbPairs; j++ {
+			params.stack[i][j] = rescaleDg(stack37[i][j],
+				stackdH[i][j],
+				tempf)
+		}
+	}
+
+	/* mismatches */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j < 5; j++ {
+			for k := 0; k < 5; k++ {
+				var mm int
+				params.mismatchI[i][j][k] = rescaleDg(mismatchI37[i][j][k],
+					mismatchIdH[i][j][k],
+					tempf)
+				params.mismatchH[i][j][k] = rescaleDg(mismatchH37[i][j][k],
+					mismatchHdH[i][j][k],
+					tempf)
+				params.mismatch1nI[i][j][k] = rescaleDg(mismatch1nI37[i][j][k],
+					mismatch1nIdH[i][j][k],
+					tempf)
+				params.mismatch23I[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
+					mismatch23IdH[i][j][k],
+					tempf)
+				// if model_details.dangles > 0 {
+				mm = rescaleDg(mismatchM37[i][j][k],
+					mismatchMdH[i][j][k],
+					tempf)
+				if mm > 0 {
+					params.mismatchM[i][j][k] = 0
+				} else {
+					params.mismatchM[i][j][k] = mm
+				}
+
+				mm = rescaleDg(mismatchExt37[i][j][k],
+					mismatchExtdH[i][j][k],
+					tempf)
+				if mm > 0 {
+					params.mismatchExt[i][j][k] = 0
+				} else {
+					params.mismatchExt[i][j][k] = mm
+				}
+				// } else {
+				// 	params.mismatchExt[i][j][k] = 0
+				// 	params.mismatchM[i][j][k] = 0
+				// }
+			}
+		}
+	}
+
+	/* dangles */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j < 5; j++ {
+			var dd int
+			dd = rescaleDg(dangle5_37[i][j],
+				dangle5_dH[i][j],
+				tempf)
+			if dd > 0 {
+				params.dangle5[i][j] = 0
+			} else {
+				params.dangle5[i][j] = dd
+			}
+
+			dd = rescaleDg(dangle3_37[i][j],
+				dangle3_dH[i][j],
+				tempf)
+			if dd > 0 {
+				params.dangle3[i][j] = 0
+			} else {
+				params.dangle3[i][j] = dd
+			}
+		}
+	}
+
+	/* interior 1x1 loops */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j <= nbPairs; j++ {
+			for k := 0; k < 5; k++ {
+				for l := 0; l < 5; l++ {
+					params.int11[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
+						int11_dH[i][j][k][l],
+						tempf)
+				}
+			}
+		}
+	}
+
+	/* interior 2x1 loops */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j <= nbPairs; j++ {
+			for k := 0; k < 5; k++ {
+				for l := 0; l < 5; l++ {
+					var m int
+					for m = 0; m < 5; m++ {
+						params.int21[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
+							int21_dH[i][j][k][l][m],
+							tempf)
+					}
+				}
+			}
+		}
+	}
+
+	/* interior 2x2 loops */
+	for i := 0; i <= nbPairs; i++ {
+		for j := 0; j <= nbPairs; j++ {
+			for k := 0; k < 5; k++ {
+				for l := 0; l < 5; l++ {
+					var m, n int
+					for m = 0; m < 5; m++ {
+						for n = 0; n < 5; n++ {
+							params.int22[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
+								int22_dH[i][j][k][l][m][n],
+								tempf)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	params.Tetraloops = Tetraloops
+	params.Triloops = Triloops
+	params.Hexaloops = Hexaloops
+
+	return params
 }
