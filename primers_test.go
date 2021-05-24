@@ -96,6 +96,13 @@ func ExampleCreateBarcodes() {
 	// Output: AAAATAAAGAAACAATTAAT
 }
 
+func ExampleSimpleCreateBarcodes() {
+	barcodes := SimpleCreateBarcodes(20, 4)
+
+	fmt.Println(barcodes[0])
+	// Output: AAAATAAAGAAACAATTAAT
+}
+
 func TestCreateBarcode(t *testing.T) {
 	testFunc := func(s string) bool {
 		return !strings.Contains(s, "GGCCGCGCCCC")

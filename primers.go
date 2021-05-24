@@ -202,6 +202,7 @@ func NucleobaseDeBruijnSequence(substringLength int) string {
 	alphabetLength := len(alphabet)
 	a := make([]byte, alphabetLength*substringLength)
 	var seq []byte
+	// The following function is mainly adapted from rosettacode.
 	var ConstructDeBruijn func(int, int) // recursive closure
 	ConstructDeBruijn = func(t, p int) {
 		if t > substringLength {
@@ -233,10 +234,10 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 	var start int
 	var end int
 	debruijn := NucleobaseDeBruijnSequence(maxSubSequence)
-	for i := 0; (i*(length-(maxSubSequence-1)))+length < len(debruijn); {
-		start = i * (length - (maxSubSequence - 1))
+	for barcodeNum := 0; (barcodeNum*(length-(maxSubSequence-1)))+length < len(debruijn); {
+		start = barcodeNum * (length - (maxSubSequence - 1))
 		end = start + length
-		i++
+		barcodeNum++
 		for _, bannedSequence := range bannedSequences {
 			// If the current deBruijn range has the banned sequence, iterate one base pair ahead. If the iteration reaches the end of the deBruijn sequence, close the channel and return the function.
 			for strings.Contains(debruijn[start:end], bannedSequence) {
@@ -245,7 +246,7 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 				}
 				start++
 				end++
-				i++
+				barcodeNum++
 			}
 			// Check reverse complement as well for the banned sequence
 			for strings.Contains(debruijn[start:end], ReverseComplement(bannedSequence)) {
@@ -254,7 +255,7 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 				}
 				start++
 				end++
-				i++
+				barcodeNum++
 			}
 		}
 		for _, bannedFunction := range bannedFunctions {
@@ -265,10 +266,15 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 				}
 				start++
 				end++
-				i++
+				barcodeNum++
 			}
 		}
 		barcodes = append(barcodes, debruijn[start:end])
 	}
 	return barcodes
+}
+
+// SimpleCreateBarcodes is a simplified version of CreateBarcodes with sane defaults.
+func SimpleCreateBarcodes(length int, maxSubSequence int) []string {
+	return CreateBarcodes(length, maxSubSequence, []string{}, []func(string) bool{})
 }
