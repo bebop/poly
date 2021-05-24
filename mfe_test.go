@@ -1243,7 +1243,7 @@ func TestCalculateMFE(t *testing.T) {
 
 func test(sequence, structure string, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, _ := CalculateMFE(sequence, structure)
+		mfe, _ := CalculateMFE(sequence, structure, DefaultTemperature)
 		log.Printf("%v", mfe)
 	})
 	output = stripWhiteSpace(output)

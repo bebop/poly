@@ -1,5 +1,12 @@
 package poly
 
+/**
+* Energy parameters taken from ViennaRNA. The names of variables have been left
+* as they are from the original repo to allow for easy update of the energy
+* parameters. To understand what the variables correspond to, see their usage
+* in `mfe.go`
+*/
+
 var (
 	mismatchI37 = [nbPairs + 1][5][5]int{
 		{
