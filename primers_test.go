@@ -118,4 +118,10 @@ func TestCreateBarcode(t *testing.T) {
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
+
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{ReverseComplement("GGCCGCGCCCC")}, []func(string) bool{})
+	output = barcodes[len(barcodes)-1]
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
+	}
 }
