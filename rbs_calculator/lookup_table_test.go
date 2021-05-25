@@ -53,7 +53,7 @@ func TestLookup(t *testing.T) {
 		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
 	}
 
-	// 5.ATAGAGTAGTG-ATTCTTAGGTG
+	// 5.ATAGAGTATGG-ATTCTTAGGTG
 	dG = dG_rRNA_mRNA[rRNA]["ATTAGCTGTGC"]
 	expected_dG = 1.3
 	if dG != expected_dG {
@@ -102,4 +102,52 @@ func TestLookup(t *testing.T) {
 		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
 	}
 
+	// 12.CATAATTGTAT-CTTTTTTTTTT
+	dG = dG_rRNA_mRNA[rRNA]["CAGGCCGATTG"]
+	expected_dG = -2.5
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 13.CTTTTTTTTTT-CCCCCCCCCCC
+	dG = dG_rRNA_mRNA[rRNA]["CCAACGGAGTG"]
+	expected_dG = -3.5
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 14.CCCCCCCCCCC-CGGGGGGGGGG
+	dG = dG_rRNA_mRNA[rRNA]["CGCTTGTAGGC"]
+	expected_dG = 1.9
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 15.CGGGGGGGGGG-GTTTTTTTTTT
+	dG = dG_rRNA_mRNA[rRNA]["GATTGCCATCT"]
+	expected_dG = 0.6
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 16.GTTTTTTTTTT-GCTAATTGCAG
+	dG = dG_rRNA_mRNA[rRNA]["GTCCGCACATG"]
+	expected_dG = 1.5
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 17.GCTAATTGCAG-GCCCCCCCCCC
+	dG = dG_rRNA_mRNA[rRNA]["GCCACAGGGTG"]
+	expected_dG = -3.0
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
+
+	// 18.GCCCCCCCCCC-GGGGGGGGGGG
+	dG = dG_rRNA_mRNA[rRNA]["GGGAAGTTTGA"]
+	expected_dG = -2.0
+	if dG != expected_dG {
+		t.Errorf(fmt.Sprintf("Failed to get correct lookup value. Expected: %v, got: %v", expected_dG, dG))
+	}
 }
