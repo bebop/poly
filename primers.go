@@ -123,7 +123,7 @@ DNA-2 := AGGC
 If we pooled these two samples together into a single tube, and sequenced
 them, we would not be able to tell if ATGC came from DNA-1 or DNA-2. In order
 to tell the difference, we would have to go through the process of DNA
-barcoding. Let's attach two small barcodes to each DNA fragment separately
+barcoding. Let's attach(2) two small barcodes to each DNA fragment separately
 in their own tubes and then pool them togehter:
 
 Barcode-1 + DNA-1 = GC + ATGC = GCATGC
@@ -193,6 +193,10 @@ Good luck with barcoding,
 Keoni
 
 (1) https://en.wikipedia.org/wiki/De_Bruijn_sequence
+(2) Barcodes are usually added in a process called "ligation" using an enzyme
+    called ligase, which basically just glues together DNA fragments. Wikipedia
+    has a good introduction:
+    https://en.wikipedia.org/wiki/Ligation_(molecular_biology)
 
 ******************************************************************************/
 
@@ -227,10 +231,10 @@ func NucleobaseDeBruijnSequence(substringLength int) string {
 	return b + b[0:substringLength-1] // as cyclic append first (n-1) digits
 }
 
-// CreateBarcodes creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
+// CreateBarcodesWithBannedSequences creates a list of barcodes given a desired barcode length, the maxSubSequence shared in each barcode,
 // Sequences may be marked as banned by passing a static list, `bannedSequences`, or, if more flexibility is needed, through a list of `bannedFunctions` that dynamically generates bannedSequences.
 // If a sequence is banned, it will not appear within a barcode. The a `bannedFunctions` function can determine if a barcode should be banned or not on the fly. If it is banned, we will continuing iterating until a barcode is found that satisfies the bannedFunction requirement.
-func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, bannedFunctions []func(string) bool) []string {
+func CreateBarcodesWithBannedSequences(length int, maxSubSequence int, bannedSequences []string, bannedFunctions []func(string) bool) []string {
 	var barcodes []string
 	var start int
 	var end int
@@ -275,7 +279,7 @@ func CreateBarcodes(length int, maxSubSequence int, bannedSequences []string, ba
 	return barcodes
 }
 
-// SimpleCreateBarcodes is a simplified version of CreateBarcodes with sane defaults.
-func SimpleCreateBarcodes(length int, maxSubSequence int) []string {
-	return CreateBarcodes(length, maxSubSequence, []string{}, []func(string) bool{})
+// CreateBarcodes is a simplified version of CreateBarcodesWithBannedSequences with sane defaults.
+func CreateBarcodes(length int, maxSubSequence int) []string {
+	return CreateBarcodesWithBannedSequences(length, maxSubSequence, []string{}, []func(string) bool{})
 }

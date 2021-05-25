@@ -89,15 +89,15 @@ func ExampleNucleobaseDeBruijnSequence() {
 	// Output: AAAATAAAGAAACAATTAATGAATCAAGTAAGGAAGCAACTAACGAACCATATAGATACATTTATTGATTCATGTATGGATGCATCTATCGATCCAGAGACAGTTAGTGAGTCAGGTAGGGAGGCAGCTAGCGAGCCACACTTACTGACTCACGTACGGACGCACCTACCGACCCTTTTGTTTCTTGGTTGCTTCGTTCCTGTGTCTGGGTGGCTGCGTGCCTCTCGGTCGCTCCGTCCCGGGGCGGCCGCGCCCCAAA
 }
 
-func ExampleCreateBarcodes() {
-	barcodes := CreateBarcodes(20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
+func ExampleCreateBarcodesWithBannedSequences() {
+	barcodes := CreateBarcodesWithBannedSequences(20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
 
 	fmt.Println(barcodes[0])
 	// Output: AAAATAAAGAAACAATTAAT
 }
 
-func ExampleSimpleCreateBarcodes() {
-	barcodes := SimpleCreateBarcodes(20, 4)
+func ExampleCreateBarcodes() {
+	barcodes := CreateBarcodes(20, 4)
 
 	fmt.Println(barcodes[0])
 	// Output: AAAATAAAGAAACAATTAAT
@@ -107,13 +107,13 @@ func TestCreateBarcode(t *testing.T) {
 	testFunc := func(s string) bool {
 		return !strings.Contains(s, "GGCCGCGCCCC")
 	}
-	barcodes := CreateBarcodes(20, 4, []string{}, []func(string) bool{testFunc})
+	barcodes := CreateBarcodesWithBannedSequences(20, 4, []string{}, []func(string) bool{testFunc})
 	output := barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence function should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 
-	barcodes = CreateBarcodes(20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
 	output = barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
