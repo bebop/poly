@@ -47,8 +47,7 @@ with a whole section on how it works and why it's gotta be that way.
 
 Like most codebases, best usage examples come from tests. You can check out
 TestTranslate and TestOptimize in transformations_test.go for pretty solid
-examples of what you can do with this code. Will add more to docs site before merge
-into prime.
+examples of what you can do with this code.
 
 TTFN,
 Tim
