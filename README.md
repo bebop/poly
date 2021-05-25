@@ -3,10 +3,9 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/TimothyStiles/poly)](https://goreportcard.com/report/github.com/TimothyStiles/poly)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
 
-Poly is a Go library and command line utility for engineering organisms.
+Poly is a Go package for engineering organisms.
 
 * **Fast:** Poly is fast and scalable.
 
@@ -42,4 +41,4 @@ Poly is a Go library and command line utility for engineering organisms.
 
 * [MIT](LICENSE)
 
-* Copyright (c) 2020 Timothy Stiles
+* Copyright (c) 2021 Timothy Stiles
