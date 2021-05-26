@@ -55,7 +55,7 @@ TODO: Biological context
 const (
 	// Arbitrary values to denote different types of loops. Used with the
 	// `EnergyContribution` struct
-	ExternalLoop = iota
+	ExteriorLoop = iota
 	InteriorLoop
 	HairpinLoop
 	MultiLoop
@@ -84,14 +84,14 @@ type foldCompound struct {
 /**
 * EnergyContribution contains the energy contribution of a loop
 * The fields `loopType` and `energy` will always have a value for all loop types.
-* Except for `loopType == ExternalLoop`, all loops will have a
+* Except for `loopType == ExteriorLoop`, all loops will have a
 * `closingFivePrimeIdx` and `closingThreePrimeIdx`.
 * Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
 * and `enclosedThreePrimeIdx`.
  */
 type EnergyContribution struct {
 	closingFivePrimeIdx, closingThreePrimeIdx   int // The closing base pair is the base pair that closes the loop
-	loopType                                    int // The type of loop (ExternalLoop, InteriorLoop, HairpinLoop, or MultiLoop)
+	loopType                                    int // The type of loop (ExteriorLoop, InteriorLoop, HairpinLoop, or MultiLoop)
 	energy                                      int // The free energy contribution of the loop in dcal / mol
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int // The base pair (that is enclosed by a closing base pair) which delimits an interior loop (only available for interior loops)
 }
@@ -308,7 +308,7 @@ func pairTable(structure string) ([]int, error) {
 
 func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 	energyContributions := make([]EnergyContribution, 0)
-	energy, contribution := externalLoopEnergy(fc)
+	energy, contribution := exteriorLoopEnergy(fc)
 	energyContributions = append(energyContributions, contribution)
 
 	pairTable := fc.pairTable
@@ -324,7 +324,7 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 	return energy, energyContributions
 }
 
-/*
+/**
 *	returns the numerical representation of a base pair based on the map
 * `basePairEncodedTypeMap`. 7 is a special value that signifies a non-standard
 * base pair (see `energy_params.md` for more information).
@@ -347,7 +347,7 @@ func encodedBasePairType(i, j byte, basePairEncodedTypeMap map[byte]map[byte]int
 * Calculate the energy contribution of stabilizing dangling-ends/mismatches
 * for all stems branching off the exterior loop
  */
-func externalLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
+func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 	pairTable := fc.pairTable
 	var energy int = 0
 	length := fc.length
@@ -1117,7 +1117,7 @@ func rescaleDg(dG, dH, dT int) int {
 func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {
 	for _, c := range energyContribution {
 		switch c.loopType {
-		case ExternalLoop:
+		case ExteriorLoop:
 			log.Printf("External loop                           : %v\n", c.energy)
 		case InteriorLoop:
 			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
