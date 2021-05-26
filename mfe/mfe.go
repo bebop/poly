@@ -308,6 +308,7 @@ func pairTable(structure string) ([]int, error) {
 
 func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 	energyContributions := make([]EnergyContribution, 0)
+
 	energy, contribution := exteriorLoopEnergy(fc)
 	energyContributions = append(energyContributions, contribution)
 
@@ -345,7 +346,11 @@ func encodedBasePairType(i, j byte, basePairEncodedTypeMap map[byte]map[byte]int
 
 /**
 * Calculate the energy contribution of stabilizing dangling-ends/mismatches
-* for all stems branching off the exterior loop
+* for all stems branching off the exterior loop.
+* For example, if the structure is
+* Structure: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
+* Index:       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+* then the exterior loops in the structure are as follows: (2, 12) and (16, 27).
  */
 func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 	pairTable := fc.pairTable
