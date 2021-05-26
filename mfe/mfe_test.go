@@ -1,4 +1,4 @@
-package poly
+package mfe
 
 import (
 	"bytes"
@@ -8,14 +8,14 @@ import (
 	"testing"
 )
 
-// func ExampleCalculateMfe() {
-// 	mfe, _ := CalculateMfe("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..")
+// func ExampleMinimumFreeEnergy() {
+// 	mfe, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..")
 // 	fmt.Println(mfe)
 // 	// Output:
 // 	// -2.9
 // }
 
-func TestCalculateMFE(t *testing.T) {
+func TestMinimumFreeEnergy(t *testing.T) {
 	test("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
 		`External loop                           :  -300
@@ -1243,7 +1243,7 @@ func TestCalculateMFE(t *testing.T) {
 
 func test(sequence, structure string, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, energyContributions, _ := CalculateMFE(sequence, structure, DefaultTemperature)
+		mfe, energyContributions, _ := MinimumFreeEnergy(sequence, structure, DefaultTemperature)
 		logEnergyContributions(energyContributions, sequence)
 		log.Printf("%v", mfe)
 	})

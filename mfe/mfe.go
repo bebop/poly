@@ -1,21 +1,65 @@
-package poly
+package mfe
 
 import (
 	"errors"
 	"fmt"
 	"log"
 	"math"
+	"regexp"
 	"strings"
 )
 
-/**
-* The MFE calculation functionality has been taken directly from ViennaRNA with the follwing changes:
-* - ViennaRNA includes the ability to specify a dangle model (more info available at [src/bin/RNAeval.ggo#L153](https://github.com/ViennaRNA/ViennaRNA/blob/d6fbaf2b33d65944f9249a91ed5ab4b3277f7d06/src/bin/RNAeval.ggo#L153)). This implementation keeps it simple and defaults to the value of -d2.
-* - ViennaRNA includes the ability to specify hard and soft constraints (more info available from [their ppt explaining hard and soft constrains](http://benasque.org/2015rna/talks_contr/2713_lorenz_benasque_2015.pdf), [official docs](https://www.tbi.univie.ac.at/RNA/ViennaRNA/doc/html/group__constraints.html), [thier paper](https://almob.biomedcentral.com/articles/10.1186/s13015-016-0070-z)). This implementation keeps it simple and defaults to no hard or soft constraints.
-* - ViennaRNA includes the ability to calculate the minimum free energy of co-folded sequences. This implementation keeps it simple and defaults to calculating the mfe of only single sequences.
- */
+/******************************************************************************
+May, 26, 2021
+
+The MFE calculation functionality (including comments and description of
+	functions) has been taken directly from ViennaRNA with the follwing changes:
+- ViennaRNA includes the ability to specify a dangle model (more info available
+	at [src/bin/RNAeval.ggo#L153](https://github.com/ViennaRNA/ViennaRNA/blob/d6fbaf2b33d65944f9249a91ed5ab4b3277f7d06/src/bin/RNAeval.ggo#L153)).
+	This implementation keeps it simple and defaults to the value of -d2.
+- ViennaRNA includes the ability to specify hard and soft constraints (more info
+	available from [their ppt explaining hard and soft constrains](http://benasque.org/2015rna/talks_contr/2713_lorenz_benasque_2015.pdf),
+	[official docs](https://www.tbi.univie.ac.at/RNA/ViennaRNA/doc/html/group__constraints.html),
+	and [thier paper](https://almob.biomedcentral.com/articles/10.1186/s13015-016-0070-z)).
+	This implementation keeps it simple and defaults to no hard or soft
+	constraints.
+- ViennaRNA includes the ability to calculate the minimum free energy of
+	co-folded sequences. This implementation keeps it simple and defaults to
+	calculating the mfe of only single sequences.
+
+File is structured as so:
+
+	Structs:
+		foldCompound - holds all information needed to compute the free energy of a
+			RNA secondary structure (a RNA sequence along with its folded structure).
+		EnergyContribution - holds information about the energy contribution of a
+			single loop, and the indexes of the base pairs that delimit the loop in
+			the RNA secondary structure.
+
+	Big functions from this file:
+
+		MinimumFreeEnergy - given a RNA sequence, it's structure, and a temperature,
+			it returns the minimum free energy of the RNA secondary structure at the
+			specified temperature. A slice of `EnergyContribution` is also returned
+			which allows for in-depth examination of the energy contribution of each
+			loop present in the secondary structure.
+
+This file contains everything you need to caluclate minimum free energy of a
+RNA sequence (except for the energy parameters which are located in
+`energy_params.go`).
+
+TODO: Biological context
+
+ ******************************************************************************/
 
 const (
+	// Arbitrary values to denote different types of loops. Used with the
+	// `EnergyContribution` struct
+	ExternalLoop = iota
+	InteriorLoop
+	HairpinLoop
+	MultiLoop
+
 	/**
 	* The number of distinguishable base pairs:
 	* CG, GC, GU, UG, AU, UA, & non-standard (see `energy_params.md`)
@@ -27,6 +71,8 @@ const (
 	DefaultTemperature float64 = 37.0
 )
 
+// foldCompound holds all information needed to compute the free energy of a
+// RNA secondary structure (a RNA sequence along with its folded structure).
 type foldCompound struct {
 	length          int           // length of `sequence`
 	energyParams    *energyParams // The precomputed free energy contributions for each type of loop
@@ -38,9 +84,10 @@ type foldCompound struct {
 /**
 * EnergyContribution contains the energy contribution of a loop
 * The fields `loopType` and `energy` will always have a value for all loop types.
-* Except for `loopType` of `ExternalLoop`, all loops will have a
+* Except for `loopType == ExternalLoop`, all loops will have a
 * `closingFivePrimeIdx` and `closingThreePrimeIdx`.
-* Only interior loops will have `enclosedFivePrimeIdx` and `enclosedThreePrimeIdx`.
+* Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
+* and `enclosedThreePrimeIdx`.
  */
 type EnergyContribution struct {
 	closingFivePrimeIdx, closingThreePrimeIdx   int // The closing base pair is the base pair that closes the loop
@@ -49,15 +96,8 @@ type EnergyContribution struct {
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int // The base pair (that is enclosed by a closing base pair) which delimits an interior loop (only available for interior loops)
 }
 
-const (
-	ExternalLoop = iota
-	InteriorLoop
-	HairpinLoop
-	MultiLoop
-)
-
 /**
- *  CalculateMFE returns the free energy of an already folded RNA and a list of
+ *  MinimumFreeEnergy returns the free energy of an already folded RNA and a list of
  *  energy contribution of each loop.
  *
  *  @param sequence         A RNA sequence
@@ -65,19 +105,22 @@ const (
  *  @param temperature      Temperature at which to evaluate the free energy of the structure
  *  @return                 The free energy of the input structure given the input sequence in kcal/mol
  */
-func CalculateMFE(sequence, structure string, temperature float64) (float64, []EnergyContribution, error) {
+func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64, []EnergyContribution, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
 	if lenSequence != lenStructure {
-		return 0, nil, fmt.Errorf("length of sequence (%v) != Length of structure (%v)", lenSequence, lenStructure)
+		return 0, nil, fmt.Errorf("length of sequence (%v) != length of structure (%v)", lenSequence, lenStructure)
 	} else if lenStructure == 0 {
 		return 0, nil, errors.New("lengths of sequence and structure cannot be 0")
 	}
 
 	sequence = strings.ToUpper(sequence)
-	// vivek: Should we convert DNA to RNA and should we ensure sequence is only
-	// made up of ACGU?
+
+	err := ensureValidRNA(sequence)
+	if err != nil {
+		return 0, nil, err
+	}
 
 	pairTable, err := pairTable(structure)
 	if err != nil {
@@ -96,6 +139,16 @@ func CalculateMFE(sequence, structure string, temperature float64) (float64, []E
 	energy := float64(energyInt) / 100.0
 
 	return energy, energyContributions, nil
+}
+
+func ensureValidRNA(sequence string) error {
+	rnaRegex, _ := regexp.Compile("^[ACGU]+")
+	rnaIdxs := rnaRegex.FindStringIndex(sequence)
+
+	if rnaIdxs[0] != 0 || rnaIdxs[1] != len(sequence) {
+		return fmt.Errorf("found invalid characters in RNA sequence. Only A, C, G, and U allowed.")
+	}
+	return nil
 }
 
 // Encodes a sequence into its numerical representaiton
@@ -1058,7 +1111,7 @@ func rescaleDg(dG, dH, dT int) int {
 * Logs energy contributions in the same format as ViennaRNA does. This is used
 * to compare output to ViennaRNA in test cases.
 * Note: 1 is added to the indexes of the closing and enclosed base pairs as
-* everyting in ViennaRNA is 1-indexed, but output from the `CalculateMFE` func
+* everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
 * is 0-indexed.
  */
 func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {

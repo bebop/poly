@@ -1,4 +1,4 @@
-package poly
+package mfe
 
 /**
 * Energy parameters taken from ViennaRNA. The names of variables have been left
