@@ -1,7 +1,5 @@
 package rbs_calculator
 
-// package main
-
 import (
 	"encoding/csv"
 	"io"
@@ -34,7 +32,6 @@ func PopulateCsvFiles() {
 }
 
 var DATA_DIR string = "./data"
-var lookup_table map[string](map[string]float64)
 
 func Filter(ss []string, filter func(string) bool) (ret []string) {
 	for _, s := range ss {
@@ -53,7 +50,7 @@ func Map(list []string, f func(string) string) []string {
 	return result
 }
 
-func parseValues(file string) error {
+func parseValues(file string, lookupTable *map[string]map[string]float64) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -80,22 +77,22 @@ func parseValues(file string) error {
 			return err
 		}
 
-		if lookup_table[row[0]] == nil {
-			lookup_table[row[0]] = make(map[string]float64)
+		if (*lookupTable)[row[0]] == nil {
+			(*lookupTable)[row[0]] = make(map[string]float64)
 		}
 
-		lookup_table[row[0]][row[1]] = dG
+		(*lookupTable)[row[0]][row[1]] = dG
 	}
 }
 
-func Initalize() (map[string]map[string]float64, error) {
-	lookup_table = make(map[string]map[string]float64)
+func LookupTable() (map[string]map[string]float64, error) {
+	lookupTable := make(map[string]map[string]float64)
 	PopulateCsvFiles()
 	for _, csv := range csv_files {
-		err := parseValues(csv)
+		err := parseValues(csv, &lookupTable)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return lookup_table, nil
+	return lookupTable, nil
 }

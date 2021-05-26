@@ -6,7 +6,7 @@ import (
 )
 
 func ExampleLookup() {
-	dG_rRNA_mRNA, err := Initalize()
+	dG_rRNA_mRNA, err := LookupTable()
 	if err != nil {
 		fmt.Printf("Failed to initialize lookup table: %s", err)
 		return
@@ -17,7 +17,7 @@ func ExampleLookup() {
 
 // Test consists of looking up one randomly selected value from each csv file
 func TestLookup(t *testing.T) {
-	dG_rRNA_mRNA, err := Initalize()
+	dG_rRNA_mRNA, err := LookupTable()
 	if err != nil {
 		t.Errorf(fmt.Sprintf("Failed to initialize lookup table: %s", err))
 	}
