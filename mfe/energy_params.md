@@ -48,7 +48,7 @@ The encoded base pair type array could also be described as:
 
 Be careful to preserve this symmetry when editing parameter tables!
 
-### stack_energies
+### Stacking pairs (stack)
 
 The list of free energies for stacked pairs, indexed by the two closing
 pairs. The list should be formatted as symmetric an `7*7` matrix, conforming
@@ -67,24 +67,24 @@ corresponds to the encoded base pair arrays
 				 [ 2  5]       [ 5  2]
 ```
 
-### hairpin
+### Hairpin loops (hairpin)
 
 Free energies of hairpin loops as a function of size. The list should
 contain 31 entries on one or more lines. Since the minimum size of a
 hairpin loop is 3 and we start counting with 0, the first three values
 should be INF to indicate a forbidden value.
 
-### bulge
+### Bulge (bulge)
 
 Free energies of bulge loops. Should contain 31 entries, the first one
 being INF.
 
-### internal_loop
+### Interior loops (internal_loop)
 
 Free energies of internal loops. Should contain 31 entries, the first 4
 being INF (since smaller loops are tabulated).
 
-### mismatch_interior
+### Interior loop mismatch (mismatchI)
 
 Free energies for the interaction between the closing pair of an interior
 loop and the two unpaired bases adjacent to the helix. This is a three
@@ -102,7 +102,7 @@ matrices. The order is such that for example the mismatch
 corresponds to entry [1 4 2] (CG=1, U=4, C=2), (in this notation
 the first index runs from 1 to 7, second and third from 0 to 4)
 
-### mismatch_hairpin
+### Hairpin loop mismatch (mismatchH)
 
 Same as above for hairpin loops.
 
@@ -110,7 +110,7 @@ Same as above for hairpin loops.
 
 Corresponding enthalpies for rescaling to temperatures other than 37C.
 
-### int11_energies
+### Interior 1x1 loop (int11)
 
 Free energies for symmetric size 2 interior loops. `7*7*5*5` entries formatted
 as 49 `5*5` matrices, or seven `7*25` matrices. Example:
@@ -124,7 +124,7 @@ as 49 `5*5` matrices, or seven `7*25` matrices. Example:
 corresponds to entry [1 5 4 2] (CG=1, AU=5, U=4, C=2), which should be
 identical to [5 1 2 4] (AU=5, CG=1, C=2, U=4).
 
-### int21_energies
+### Interior 2x1 loop (int21)
 
 Free energies for size 3 (2+1) interior loops. `7*7*5*5*5` entries formatted
 in `5*5` or `5*25` matrices. The strand with a single unpaired base is listed
@@ -138,13 +138,13 @@ first, example:
 
 corresponds to entry [1 5 4 2 2] (CG=1, AU=5, U=4, C=2).
 
-### int22_energies
+### Interior 2x2 loop (int22)
 
 Free energies for symmetric size 4 interior loops. To reduce the size of
 parameter files this table only lists canonical bases (A, C, G, U) resulting in
 a `7*7*4*4*4*4` table. See above for an example.
 
-### dangle5
+### 5' dangle (dangle5)
 
 Energies for the interaction of an unpaired base on the 5' side and
 adjacent to a helix in multiloops and free ends (the equivalent of mismatch
@@ -160,7 +160,7 @@ matrix. For example the dangling base in
 
 corresponds to entry [1 3] (CG=1, G=3).
 
-### dangle3
+### 3' dangle (dangle3)
 
 Same as above for bases on the 3' side of a helix.
 
