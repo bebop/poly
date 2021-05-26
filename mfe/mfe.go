@@ -125,6 +125,11 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 		return 0, nil, err
 	}
 
+	err = ensureValidStructure(structure)
+	if err != nil {
+		return 0, nil, err
+	}
+
 	pairTable, err := pairTable(structure)
 	if err != nil {
 		return 0, nil, err
@@ -151,6 +156,16 @@ func ensureValidRNA(sequence string) error {
 
 	if rnaIdxs[0] != 0 || rnaIdxs[1] != len(sequence) {
 		return fmt.Errorf("found invalid characters in RNA sequence. Only A, C, G, and U allowed")
+	}
+	return nil
+}
+
+func ensureValidStructure(structure string) error {
+	dotBracketStructureRegex, _ := regexp.Compile("^[().]+")
+	structureIdxs := dotBracketStructureRegex.FindStringIndex(structure)
+
+	if structureIdxs[0] != 0 || structureIdxs[1] != len(structure) {
+		return fmt.Errorf("found invalid characters in structure. Only dot-bracket notation allowed")
 	}
 	return nil
 }
@@ -257,15 +272,6 @@ func pairTable(structure string) ([]int, error) {
 	var pairTable []int
 	lenStructure := len(structure)
 
-	// vivek: this was a constraint from the original code, but not sure why it's
-	// there. I don't think it should be a problem, so I've commented it out for
-	// now.
-	// if len_seq > SHRT_MAX {
-	// 	err := fmt.Sprintf("pairTable: Structure too long to be converted to pair
-	//  table (n=%v, max=%v)", len_seq, SHRT_MAX)
-	// 	return nil, errors.New(err)
-	// }
-
 	pairTable = make([]int, lenStructure)
 
 	// the characters of the opening and closing brackets in the structure string
@@ -329,12 +335,7 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 }
 
 /**
-*	returns the numerical representation of a base pair based on the map
-* `basePairEncodedType`.
-* As stated in `basePairEncodedTypeMap()`, the numerical representation carries
-* no meaning in itself except for where to find the relevent energy
-* contributions of the base pair (i, j) in the matrices of the energy
-* paramaters (found in `energy_params.go`).
+* (see `basePairEncodedTypeMap()`)
  */
 func encodedBasePairType(fc *foldCompound, basePairFivePrime, basePairThreePrime int) int {
 	return fc.basePairEncodedType[fc.sequence[basePairFivePrime]][fc.sequence[basePairThreePrime]]
