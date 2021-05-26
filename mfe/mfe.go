@@ -318,7 +318,9 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 			continue
 		}
 
-		energy += stackEnergy(fc, i, &energyContributions)
+		en, contributions := stackEnergy(fc, i)
+		energy += en
+		energyContributions = append(energyContributions, contributions...)
 		i = pairTable[i]
 	}
 
@@ -435,8 +437,10 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 }
 
 // TODO: document
-func stackEnergy(fc *foldCompound, pairFivePrimeIdx int, energyContributions *([]EnergyContribution)) int {
+func stackEnergy(fc *foldCompound, pairFivePrimeIdx int) (int, []EnergyContribution) {
 	// recursively calculate energy of substructure enclosed by (pairFivePrimeIdx, pairThreePrimeIdx)
+	energyContributions := make([]EnergyContribution, 0)
+
 	pairTable := fc.pairTable
 	energy := 0
 	pairThreePrimeIdx := pairTable[pairFivePrimeIdx]
@@ -482,38 +486,43 @@ func stackEnergy(fc *foldCompound, pairFivePrimeIdx int, energyContributions *([
 
 		en, contribution := interiorLoopEnergy(fc, pairFivePrimeIdx, pairThreePrimeIdx, fivePrimeIter, threePrimeIter)
 		energy += en
-		*energyContributions = append(*energyContributions, contribution)
+		energyContributions = append(energyContributions, contribution)
 
 		pairFivePrimeIdx = fivePrimeIter
 		pairThreePrimeIdx = threePrimeIter
 	} /* end for */
+	// fivePrimeIter & threePrimeIter don't pair. Must have found hairpin or multi-loop.
 
-	// fivePrimeIter & threePrimeIter don't pair. Must have found hairpin or multi loop
 	if fivePrimeIter > threePrimeIter {
 		// hairpin
 		en, contribution := hairpinLoopEnergy(fc, pairFivePrimeIdx, pairThreePrimeIdx)
 		energy += en
-		*energyContributions = append(*energyContributions, contribution)
-		return energy
+		energyContributions = append(energyContributions, contribution)
+		return energy, energyContributions
+	} else {
+		// we have a multi-loop
+
+		// (pairFivePrimeIdx, pairThreePrimeIdx) is exterior pair of multi loop
+		// for fivePrimeIter < pairThreePrimeIdx {
+		// 	// add up the contributions of the substructures of the multi loop
+		// 	en, contributions := stackEnergy(fc, fivePrimeIter)
+		// 	energy += en
+		// 	energyContributions = append(energyContributions, contributions...)
+
+		// 	fivePrimeIter = pairTable[fivePrimeIter]
+		// 	// search for next base pair in multi loop
+		// 	fivePrimeIter++
+		// 	for pairTable[fivePrimeIter] == -1 {
+		// 		fivePrimeIter++
+		// 	}
+		// }
+
+		en, contributions := multiLoopEnergy(fc, pairFivePrimeIdx, pairTable)
+		energy += en
+		energyContributions = append(energyContributions, contributions...)
 	}
 
-	// (pairFivePrimeIdx, pairThreePrimeIdx) is exterior pair of multi loop
-	for fivePrimeIter < pairThreePrimeIdx {
-		// add up the contributions of the substructures of the multi loop
-		energy += stackEnergy(fc, fivePrimeIter, energyContributions)
-		fivePrimeIter = pairTable[fivePrimeIter]
-		// search for next base pair in multi loop
-		fivePrimeIter++
-		for pairTable[fivePrimeIter] == -1 {
-			fivePrimeIter++
-		}
-	}
-
-	en, contribution := multiLoopEnergy(fc, pairFivePrimeIdx, pairTable)
-	energy += en
-	*energyContributions = append(*energyContributions, contribution)
-
-	return energy
+	return energy, energyContributions
 }
 
 /**
@@ -800,18 +809,37 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 }
 
 // TODO: document
-func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int) (int, EnergyContribution) {
+/**
+ *  Compute the energy of a multi-loop.
+ *  A multi-loop has this structure:
+ *								·   ·
+ * 							·   ·
+ * 							·   ·
+ * 							A - B
+ * 						·		 	 ·
+ * 					 ·				C · · ·
+ * 					·					|
+ * 		5' - X					D · · ·
+ * 				 |				 ·
+ * 		3' - Y - V - U
+ * 						 ·   ·
+ * 						 ·   ·
+ * 						 ·   ·
+ * where X-Y marks the closing pair (X is the nucleotide at `closingFivePrimeIdx`)
+ * of the multi-loop, and `·`s are an arbitrary number of unparied nucelotides
+ * (can also be 0). (A,B), (C,D), and (V,U) are the enclosed base pairs in this
+ * multi-loop (there can be ).
+ *
+ */
+func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int) (int, []EnergyContribution) {
+	energyContributions := make([]EnergyContribution, 0)
 
+	// (pairFivePrimeIdx, pairThreePrimeIdx) is exterior pair of multi loop
 	if closingFivePrimeIdx >= pairTable[closingFivePrimeIdx] {
-		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a closing pair")
+		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a pair that closes a loop")
 	}
 
-	var closingThreePrimeIdx int
-	if closingFivePrimeIdx == 0 {
-		closingThreePrimeIdx = fc.length
-	} else {
-		closingThreePrimeIdx = pairTable[closingFivePrimeIdx]
-	}
+	closingThreePrimeIdx := pairTable[closingFivePrimeIdx]
 
 	// The index of the enclosed base pair at the 5' end
 	enclosedFivePrimeIdx := closingFivePrimeIdx + 1
@@ -824,12 +852,23 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
 	// add inital unpaired nucleotides
 	nbUnpairedNucleotides := enclosedFivePrimeIdx - closingFivePrimeIdx - 1
 
-	// multiLoopClosingPenalty is energetic penalty imposed when a base pair encloses a
-	// multi loop
+	// energetic penalty imposed when a base pair encloses a multi loop
 	energy := fc.energyParams.multiLoopClosingPenalty
+
+	// the energy due to the substructures enclosed in the multi-loop
+	substructuresEnergy := 0
+
+	// iterate through structure and find all base pairs enclosed by the
+	// base pair that closes the multi loop
 	for enclosedFivePrimeIdx < closingThreePrimeIdx {
-		/* fivePrimeIter must have a pairing partner */
+		// add up the contributions of the substructures of the multi loop
+		en, contributions := stackEnergy(fc, enclosedFivePrimeIdx)
+		substructuresEnergy += en
+		energyContributions = append(energyContributions, contributions...)
+
+		/* enclosedFivePrimeIdx must have a pairing partner */
 		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+
 		/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
 		basePairType := encodedBasePairType(fc.sequence[enclosedFivePrimeIdx],
 			fc.sequence[enclosedThreePrimeIdx], fc.energyParams.basePairEncodedTypeMap)
@@ -851,33 +890,30 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
 		nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
 	}
 
-	if closingFivePrimeIdx > 0 {
-		// actual closing pair
+	// energy due to actual closing pair
 
-		// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
-		// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
-		basePairType := encodedBasePairType(fc.sequence[closingThreePrimeIdx],
-			fc.sequence[closingFivePrimeIdx], fc.energyParams.basePairEncodedTypeMap)
-		closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-		closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+	// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
+	// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
+	basePairType := encodedBasePairType(fc.sequence[closingThreePrimeIdx],
+		fc.sequence[closingFivePrimeIdx], fc.energyParams.basePairEncodedTypeMap)
+	closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+	closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
 
-		energy += multiLoopStemEnergy(basePairType, closingFivePrimeMismatch,
-			closingThreePrimeMismatch, fc.energyParams)
-	} else {
-		/* virtual closing pair */
-		energy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
-	}
+	energy += multiLoopStemEnergy(basePairType, closingFivePrimeMismatch,
+		closingThreePrimeMismatch, fc.energyParams)
 
 	// add bonus energies for unpaired nucleotides
 	energy += nbUnpairedNucleotides * fc.energyParams.multiLoopBase
 
-	energyContribution := EnergyContribution{
+	// Add a energy contribution for this multi-loop
+	contribution := EnergyContribution{
 		closingFivePrimeIdx:  closingFivePrimeIdx,
 		closingThreePrimeIdx: closingThreePrimeIdx,
 		energy:               energy,
 		loopType:             MultiLoop,
 	}
-	return energy, energyContribution
+	energyContributions = append(energyContributions, contribution)
+	return energy + substructuresEnergy, energyContributions
 }
 
 /**
@@ -885,13 +921,6 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
  *
  *  Given a base pair (i,j) (encoded by `basePairType`), compute the
  *  energy contribution including dangling-end/terminal-mismatch contributions.
- *  You can prevent taking 5'-, 3'-dangles or mismatch contributions into
- *  account by passing -1 for `fivePrimeMismatch` and/or `threePrimeMismatch`
- *  respectively.
- *
- *  If either of the adjacent nucleotides i - 1 (`fivePrimeMismatch`) and j + 1
- *  (`threePrimeMismatch`) must not contribute stacking energy, the
- *  corresponding encoding must be -1.
  *
  *  @param  basePairType          The encoded base pair type of (i, j) (see `basePairType()`)
  *  @param  fivePrimeMismatch     The encoded nucleotide directly adjacent (in the 5' direction) to i (may be -1 if index of i is 0)
@@ -900,22 +929,13 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
  *  @return                       The energy contribution of the introduced multi-loop stem
  */
 func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energyParams) int {
-	var energy int = 0
-
-	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
-		energy += energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
-	} else if fivePrimeMismatch >= 0 {
-		energy += energyParams.dangle5[basePairType][fivePrimeMismatch]
-	} else if threePrimeMismatch >= 0 {
-		energy += energyParams.dangle3[basePairType][threePrimeMismatch]
-	}
+	var energy int = energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch] +
+		energyParams.multiLoopIntern[basePairType]
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 		energy += energyParams.terminalAU
 	}
-
-	energy += energyParams.multiLoopIntern[basePairType]
 
 	return energy
 }
