@@ -431,11 +431,58 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 }
 
 /**
- * stackEnergy recursively calculate energy of substructure enclosed by
- * (closingFivePrimeIdx, closingThreePrimeIdx).
- */
+    stackEnergy recursively calculate energy of substructure enclosed by
+    (closingFivePrimeIdx, closingThreePrimeIdx).
+
+    vivek: I think this function should be better named.
+    Given a base pair (closingFivePrimeIdx, closingThreePrimeIdx), this function
+    finds all loops that the base pair encloses. For each enclosed base pair,
+    we find out if it belongs to one of the three groups:
+    - stacking pair, bulge, or interior loop
+    - hairpin loop
+    - multi-loop
+    and pass on the indexes of the closing pair and enclosed pair to the relevant
+    functions.
+    I think it's called stackEnergy because it proceeds in a stack-wise manner
+    from the 5' and 3' ends until the iterators come across pairs that don't pair
+    with each other
+		For example,
+    5' -- X · · U - A ...
+					|    /    |
+		3' -- Y · V · · B ...
+		where (X,Y), (U,V), and (A,B) are base pairs and `·`s are arbitrary number
+		of unpaired nucleotides. (X,Y) is the base pair which closes this loop so
+		X would be the nucleotide at `closingFivePrimeIdx`.
+
+		In this sequence, `stackEnergy`'s for-loop would proceed normally and pass on
+		(U,V) and (A,B) to `stackBulgeInteriorLoopEnergy`.
+
+		But if the continuation of the sequence was
+		5' -- X · · U - A · ·
+					|    /    |	   ·
+		3' -- Y · V · · B · ·
+		then the last encounted base pair would be (A,B) so `enclosedFivePrimeIdx`
+		is A and `enclosedThreePrimeIdx` is B. On the next iteration of the for-loop,
+		`enclosedThreePrimeIdx` will point to A and `enclosedThreePrimeIdx` will point
+		to B. Thus, the for-loop breaks and since `enclosedFivePrimeIdx > enclosedThreePrimeIdx`,
+		we know we have a hairpin loop.
+
+		In the other scenario, suppose the contiuation of the sequence was
+											·   ·
+											·   ·
+											E - F ...
+										 ·
+		5' -- X · · U - A
+					|    /    |
+		3' -- Y · V · · B · · C - D ...
+													·   ·
+													·   ·
+		then on the next iteration, `enclosedFivePrimeIdx` would point to E, and
+		`enclosedThreePrimeIdx` would point to C, but since
+		`pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx` (as C and E don't
+		pair), we know we're in some sort of multi-loop.
+*/
 func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
-	// recursively calculate energy of substructure enclosed by (pairFivePrimeIdx, pairThreePrimeIdx)
 	energyContributions := make([]EnergyContribution, 0)
 
 	pairTable := fc.pairTable
@@ -503,7 +550,6 @@ func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContri
 		return energy, energyContributions
 	} else {
 		// we have a multi-loop
-
 		en, multiLoopContributions := multiLoopEnergy(fc, closingFivePrimeIdx)
 		energy += en
 		energyContributions = append(energyContributions, multiLoopContributions...)
@@ -797,19 +843,19 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 /**
  *  Compute the energy of a multi-loop.
  *  A multi-loop has this structure:
- *							·   ·
- * 							·   ·
- * 							·   ·
- * 							A - B
- * 						·		 	 ·
- * 					 ·				C · · ·
- * 					·					|
- * 		5' - X					D · · ·
- * 				 |				 ·
- * 		3' - Y - V - U
- * 						 ·   ·
- * 						 ·   ·
- * 						 ·   ·
+ *				 	 		·   ·
+ * 				 	 		·   ·
+ * 				 	 		·   ·
+ * 				 	 		A - B
+ * 				 	 	 ·		 	 ·
+ * 				 	  ·				C · · ·
+ * 				 	 ·					|
+ * 		5' -- X					D · · ·
+ * 				  |				 ·
+ * 		3' -- Y · V - U
+ * 				 	 	  ·   ·
+ * 				 	 	  ·   ·
+ * 				 	 	  ·   ·
  * where X-Y marks the closing pair (X is the nucleotide at `closingFivePrimeIdx`)
  * of the multi-loop, and `·`s are an arbitrary number of unparied nucelotides
  * (can also be 0). (A,B), (C,D), and (V,U) are the base pairs enclosed in this
