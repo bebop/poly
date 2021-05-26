@@ -103,8 +103,10 @@ type EnergyContribution struct {
  *  @param sequence         A RNA sequence
  *  @param structure        Secondary structure in dot-bracket notation
  *  @param temperature      Temperature at which to evaluate the free energy of the structure
- *  @return                 The free energy of the input structure given the input sequence in kcal/mol
- */
+ *  @return                 The free energy of the input structure given the input sequence in kcal/mol,
+														and a slice of `EnergyContribution` (which gives information about the
+														energy contribution of each loop present in the secondary structure)
+*/
 func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64, []EnergyContribution, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
@@ -146,7 +148,7 @@ func ensureValidRNA(sequence string) error {
 	rnaIdxs := rnaRegex.FindStringIndex(sequence)
 
 	if rnaIdxs[0] != 0 || rnaIdxs[1] != len(sequence) {
-		return fmt.Errorf("found invalid characters in RNA sequence. Only A, C, G, and U allowed.")
+		return fmt.Errorf("found invalid characters in RNA sequence. Only A, C, G, and U allowed")
 	}
 	return nil
 }
@@ -212,30 +214,30 @@ type energyParams struct {
 	bulge        [maxLoop + 1]int
 	/* This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops */
-	interiorLoop                              [maxLoop + 1]int
-	mismatchExteriorLoop                      [nbPairs + 1][5][5]int
-	mismatchInteriorLoop                      [nbPairs + 1][5][5]int
-	mismatch1xnInteriorLoop                   [nbPairs + 1][5][5]int
-	mismatch2x3InteriorLoop                   [nbPairs + 1][5][5]int
-	mismatchHairpinLoop                       [nbPairs + 1][5][5]int
-	mismatchMultiLoop                         [nbPairs + 1][5][5]int
-	dangle5                                   [nbPairs + 1][5]int
-	dangle3                                   [nbPairs + 1][5]int
-	interior1x1Loop                           [nbPairs + 1][nbPairs + 1][5][5]int
-	interior2x1Loop                           [nbPairs + 1][nbPairs + 1][5][5][5]int
-	interior2x2Loop                           [nbPairs + 1][nbPairs + 1][5][5][5][5]int
-	ninio                                     [5]int
-	lxc                                       float64
-	MLbase, MLclosing, TerminalAU, DuplexInit int
-	MLintern                                  [nbPairs + 1]int
-	Tetraloops                                string
-	Tetraloop                                 [200]int
-	Triloops                                  string
-	Triloop                                   [40]int
-	Hexaloops                                 string
-	Hexaloop                                  [40]int
-	TripleC, MultipleCA, MultipleCB           int
-	basePairEncodedTypeMap                    map[byte]map[byte]int
+	interiorLoop                                       [maxLoop + 1]int
+	mismatchExteriorLoop                               [nbPairs + 1][5][5]int
+	mismatchInteriorLoop                               [nbPairs + 1][5][5]int
+	mismatch1xnInteriorLoop                            [nbPairs + 1][5][5]int
+	mismatch2x3InteriorLoop                            [nbPairs + 1][5][5]int
+	mismatchHairpinLoop                                [nbPairs + 1][5][5]int
+	mismatchMultiLoop                                  [nbPairs + 1][5][5]int
+	dangle5                                            [nbPairs + 1][5]int
+	dangle3                                            [nbPairs + 1][5]int
+	interior1x1Loop                                    [nbPairs + 1][nbPairs + 1][5][5]int
+	interior2x1Loop                                    [nbPairs + 1][nbPairs + 1][5][5][5]int
+	interior2x2Loop                                    [nbPairs + 1][nbPairs + 1][5][5][5][5]int
+	ninio                                              [5]int
+	lxc                                                float64
+	multiLoopBase, multiLoopClosingPenalty, terminalAU int
+	multiLoopIntern                                    [nbPairs + 1]int
+	tetraloops                                         string
+	tetraloop                                          [200]int
+	triloops                                           string
+	triloop                                            [40]int
+	hexaloops                                          string
+	hexaloop                                           [40]int
+	tripleC, multipleCA, multipleCB                    int
+	basePairEncodedTypeMap                             map[byte]map[byte]int
 }
 
 /**
@@ -395,8 +397,6 @@ func externalLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
  *
  *  Given a base pair (i,j) (encoded by `basePairType`), compute the
  *  energy contribution including dangling-end/terminal-mismatch contributions.
- *  Instead of returning the energy contribution per-se, this function returns
- *  the corresponding Boltzmann factor.
  *
  *  You can prevent taking 5'-, 3'-dangles or mismatch contributions into
  *  account by passing -1 for `fivePrimeMismatch` and/or `threePrimeMismatch`
@@ -423,7 +423,7 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-		energy += energyParams.TerminalAU
+		energy += energyParams.terminalAU
 	}
 
 	return energy
@@ -619,12 +619,12 @@ func evaluateInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 		} else {
 			if closingBasePairType > 2 {
 				// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-				energy += energyParams.TerminalAU
+				energy += energyParams.terminalAU
 			}
 
 			if enclosedBasePairType > 2 {
 				// The encosed base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-				energy += energyParams.TerminalAU
+				energy += energyParams.terminalAU
 			}
 		}
 
@@ -762,26 +762,26 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 
 	if size == 4 {
 		tetraloop := sequence[:6]
-		idx := strings.Index(string(energyParams.Tetraloops), tetraloop)
+		idx := strings.Index(string(energyParams.tetraloops), tetraloop)
 		if idx != -1 {
-			return energyParams.Tetraloop[idx/7]
+			return energyParams.tetraloop[idx/7]
 		}
 	} else if size == 6 {
 		hexaloop := sequence[:8]
-		idx := strings.Index(string(energyParams.Hexaloops), hexaloop)
+		idx := strings.Index(string(energyParams.hexaloops), hexaloop)
 		if idx != -1 {
-			return energyParams.Hexaloop[idx/9]
+			return energyParams.hexaloop[idx/9]
 		}
 	} else if size == 3 {
 		triloop := sequence[:5]
-		idx := strings.Index(string(energyParams.Triloops), triloop)
+		idx := strings.Index(string(energyParams.triloops), triloop)
 		if idx != -1 {
-			return energyParams.Triloop[idx/6]
+			return energyParams.triloop[idx/6]
 		}
 
 		if basePairType > 2 {
 			// (X,Y) is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-			return energy + energyParams.TerminalAU
+			return energy + energyParams.terminalAU
 		}
 
 		// (X,Y) is a GC or CG pair
@@ -819,9 +819,9 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
 	// add inital unpaired nucleotides
 	nbUnpairedNucleotides := enclosedFivePrimeIdx - closingFivePrimeIdx - 1
 
-	// MLclosing is energetic penalty imposed when a base pair encloses a
+	// multiLoopClosingPenalty is energetic penalty imposed when a base pair encloses a
 	// multi loop
-	energy := fc.energyParams.MLclosing
+	energy := fc.energyParams.multiLoopClosingPenalty
 	for enclosedFivePrimeIdx < closingThreePrimeIdx {
 		/* fivePrimeIter must have a pairing partner */
 		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
@@ -864,7 +864,7 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int, pairTable []int)
 	}
 
 	// add bonus energies for unpaired nucleotides
-	energy += nbUnpairedNucleotides * fc.energyParams.MLbase
+	energy += nbUnpairedNucleotides * fc.energyParams.multiLoopBase
 
 	energyContribution := EnergyContribution{
 		closingFivePrimeIdx:  closingFivePrimeIdx,
@@ -907,10 +907,10 @@ func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-		energy += energyParams.TerminalAU
+		energy += energyParams.terminalAU
 	}
 
-	energy += energyParams.MLintern[basePairType]
+	energy += energyParams.multiLoopIntern[basePairType]
 
 	return energy
 }
@@ -927,14 +927,14 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	var tempf int = int((temperature + K0) / Tmeasure)
 
 	var params *energyParams = &energyParams{
-		lxc:                    lxc37 * float64(tempf),
-		TripleC:                rescaleDg(TripleC37, TripleCdH, tempf),
-		MultipleCA:             rescaleDg(MultipleCA37, MultipleCAdH, tempf),
-		MultipleCB:             rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		TerminalAU:             rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		MLbase:                 rescaleDg(ML_BASE37, ML_BASEdH, tempf),
-		MLclosing:              rescaleDg(ML_closing37, ML_closingdH, tempf),
-		basePairEncodedTypeMap: basePairEncodedTypeMap(),
+		lxc:                     lxc37 * float64(tempf),
+		tripleC:                 rescaleDg(TripleC37, TripleCdH, tempf),
+		multipleCA:              rescaleDg(MultipleCA37, MultipleCAdH, tempf),
+		multipleCB:              rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		terminalAU:              rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		multiLoopBase:           rescaleDg(ML_BASE37, ML_BASEdH, tempf),
+		multiLoopClosingPenalty: rescaleDg(ML_closing37, ML_closingdH, tempf),
+		basePairEncodedTypeMap:  basePairEncodedTypeMap(),
 	}
 
 	params.ninio[2] = rescaleDg(ninio37, niniodH, tempf)
@@ -958,19 +958,19 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 	// This could be 281 or only the amount of chars
 	for i := 0; (i * 7) < len(Tetraloops); i++ {
-		params.Tetraloop[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], tempf)
+		params.tetraloop[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], tempf)
 	}
 
 	for i := 0; (i * 5) < len(Triloops); i++ {
-		params.Triloop[i] = rescaleDg(Triloop37[i], TriloopdH[i], tempf)
+		params.triloop[i] = rescaleDg(Triloop37[i], TriloopdH[i], tempf)
 	}
 
 	for i := 0; (i * 9) < len(Hexaloops); i++ {
-		params.Hexaloop[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], tempf)
+		params.hexaloop[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], tempf)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
-		params.MLintern[i] = rescaleDg(ML_intern37, ML_interndH, tempf)
+		params.multiLoopIntern[i] = rescaleDg(ML_intern37, ML_interndH, tempf)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
@@ -1096,9 +1096,9 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		}
 	}
 
-	params.Tetraloops = Tetraloops
-	params.Triloops = Triloops
-	params.Hexaloops = Hexaloops
+	params.tetraloops = Tetraloops
+	params.triloops = Triloops
+	params.hexaloops = Hexaloops
 
 	return params
 }

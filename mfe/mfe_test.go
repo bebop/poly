@@ -2,18 +2,19 @@ package mfe
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"testing"
 )
 
-// func ExampleMinimumFreeEnergy() {
-// 	mfe, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..")
-// 	fmt.Println(mfe)
-// 	// Output:
-// 	// -2.9
-// }
+func ExampleMinimumFreeEnergy() {
+	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", DefaultTemperature)
+	fmt.Println(mfe)
+	// Output:
+	// -2.9
+}
 
 func TestMinimumFreeEnergy(t *testing.T) {
 	test("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
