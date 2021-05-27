@@ -65,6 +65,12 @@ const (
 	* CG, GC, GU, UG, AU, UA, & non-standard (see `energy_params.md`)
 	 */
 	nbPairs int = 7
+	/**
+	* The number of distinguishable nucleotides:
+	* A, C, G, U
+	 */
+	nbNucleobase int = 4
+
 	// The maximum loop length
 	maxLoop int = 30
 	// Default temperature for free energy evaluation
@@ -232,18 +238,18 @@ type energyParams struct {
 	/* This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops */
 	interiorLoop                                       [maxLoop + 1]int
-	mismatchExteriorLoop                               [nbPairs + 1][5][5]int
-	mismatchInteriorLoop                               [nbPairs + 1][5][5]int
-	mismatch1xnInteriorLoop                            [nbPairs + 1][5][5]int
-	mismatch2x3InteriorLoop                            [nbPairs + 1][5][5]int
-	mismatchHairpinLoop                                [nbPairs + 1][5][5]int
-	mismatchMultiLoop                                  [nbPairs + 1][5][5]int
-	dangle5                                            [nbPairs + 1][5]int
-	dangle3                                            [nbPairs + 1][5]int
-	interior1x1Loop                                    [nbPairs + 1][nbPairs + 1][5][5]int
-	interior2x1Loop                                    [nbPairs + 1][nbPairs + 1][5][5][5]int
-	interior2x2Loop                                    [nbPairs + 1][nbPairs + 1][5][5][5][5]int
-	ninio                                              [5]int
+	mismatchExteriorLoop                               [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchInteriorLoop                               [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatch1xnInteriorLoop                            [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatch2x3InteriorLoop                            [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchHairpinLoop                                [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchMultiLoop                                  [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	dangle5                                            [nbPairs + 1][nbNucleobase + 1]int
+	dangle3                                            [nbPairs + 1][nbNucleobase + 1]int
+	interior1x1Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	interior2x1Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	interior2x2Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	ninio                                              [nbNucleobase + 1]int
 	lxc                                                float64
 	multiLoopBase, multiLoopClosingPenalty, terminalAU int
 	multiLoopIntern                                    [nbPairs + 1]int
@@ -714,7 +720,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				// 2x3 loop
 
 				var energy int
-				energy = energyParams.interiorLoop[5] + energyParams.ninio[2]
+				energy = energyParams.interiorLoop[nbNucleobase+1] + energyParams.ninio[2]
 				energy += energyParams.mismatch2x3InteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch2x3InteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 				return energy
 			}
@@ -1048,8 +1054,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 	/* mismatches */
 	for i := 0; i <= nbPairs; i++ {
-		for j := 0; j < 5; j++ {
-			for k := 0; k < 5; k++ {
+		for j := 0; j <= nbNucleobase; j++ {
+			for k := 0; k <= nbNucleobase; k++ {
 				var mm int
 				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchI37[i][j][k],
 					mismatchIdH[i][j][k],
@@ -1091,7 +1097,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 	/* dangles */
 	for i := 0; i <= nbPairs; i++ {
-		for j := 0; j < 5; j++ {
+		for j := 0; j <= nbNucleobase; j++ {
 			var dd int
 			dd = rescaleDg(dangle5_37[i][j],
 				dangle5_dH[i][j],
@@ -1116,8 +1122,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	/* interior 1x1 loops */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			for k := 0; k < 5; k++ {
-				for l := 0; l < 5; l++ {
+			for k := 0; k <= nbNucleobase; k++ {
+				for l := 0; l <= nbNucleobase; l++ {
 					params.interior1x1Loop[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
 						int11_dH[i][j][k][l],
 						tempf)
@@ -1129,10 +1135,10 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	/* interior 2x1 loops */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			for k := 0; k < 5; k++ {
-				for l := 0; l < 5; l++ {
+			for k := 0; k <= nbNucleobase; k++ {
+				for l := 0; l <= nbNucleobase; l++ {
 					var m int
-					for m = 0; m < 5; m++ {
+					for m = 0; m <= nbNucleobase; m++ {
 						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
 							int21_dH[i][j][k][l][m],
 							tempf)
@@ -1145,11 +1151,11 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	/* interior 2x2 loops */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			for k := 0; k < 5; k++ {
-				for l := 0; l < 5; l++ {
+			for k := 0; k <= nbNucleobase; k++ {
+				for l := 0; l <= nbNucleobase; l++ {
 					var m, n int
-					for m = 0; m < 5; m++ {
-						for n = 0; n < 5; n++ {
+					for m = 0; m <= nbNucleobase; m++ {
+						for n = 0; n <= nbNucleobase; n++ {
 							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
 								int22_dH[i][j][k][l][m][n],
 								tempf)

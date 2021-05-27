@@ -1,13 +1,15 @@
 The following is the modified version of the man pages from
 [ViennaRNA](https://github.com/ViennaRNA/ViennaRNA/blob/master/man/RNAlib.texi)
 
-Various loop parameters depend in general on the pairs closing the loops, 
+Various loop energy parameters depend in general on the pairs closing the loops, 
 as well as unpaired bases in the loops. Internally, the library
 distinguishes 8 types of pairs (CG=1, GC=2, GU=3, UG=4, AU=5, UA=6, 
 nonstandard=7, 0= no pair), and 5 types of bases (A=1, C=2, G=3, U=4 and 0
 for anything else). Parameters belonging to pairs of type 0 are not listed
 in the parameter files, but values for nonstandard pairs (type 7) and
-nonstandard bases (type 0) are. Thus, a table for symmetric size 2 interior
+nonstandard bases (type 0) are.
+
+Thus, a table for symmetric size 2 interior
 loops would have `7*7*5*5` entries (2 pairs, two unpaired bases).
 
 The order of entries always uses the closing pair or pairs as the first
