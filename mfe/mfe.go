@@ -20,7 +20,7 @@ The MFE calculation functionality (including comments and description of
 - ViennaRNA includes the ability to specify hard and soft constraints (more info
 	available from [their ppt explaining hard and soft constrains](http://benasque.org/2015rna/talks_contr/2713_lorenz_benasque_2015.pdf),
 	[official docs](https://www.tbi.univie.ac.at/RNA/ViennaRNA/doc/html/group__constraints.html),
-	and [thier paper](https://almob.biomedcentral.com/articles/10.1186/s13015-016-0070-z)).
+	and [their paper](https://almob.biomedcentral.com/articles/10.1186/s13015-016-0070-z)).
 	This implementation keeps it simple and defaults to no hard or soft
 	constraints.
 - ViennaRNA includes the ability to calculate the minimum free energy of
