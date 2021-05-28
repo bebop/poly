@@ -59,17 +59,11 @@ const (
 	HairpinLoop
 	MultiLoop
 
-	/**
-	* The number of distinguishable base pairs:
-	* CG, GC, GU, UG, AU, UA, & non-standard (see `energy_params.md`)
-	 */
+	// The number of distinguishable base pairs:
+	// CG, GC, GU, UG, AU, UA, & non-standard (see `energy_params.md`)
 	nbPairs int = 7
-	/**
-	* The number of distinguishable nucleotides:
-	* A, C, G, U
-	 */
+	// The number of distinguishable nucleotides: A, C, G, U
 	nbNucleobase int = 4
-
 	// The maximum loop length
 	maxLenLoop int = 30
 	// DefaultTemperature is the temperature in Celcius for free energy evaluation
@@ -201,24 +195,24 @@ func encodeSequence(sequence string) []int {
 }
 
 /**
-* Returns a map that encodes a base pair to its numerical representation.
-* Various loop energy parameters depend in general on the pairs closing the loops.
-* Internally, the library distinguishes 8 types of pairs (CG=1, GC=2, GU=3, UG=4,
-* AU=5, UA=6, nonstandard=7, 0= no pair).
-* The map is:
-*    _  A  C  G  U
-*	_ {0, 0, 0, 0, 0}
-*	A {0, 0, 0, 0, 5}
-*	C {0, 0, 0, 1, 0}
-*	G {0, 0, 2, 0, 3}
-*	U {0, 6, 0, 4, 0}
-* For example, map['A']['U'] is 5.
-* The encoded numerical representation of a base pair carries no meaning in
-* itself except for where to find the relevent energy contributions of the base
-* pair in the matrices of the energy paramaters (found in `energy_params.go`).
-* Thus, any change to this map must be reflected in the energy
-* parameters matrices in `energy_params.go`, and vice versa.
- */
+Returns a map that encodes a base pair to its numerical representation.
+Various loop energy parameters depend in general on the pairs closing the loops.
+Internally, the library distinguishes 8 types of pairs (CG=1, GC=2, GU=3, UG=4,
+AU=5, UA=6, nonstandard=7, 0= no pair).
+The map is:
+   _  A  C  G  U
+_ {0, 0, 0, 0, 0}
+A {0, 0, 0, 0, 5}
+C {0, 0, 0, 1, 0}
+G {0, 0, 2, 0, 3}
+U {0, 6, 0, 4, 0}
+For example, map['A']['U'] is 5.
+The encoded numerical representation of a base pair carries no meaning in
+itself except for where to find the relevent energy contributions of the base
+pair in the matrices of the energy paramaters (found in `energy_params.go`).
+Thus, any change to this map must be reflected in the energy
+parameters matrices in `energy_params.go`, and vice versa.
+*/
 func basePairEncodedTypeMap() map[byte]map[byte]int {
 	nucelotideAEncodedTypeMap := map[byte]int{'U': 5}
 	nucelotideCEncodedTypeMap := map[byte]int{'G': 1}
@@ -268,7 +262,7 @@ which means the energy of the sequence is equivalent to:
 type energyParams struct {
 	/**
 	The matrix of free energies for stacked pairs, indexed by the two encoded closing
-	pairs. The list should be formatted as symmetric an `7*7` matrix, conforming
+	pairs. The list should be formatted as symmetric a `7*7` matrix, conforming
 	to the order explained above. As an example the stacked pair
 	```
 						5'-GU-3'
@@ -280,19 +274,19 @@ type energyParams struct {
 	stackingPair [nbPairs + 1][nbPairs + 1]int
 	/**
 	Free energies of hairpin loops as a function of size. The list should
-	contain 31 entries. Since the minimum size of a hairpin loop is 3 and we start
-	counting with 0, the first three values should be INF to indicate a forbidden
-	value.
+	contain 31 (maxLenLoop + 1) entries. Since the minimum size of a hairpin loop
+	is 3 and we start counting with 0, the first three values should be INF to
+	indicate a forbidden value.
 	*/
 	hairpinLoop [maxLenLoop + 1]int
 	/**
-	Free energies of bulge loops. Should contain 31 entries, the first one
-	being INF.
+	Free energies of bulge loops. Should contain 31 (maxLenLoop + 1) entries, the
+	first one being INF.
 	*/
 	bulge [maxLenLoop + 1]int
 	/**
-	Free energies of interior loops. Should contain 31 entries, the first 4
-	being INF (since smaller loops are tabulated).
+	Free energies of interior loops. Should contain 31 (maxLenLoop + 1) entries,
+	the first 4 being INF (since smaller loops are tabulated).
 
 	This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops
@@ -376,11 +370,10 @@ type energyParams struct {
 	corresponds to entry interior2x2Loop[1][5][4][1][2][2] (CG=1, AU=5, U=4, A=1, C=2, C=2),
 	which should be identical to interior2x2Loop[5][1][2][2][1][4] (AU=5, CG=1, C=2, C=2, A=1, U=4).
 	*/
-	interior2x2Loop                                                       [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	ninio                                                                 [nbNucleobase + 1]int
-	lxc                                                                   float64
-	multiLoopUnpairedNucelotideBonus, multiLoopClosingPenalty, terminalAU int
-	multiLoopIntern                                                       [nbPairs + 1]int
+	interior2x2Loop                                                              [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	lxc                                                                          float64
+	multiLoopUnpairedNucelotideBonus, multiLoopClosingPenalty, terminalAU, ninio int
+	multiLoopIntern                                                              [nbPairs + 1]int
 	/**
 	Some tetraloops particularly stable tetraloops are assigned an energy
 	bonus. Up to forty tetraloops and their bonus energies can be listed
@@ -848,7 +841,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				} else {
 					energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLenLoop)))
 				}
-				energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
+				energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 				energy += energyParams.mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 				return energy
 			}
@@ -860,7 +853,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				// 2x3 loop
 
 				var energy int
-				energy = energyParams.interiorLoop[nbNucleobase+1] + energyParams.ninio[2]
+				energy = energyParams.interiorLoop[nbNucleobase+1] + energyParams.ninio
 				energy += energyParams.mismatch2x3InteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch2x3InteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 				return energy
 			}
@@ -877,7 +870,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLenLoop)))
 			}
 
-			energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
+			energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 
 			energy += energyParams.mismatchInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatchInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 			return energy
@@ -1133,8 +1126,10 @@ func min(a, b int) int {
 	return b
 }
 
+// scales energy paramaters according to the specificed temperatue.
 func scaleEnergyParams(temperature float64) *energyParams {
 
+	// set the non-matix energy parameters
 	var params *energyParams = &energyParams{
 		lxc:                              lxc37 * temperature,
 		tripleC:                          rescaleDg(TripleC37, TripleCdH, temperature),
@@ -1143,25 +1138,14 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		terminalAU:                       rescaleDg(TerminalAU37, TerminalAUdH, temperature),
 		multiLoopUnpairedNucelotideBonus: rescaleDg(ML_BASE37, ML_BASEdH, temperature),
 		multiLoopClosingPenalty:          rescaleDg(ML_closing37, ML_closingdH, temperature),
+		ninio:                            rescaleDg(ninio37, niniodH, temperature),
 	}
 
-	params.ninio[2] = rescaleDg(ninio37, niniodH, temperature)
-
-	for i := 0; i < 31; i++ {
+	// scale and set hairpin, bulge and interior energy params
+	for i := 0; i <= maxLenLoop; i++ {
 		params.hairpinLoop[i] = rescaleDg(hairpin37[i], hairpindH[i], temperature)
-	}
-
-	var i int
-	for i = 0; i <= maxLenLoop; i++ {
 		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], temperature)
 		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], temperature)
-	}
-
-	for ; i <= maxLenLoop; i++ {
-		params.bulge[i] = params.bulge[maxLenLoop] +
-			int(params.lxc*math.Log(float64(i)/float64(maxLenLoop)))
-		params.interiorLoop[i] = params.interiorLoop[maxLenLoop] +
-			int(params.lxc*math.Log(float64(i)/float64(maxLenLoop)))
 	}
 
 	// This could be 281 or only the amount of chars
@@ -1194,7 +1178,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbNucleobase; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
-				var mm int
+				var mismatch int
 				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchI37[i][j][k],
 					mismatchIdH[i][j][k],
 					temperature)
@@ -1207,28 +1191,24 @@ func scaleEnergyParams(temperature float64) *energyParams {
 				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
 					mismatch23IdH[i][j][k],
 					temperature)
-				// if model_details.dangles > 0 {
-				mm = rescaleDg(mismatchM37[i][j][k],
+
+				mismatch = rescaleDg(mismatchM37[i][j][k],
 					mismatchMdH[i][j][k],
 					temperature)
-				if mm > 0 {
+				if mismatch > 0 {
 					params.mismatchMultiLoop[i][j][k] = 0
 				} else {
-					params.mismatchMultiLoop[i][j][k] = mm
+					params.mismatchMultiLoop[i][j][k] = mismatch
 				}
 
-				mm = rescaleDg(mismatchExt37[i][j][k],
+				mismatch = rescaleDg(mismatchExt37[i][j][k],
 					mismatchExtdH[i][j][k],
 					temperature)
-				if mm > 0 {
+				if mismatch > 0 {
 					params.mismatchExteriorLoop[i][j][k] = 0
 				} else {
-					params.mismatchExteriorLoop[i][j][k] = mm
+					params.mismatchExteriorLoop[i][j][k] = mismatch
 				}
-				// } else {
-				// 	params.mismatchExt[i][j][k] = 0
-				// 	params.mismatchM[i][j][k] = 0
-				// }
 			}
 		}
 	}
@@ -1275,8 +1255,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
-					var m int
-					for m = 0; m <= nbNucleobase; m++ {
+					for m := 0; m <= nbNucleobase; m++ {
 						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
 							int21_dH[i][j][k][l][m],
 							temperature)
@@ -1291,9 +1270,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
-					var m, n int
-					for m = 0; m <= nbNucleobase; m++ {
-						for n = 0; n <= nbNucleobase; n++ {
+					for m := 0; m <= nbNucleobase; m++ {
+						for n := 0; n <= nbNucleobase; n++ {
 							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
 								int22_dH[i][j][k][l][m][n],
 								temperature)
