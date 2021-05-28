@@ -178,8 +178,9 @@ func ensureValidStructure(structure string) error {
 
 // Encodes a sequence into its numerical representaiton
 func encodeSequence(sequence string) []int {
+
 	// Make a nucleotide byte -> int map
-	nucleotideRuneMap := map[byte]int{
+	var nucleotideRuneEncodedIntMap map[byte]int = map[byte]int{
 		'A': 1,
 		'C': 2,
 		'G': 3,
@@ -191,7 +192,7 @@ func encodeSequence(sequence string) []int {
 
 	// encode the sequence based on nucleotideRuneMap
 	for i := 0; i < lenSequence; i++ {
-		encodedSequence[i] = nucleotideRuneMap[sequence[i]]
+		encodedSequence[i] = nucleotideRuneEncodedIntMap[sequence[i]]
 	}
 
 	return encodedSequence
@@ -199,6 +200,9 @@ func encodeSequence(sequence string) []int {
 
 /**
 * Returns a map that encodes a base pair to its numerical representation.
+* Various loop energy parameters depend in general on the pairs closing the loops.
+* Internally, the library distinguishes 8 types of pairs (CG=1, GC=2, GU=3, UG=4,
+* AU=5, UA=6, nonstandard=7, 0= no pair).
 * The map is:
 *    _  A  C  G  U
 *	_ {0, 0, 0, 0, 0}
@@ -211,8 +215,7 @@ func encodeSequence(sequence string) []int {
 * itself except for where to find the relevent energy contributions of the base
 * pair in the matrices of the energy paramaters (found in `energy_params.go`).
 * Thus, any change to this map must be reflected in the energy
-* parameters matrices in `energy_params.go`, and vice versa (see
-* `energy_params.md` for more information.)
+* parameters matrices in `energy_params.go`, and vice versa.
  */
 func basePairEncodedTypeMap() map[byte]map[byte]int {
 	nucelotideAEncodedTypeMap := map[byte]int{'U': 5}
@@ -230,36 +233,169 @@ func basePairEncodedTypeMap() map[byte]map[byte]int {
 	return basePairMap
 }
 
-// Contains all the energy parameters needed for the free energy calculations
+/**
+Contains all the energy parameters needed for the free energy calculations.
+
+The order of entries to access theses matrices always uses the closing pair or
+pairs as the first indices followed by the unpaired bases in 5' to 3' direction.
+For example, if we have a 2x2 interior loop:
+```
+		      5'-GAUA-3'
+		      3'-CGCU-5'
+```
+The closing pairs for the loops are GC and UA (not AU!), and the unpaired bases
+are (in 5' to 3' direction, starting at the first pair) A U C G.
+Thus, the energy for this sequence is:
+```
+	pairs:                    GC UA A  U  C  G
+						interior2x2Loop[2][6][1][4][2][3]
+```
+(See `basePairEncodedTypeMap()` and `encodeSequence()` for more details on how
+pairs and unpaired nucleotides are encoded)
+Note that this sequence is symmetric so the sequence is equivalent to:
+```
+					5'-UCGC-3'
+					3'-AUAG-5'
+```
+which means the energy of the sequence is equivalent to:
+```
+	pairs:                    UA GC C  G  A  U
+						interior2x2Loop[2][6][1][4][2][3]
+```
+*/
 type energyParams struct {
+	/**
+	The matrix of free energies for stacked pairs, indexed by the two encoded closing
+	pairs. The list should be formatted as symmetric an `7*7` matrix, conforming
+	to the order explained above. As an example the stacked pair
+	```
+						5'-GU-3'
+						3'-CA-5'
+	```
+	corresponds to the entry stackingPair[2][5] (GC=2, AU=5) which should be
+	identical to stackingPair[5][2] (AU=5, GC=2).
+	*/
 	stackingPair [nbPairs + 1][nbPairs + 1]int
-	hairpinLoop  [31]int
-	bulge        [maxLoop + 1]int
-	/* This field was previous called internal_loop, but has been renamed to
-	interior loop to remain consistent with the names of other interior loops */
-	interiorLoop                                       [maxLoop + 1]int
-	mismatchExteriorLoop                               [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	mismatchInteriorLoop                               [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	mismatch1xnInteriorLoop                            [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	mismatch2x3InteriorLoop                            [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	mismatchHairpinLoop                                [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	mismatchMultiLoop                                  [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	dangle5                                            [nbPairs + 1][nbNucleobase + 1]int
-	dangle3                                            [nbPairs + 1][nbNucleobase + 1]int
-	interior1x1Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	interior2x1Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	interior2x2Loop                                    [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	ninio                                              [nbNucleobase + 1]int
-	lxc                                                float64
-	multiLoopBase, multiLoopClosingPenalty, terminalAU int
-	multiLoopIntern                                    [nbPairs + 1]int
-	tetraloops                                         string
-	tetraloop                                          [200]int
-	triloops                                           string
-	triloop                                            [40]int
-	hexaloops                                          string
-	hexaloop                                           [40]int
-	tripleC, multipleCA, multipleCB                    int
+	/**
+	Free energies of hairpin loops as a function of size. The list should
+	contain 31 entries. Since the minimum size of a hairpin loop is 3 and we start
+	counting with 0, the first three values should be INF to indicate a forbidden
+	value.
+	*/
+	hairpinLoop [maxLoop + 1]int
+	/**
+	Free energies of bulge loops. Should contain 31 entries, the first one
+	being INF.
+	*/
+	bulge [maxLoop + 1]int
+	/**
+	Free energies of interior loops. Should contain 31 entries, the first 4
+	being INF (since smaller loops are tabulated).
+
+	This field was previous called internal_loop, but has been renamed to
+	interior loop to remain consistent with the names of other interior loops
+	*/
+	interiorLoop [maxLoop + 1]int
+	/**
+		Free energies for the interaction between the closing pair of an interior
+	  loop and the two unpaired bases adjacent to the helix. This is a three
+	  dimensional array indexed by the type of the closing pair and the two
+		unpaired bases. Since we distinguish 5 bases the list contains
+	  `7*5*5` entries. The order is such that for example the mismatch
+
+	  ```
+	  			       5'-CU-3'
+	  			       3'-GC-5'
+	  ```
+	  corresponds to entry mismatchInteriorLoop[1][4][2] (CG=1, U=4, C=2).
+	*/
+	mismatchInteriorLoop    [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatch1xnInteriorLoop [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatch2x3InteriorLoop [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchExteriorLoop    [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchHairpinLoop     [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	mismatchMultiLoop       [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	/**
+	Energies for the interaction of an unpaired base on the 5' side and
+	adjacent to a helix in multiloops and free ends (the equivalent of mismatch
+	energies in interior and hairpin loops). The array is indexed by the type
+	of pair closing the helix and the unpaired base and, therefore, forms a `7*5`
+	matrix. For example the dangling base in
+	```
+							5'-GC-3'
+							3'- G-5'
+	```
+
+	corresponds to entry dangle5[1][3] (CG=1, G=3).
+	*/
+	dangle5 [nbPairs + 1][nbNucleobase + 1]int
+	/**
+	Same as above for bases on the 3' side of a helix.
+	```
+				       5'- A-3'
+				       3'-AU-5'
+	```
+	corresponds to entry dangle3[5][1] (AU=5, A=1).
+	*/
+	dangle3 [nbPairs + 1][nbNucleobase + 1]int
+	/**
+	Free energies for symmetric size 2 interior loops. `7*7*5*5` entries.
+	Example:
+	```
+							5'-CUU-3'
+							3'-GCA-5'
+	```
+	corresponds to entry interior1x1Loop[1][5][4][2] (CG=1, AU=5, U=4, C=2),
+	which should be identical to interior1x1Loop[5][1][2][4] (AU=5, CG=1, C=2, U=4).
+	*/
+	interior1x1Loop [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	/**
+	Free energies for 2x1 interior loops, where 2 is the number of unpaired
+	nucelobases on the larger 'side' of the interior loop and 1 is the number of
+	unpaired nucelobases on the smaller 'side' of the interior loop.
+	`7*7*5*5*5` entries.
+	Example:
+	```
+							5'-CUUU-3'
+							3'-GC A-5'
+	```
+	corresponds to entry interior2x1Loop[1][5][4][4][2] (CG=1, AU=5, U=4, U=4, C=2).
+	Note that this matrix is always accessed in the 5' to 3' direction with the
+	larger number of unpaired nucleobases first.
+	*/
+	interior2x1Loop [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	/**
+	Free energies for symmetric size 4 interior loops. `7*7*5*5*5*5` entries.
+	Example:
+	```
+							5'-CUAU-3'
+							3'-GCCA-5'
+	```
+	corresponds to entry interior2x2Loop[1][5][4][1][2][2] (CG=1, AU=5, U=4, A=1, C=2, C=2),
+	which should be identical to interior2x2Loop[5][1][2][2][1][4] (AU=5, CG=1, C=2, C=2, A=1, U=4).
+	*/
+	interior2x2Loop                                                       [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	ninio                                                                 [nbNucleobase + 1]int
+	lxc                                                                   float64
+	multiLoopUnpairedNucelotideBonus, multiLoopClosingPenalty, terminalAU int
+	multiLoopIntern                                                       [nbPairs + 1]int
+	/**
+	Some tetraloops particularly stable tetraloops are assigned an energy
+	bonus. Up to forty tetraloops and their bonus energies can be listed
+	following the token, one sequence per line. For example:
+	```
+		GAAA    -200
+	```
+	assigns a bonus energy of -2 kcal/mol to tetraloops containing
+	the sequence GAAA.
+	*/
+	tetraloops                      string
+	tetraloop                       [200]int
+	triloops                        string
+	triloop                         [40]int
+	hexaloops                       string
+	hexaloop                        [40]int
+	tripleC, multipleCA, multipleCB int
 }
 
 /**
@@ -664,7 +800,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 		if nbUnpairedLarger <= maxLoop {
 			energy = energyParams.bulge[nbUnpairedLarger]
 		} else {
-			energy = energyParams.bulge[30] + int(energyParams.lxc*math.Log(float64(nbUnpairedLarger)/30.0))
+			energy = energyParams.bulge[maxLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedLarger)/float64(maxLoop)))
 		}
 
 		if nbUnpairedLarger == 1 {
@@ -706,7 +842,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				if nbUnpairedLarger+1 <= maxLoop {
 					energy = energyParams.interiorLoop[nbUnpairedLarger+1]
 				} else {
-					energy = energyParams.interiorLoop[30] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/30.0))
+					energy = energyParams.interiorLoop[maxLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLoop)))
 				}
 				energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
 				energy += energyParams.mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
@@ -734,7 +870,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 			if nbUnpairedNucleotides <= maxLoop {
 				energy = energyParams.interiorLoop[nbUnpairedNucleotides]
 			} else {
-				energy = energyParams.interiorLoop[30] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/30.0))
+				energy = energyParams.interiorLoop[maxLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLoop)))
 			}
 
 			energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
@@ -801,10 +937,10 @@ func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int
 func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismatch int, sequence string, energyParams *energyParams) int {
 	var energy int
 
-	if size <= 30 {
+	if size <= maxLoop {
 		energy = energyParams.hairpinLoop[size]
 	} else {
-		energy = energyParams.hairpinLoop[30] + int(energyParams.lxc*math.Log(float64(size)/30.0))
+		energy = energyParams.hairpinLoop[maxLoop] + int(energyParams.lxc*math.Log(float64(size)/float64(maxLoop)))
 	}
 
 	if size < 3 {
@@ -949,7 +1085,7 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 	}
 
 	// add bonus energies for unpaired nucleotides
-	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.multiLoopBase
+	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.multiLoopUnpairedNucelotideBonus
 
 	// Add a energy contribution for this multi-loop
 	contribution := EnergyContribution{
@@ -998,13 +1134,13 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	var tempf int = int((temperature + K0) / Tmeasure)
 
 	var params *energyParams = &energyParams{
-		lxc:                     lxc37 * float64(tempf),
-		tripleC:                 rescaleDg(TripleC37, TripleCdH, tempf),
-		multipleCA:              rescaleDg(MultipleCA37, MultipleCAdH, tempf),
-		multipleCB:              rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		terminalAU:              rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		multiLoopBase:           rescaleDg(ML_BASE37, ML_BASEdH, tempf),
-		multiLoopClosingPenalty: rescaleDg(ML_closing37, ML_closingdH, tempf),
+		lxc:                              lxc37 * float64(tempf),
+		tripleC:                          rescaleDg(TripleC37, TripleCdH, tempf),
+		multipleCA:                       rescaleDg(MultipleCA37, MultipleCAdH, tempf),
+		multipleCB:                       rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		terminalAU:                       rescaleDg(TerminalAU37, TerminalAUdH, tempf),
+		multiLoopUnpairedNucelotideBonus: rescaleDg(ML_BASE37, ML_BASEdH, tempf),
+		multiLoopClosingPenalty:          rescaleDg(ML_closing37, ML_closingdH, tempf),
 	}
 
 	params.ninio[2] = rescaleDg(ninio37, niniodH, tempf)
@@ -1014,16 +1150,16 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	var i int
-	for i = 0; i <= min(30, maxLoop); i++ {
+	for i = 0; i <= maxLoop; i++ {
 		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], tempf)
 		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], tempf)
 	}
 
 	for ; i <= maxLoop; i++ {
-		params.bulge[i] = params.bulge[30] +
-			int(params.lxc*math.Log(float64(i)/30.0))
-		params.interiorLoop[i] = params.interiorLoop[30] +
-			int(params.lxc*math.Log(float64(i)/30.0))
+		params.bulge[i] = params.bulge[maxLoop] +
+			int(params.lxc*math.Log(float64(i)/float64(maxLoop)))
+		params.interiorLoop[i] = params.interiorLoop[maxLoop] +
+			int(params.lxc*math.Log(float64(i)/float64(maxLoop)))
 	}
 
 	// This could be 281 or only the amount of chars
