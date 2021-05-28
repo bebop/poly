@@ -771,11 +771,8 @@ var (
 	}
 )
 
-// K0 is 0 deg Celsius in Kelvin
-var K0 float64 = 273.15
-
-// Tmeasure is the temperature of param measurements
-var Tmeasure float64 = 37 + K0
+// zeroCKelvin is 0 deg Celsius in Kelvin
+var zeroCKelvin float64 = 273.15
 
 var (
 	lxc37        float64 = 107.856

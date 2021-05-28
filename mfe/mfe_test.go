@@ -1269,3 +1269,40 @@ func captureOutput(f func()) string {
 func stripWhiteSpace(s string) string {
 	return strings.Join(strings.Fields(s), "")
 }
+
+/**
+* Logs energy contributions in the same format as ViennaRNA does. This is used
+* to compare output to ViennaRNA in test cases.
+* Note: 1 is added to the indexes of the closing and enclosed base pairs as
+* everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
+* is 0-indexed.
+ */
+func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+	for _, c := range energyContribution {
+		switch c.loopType {
+		case ExteriorLoop:
+			log.Printf("External loop                           : %v\n", c.energy)
+		case InteriorLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
+			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				k+1, l+1,
+				string(sequence[k]), string(sequence[l]),
+				c.energy)
+		case HairpinLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				c.energy)
+		case MultiLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				c.energy)
+		}
+	}
+}

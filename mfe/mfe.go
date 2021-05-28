@@ -3,7 +3,6 @@ package mfe
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"regexp"
 	"strings"
@@ -72,9 +71,12 @@ const (
 	nbNucleobase int = 4
 
 	// The maximum loop length
-	maxLoop int = 30
-	// Default temperature for free energy evaluation
+	maxLenLoop int = 30
+	// DefaultTemperature is the temperature in Celcius for free energy evaluation
 	DefaultTemperature float64 = 37.0
+	// The temperature at which the energy parameters in `energy_params.go` have
+	// been calculate at
+	energyParamsTemperature float64 = 37.0
 )
 
 // foldCompound holds all information needed to compute the free energy of a
@@ -282,12 +284,12 @@ type energyParams struct {
 	counting with 0, the first three values should be INF to indicate a forbidden
 	value.
 	*/
-	hairpinLoop [maxLoop + 1]int
+	hairpinLoop [maxLenLoop + 1]int
 	/**
 	Free energies of bulge loops. Should contain 31 entries, the first one
 	being INF.
 	*/
-	bulge [maxLoop + 1]int
+	bulge [maxLenLoop + 1]int
 	/**
 	Free energies of interior loops. Should contain 31 entries, the first 4
 	being INF (since smaller loops are tabulated).
@@ -295,7 +297,7 @@ type energyParams struct {
 	This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops
 	*/
-	interiorLoop [maxLoop + 1]int
+	interiorLoop [maxLenLoop + 1]int
 	/**
 		Free energies for the interaction between the closing pair of an interior
 	  loop and the two unpaired bases adjacent to the helix. This is a three
@@ -797,10 +799,10 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 		// bulge
 		var energy int
 
-		if nbUnpairedLarger <= maxLoop {
+		if nbUnpairedLarger <= maxLenLoop {
 			energy = energyParams.bulge[nbUnpairedLarger]
 		} else {
-			energy = energyParams.bulge[maxLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedLarger)/float64(maxLoop)))
+			energy = energyParams.bulge[maxLenLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedLarger)/float64(maxLenLoop)))
 		}
 
 		if nbUnpairedLarger == 1 {
@@ -839,10 +841,10 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 
 				var energy int
 				// vivek: Why do we add 1 here?
-				if nbUnpairedLarger+1 <= maxLoop {
+				if nbUnpairedLarger+1 <= maxLenLoop {
 					energy = energyParams.interiorLoop[nbUnpairedLarger+1]
 				} else {
-					energy = energyParams.interiorLoop[maxLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLoop)))
+					energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLenLoop)))
 				}
 				energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
 				energy += energyParams.mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
@@ -867,10 +869,10 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 			nbUnpairedNucleotides := nbUnpairedLarger + nbUnpairedSmaller
 
 			var energy int
-			if nbUnpairedNucleotides <= maxLoop {
+			if nbUnpairedNucleotides <= maxLenLoop {
 				energy = energyParams.interiorLoop[nbUnpairedNucleotides]
 			} else {
-				energy = energyParams.interiorLoop[maxLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLoop)))
+				energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLenLoop)))
 			}
 
 			energy += min(MAX_NINIO, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio[2])
@@ -937,10 +939,10 @@ func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int
 func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismatch int, sequence string, energyParams *energyParams) int {
 	var energy int
 
-	if size <= maxLoop {
+	if size <= maxLenLoop {
 		energy = energyParams.hairpinLoop[size]
 	} else {
-		energy = energyParams.hairpinLoop[maxLoop] + int(energyParams.lxc*math.Log(float64(size)/float64(maxLoop)))
+		energy = energyParams.hairpinLoop[maxLenLoop] + int(energyParams.lxc*math.Log(float64(size)/float64(maxLenLoop)))
 	}
 
 	if size < 3 {
@@ -1131,52 +1133,51 @@ func min(a, b int) int {
 }
 
 func scaleEnergyParams(temperature float64) *energyParams {
-	var tempf int = int((temperature + K0) / Tmeasure)
 
 	var params *energyParams = &energyParams{
-		lxc:                              lxc37 * float64(tempf),
-		tripleC:                          rescaleDg(TripleC37, TripleCdH, tempf),
-		multipleCA:                       rescaleDg(MultipleCA37, MultipleCAdH, tempf),
-		multipleCB:                       rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		terminalAU:                       rescaleDg(TerminalAU37, TerminalAUdH, tempf),
-		multiLoopUnpairedNucelotideBonus: rescaleDg(ML_BASE37, ML_BASEdH, tempf),
-		multiLoopClosingPenalty:          rescaleDg(ML_closing37, ML_closingdH, tempf),
+		lxc:                              lxc37 * temperature,
+		tripleC:                          rescaleDg(TripleC37, TripleCdH, temperature),
+		multipleCA:                       rescaleDg(MultipleCA37, MultipleCAdH, temperature),
+		multipleCB:                       rescaleDg(TerminalAU37, TerminalAUdH, temperature),
+		terminalAU:                       rescaleDg(TerminalAU37, TerminalAUdH, temperature),
+		multiLoopUnpairedNucelotideBonus: rescaleDg(ML_BASE37, ML_BASEdH, temperature),
+		multiLoopClosingPenalty:          rescaleDg(ML_closing37, ML_closingdH, temperature),
 	}
 
-	params.ninio[2] = rescaleDg(ninio37, niniodH, tempf)
+	params.ninio[2] = rescaleDg(ninio37, niniodH, temperature)
 
 	for i := 0; i < 31; i++ {
-		params.hairpinLoop[i] = rescaleDg(hairpin37[i], hairpindH[i], tempf)
+		params.hairpinLoop[i] = rescaleDg(hairpin37[i], hairpindH[i], temperature)
 	}
 
 	var i int
-	for i = 0; i <= maxLoop; i++ {
-		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], tempf)
-		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], tempf)
+	for i = 0; i <= maxLenLoop; i++ {
+		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], temperature)
+		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], temperature)
 	}
 
-	for ; i <= maxLoop; i++ {
-		params.bulge[i] = params.bulge[maxLoop] +
-			int(params.lxc*math.Log(float64(i)/float64(maxLoop)))
-		params.interiorLoop[i] = params.interiorLoop[maxLoop] +
-			int(params.lxc*math.Log(float64(i)/float64(maxLoop)))
+	for ; i <= maxLenLoop; i++ {
+		params.bulge[i] = params.bulge[maxLenLoop] +
+			int(params.lxc*math.Log(float64(i)/float64(maxLenLoop)))
+		params.interiorLoop[i] = params.interiorLoop[maxLenLoop] +
+			int(params.lxc*math.Log(float64(i)/float64(maxLenLoop)))
 	}
 
 	// This could be 281 or only the amount of chars
 	for i := 0; (i * 7) < len(Tetraloops); i++ {
-		params.tetraloop[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], tempf)
+		params.tetraloop[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], temperature)
 	}
 
 	for i := 0; (i * 5) < len(Triloops); i++ {
-		params.triloop[i] = rescaleDg(Triloop37[i], TriloopdH[i], tempf)
+		params.triloop[i] = rescaleDg(Triloop37[i], TriloopdH[i], temperature)
 	}
 
 	for i := 0; (i * 9) < len(Hexaloops); i++ {
-		params.hexaloop[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], tempf)
+		params.hexaloop[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], temperature)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
-		params.multiLoopIntern[i] = rescaleDg(ML_intern37, ML_interndH, tempf)
+		params.multiLoopIntern[i] = rescaleDg(ML_intern37, ML_interndH, temperature)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
@@ -1184,7 +1185,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			params.stackingPair[i][j] = rescaleDg(stack37[i][j],
 				stackdH[i][j],
-				tempf)
+				temperature)
 		}
 	}
 
@@ -1195,20 +1196,20 @@ func scaleEnergyParams(temperature float64) *energyParams {
 				var mm int
 				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchI37[i][j][k],
 					mismatchIdH[i][j][k],
-					tempf)
+					temperature)
 				params.mismatchHairpinLoop[i][j][k] = rescaleDg(mismatchH37[i][j][k],
 					mismatchHdH[i][j][k],
-					tempf)
+					temperature)
 				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(mismatch1nI37[i][j][k],
 					mismatch1nIdH[i][j][k],
-					tempf)
+					temperature)
 				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
 					mismatch23IdH[i][j][k],
-					tempf)
+					temperature)
 				// if model_details.dangles > 0 {
 				mm = rescaleDg(mismatchM37[i][j][k],
 					mismatchMdH[i][j][k],
-					tempf)
+					temperature)
 				if mm > 0 {
 					params.mismatchMultiLoop[i][j][k] = 0
 				} else {
@@ -1217,7 +1218,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 				mm = rescaleDg(mismatchExt37[i][j][k],
 					mismatchExtdH[i][j][k],
-					tempf)
+					temperature)
 				if mm > 0 {
 					params.mismatchExteriorLoop[i][j][k] = 0
 				} else {
@@ -1237,7 +1238,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 			var dd int
 			dd = rescaleDg(dangle5_37[i][j],
 				dangle5_dH[i][j],
-				tempf)
+				temperature)
 			if dd > 0 {
 				params.dangle5[i][j] = 0
 			} else {
@@ -1246,7 +1247,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 			dd = rescaleDg(dangle3_37[i][j],
 				dangle3_dH[i][j],
-				tempf)
+				temperature)
 			if dd > 0 {
 				params.dangle3[i][j] = 0
 			} else {
@@ -1262,7 +1263,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 				for l := 0; l <= nbNucleobase; l++ {
 					params.interior1x1Loop[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
 						int11_dH[i][j][k][l],
-						tempf)
+						temperature)
 				}
 			}
 		}
@@ -1277,7 +1278,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 					for m = 0; m <= nbNucleobase; m++ {
 						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
 							int21_dH[i][j][k][l][m],
-							tempf)
+							temperature)
 					}
 				}
 			}
@@ -1294,7 +1295,7 @@ func scaleEnergyParams(temperature float64) *energyParams {
 						for n = 0; n <= nbNucleobase; n++ {
 							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
 								int22_dH[i][j][k][l][m][n],
-								tempf)
+								temperature)
 						}
 					}
 				}
@@ -1309,41 +1310,50 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	return params
 }
 
-func rescaleDg(dG, dH, dT int) int {
-	return (dH - (dH-dG)*dT)
+/**
+Rescale Gibbs free energy according to the equation dG = dH - T * dS
+where dG is the change in Gibbs free energy
+			dH is the change in enthalpy
+			dS is the change in entrophy
+			T is the temperature
+*/
+func rescaleDg(dG, dH int, temperature float64) int {
+	defaultEnergyParamsTemperatureKelvin := energyParamsTemperature + zeroCKelvin
+	temperatureKelvin := temperature + zeroCKelvin
+	var T int = int(temperatureKelvin / defaultEnergyParamsTemperatureKelvin)
+
+	dS := dH - dG
+	return dH - dS*T
 }
 
 /**
-* Logs energy contributions in the same format as ViennaRNA does. This is used
-* to compare output to ViennaRNA in test cases.
-* Note: 1 is added to the indexes of the closing and enclosed base pairs as
-* everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
-* is 0-indexed.
- */
-func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+PrintEnergyContributions pretty prints a list of energy contributions returned
+from `MinimumFreeEnergy`.
+*/
+func PrintEnergyContributions(energyContribution []EnergyContribution, sequence string) {
 	for _, c := range energyContribution {
 		switch c.loopType {
 		case ExteriorLoop:
-			log.Printf("External loop                           : %v\n", c.energy)
+			fmt.Printf("External loop                           : %v\n", c.energy)
 		case InteriorLoop:
 			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
 			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
-			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
-				i+1, j+1,
+			fmt.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
+				i, j,
 				string(sequence[i]), string(sequence[j]),
-				k+1, l+1,
+				k, l,
 				string(sequence[k]), string(sequence[l]),
 				c.energy)
 		case HairpinLoop:
 			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
-			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
-				i+1, j+1,
+			fmt.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
+				i, j,
 				string(sequence[i]), string(sequence[j]),
 				c.energy)
 		case MultiLoop:
 			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
-			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
-				i+1, j+1,
+			fmt.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
+				i, j,
 				string(sequence[i]), string(sequence[j]),
 				c.energy)
 		}
