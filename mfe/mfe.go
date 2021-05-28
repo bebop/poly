@@ -426,7 +426,8 @@ func pairTable(structure string) ([]int, error) {
 	var openBracketIdxStack []int = make([]int, lenStructure)
 	var stackIdx int = 0
 
-	for i := 0; i < len(structure); i++ {
+	// iterate through structure and create pair table
+	for i := 0; i < lenStructure; i++ {
 		if structure[i] == openBracket {
 			// push index of open bracket onto stack
 			openBracketIdxStack[stackIdx] = i
@@ -624,7 +625,8 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 		then on the next iteration, `enclosedFivePrimeIdx` would point to E, and
 		`enclosedThreePrimeIdx` would point to C, but since
 		`pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx` (as C and E don't
-		pair), we know we're in some sort of multi-loop.
+		pair), we know we're in some sort of multi-loop. Note that multi-loops
+		have atleast two enclosed pairs.
 */
 func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
 	energyContributions := make([]EnergyContribution, 0)
@@ -1003,9 +1005,8 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
  * where X-Y marks the closing pair (X is the nucleotide at `closingFivePrimeIdx`)
  * of the multi-loop, and `·`s are an arbitrary number of unparied nucelotides
  * (can also be 0). (A,B), (C,D), and (V,U) are the base pairs enclosed in this
- * multi-loop (vivek: I think there can be an arbitraty number of enclosed
- * base pairs. I'm not sure if there's a limit on the least or greatest numbers
- * of base pairs that can be enclosed).
+ * multi-loop. Note that there is at minimum two base pairs enclosed in a
+ * multi-loop.
  *
  * multiLoopEnergy iterates through the multi-loop and finds each base pair
  * enclosed in the multi-loop. For each enclosed base pair, we add to the total
