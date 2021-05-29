@@ -1,23 +1,25 @@
-package poly
+package mfe
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"testing"
 )
 
-// func ExampleCalculateMfe() {
-// 	mfe, _ := CalculateMfe("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..")
-// 	fmt.Println(mfe)
-// 	// Output:
-// 	// -2.9
-// }
+func ExampleMinimumFreeEnergy() {
+	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", DefaultTemperature)
+	fmt.Println(mfe)
+	// Output:
+	// -2.9
+}
 
-func TestCalculateMFE(t *testing.T) {
-	test("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
+func TestMinimumFreeEnergy(t *testing.T) {
+	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
+		DefaultTemperature,
 		`External loop                           :  -300
 		Interior loop (  3, 13) GC; (  4, 12) AU:  -240
 		Interior loop (  4, 12) AU; (  5, 11) UA:  -110
@@ -27,8 +29,21 @@ func TestCalculateMFE(t *testing.T) {
 		Hairpin  loop ( 18, 27) CG              :   400
 		-2.9`, t)
 
-	test("AAAACGGUCCUUAUCAGGACCAAACA",
+	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
+		"..((((...))))...((........))..",
+		4,
+		`External loop                           :  -423
+		Interior loop (  3, 13) GC; (  4, 12) AU:  -346
+		Interior loop (  4, 12) AU; (  5, 11) UA:  -198
+		Interior loop (  5, 11) UA; (  6, 10) CG:  -346
+		Hairpin  loop (  6, 10) CG              :   496
+		Interior loop ( 17, 28) GC; ( 18, 27) CG:  -462
+		Hairpin  loop ( 18, 27) CG              :   230
+		-10.49`, t)
+
+	compareMFEOutputToViennaRNA("AAAACGGUCCUUAUCAGGACCAAACA",
 		".....((((((....)))))).....",
+		DefaultTemperature,
 		`External loop                           :  -150
 		Interior loop (  6, 21) GC; (  7, 20) GC:  -330
 		Interior loop (  7, 20) GC; (  8, 19) UA:  -220
@@ -39,13 +54,15 @@ func TestCalculateMFE(t *testing.T) {
 		-9.3
 		`, t)
 
-	test("AUUCUUGCUUCAACAGUGUUUGAACGGAAU",
+	compareMFEOutputToViennaRNA("AUUCUUGCUUCAACAGUGUUUGAACGGAAU",
 		"..............................",
+		DefaultTemperature,
 		`External loop                           :     0
 		0`, t)
 
-	test("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
+	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
 		"(((((((...................)))))))",
+		DefaultTemperature,
 		`External loop                           :    50
 		Interior loop (  1, 33) UA; (  2, 32) CG:  -240
 		Interior loop (  2, 32) CG; (  3, 31) GC:  -240
@@ -56,8 +73,22 @@ func TestCalculateMFE(t *testing.T) {
 		Hairpin  loop (  7, 27) AU              :   700
 		-6.7`, t)
 
-	test("GUUUUUAUCUUACACACGCUUGUGUAAGAUAGUUA",
+	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
+		"(((((((...................)))))))",
+		58.0,
+		`External loop                           :    28
+		Interior loop (  1, 33) UA; (  2, 32) CG:  -172
+		Interior loop (  2, 32) CG; (  3, 31) GC:  -184
+		Interior loop (  3, 31) GC; (  4, 30) GU:  -103
+		Interior loop (  4, 30) GU; (  5, 29) CG:  -181
+		Interior loop (  5, 29) CG; (  6, 28) CG:  -261
+		Interior loop (  6, 28) CG; (  7, 27) AU:  -153
+		Hairpin  loop (  7, 27) AU              :   690
+		-3.36`, t)
+
+	compareMFEOutputToViennaRNA("GUUUUUAUCUUACACACGCUUGUGUAAGAUAGUUA",
 		".....(((((((((((....)))))))))))....",
+		DefaultTemperature,
 		`External loop                           :   -50
 		Interior loop (  6, 31) UA; (  7, 30) AU:  -130
 		Interior loop (  7, 30) AU; (  8, 29) UA:  -110
@@ -72,8 +103,9 @@ func TestCalculateMFE(t *testing.T) {
 		Hairpin  loop ( 16, 21) AU              :   540
 		-12.8`, t)
 
-	test("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
+	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
+		DefaultTemperature,
 		`External loop                           :  -170
 		Interior loop (  1, 68) GC; (  2, 67) GC:  -330
 		Interior loop (  2, 67) GC; (  3, 66) GU:  -150
@@ -100,8 +132,39 @@ func TestCalculateMFE(t *testing.T) {
 		Multi    loop (  7, 62) GC              :   140
 		-31`, t)
 
-	test("AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
+	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
+		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
+		22.19,
+		`External loop                           :  -204
+		Interior loop (  1, 68) GC; (  2, 67) GC:  -378
+		Interior loop (  2, 67) GC; (  3, 66) GU:  -182
+		Interior loop (  3, 66) GU; (  4, 65) CG:  -298
+		Interior loop (  4, 65) CG; (  5, 64) UA:  -250
+		Interior loop (  5, 64) UA; (  6, 63) CG:  -287
+		Interior loop (  6, 63) CG; (  7, 62) GC:  -279
+		Interior loop ( 10, 24) GC; ( 11, 23) AU:  -287
+		Interior loop ( 11, 23) AU; ( 12, 22) UA:  -149
+		Interior loop ( 12, 22) UA; ( 13, 21) CG:  -287
+		Hairpin  loop ( 13, 21) CG              :   391
+		Interior loop ( 25, 43) GC; ( 26, 42) CG:  -394
+		Interior loop ( 26, 42) CG; ( 27, 41) UA:  -250
+		Interior loop ( 27, 41) UA; ( 28, 40) UA:  -118
+		Interior loop ( 28, 40) UA; ( 29, 39) CG:  -287
+		Interior loop ( 29, 39) CG; ( 30, 38) CG:  -378
+		Interior loop ( 30, 38) CG; ( 31, 37) UA:  -250
+		Hairpin  loop ( 31, 37) UA              :   538
+		Interior loop ( 45, 61) CG; ( 46, 60) UA:  -250
+		Interior loop ( 46, 60) UA; ( 47, 59) GC:  -249
+		Interior loop ( 47, 59) GC; ( 48, 58) GC:  -378
+		Interior loop ( 48, 58) GC; ( 49, 57) GC:  -378
+		Hairpin  loop ( 49, 57) GC              :   374
+		Multi    loop (  7, 62) GC              :   149
+		-40.81`, t)
+
+	compareMFEOutputToViennaRNA(
+		"AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
 		"........(((((...((((.......(((((((.((....((((...((((((...((((..(((((((..........))).))))...))))...((((.(((.((..........(((((((((.(((((............)).)))..)))))))))......)).)))))))..)))))).)))).....)).)))))))..(((.(((....))).))).......((((..((((.((((......)))).)))).......))))(((((........)))))..(((((.((((..((((((....((((.....)))).....((((((((((.((((....(((((((............(((((((.(((........(((((.(((((((((.(((...........((((((......((((((.....(((((((((((.........)))))))))))...))))))...))))))..))).)))))...))))))))).......))).)))))))...........)))))))...)))).))))))))))...((((((..((((((((........(((((((.....((((((((((((((.....))))))))).)))))....))))))))))))))).))))))...........((((((((.((((.(((........(((((...)))))((((..(((..(((...............)))..)))..)))).(((((((.........)))))))....))).)))).))))))))))))...))..)))))))))......((((.....)))).))))...)))))..",
+		DefaultTemperature,
 		`External loop                           :   -50
 		Interior loop (  9,859) AU; ( 10,858) UG:  -140
 		Interior loop ( 10,858) UG; ( 11,857) AU:  -100
@@ -356,8 +419,10 @@ func TestCalculateMFE(t *testing.T) {
 		Multi    loop ( 20,848) UA              :  -220
 		-197.7`, t)
 
-	test("GAGAUACCUACAGCGUGAGCUAUGAGAAAGCGCCACGCUUCCCGAAGGGAGAAAGGCGGACAGGUAUCCGGUAAGCGGCAGGGUCGGAACAGGAGAGCGCACGAGGGAGCUUCCAGGGGGAAACGCCUGGUAUCUUUAUAGUCCUGUCGGGUUUCGCCACCUCUGACUUGAGCGUCGAUUUUUGUGAUGCUCGUCAGGGGGGCGGAGCCUAUGGAAAAACGCCAGCAACGCGGCCUUUUUACGGUUCCUGGCCUUUUGCUGGCCUUUUGCUCACAUGUUCUUUCCUGCGUUAUCCCCUGAUUCUGUGGAUAACCGUAUUACCGCCUUUGAGUGAGCUGAUACCGCUCGCCGCAGCCGAACGACCGAGCGCAGCGAGUCAGUGAGCGAGGAAGCGGAAGAGCGCCCAAUACGCAAACCGCCUCUCCCCGCGCGUUGGCCGAUUCAUUAAUGCAGCUGGCACGACAGGUUUCCCGACUGGAAAGCGGGCAGUGAGCGCAACGCAAUUAAUGUGAGUUAGCUCACUCAUUAGGCACCCCAGGCUUUACACUUUAUGCUUCCGGCUCGUAUGUUGUGUGGAAUUGUGAGCGGAUAACAAUUUCACACAGGAAACAGCUAUGACCAUGAUUACGCCAAGCUUGCAUGCCUGCAGGUCGACUCUAGAGGAUCCCCGGGUACCGAGCUCGAAUUCACUGGCCGUCGUUUUACAACGUCGUGACUGGGAAAACCCUGGCGUUACCCAACUUAAUCGCCUUGCAGCACAUCCCCCUUUCGCCAGCUGGCGUAAUAGCGAAGAGGCCCGCACCGAUCGCCCUUCCCAACAGUUGCGCAGCCUGAAUGGCGAAUGGCGCCUGAUGCGGUAUUUUCUCCUUACGCAUCUGUGCGGUAUUUCACACCGCAUAUGGUGCACUCUCAGUACAAUCUGCUCUGAUGCCGCAUAGUUAAGCCAGCCCCGACACCCGCCAACACCCGCUGACGCGCCCUGACGGGCUUGUCUGCUCCCGGCAUCCGCUUACAGACAAGCUGUGACCGUCUCCGGGAGCUGCAUGUGUCAGAGGUUUUCACCGUCAUCACCGAAACGCGCGAGACGAAAGGGCCUCGUGAUACGCCUAUUUUUAUAGGUUAAUGUCAUGAUAAUAAUGGUUUCUUAGACGUCAGGUGGCACUUUUCGGGGAAAUGUGCGCGGAACCCCUAUUUGUUUAUUUUUCUAAAUACAUUCAAAUAUGUAUCCGCUCAUGAGACAAUAACCCUGAUAAAUGCUUCAAUAAUAUUGAAAAAGGAAGAGUAUGAGUAUUCAACAUUUCCGUGUCGCCCUUAUUCCCUUUUUUGCGGCAUUUUGCCUUCCUGUUUUUGCUCACCCAGAAACGCUGGUGAAAGUAAAAGAUGCUGAAGAUCAGUUGGGUGCACGAGUGGGUUACAUCGAACUGGAUCUCAACAGCGGUAAGAUCCUUGAGAGUUUUCGCCCCGAAGAACGUUUUCCAAUGAUGAGCACUUUUAAAGUUCUGCUAUGUGGCGCGGUAUUAUCCCGUAUUGACGCCGGGCAAGAGCAACUCGGUCGCCGCAUACACUAUUCUCAGAAUGACUUGGUUGAGUACUCACCAGUCACAGAAAAGCAUCUUACGGAUGGCAUGACAGUAAGAGAAUUAUGCAGUGCUGCCAUAACCAUGAGUGAUAACACUGCGGCCAACUUACUUCUGACAACGAUCGGAGGACCGAAGGAGCUAACCGCUUUUUUGCACAACAUGGGGGAUCAUGUAACUCGCCUUGAUCGUUGGGAACCGGAGCUGAAUGAAGCCAUACCAAACGACGAGCGUGACACCACGAUGCCUGUAGCAAUGGCAACAACGUUGCGCAAACUAUUAACUGGCGAACUACUUACUCUAGCUUCCCGGCAACAAUUAAUAGACUGGAUGGAGGCGGAUAAAGUUGCAGGACCACUUCUGCGCUCGGCCCUUCCGGCUGGCUGGUUUAUUGCUGAUAAAUCUGGAGCCGGUGAGCGUGGGUCUCGCGGUAUCAUUGCAGCACUGGGGCCAGAUGGUAAGCCCUCCCGUAUCGUAGUUAUCUACACGACGGGGAGUCAGGCAACUAUGGAUGAACGAAAUAGACAGAUCGCUGAGAUAGGUGCCUCACUGAUUAAGCAUUGGUAACUGUCAGACCAAGUUUACUCAUAUAUACUUUAGAUUGAUUUAAAACUUCAUUUUUAAUUUAAAAGGAUCUAGGUGAAGAUCCUUUUUGAUAAUCUCAUGACCAAAAUCCCUUAACGUGAGUUUUCGUUCCACUGAGCGUCAGACCCCGUAGAAAAGAUCAAAGGAUCUUCUUGAGAUCCUUUUUUUCUGCGCGUAAUCUGCUGCUUGCAAACAAAAAAACCACCGCUACCAGCGGUGGUUUGUUUGCCGGAUCAAGAGCUACCAACUCUUUUUCCGAAGGUAACUGGCUUCAGCAGAGCGCAGAUACCAAAUACUGUUCUUCUAGUGUAGCCGUAGUUAGGCCACCACUUCAAGAACUCUGUAGCACCGCCUACAUACCUCGCUCUGCUAAUCCUGUUACCAGUGGCUGCUGCCAGUGGCGAUAAGUCGUGUCUUACCGGGUUGGACUCAAGACGAUAGUUACCGGAUAAGGCGCAGCGGUCGGGCUGAACGGGGGGUUCGUGCACACAGCCCAGCUUGGAGCGAACGACCUACACCGAACU",
+	compareMFEOutputToViennaRNA(
+		"GAGAUACCUACAGCGUGAGCUAUGAGAAAGCGCCACGCUUCCCGAAGGGAGAAAGGCGGACAGGUAUCCGGUAAGCGGCAGGGUCGGAACAGGAGAGCGCACGAGGGAGCUUCCAGGGGGAAACGCCUGGUAUCUUUAUAGUCCUGUCGGGUUUCGCCACCUCUGACUUGAGCGUCGAUUUUUGUGAUGCUCGUCAGGGGGGCGGAGCCUAUGGAAAAACGCCAGCAACGCGGCCUUUUUACGGUUCCUGGCCUUUUGCUGGCCUUUUGCUCACAUGUUCUUUCCUGCGUUAUCCCCUGAUUCUGUGGAUAACCGUAUUACCGCCUUUGAGUGAGCUGAUACCGCUCGCCGCAGCCGAACGACCGAGCGCAGCGAGUCAGUGAGCGAGGAAGCGGAAGAGCGCCCAAUACGCAAACCGCCUCUCCCCGCGCGUUGGCCGAUUCAUUAAUGCAGCUGGCACGACAGGUUUCCCGACUGGAAAGCGGGCAGUGAGCGCAACGCAAUUAAUGUGAGUUAGCUCACUCAUUAGGCACCCCAGGCUUUACACUUUAUGCUUCCGGCUCGUAUGUUGUGUGGAAUUGUGAGCGGAUAACAAUUUCACACAGGAAACAGCUAUGACCAUGAUUACGCCAAGCUUGCAUGCCUGCAGGUCGACUCUAGAGGAUCCCCGGGUACCGAGCUCGAAUUCACUGGCCGUCGUUUUACAACGUCGUGACUGGGAAAACCCUGGCGUUACCCAACUUAAUCGCCUUGCAGCACAUCCCCCUUUCGCCAGCUGGCGUAAUAGCGAAGAGGCCCGCACCGAUCGCCCUUCCCAACAGUUGCGCAGCCUGAAUGGCGAAUGGCGCCUGAUGCGGUAUUUUCUCCUUACGCAUCUGUGCGGUAUUUCACACCGCAUAUGGUGCACUCUCAGUACAAUCUGCUCUGAUGCCGCAUAGUUAAGCCAGCCCCGACACCCGCCAACACCCGCUGACGCGCCCUGACGGGCUUGUCUGCUCCCGGCAUCCGCUUACAGACAAGCUGUGACCGUCUCCGGGAGCUGCAUGUGUCAGAGGUUUUCACCGUCAUCACCGAAACGCGCGAGACGAAAGGGCCUCGUGAUACGCCUAUUUUUAUAGGUUAAUGUCAUGAUAAUAAUGGUUUCUUAGACGUCAGGUGGCACUUUUCGGGGAAAUGUGCGCGGAACCCCUAUUUGUUUAUUUUUCUAAAUACAUUCAAAUAUGUAUCCGCUCAUGAGACAAUAACCCUGAUAAAUGCUUCAAUAAUAUUGAAAAAGGAAGAGUAUGAGUAUUCAACAUUUCCGUGUCGCCCUUAUUCCCUUUUUUGCGGCAUUUUGCCUUCCUGUUUUUGCUCACCCAGAAACGCUGGUGAAAGUAAAAGAUGCUGAAGAUCAGUUGGGUGCACGAGUGGGUUACAUCGAACUGGAUCUCAACAGCGGUAAGAUCCUUGAGAGUUUUCGCCCCGAAGAACGUUUUCCAAUGAUGAGCACUUUUAAAGUUCUGCUAUGUGGCGCGGUAUUAUCCCGUAUUGACGCCGGGCAAGAGCAACUCGGUCGCCGCAUACACUAUUCUCAGAAUGACUUGGUUGAGUACUCACCAGUCACAGAAAAGCAUCUUACGGAUGGCAUGACAGUAAGAGAAUUAUGCAGUGCUGCCAUAACCAUGAGUGAUAACACUGCGGCCAACUUACUUCUGACAACGAUCGGAGGACCGAAGGAGCUAACCGCUUUUUUGCACAACAUGGGGGAUCAUGUAACUCGCCUUGAUCGUUGGGAACCGGAGCUGAAUGAAGCCAUACCAAACGACGAGCGUGACACCACGAUGCCUGUAGCAAUGGCAACAACGUUGCGCAAACUAUUAACUGGCGAACUACUUACUCUAGCUUCCCGGCAACAAUUAAUAGACUGGAUGGAGGCGGAUAAAGUUGCAGGACCACUUCUGCGCUCGGCCCUUCCGGCUGGCUGGUUUAUUGCUGAUAAAUCUGGAGCCGGUGAGCGUGGGUCUCGCGGUAUCAUUGCAGCACUGGGGCCAGAUGGUAAGCCCUCCCGUAUCGUAGUUAUCUACACGACGGGGAGUCAGGCAACUAUGGAUGAACGAAAUAGACAGAUCGCUGAGAUAGGUGCCUCACUGAUUAAGCAUUGGUAACUGUCAGACCAAGUUUACUCAUAUAUACUUUAGAUUGAUUUAAAACUUCAUUUUUAAUUUAAAAGGAUCUAGGUGAAGAUCCUUUUUGAUAAUCUCAUGACCAAAAUCCCUUAACGUGAGUUUUCGUUCCACUGAGCGUCAGACCCCGUAGAAAAGAUCAAAGGAUCUUCUUGAGAUCCUUUUUUUCUGCGCGUAAUCUGCUGCUUGCAAACAAAAAAACCACCGCUACCAGCGGUGGUUUGUUUGCCGGAUCAAGAGCUACCAACUCUUUUUCCGAAGGUAACUGGCUUCAGCAGAGCGCAGAUACCAAAUACUGUUCUUCUAGUGUAGCCGUAGUUAGGCCACCACUUCAAGAACUCUGUAGCACCGCCUACAUACCUCGCUCUGCUAAUCCUGUUACCAGUGGCUGCUGCCAGUGGCGAUAAGUCGUGUCUUACCGGGUUGGACUCAAGACGAUAGUUACCGGAUAAGGCGCAGCGGUCGGGCUGAACGGGGGGUUCGUGCACACAGCCCAGCUUGGAGCGAACGACCUACACCGAACU",
 		"(((((......((((((.(((.......)))..))))))((((...)))).((((((((...((((..((((.....((((((((((....(((.((((((.((((((((..(((((........)))))...........(((....((((((((((.((((((((..((((((((.......))))))))))))))))))))))))))..)))((((.((((((((...((((..............))))..)))))))).))))........)))))))).)))))).))).)))))))))).....)))))))).))))))))((((((((((((...((((((.((.((((......)).)))).))))))......(((.(((.((((....(((.......)))...))))...))).)))((((((..((.((((((......(((.((....(((.........)))....)).)))))))))))))))))...........))))))))))))..((((((...(((((((......(((((.((..((((.((...((((((((((((((.........))))))))))))))...))))))..)).))))).......)))))))..)))))).(((((((.(((((((......(((((.....))))).......(((((((.((.(((..((.(((((...(((....))).(((((((.......))).))))..(((((((.....((.(((((((((((.((((((...((((.(((.((...))...)))))))......)))))))))).....))))))).))(((.....)))((((.(((((.(((((((((((((((((.......)))))))).))))).....(((......)))....(((((((((.((............((((((..((........)).((((.((((....)))).)))).((((((((....((.((((((.....)))))).))...)))))))).((((.((((((.((((......(((.((.((((((.((((..((((.(((((((((((((((.((((((....))))))...)))))))).......)).)))))...))))..)).))...))))))......(((.(((((((...((((((..(((((....)))))....)))))).)).))))).))))))))...)))))))))).))))((((((...))))))...(((((.((.(((....))))).))))))))))).............)).))))))))).((((.(((.....(((((((((.((.....)))))))..))))((((((((..(((..(((((((((..((((((((((..((((..(((........)))))))..)))))((((((((.((((....(((((...)))))......)))).)))))))).((((((((...(((((((((((......)))))).)))))))).))))).)))))..)))).))...)))..))).....(((((.(((.((....))))))))))......))))))))..))).)))).....)))))))))..)))).)))))))......)))))))..))).)).))))))).(((((((((..(((((((((.(((..(((((((((.....)))))))))....((((((....))))))......))))))))))))((..((((.(((((((((.(((..............(((.(((.(((((.....(((.((((((.......)))))))))..(((((((((((.((((((.......))).)))))))......))))))).(((((.((.(((.((....((.((((((....)))))))))).))))))))))((((((((((((((...))))))))...))))))....)))))))).)))))).))))).)))).))))..))))).))))))...((((((...((((....))))...))))))(((.(((((.((((.......(((..........))).....)))).))))).)))((.(((((.(((((.........)))))))))).)).......))))))))))))))...............(((.((((((((((......)))))))))).))).)))))...................(((.((((((((((((..(((((.((((...(((((((((((....((((((((...))))))))))))))))))).....)))).)))))((((((((....(((((((((...)))))))))))))))))((((..(((((.......)))))..))))..((((((.((.((.(((((((((.((............((((((..((((..(((.......)))...))))..))))))..(((((......)))))...))))))))))))).)).))))))...(((((((((....(((.....)))..((((((((((((((.........)))).....)))).)))))))))))))))((((((.((((.....)))).....))))))....))))))))).))).)))........",
+		DefaultTemperature,
 		`External loop                           :  -320
 		Interior loop (  1,2240) GC; (  2,2239) AU:  -240
 		Interior loop (  2,2239) AU; (  3,2238) GC:  -210
@@ -1241,9 +1306,9 @@ func TestCalculateMFE(t *testing.T) {
 		-936.5`, t)
 }
 
-func test(sequence, structure string, expected_output string, t *testing.T) {
+func compareMFEOutputToViennaRNA(sequence, structure string, temperature float64, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, energyContributions, _ := CalculateMFE(sequence, structure, DefaultTemperature)
+		mfe, energyContributions, _ := MinimumFreeEnergy(sequence, structure, temperature)
 		logEnergyContributions(energyContributions, sequence)
 		log.Printf("%v", mfe)
 	})
@@ -1267,4 +1332,41 @@ func captureOutput(f func()) string {
 // removes all white space in a string
 func stripWhiteSpace(s string) string {
 	return strings.Join(strings.Fields(s), "")
+}
+
+/**
+* Logs energy contributions in the same format as ViennaRNA does. This is used
+* to compare output to ViennaRNA in test cases.
+* Note: 1 is added to the indexes of the closing and enclosed base pairs as
+* everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
+* is 0-indexed.
+ */
+func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+	for _, c := range energyContribution {
+		switch c.loopType {
+		case ExteriorLoop:
+			log.Printf("External loop                           : %v\n", c.energy)
+		case InteriorLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
+			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				k+1, l+1,
+				string(sequence[k]), string(sequence[l]),
+				c.energy)
+		case HairpinLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				c.energy)
+		case MultiLoop:
+			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				c.energy)
+		}
+	}
 }
