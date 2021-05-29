@@ -10,9 +10,9 @@ import (
 	"github.com/TimothyStiles/poly/rbs_calculator/csv_helper"
 )
 
-//go:embed lookup_data/*
-var embededRBSLookupDataDirectory embed.FS
-var rbsLookupDataDirectory = "lookup_data"
+//go:embed lookup_table_data/*
+var embededLookupTableDataDirectory embed.FS
+var rbsLookupDataDirectory = "lookup_table_data"
 
 func parseCSVIntoLookupTable(file string, lookupTable *map[string]map[string]float64) error {
 	f, err := os.Open(file)
@@ -50,7 +50,7 @@ func parseCSVIntoLookupTable(file string, lookupTable *map[string]map[string]flo
 
 func LookupTable() (map[string]map[string]float64, error) {
 	lookupTable := make(map[string]map[string]float64)
-	csvFiles := csv_helper.CSVFilesFromEmbededFS(embededRBSLookupDataDirectory, rbsLookupDataDirectory)
+	csvFiles := csv_helper.CSVFilesFromEmbededFS(embededLookupTableDataDirectory, rbsLookupDataDirectory)
 
 	for _, csv := range csvFiles {
 		err := parseCSVIntoLookupTable(csv, &lookupTable)
