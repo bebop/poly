@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/TimothyStiles/poly"
+	"github.com/TimothyStiles/poly/mfe"
 )
 
 type BindingSite struct {
@@ -39,7 +40,7 @@ func RibosomeBindingSite(mRNA string) (*BindingSite, error) {
 	// The third variable they use on
 
 	mRNA_structure, _ := poly.LinearFold(mRNA)
-	dG_mRNA, _, _ := poly.CalculateMFE(mRNA, mRNA_structure, poly.DefaultTemperature)
+	dG_mRNA, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNA_structure, mfe.DefaultTemperature)
 
 	total_mfe := least_dG_rRNA_mRNA + dG_mRNA
 	return &BindingSite{
