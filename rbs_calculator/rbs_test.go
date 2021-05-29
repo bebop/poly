@@ -9,6 +9,10 @@ func ExampleRibosomeBindingSite() {
 	// 	return
 	// }
 
-	fmt.Printf("%v\n", bindingSite)
-	// Output: -11.9
+	bindingSiteSequence := bindingSite.mrna[bindingSite.fivePrimeIdx:bindingSite.threePrimeIdx]
+	fmt.Printf("binding site sequence: %v (%v,%v)\n", bindingSiteSequence, bindingSite.fivePrimeIdx, bindingSite.threePrimeIdx)
+	fmt.Printf("mfe: %v\n", bindingSite.minimumFreeEnergy)
+	// Output:
+	// binding site sequence: GGUAAAAAAUG (27,38)
+	// mfe: -18.2
 }

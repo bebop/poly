@@ -2,6 +2,8 @@ package rbs_calculator
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/mfe"
@@ -39,7 +41,11 @@ func RibosomeBindingSite(mRNA string) (*BindingSite, error) {
 	// Special case is cannot RBS that drags into the CDS
 	// The third variable they use on
 
-	mRNA_structure, _ := poly.LinearFold(mRNA)
+	mRNA = strings.ReplaceAll(mRNA, "T", "U")
+	mRNA_structure, _ := poly.LinearFold(mRNA, poly.DefaultBeamSize)
+	log.Printf("sequence: %v\n", mRNA)
+	log.Printf("structure: %v\n", mRNA_structure)
+
 	dG_mRNA, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNA_structure, mfe.DefaultTemperature)
 
 	total_mfe := least_dG_rRNA_mRNA + dG_mRNA
