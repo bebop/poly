@@ -771,10 +771,9 @@ var (
 	}
 )
 
-// zeroCKelvin is 0 deg Celsius in Kelvin
-var zeroCKelvin float64 = 273.15
-
 var (
+	// zeroCKelvin is 0 deg Celsius in Kelvin
+	zeroCKelvin  float64 = 273.15
 	lxc37        float64 = 107.856
 	ML_intern37  int     = -90
 	ML_interndH  int     = -220
@@ -828,26 +827,27 @@ var (
 		{INF, -560, -830, -880, -320, -320, -680, -320},
 	}
 
-	Tetraloops  = "CAACGG CCAAGG CCACGG CCCAGG CCGAGG CCGCGG CCUAGG CCUCGG CUAAGG CUACGG CUCAGG CUCCGG CUGCGG CUUAGG CUUCGG CUUUGG "
-	Tetraloop37 = [40]int{550, 330, 370, 340, 350, 360, 370, 250, 360, 280, 370, 270, 280, 350, 370, 370}
-	TetraloopdH = [40]int{690, -1030, -330, -890, -660, -750, -350, -1390, -760, -1070, -660, -1290, -1070, -620, -1530, -680}
+	Tetraloops = map[string]bool{"CAACGG": true, "CCAAGG": true, "CCACGG": true, "CCCAGG": true,
+															 "CCGAGG": true, "CCGCGG": true, "CCUAGG": true, "CCUCGG": true,
+															 "CUAAGG": true, "CUACGG": true, "CUCAGG": true, "CUCCGG": true,
+															 "CUGCGG": true, "CUUAGG": true, "CUUCGG": true, "CUUUGG": true}
+	Tetraloop37 = map[string]int{"CAACGG": 550, "CCAAGG": 330, "CCACGG": 370, "CCCAGG": 340,
+															 "CCGAGG": 350, "CCGCGG": 360, "CCUAGG": 370, "CCUCGG": 250,
+															 "CUAAGG": 360, "CUACGG": 280, "CUCAGG": 370, "CUCCGG": 270,
+															 "CUGCGG": 280, "CUUAGG": 350, "CUUCGG": 370, "CUUUGG": 370}
+	TetraloopdH = map[string]int{"CAACGG":   690, "CCAAGG": -1030, "CCACGG":  -330, "CCCAGG":  -890,
+															 "CCGAGG":  -660, "CCGCGG":  -750, "CCUAGG":  -350, "CCUCGG": -1390,
+															 "CUAAGG":  -760, "CUACGG": -1070, "CUCAGG":  -660, "CUCCGG": -1290,
+															 "CUGCGG": -1070, "CUUAGG":  -620, "CUUCGG": -1530, "CUUUGG":  -680}
 
-	// Triloops = [241]rune{
-	// 	"CAACG ",
-	// 	"GUUAC ",
-	// }
-	Triloops  = "CAACG GUUAC "
-	Triloop37 = [40]int{680, 690}
-	TriloopdH = [40]int{2370, 1080}
+	Triloops  = map[string]bool{"CAACG": true, "GUUAC": true}
+	Triloop37 = map[string]int{"CAACG": 680, "GUUAC": 690}
+	TriloopdH = map[string]int{"CAACG": 2370, "GUUAC": 1080}
 
-	// Hexaloops = [361]rune{"ACAGUACU ",
-	// 	"ACAGUGAU ",
-	// 	"ACAGUGCU ",
-	// 	"ACAGUGUU ",
-	// }
-	Hexaloops  = "ACAGUACU ACAGUGAU ACAGUGCU ACAGUGUU "
-	Hexaloop37 = [40]int{280, 360, 290, 180}
-	HexaloopdH = [40]int{-1680, -1140, -1280, -1540}
+	Hexaloops  = map[string]bool{"ACAGUACU": true, "ACAGUGAU": true, "ACAGUGCU": true, "ACAGUGUU": true}
+	Hexaloop37  = map[string]int{"ACAGUACU": 280, "ACAGUGAU": 360, "ACAGUGCU": 290, "ACAGUGUU": 180}
+	HexaloopdH  = map[string]int{"ACAGUACU": -1680, "ACAGUGAU": -1140, "ACAGUGCU": -1280, "ACAGUGUU": -1540}
+
 )
 
 var int11_37 = [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int{

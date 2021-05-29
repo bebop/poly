@@ -384,12 +384,9 @@ type energyParams struct {
 	assigns a bonus energy of -2 kcal/mol to tetraloops containing
 	the sequence GAAA.
 	*/
-	tetraloops                      string
-	tetraloop                       [200]int
-	triloops                        string
-	triloop                         [40]int
-	hexaloops                       string
-	hexaloop                        [40]int
+	tetraloops                      map[string]int
+	triloops                        map[string]int
+	hexaloops                       map[string]int
 	tripleC, multipleCA, multipleCB int
 }
 
@@ -947,21 +944,21 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 
 	if size == 4 {
 		tetraloop := sequence[:6]
-		idx := strings.Index(string(energyParams.tetraloops), tetraloop)
-		if idx != -1 {
-			return energyParams.tetraloop[idx/7]
+		tetraloopEnergy, present := energyParams.tetraloops[tetraloop]
+		if present {
+			return tetraloopEnergy
 		}
 	} else if size == 6 {
 		hexaloop := sequence[:8]
-		idx := strings.Index(string(energyParams.hexaloops), hexaloop)
-		if idx != -1 {
-			return energyParams.hexaloop[idx/9]
+		hexaloopEnergy, present := energyParams.hexaloops[hexaloop]
+		if present {
+			return hexaloopEnergy
 		}
 	} else if size == 3 {
 		triloop := sequence[:5]
-		idx := strings.Index(string(energyParams.triloops), triloop)
-		if idx != -1 {
-			return energyParams.triloop[idx/6]
+		triloopEnergy, present := energyParams.triloops[triloop]
+		if present {
+			return triloopEnergy
 		}
 
 		if basePairType > 2 {
@@ -973,7 +970,6 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 		return energy
 	}
 
-	// size is 5 or greater than 6
 	energy += energyParams.mismatchHairpinLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
 
 	return energy
@@ -1126,7 +1122,7 @@ func min(a, b int) int {
 	return b
 }
 
-// scales energy paramaters according to the specificed temperatue.
+// scales energy paramaters according to the specificed temperatue
 func scaleEnergyParams(temperature float64) *energyParams {
 
 	// set the non-matix energy parameters
@@ -1148,17 +1144,19 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], temperature)
 	}
 
-	// This could be 281 or only the amount of chars
-	for i := 0; (i * 7) < len(Tetraloops); i++ {
-		params.tetraloop[i] = rescaleDg(Tetraloop37[i], TetraloopdH[i], temperature)
+	params.tetraloops = make(map[string]int)
+	for k := range Tetraloops {
+		params.tetraloops[k] = rescaleDg(Tetraloop37[k], TetraloopdH[k], temperature)
 	}
 
-	for i := 0; (i * 5) < len(Triloops); i++ {
-		params.triloop[i] = rescaleDg(Triloop37[i], TriloopdH[i], temperature)
+	params.triloops = make(map[string]int)
+	for k := range Triloops {
+		params.triloops[k] = rescaleDg(Triloop37[k], TriloopdH[k], temperature)
 	}
 
-	for i := 0; (i * 9) < len(Hexaloops); i++ {
-		params.hexaloop[i] = rescaleDg(Hexaloop37[i], HexaloopdH[i], temperature)
+	params.hexaloops = make(map[string]int)
+	for k := range Hexaloops {
+		params.hexaloops[k] = rescaleDg(Hexaloop37[k], HexaloopdH[k], temperature)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
@@ -1281,10 +1279,6 @@ func scaleEnergyParams(temperature float64) *energyParams {
 			}
 		}
 	}
-
-	params.tetraloops = Tetraloops
-	params.triloops = Triloops
-	params.hexaloops = Hexaloops
 
 	return params
 }
