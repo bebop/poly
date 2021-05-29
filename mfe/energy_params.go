@@ -805,8 +805,8 @@ var (
 	multiLoopBase37C int = 0
 	// ML_BASEdH
 	multiLoopBaseEnthalpy int = 0
-	// MAX_NINIO
-	MAX_NINIO int = 300
+	// maxNinio
+	maxNinio int = 300
 	// ninio37
 	ninio37C int = 60
 	// niniodH
