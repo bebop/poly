@@ -5,16 +5,16 @@ import (
 )
 
 func ExampleRibosomeBindingSite() {
-	bindingSite, err := RibosomeBindingSite(defaultRRNA, "TATCGGGGCTTCCGTCGGCCATAAGGAGGTAAAAAATGGCGAGCTCTGAAGACGTTATCAAAGAGTTCAT")
+	bindingSite, err := RibosomeBindingSite(EColiRNA, "TATCGGGGCTTCCGTCGGCCATAAGGAGGTAAAAAATGGCGAGCTCTGAAGACGTTATCAAAGAGTTCAT")
 	if err != nil {
 		fmt.Printf("Failed to initialize lookup table: %s", err)
 		return
 	}
 
-	bindingSiteSequence := bindingSite.mrna[bindingSite.fivePrimeIdx:bindingSite.threePrimeIdx]
-	fmt.Printf("binding site sequence: %v (%v,%v)\n", bindingSiteSequence, bindingSite.fivePrimeIdx, bindingSite.threePrimeIdx)
-	fmt.Printf("mfe: %v\n", bindingSite.minimumFreeEnergy)
-	fmt.Printf("translationInitiationRate: %v\n", bindingSite.translationInitiationRate)
+	bindingSiteSequence := bindingSite.MRNA[bindingSite.FivePrimeIdx:bindingSite.ThreePrimeIdx]
+	fmt.Printf("binding site sequence: %v (%v,%v)\n", bindingSiteSequence, bindingSite.FivePrimeIdx, bindingSite.ThreePrimeIdx)
+	fmt.Printf("mfe: %v\n", bindingSite.MinimumFreeEnergy)
+	fmt.Printf("translationInitiationRate: %v\n", bindingSite.TranslationInitiationRate)
 	// Output:
 	// binding site sequence: GGUAAAAAAUG (27,38)
 	// mfe: -18.2

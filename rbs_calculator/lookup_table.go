@@ -1,13 +1,18 @@
 package rbs_calculator
 
 import (
+	"embed"
 	"encoding/csv"
 	"io"
 	"os"
 	"strconv"
+
+	"github.com/TimothyStiles/poly/rbs_calculator/csv_helper"
 )
 
-var rbsDataDirectory string = "./data"
+//go:embed lookup_data/*
+var embededRBSLookupDataDirectory embed.FS
+var rbsLookupDataDirectory = "lookup_data"
 
 func parseCSVIntoLookupTable(file string, lookupTable *map[string]map[string]float64) error {
 	f, err := os.Open(file)
@@ -45,7 +50,8 @@ func parseCSVIntoLookupTable(file string, lookupTable *map[string]map[string]flo
 
 func LookupTable() (map[string]map[string]float64, error) {
 	lookupTable := make(map[string]map[string]float64)
-	csvFiles := csvFiles(rbsDataDirectory)
+	csvFiles := csv_helper.CSVFilesFromEmbededFS(embededRBSLookupDataDirectory, rbsLookupDataDirectory)
+
 	for _, csv := range csvFiles {
 		err := parseCSVIntoLookupTable(csv, &lookupTable)
 		if err != nil {

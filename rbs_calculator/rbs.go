@@ -2,7 +2,6 @@ package rbs_calculator
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strings"
 
@@ -11,12 +10,12 @@ import (
 )
 
 type BindingSite struct {
-	translationInitiationRate, minimumFreeEnergy float64
-	fivePrimeIdx, threePrimeIdx                  int
-	rrna, mrna                                   string
+	TranslationInitiationRate, MinimumFreeEnergy float64
+	FivePrimeIdx, ThreePrimeIdx                  int
+	RRNA, MRNA                                   string
 }
 
-var defaultRRNA = "ACCTCCTTA"
+var EColiRNA = "ACCTCCTTA"
 
 // This file goes agains Go's style conventions and uses the snake case
 // convention for variable names (functions, types, and struct fields still
@@ -44,20 +43,20 @@ func RibosomeBindingSite(rRNA, mRNA string) (*BindingSite, error) {
 
 	mRNA = strings.ReplaceAll(mRNA, "T", "U")
 	mRNA_structure, _ := poly.LinearFold(mRNA, poly.DefaultBeamSize)
-	log.Printf("sequence: %v\n", mRNA)
-	log.Printf("structure: %v\n", mRNA_structure)
+	// log.Printf("sequence: %v\n", mRNA)
+	// log.Printf("structure: %v\n", mRNA_structure)
 
 	dG_mRNA, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNA_structure, mfe.DefaultTemperature)
 	translationInitiationRate := translationInitiationRate(dG_mRNA)
 
 	total_mfe := least_dG_rRNA_mRNA + dG_mRNA
 	return &BindingSite{
-		translationInitiationRate: translationInitiationRate,
-		minimumFreeEnergy:         total_mfe,
-		threePrimeIdx:             binding_site_three_prime,
-		fivePrimeIdx:              binding_site_three_prime - 11,
-		rrna:                      rRNA,
-		mrna:                      mRNA,
+		TranslationInitiationRate: translationInitiationRate,
+		MinimumFreeEnergy:         total_mfe,
+		ThreePrimeIdx:             binding_site_three_prime,
+		FivePrimeIdx:              binding_site_three_prime - 11,
+		RRNA:                      rRNA,
+		MRNA:                      mRNA,
 	}, nil
 }
 
