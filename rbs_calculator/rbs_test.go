@@ -3,7 +3,7 @@ package rbs_calculator
 import "fmt"
 
 func ExampleRibosomeBindingSite() {
-	bindingSite, _ := RibosomeBindingSite("TATCGGGGCTTCCGTCGGCCATAAGGAGGTAAAAAATGGCGAGCTCTGAAGACGTTATCAAAGAGTTCAT")
+	bindingSite, _ := RibosomeBindingSite("TATCGGGGCTTCCGTCGGCCATAAGGAGGTAAAAAATGGCGAGCTCTGAAGACGTTATCAAAGAGTTCAT", defaultRRNA)
 	// if err != nil {
 	// 	fmt.Printf("Failed to initialize lookup table: %s", err)
 	// 	return

@@ -16,16 +16,16 @@ type BindingSite struct {
 	rrna, mrna                                   string
 }
 
+var defaultRRNA = "ACCTCCTTA"
+
 // This file goes agains Go's style conventions and uses the snake case
 // convention for variable names (functions, types, and struct fields still
 // follow Go's style conventions).
-func RibosomeBindingSite(mRNA string) (*BindingSite, error) {
+func RibosomeBindingSite(rRNA, mRNA string) (*BindingSite, error) {
 	len_mRNA := len(mRNA)
 	if len_mRNA < 11 {
 		return nil, fmt.Errorf("length of mRNA (%v) must be greater than 11", len_mRNA)
 	}
-
-	rRNA := "ACCTCCTTA"
 
 	var binding_site_three_prime int
 	var least_dG_rRNA_mRNA float64 = 1000000.0
@@ -62,7 +62,7 @@ func RibosomeBindingSite(mRNA string) (*BindingSite, error) {
 }
 
 func translationInitiationRate(freeEnergy float64) float64 {
-	beta := 0.45
-	freeEnergyInEquibiliriumConditions := -beta * freeEnergy
-	return math.Exp(freeEnergyInEquibiliriumConditions)
+	probabilisticFreeEnergyAtEquibiliriumConditionsConverstionFactor := 0.45
+	freeEnergyAtEquibiliriumConditions := -probabilisticFreeEnergyAtEquibiliriumConditionsConverstionFactor * freeEnergy
+	return math.Exp(freeEnergyAtEquibiliriumConditions)
 }
