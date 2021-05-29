@@ -10,10 +10,10 @@ import (
 )
 
 func ExampleMinimumFreeEnergy() {
-	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", 4)
+	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", DefaultTemperature)
 	fmt.Println(mfe)
 	// Output:
-	// -10.49
+	// -2.9
 }
 
 func TestMinimumFreeEnergy(t *testing.T) {
