@@ -1,4 +1,4 @@
-package poly
+package linearfold
 
 import (
 	"container/heap"
@@ -140,9 +140,7 @@ const SYMMETRIC_MAX_LEN int = 15
 const ASYMMETRY_MAX_LEN int = 28
 
 // recommended beam size based on paper
-var beamSize int
-
-const DefaultBeamSize int = 100
+var beam_size int = 100
 
 // (((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....
 
@@ -338,9 +336,7 @@ func (s *State) Set3(score float64, manner int, split int) {
 
 // Assumes valid sequence input
 // Output: Linearfold score, structure
-func LinearFold(sequence string, beamSize int) (string, float64) {
-	beamSize = beamSize
-
+func LinearFold(sequence string) (string, float64) {
 	initialize()
 	initialize_cachesingle()
 
@@ -485,7 +481,7 @@ func Parse(sequence string) (string, float64) {
 		var beamstepC *State = bestC[j]
 
 		// beam of H
-		if beamSize > 0 && len(bestH[j]) > beamSize {
+		if beam_size > 0 && len(bestH[j]) > beam_size {
 			BeamPrune(&bestH[j])
 		}
 
@@ -578,7 +574,7 @@ func Parse(sequence string) (string, float64) {
 
 		// beam of Multi
 		{
-			if beamSize > 0 && len(*beamstepMulti) > beamSize {
+			if beam_size > 0 && len(*beamstepMulti) > beam_size {
 				BeamPrune(beamstepMulti)
 			}
 
@@ -624,7 +620,7 @@ func Parse(sequence string) (string, float64) {
 
 		// beam of P
 		{
-			if beamSize > 0 && len(*beamstepP) > beamSize {
+			if beam_size > 0 && len(*beamstepP) > beam_size {
 				BeamPrune(beamstepP)
 			}
 
@@ -633,7 +629,7 @@ func Parse(sequence string) (string, float64) {
 			//   2. M = P
 			//   3. M2 = M + P
 			//   4. C = C + P
-			var use_cube_pruning bool = beamSize > MIN_CUBE_PRUNING_SIZE && len(*beamstepP) > MIN_CUBE_PRUNING_SIZE
+			var use_cube_pruning bool = beam_size > MIN_CUBE_PRUNING_SIZE && len(*beamstepP) > MIN_CUBE_PRUNING_SIZE
 
 			for i, state := range *beamstepP {
 				nuci := nucs[i]
@@ -794,7 +790,7 @@ func Parse(sequence string) (string, float64) {
 				// exit when filled >= beam and current score < prev score
 				var prev_score float64 = VALUE_MIN
 				var current_score float64 = VALUE_MIN
-				for (filled < beamSize || current_score == prev_score) && len(*h) != 0 {
+				for (filled < beam_size || current_score == prev_score) && len(*h) != 0 {
 
 					// HEAP STUFF
 					top := (*h)[0]
@@ -858,7 +854,7 @@ func Parse(sequence string) (string, float64) {
 
 		// beam of M2
 		{
-			if beamSize > 0 && len(*beamstepM2) > beamSize {
+			if beam_size > 0 && len(*beamstepM2) > beam_size {
 				BeamPrune(beamstepM2)
 			}
 
@@ -901,7 +897,7 @@ func Parse(sequence string) (string, float64) {
 		// beam of M
 		{
 			var threshold float64 = VALUE_MIN
-			if beamSize > 0 && len(*beamstepM) > beamSize {
+			if beam_size > 0 && len(*beamstepM) > beam_size {
 				threshold = BeamPrune(beamstepM)
 			}
 
@@ -960,11 +956,11 @@ func BeamPrune(beamstep *map[int]*State) float64 {
 		scores = append(scores, Pair{newscore, i})
 	}
 
-	if len(scores) <= beamSize {
+	if len(scores) <= beam_size {
 		return VALUE_MIN
 	}
 
-	var threshold float64 = quickselect(0, len(scores)-1, len(scores)-beamSize)
+	var threshold float64 = quickselect(0, len(scores)-1, len(scores)-beam_size)
 
 	for _, pair := range scores {
 		if pair.first.(float64) < threshold {
