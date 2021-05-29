@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func ExampleLookup() {
+func ExampleLookupTable() {
 	dG_rRNA_mRNA, err := LookupTable()
 	if err != nil {
 		fmt.Printf("Failed to initialize lookup table: %s", err)
