@@ -3,6 +3,7 @@ package rbs_calculator
 import (
 	"fmt"
 	"log"
+	"math"
 	"strings"
 
 	"github.com/TimothyStiles/poly"
@@ -47,13 +48,21 @@ func RibosomeBindingSite(mRNA string) (*BindingSite, error) {
 	log.Printf("structure: %v\n", mRNA_structure)
 
 	dG_mRNA, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNA_structure, mfe.DefaultTemperature)
+	translationInitiationRate := translationInitiationRate(dG_mRNA)
 
 	total_mfe := least_dG_rRNA_mRNA + dG_mRNA
 	return &BindingSite{
-		minimumFreeEnergy: total_mfe,
-		threePrimeIdx:     binding_site_three_prime,
-		fivePrimeIdx:      binding_site_three_prime - 11,
-		rrna:              rRNA,
-		mrna:              mRNA,
+		translationInitiationRate: translationInitiationRate,
+		minimumFreeEnergy:         total_mfe,
+		threePrimeIdx:             binding_site_three_prime,
+		fivePrimeIdx:              binding_site_three_prime - 11,
+		rrna:                      rRNA,
+		mrna:                      mRNA,
 	}, nil
+}
+
+func translationInitiationRate(freeEnergy float64) float64 {
+	beta := 0.45
+	freeEnergyInEquibiliriumConditions := -beta * freeEnergy
+	return math.Exp(freeEnergyInEquibiliriumConditions)
 }
