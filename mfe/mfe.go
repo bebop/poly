@@ -69,8 +69,8 @@ const (
 	// DefaultTemperature is the temperature in Celcius for free energy evaluation
 	DefaultTemperature float64 = 37.0
 	// The temperature at which the energy parameters in `energy_params.go` have
-	// been calculate at
-	energyParamsTemperature float64 = 37.0
+	// been measured at
+	energyParamsMeasurementTemperature float64 = 37.0
 )
 
 // foldCompound holds all information needed to compute the free energy of a
@@ -1294,27 +1294,31 @@ where dG is the change in Gibbs free energy
 func rescaleDg(dG, dH int, temperature float64) int {
 	// if temperate == energyParamsTemperature then below calculation will always
 	// return dG. So we save some computation with this check.
-	if temperature == energyParamsTemperature {
+	if temperature == energyParamsMeasurementTemperature {
 		return dG
 	}
 
-	defaultEnergyParamsTemperatureKelvin := energyParamsTemperature + zeroCKelvin
+	defaultEnergyParamsTemperatureKelvin := energyParamsMeasurementTemperature + zeroCKelvin
 	temperatureKelvin := temperature + zeroCKelvin
-	var T int = int(temperatureKelvin / defaultEnergyParamsTemperatureKelvin)
+	var T float64 = float64(temperatureKelvin / defaultEnergyParamsTemperatureKelvin)
 
-	dS := dH - dG
-	return dH - dS*T
+	dGFloat64 := float64(dG)
+	dHFloat64 := float64(dH)
+
+	dSFloat64 := dHFloat64 - dGFloat64
+
+	return int(dHFloat64 - dSFloat64*T)
 }
 
 // same as rescaleDg, but for floats
 func rescaleDgFloat64(dG, dH, temperature float64) float64 {
 	// if temperate == energyParamsTemperature then below calculation will always
 	// return dG. So we save some computation with this check.
-	if temperature == energyParamsTemperature {
+	if temperature == energyParamsMeasurementTemperature {
 		return dG
 	}
 
-	defaultEnergyParamsTemperatureKelvin := energyParamsTemperature + zeroCKelvin
+	defaultEnergyParamsTemperatureKelvin := energyParamsMeasurementTemperature + zeroCKelvin
 	temperatureKelvin := temperature + zeroCKelvin
 	var T float64 = temperatureKelvin / defaultEnergyParamsTemperatureKelvin
 
