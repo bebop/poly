@@ -304,6 +304,8 @@ type energyParams struct {
 	  			       3'-GC-5'
 	  ```
 	  corresponds to entry mismatchInteriorLoop[1][4][2] (CG=1, U=4, C=2).
+
+		More information about mismatch energy: https://rna.urmc.rochester.edu/NNDB/turner04/tm.html
 	*/
 	mismatchInteriorLoop    [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
 	mismatch1xnInteriorLoop [nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1]int
@@ -323,6 +325,8 @@ type energyParams struct {
 	```
 
 	corresponds to entry dangle5[1][3] (CG=1, G=3).
+
+	More information about dangling ends: https://rna.urmc.rochester.edu/NNDB/turner04/de.html
 	*/
 	dangle5 [nbPairs + 1][nbNucleobase + 1]int
 	/**
@@ -483,6 +487,8 @@ func encodedBasePairType(fc *foldCompound, basePairFivePrime, basePairThreePrime
 * Structure: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
 * Index:       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
 * then the exterior loops in the structure are as follows: (2, 12) and (16, 27).
+* See `exteriorStemEnergy()` for information of how exterior loops are evaluated.
+* More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
  */
 func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 	pairTable := fc.pairTable
@@ -696,7 +702,7 @@ func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContri
 
 /**
  *  Evaluate the free energy contribution of an interior loop with delimiting
- *  base pairs (i,j) and (k,l). See `evaluateInteriorLoop()` for more details.
+ *  base pairs (i,j) and (k,l). See `evaluateStackBulgeInteriorLoop()` for more details.
  */
 func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 	closingFivePrimeIdx, closingThreePrimeIdx,
@@ -753,7 +759,11 @@ func stackBulgeInteriorLoopEnergy(fc *foldCompound,
  *  5'-mismatch: b_1
  *  3'-mismatch: a_n
  *  @note Base pairs are always denoted in 5'->3' direction. Thus the `enclosedBasePair`
- *  must be 'turned around' when evaluating the free energy of the interior loop
+ *  must be 'turned around' when evaluating the free energy of the interior loop.
+ *
+ *  More information about
+ * 		- Bulge Loops: https://rna.urmc.rochester.edu/NNDB/turner04/bulge.html
+ *		- Interior Loops: https://rna.urmc.rochester.edu/NNDB/turner04/internal.html
  *
  *  @param  nbUnpairedLeftLoop      The size of the 'left'-loop (number of unpaired nucleotides)
  *  @param  nbUnpairedRightLoop     The size of the 'right'-loop (number of unpaired nucleotides)
@@ -878,6 +888,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 /**
  *  Evaluate free energy of a hairpin loop encosed by the base pair
  *  (pairFivePrimeIdx, pairThreePrimeIdx).
+ *  See `evaluateHairpinLoop()` for more information.
  *
  *  @param  fc                 The foldCompund for the particular energy evaluation
  *  @param  pairFivePrimeIdx   5'-position of the base pair enclosing the hairpin loop
@@ -919,6 +930,8 @@ func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int
  *  @note The parameter `sequence` should contain the sequence of the loop in capital letters of the nucleic acid
  *  alphabet if the loop size is below 7. This is useful for unusually stable tri-, tetra- and hexa-loops
  *  which are treated differently (based on experimental data) if they are tabulated.
+ *
+ *  More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/hairpin.html
  *
  *  @param  size                 The size of the hairpin loop (number of unpaired nucleotides)
  *  @param  basePairType         The pair type of the base pair closing the hairpin
@@ -1003,6 +1016,8 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
  * enclosed base pair.
  * We also add a bonus energy based on the number of unpaired nucleotides in
  * the multi-loop (though it defaults to 0 right now).
+ *
+ * More information about multi-loops: https://rna.urmc.rochester.edu/NNDB/turner04/mb.html
  */
 func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
 	energyContributions := make([]EnergyContribution, 0)
