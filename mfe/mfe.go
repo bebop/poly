@@ -374,24 +374,27 @@ type energyParams struct {
 	corresponds to entry interior2x2Loop[1][5][4][1][2][2] (CG=1, AU=5, U=4, A=1, C=2, C=2),
 	which should be identical to interior2x2Loop[5][1][2][2][1][4] (AU=5, CG=1, C=2, C=2, A=1, U=4).
 	*/
-	interior2x2Loop                                                              [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
-	lxc                                                                          float64
-	multiLoopUnpairedNucelotideBonus, multiLoopClosingPenalty, terminalAU, ninio int
-	multiLoopIntern                                                              [nbPairs + 1]int
+	interior2x2Loop [nbPairs + 1][nbPairs + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1][nbNucleobase + 1]int
+	/**
+	Parameter for logarithmic loop energy extrapolation. Used to scale energy
+	parameters for hairpin, bulge and interior loops when the length of the loop
+	is greather than `maxLenLoop`.
+	*/
+	lxc                                                                                 float64
+	multiLoopUnpairedNucelotideBonus, multiLoopClosingPenalty, terminalAUPenalty, ninio int
+	multiLoopIntern                                                                     [nbPairs + 1]int
 	/**
 	Some tetraloops particularly stable tetraloops are assigned an energy
-	bonus. Up to forty tetraloops and their bonus energies can be listed
-	following the token, one sequence per line. For example:
+	bonus. For example:
 	```
 		GAAA    -200
 	```
-	assigns a bonus energy of -2 kcal/mol to tetraloops containing
+	assigns a bonus energy of -2 kcal/mol to tetraLoop containing
 	the sequence GAAA.
 	*/
-	tetraloops                      map[string]int
-	triloops                        map[string]int
-	hexaloops                       map[string]int
-	tripleC, multipleCA, multipleCB int
+	tetraLoop map[string]int
+	triLoop   map[string]int
+	hexaLoop  map[string]int
 }
 
 /**
@@ -567,7 +570,7 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-		energy += energyParams.terminalAU
+		energy += energyParams.terminalAUPenalty
 	}
 
 	return energy
@@ -814,12 +817,12 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 		} else {
 			if closingBasePairType > 2 {
 				// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-				energy += energyParams.terminalAU
+				energy += energyParams.terminalAUPenalty
 			}
 
 			if enclosedBasePairType > 2 {
 				// The encosed base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-				energy += energyParams.terminalAU
+				energy += energyParams.terminalAUPenalty
 			}
 		}
 
@@ -958,27 +961,27 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 	}
 
 	if size == 4 {
-		tetraloop := sequence[:6]
-		tetraloopEnergy, present := energyParams.tetraloops[tetraloop]
+		tetraLoop := sequence[:6]
+		tetraLoopEnergy, present := energyParams.tetraLoop[tetraLoop]
 		if present {
-			return tetraloopEnergy
+			return tetraLoopEnergy
 		}
 	} else if size == 6 {
-		hexaloop := sequence[:8]
-		hexaloopEnergy, present := energyParams.hexaloops[hexaloop]
+		hexaLoop := sequence[:8]
+		hexaLoopEnergy, present := energyParams.hexaLoop[hexaLoop]
 		if present {
-			return hexaloopEnergy
+			return hexaLoopEnergy
 		}
 	} else if size == 3 {
-		triloop := sequence[:5]
-		triloopEnergy, present := energyParams.triloops[triloop]
+		triLoop := sequence[:5]
+		triLoopEnergy, present := energyParams.triLoop[triLoop]
 		if present {
-			return triloopEnergy
+			return triLoopEnergy
 		}
 
 		if basePairType > 2 {
 			// (X,Y) is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-			return energy + energyParams.terminalAU
+			return energy + energyParams.terminalAUPenalty
 		}
 
 		// (X,Y) is a GC or CG pair
@@ -1125,7 +1128,7 @@ func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
-		energy += energyParams.terminalAU
+		energy += energyParams.terminalAUPenalty
 	}
 
 	return energy
@@ -1144,47 +1147,44 @@ func scaleEnergyParams(temperature float64) *energyParams {
 
 	// set the non-matix energy parameters
 	var params *energyParams = &energyParams{
-		lxc:                              lxc37 * temperature,
-		tripleC:                          rescaleDg(TripleC37, TripleCdH, temperature),
-		multipleCA:                       rescaleDg(MultipleCA37, MultipleCAdH, temperature),
-		multipleCB:                       rescaleDg(TerminalAU37, TerminalAUdH, temperature),
-		terminalAU:                       rescaleDg(TerminalAU37, TerminalAUdH, temperature),
-		multiLoopUnpairedNucelotideBonus: rescaleDg(ML_BASE37, ML_BASEdH, temperature),
-		multiLoopClosingPenalty:          rescaleDg(ML_closing37, ML_closingdH, temperature),
-		ninio:                            rescaleDg(ninio37, niniodH, temperature),
+		lxc:                              rescaleDgFloat64(lxc37, 0, temperature),
+		terminalAUPenalty:                rescaleDg(terminalAU37C, terminalAUEnthalpy, temperature),
+		multiLoopUnpairedNucelotideBonus: rescaleDg(multiLoopBase37C, multiLoopBaseEnthalpy, temperature),
+		multiLoopClosingPenalty:          rescaleDg(multiLoopClosing37C, multiLoopClosingEnthalpy, temperature),
+		ninio:                            rescaleDg(ninio37C, ninioEnthalpy, temperature),
 	}
 
 	// scale and set hairpin, bulge and interior energy params
 	for i := 0; i <= maxLenLoop; i++ {
-		params.hairpinLoop[i] = rescaleDg(hairpin37[i], hairpindH[i], temperature)
-		params.bulge[i] = rescaleDg(bulge37[i], bulgedH[i], temperature)
-		params.interiorLoop[i] = rescaleDg(internal_loop37[i], internal_loopdH[i], temperature)
+		params.hairpinLoop[i] = rescaleDg(hairpinLoopEnergy37C[i], hairpinLoopEnthalpy[i], temperature)
+		params.bulge[i] = rescaleDg(bulgeEnergy37C[i], bulgeEnthalpy[i], temperature)
+		params.interiorLoop[i] = rescaleDg(interiorLoopEnergy37C[i], interiorLoopEnthalpy[i], temperature)
 	}
 
-	params.tetraloops = make(map[string]int)
-	for k := range Tetraloops {
-		params.tetraloops[k] = rescaleDg(Tetraloop37[k], TetraloopdH[k], temperature)
+	params.tetraLoop = make(map[string]int)
+	for k := range tetraLoops {
+		params.tetraLoop[k] = rescaleDg(tetraLoopEnergy37C[k], tetraLoopEnthalpy[k], temperature)
 	}
 
-	params.triloops = make(map[string]int)
-	for k := range Triloops {
-		params.triloops[k] = rescaleDg(Triloop37[k], TriloopdH[k], temperature)
+	params.triLoop = make(map[string]int)
+	for k := range triLoops {
+		params.triLoop[k] = rescaleDg(triLoopEnergy37C[k], triLoopEnthalpy[k], temperature)
 	}
 
-	params.hexaloops = make(map[string]int)
-	for k := range Hexaloops {
-		params.hexaloops[k] = rescaleDg(Hexaloop37[k], HexaloopdH[k], temperature)
+	params.hexaLoop = make(map[string]int)
+	for k := range hexaLoops {
+		params.hexaLoop[k] = rescaleDg(hexaLoopEnergy37C[k], hexaLoopEnthalpy[k], temperature)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
-		params.multiLoopIntern[i] = rescaleDg(ML_intern37, ML_interndH, temperature)
+		params.multiLoopIntern[i] = rescaleDg(multiLoopIntern37C, multiLoopInternEnthalpy, temperature)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			params.stackingPair[i][j] = rescaleDg(stack37[i][j],
-				stackdH[i][j],
+			params.stackingPair[i][j] = rescaleDg(stackingPairEnergy37C[i][j],
+				stackingPairEnthalpy[i][j],
 				temperature)
 		}
 	}
@@ -1194,36 +1194,28 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbNucleobase; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				var mismatch int
-				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchI37[i][j][k],
-					mismatchIdH[i][j][k],
+				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchInteriorLoopEnergy37C[i][j][k],
+					mismatchInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatchHairpinLoop[i][j][k] = rescaleDg(mismatchH37[i][j][k],
-					mismatchHdH[i][j][k],
+				params.mismatchHairpinLoop[i][j][k] = rescaleDg(mismatchHairpinLoopEnergy37C[i][j][k],
+					mismatchHairpinLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(mismatch1nI37[i][j][k],
-					mismatch1nIdH[i][j][k],
+				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(mismatch1xnInteriorLoopEnergy37C[i][j][k],
+					mismatch1xnInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch23I37[i][j][k],
-					mismatch23IdH[i][j][k],
+				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch2x3InteriorLoopEnergy37C[i][j][k],
+					mismatch2x3InteriorLoopEnthalpy[i][j][k],
 					temperature)
 
-				mismatch = rescaleDg(mismatchM37[i][j][k],
-					mismatchMdH[i][j][k],
+				mismatch = rescaleDg(mismatchMultiLoopEnergy37C[i][j][k],
+					mismatchMultiLoopEnthalpy[i][j][k],
 					temperature)
-				if mismatch > 0 {
-					params.mismatchMultiLoop[i][j][k] = 0
-				} else {
-					params.mismatchMultiLoop[i][j][k] = mismatch
-				}
+				params.mismatchMultiLoop[i][j][k] = min(0, mismatch)
 
-				mismatch = rescaleDg(mismatchExt37[i][j][k],
-					mismatchExtdH[i][j][k],
+				mismatch = rescaleDg(mismatchExteriorLoopEnergy37C[i][j][k],
+					mismatchExteriorLoopEnthalpy[i][j][k],
 					temperature)
-				if mismatch > 0 {
-					params.mismatchExteriorLoop[i][j][k] = 0
-				} else {
-					params.mismatchExteriorLoop[i][j][k] = mismatch
-				}
+				params.mismatchExteriorLoop[i][j][k] = min(0, mismatch)
 			}
 		}
 	}
@@ -1232,23 +1224,15 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbNucleobase; j++ {
 			var dd int
-			dd = rescaleDg(dangle5_37[i][j],
-				dangle5_dH[i][j],
+			dd = rescaleDg(dangle5Energy37C[i][j],
+				dangle5Enthalpy[i][j],
 				temperature)
-			if dd > 0 {
-				params.dangle5[i][j] = 0
-			} else {
-				params.dangle5[i][j] = dd
-			}
+			params.dangle5[i][j] = min(0, dd)
 
-			dd = rescaleDg(dangle3_37[i][j],
-				dangle3_dH[i][j],
+			dd = rescaleDg(dangle3Energy37C[i][j],
+				dangle3Enthalpy[i][j],
 				temperature)
-			if dd > 0 {
-				params.dangle3[i][j] = 0
-			} else {
-				params.dangle3[i][j] = dd
-			}
+			params.dangle3[i][j] = min(0, dd)
 		}
 	}
 
@@ -1257,8 +1241,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
-					params.interior1x1Loop[i][j][k][l] = rescaleDg(int11_37[i][j][k][l],
-						int11_dH[i][j][k][l],
+					params.interior1x1Loop[i][j][k][l] = rescaleDg(interior1x1LoopEnergy37C[i][j][k][l],
+						interior1x1LoopEnthalpy[i][j][k][l],
 						temperature)
 				}
 			}
@@ -1271,8 +1255,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
-						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(int21_37[i][j][k][l][m],
-							int21_dH[i][j][k][l][m],
+						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(interior2x1LoopEnergy37[i][j][k][l][m],
+							interior2x1LoopEnthalpy[i][j][k][l][m],
 							temperature)
 					}
 				}
@@ -1287,8 +1271,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
 						for n := 0; n <= nbNucleobase; n++ {
-							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(int22_37[i][j][k][l][m][n],
-								int22_dH[i][j][k][l][m][n],
+							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(interior2x2LoopEnergy37[i][j][k][l][m][n],
+								interior2x2LoopEnthalpy[i][j][k][l][m][n],
 								temperature)
 						}
 					}
@@ -1308,9 +1292,31 @@ where dG is the change in Gibbs free energy
 			T is the temperature
 */
 func rescaleDg(dG, dH int, temperature float64) int {
+	// if temperate == energyParamsTemperature then below calculation will always
+	// return dG. So we save some computation with this check.
+	if temperature == energyParamsTemperature {
+		return dG
+	}
+
 	defaultEnergyParamsTemperatureKelvin := energyParamsTemperature + zeroCKelvin
 	temperatureKelvin := temperature + zeroCKelvin
 	var T int = int(temperatureKelvin / defaultEnergyParamsTemperatureKelvin)
+
+	dS := dH - dG
+	return dH - dS*T
+}
+
+// same as rescaleDg, but for floats
+func rescaleDgFloat64(dG, dH, temperature float64) float64 {
+	// if temperate == energyParamsTemperature then below calculation will always
+	// return dG. So we save some computation with this check.
+	if temperature == energyParamsTemperature {
+		return dG
+	}
+
+	defaultEnergyParamsTemperatureKelvin := energyParamsTemperature + zeroCKelvin
+	temperatureKelvin := temperature + zeroCKelvin
+	var T float64 = temperatureKelvin / defaultEnergyParamsTemperatureKelvin
 
 	dS := dH - dG
 	return dH - dS*T
