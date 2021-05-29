@@ -455,6 +455,7 @@ func pairTable(structure string) ([]int, error) {
 func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 	energyContributions := make([]EnergyContribution, 0)
 
+	// get the energy contributions due to exterior loops
 	energy, contribution := exteriorLoopEnergy(fc)
 	energyContributions = append(energyContributions, contribution)
 
@@ -467,6 +468,7 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 		en, contributions := stackEnergy(fc, i)
 		energy += en
 		energyContributions = append(energyContributions, contributions...)
+		// seek to end of current loop
 		i = pairTable[i]
 	}
 
