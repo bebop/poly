@@ -13,50 +13,57 @@ type BindingSite struct {
 	TranslationInitiationRate, MinimumFreeEnergy float64
 	FivePrimeIdx, ThreePrimeIdx                  int
 	RRNA, MRNA                                   string
+	MRNAFreeEnergy, BindingSiteFreeEnergy        float64
 }
 
 var EColiRNA = "ACCTCCTTA"
+var defaultLenBindingSite = 11
 
 // This file goes agains Go's style conventions and uses the snake case
 // convention for variable names (functions, types, and struct fields still
 // follow Go's style conventions).
 func RibosomeBindingSite(rRNA, mRNA string) (*BindingSite, error) {
-	len_mRNA := len(mRNA)
-	if len_mRNA < 11 {
-		return nil, fmt.Errorf("length of mRNA (%v) must be greater than 11", len_mRNA)
+	mRNA = strings.ToUpper(mRNA)
+	lenMRNA := len(mRNA)
+	if lenMRNA < defaultLenBindingSite {
+		return nil, fmt.Errorf("length of mRNA (%v) must be greater than 11", lenMRNA)
 	}
 
-	var binding_site_three_prime int
-	var least_dG_rRNA_mRNA float64 = 1000000.0
-	lookup_table, _ := LookupTable()
-	for i := 11; i <= len_mRNA; i++ {
-		potential_binding_site := mRNA[i-11 : i]
-		dG_rRNA_mRNA := lookup_table[rRNA][potential_binding_site]
-		if dG_rRNA_mRNA < least_dG_rRNA_mRNA {
-			least_dG_rRNA_mRNA = dG_rRNA_mRNA
-			binding_site_three_prime = i
+	var bindingSiteThreePrime int = defaultLenBindingSite
+	var leastBindingSiteFreeEnergy float64 = 1000000.0
+	lookupTable, _ := LookupTable()
+	for i := defaultLenBindingSite; i <= lenMRNA; i++ {
+		potentialBindingSite := mRNA[i-defaultLenBindingSite : i]
+		fmt.Printf("%v, %v\n", rRNA, potentialBindingSite)
+		bindingSiteFreeEnergy, ok := lookupTable[rRNA][potentialBindingSite]
+		if potentialBindingSite == "GGTAAAAAATG" {
+			panic(fmt.Sprintf("%v, %v", bindingSiteFreeEnergy, ok))
 		}
+		if ok {
+			if bindingSiteFreeEnergy < leastBindingSiteFreeEnergy {
+				leastBindingSiteFreeEnergy = bindingSiteFreeEnergy
+				bindingSiteThreePrime = i
+			}
+		}
+		// fmt.Println(i)
 	}
 
 	// Special case is cannot RBS that drags into the CDS
 	// The third variable they use on
-
 	mRNA = strings.ReplaceAll(mRNA, "T", "U")
-	mRNA_structure, _ := poly.LinearFold(mRNA, poly.DefaultBeamSize)
-	// log.Printf("sequence: %v\n", mRNA)
-	// log.Printf("structure: %v\n", mRNA_structure)
+	mRNAStructure, _ := poly.LinearFold(mRNA, poly.DefaultBeamSize)
+	mRNAFreeEnergy, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNAStructure, mfe.DefaultTemperature)
 
-	dG_mRNA, _, _ := mfe.MinimumFreeEnergy(mRNA, mRNA_structure, mfe.DefaultTemperature)
-	translationInitiationRate := translationInitiationRate(dG_mRNA)
-
-	total_mfe := least_dG_rRNA_mRNA + dG_mRNA
+	totalMFE := leastBindingSiteFreeEnergy + mRNAFreeEnergy
 	return &BindingSite{
-		TranslationInitiationRate: translationInitiationRate,
-		MinimumFreeEnergy:         total_mfe,
-		ThreePrimeIdx:             binding_site_three_prime,
-		FivePrimeIdx:              binding_site_three_prime - 11,
+		TranslationInitiationRate: translationInitiationRate(mRNAFreeEnergy),
+		MinimumFreeEnergy:         totalMFE,
+		ThreePrimeIdx:             bindingSiteThreePrime,
+		FivePrimeIdx:              bindingSiteThreePrime - 11,
 		RRNA:                      rRNA,
 		MRNA:                      mRNA,
+		MRNAFreeEnergy:            mRNAFreeEnergy,
+		BindingSiteFreeEnergy:     leastBindingSiteFreeEnergy,
 	}, nil
 }
 

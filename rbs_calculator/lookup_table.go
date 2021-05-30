@@ -4,7 +4,6 @@ import (
 	"embed"
 	"encoding/csv"
 	"io"
-	"os"
 	"strconv"
 
 	"github.com/TimothyStiles/poly/rbs_calculator/csv_helper"
@@ -14,8 +13,8 @@ import (
 var embededLookupTableDataDirectory embed.FS
 var rbsLookupDataDirectory = "lookup_table_data"
 
-func parseCSVIntoLookupTable(file string, lookupTable *map[string]map[string]float64) error {
-	f, err := os.Open(file)
+func parseCSVIntoLookupTable(fs embed.FS, file string, lookupTable *map[string]map[string]float64) error {
+	f, err := fs.Open(file)
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func LookupTable() (map[string]map[string]float64, error) {
 	csvFiles := csv_helper.CSVFilesFromEmbededFS(embededLookupTableDataDirectory, rbsLookupDataDirectory)
 
 	for _, csv := range csvFiles {
-		err := parseCSVIntoLookupTable(csv, &lookupTable)
+		err := parseCSVIntoLookupTable(embededLookupTableDataDirectory, csv, &lookupTable)
 		if err != nil {
 			return nil, err
 		}

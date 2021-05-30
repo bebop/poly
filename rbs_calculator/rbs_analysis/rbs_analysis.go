@@ -53,6 +53,10 @@ func processCSV(file string, mRNAColNumber int, translationInitiationRateHeader 
 		return err
 	}
 	header = append(header, translationInitiationRateHeader)
+	header = append(header, "mfe")
+	header = append(header, "mRNA mfe")
+	header = append(header, "bindingSiteFreeEnergy")
+	header = append(header, "bindingSiteSequence")
 	if err := csvWriter.Write(header); err != nil {
 		log.Fatalln("error writing record to file", err)
 	}
@@ -73,11 +77,17 @@ func processCSV(file string, mRNAColNumber int, translationInitiationRateHeader 
 		if err != nil {
 			return err
 		}
-
 		row = append(row, fmt.Sprint(bindingSite.TranslationInitiationRate))
+		row = append(row, fmt.Sprint(bindingSite.MinimumFreeEnergy))
+		row = append(row, fmt.Sprint(bindingSite.MRNAFreeEnergy))
+		row = append(row, fmt.Sprint(bindingSite.BindingSiteFreeEnergy))
+		bindingSiteSequence := bindingSite.MRNA[bindingSite.FivePrimeIdx:bindingSite.ThreePrimeIdx]
+		bindingSiteSequence = fmt.Sprintf("%v (%v,%v)", bindingSiteSequence, bindingSite.FivePrimeIdx, bindingSite.ThreePrimeIdx)
+		row = append(row, fmt.Sprint(bindingSiteSequence))
 		if err := csvWriter.Write(row); err != nil {
 			log.Fatalln("error writing record to file", err)
 		}
+		fmt.Println("here")
 	}
 }
 
