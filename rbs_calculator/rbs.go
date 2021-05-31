@@ -12,8 +12,9 @@ import (
 type BindingSite struct {
 	TranslationInitiationRate, MinimumFreeEnergy float64
 	FivePrimeIdx, ThreePrimeIdx                  int
-	RRNA, MRNA                                   string
+	RRNA, MRNA, MRNAStructure                    string
 	MRNAFreeEnergy, BindingSiteFreeEnergy        float64
+	FoundBindingSite                             bool
 }
 
 var EColiRNA = "ACCTCCTTA"
@@ -28,21 +29,21 @@ func RibosomeBindingSite(rRNA, mRNA string) (*BindingSite, error) {
 	if lenMRNA < defaultLenBindingSite {
 		return nil, fmt.Errorf("length of mRNA (%v) must be greater than 11", lenMRNA)
 	}
+	mRNA = strings.ReplaceAll(mRNA, "U", "T")
 
 	var bindingSiteThreePrime int = defaultLenBindingSite
-	var leastBindingSiteFreeEnergy float64 = 1000000.0
+	var leastBindingSiteFreeEnergy float64 = 0
+	firstBindingSite := true
 	lookupTable, _ := LookupTable()
 	for i := defaultLenBindingSite; i <= lenMRNA; i++ {
 		potentialBindingSite := mRNA[i-defaultLenBindingSite : i]
-		fmt.Printf("%v, %v\n", rRNA, potentialBindingSite)
+		// fmt.Println(i, potentialBindingSite)
 		bindingSiteFreeEnergy, ok := lookupTable[rRNA][potentialBindingSite]
-		if potentialBindingSite == "GGTAAAAAATG" {
-			panic(fmt.Sprintf("%v, %v", bindingSiteFreeEnergy, ok))
-		}
 		if ok {
-			if bindingSiteFreeEnergy < leastBindingSiteFreeEnergy {
+			if bindingSiteFreeEnergy < leastBindingSiteFreeEnergy || firstBindingSite {
 				leastBindingSiteFreeEnergy = bindingSiteFreeEnergy
 				bindingSiteThreePrime = i
+				firstBindingSite = false
 			}
 		}
 		// fmt.Println(i)
@@ -63,7 +64,9 @@ func RibosomeBindingSite(rRNA, mRNA string) (*BindingSite, error) {
 		RRNA:                      rRNA,
 		MRNA:                      mRNA,
 		MRNAFreeEnergy:            mRNAFreeEnergy,
+		MRNAStructure:             mRNAStructure,
 		BindingSiteFreeEnergy:     leastBindingSiteFreeEnergy,
+		FoundBindingSite:          !firstBindingSite,
 	}, nil
 }
 

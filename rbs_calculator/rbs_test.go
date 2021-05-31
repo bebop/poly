@@ -21,17 +21,17 @@ func ExampleRibosomeBindingSite() {
 	// translationInitiationRate: 1022.4939796226361
 }
 
-func ExampleRibosomeBindingSite2() {
-	bindingSite, err := RibosomeBindingSite(EColiRNA, "ATTGAAAAGGATTCTAG")
-	if err != nil {
-		fmt.Printf("Failed to initialize lookup table: %s", err)
-		return
-	}
+// func ExampleRibosomeBindingSite2() {
+// 	bindingSite, err := RibosomeBindingSite(EColiRNA, "ATTGAAAAGGATTCTAG")
+// 	if err != nil {
+// 		fmt.Printf("Failed to initialize lookup table: %s", err)
+// 		return
+// 	}
 
-	bindingSiteSequence := bindingSite.MRNA[bindingSite.FivePrimeIdx:bindingSite.ThreePrimeIdx]
-	fmt.Printf("binding site sequence: %v (%v,%v)\n", bindingSiteSequence, bindingSite.FivePrimeIdx, bindingSite.ThreePrimeIdx)
-	fmt.Printf("mfe: %v\n", bindingSite.MinimumFreeEnergy)
-	fmt.Printf("translationInitiationRate: %v\n", bindingSite.TranslationInitiationRate)
-	// Output:
-	// write output
-}
+// 	bindingSiteSequence := bindingSite.MRNA[bindingSite.FivePrimeIdx:bindingSite.ThreePrimeIdx]
+// 	fmt.Printf("binding site sequence: %v (%v,%v)\n", bindingSiteSequence, bindingSite.FivePrimeIdx, bindingSite.ThreePrimeIdx)
+// 	fmt.Printf("mfe: %v\n", bindingSite.MinimumFreeEnergy)
+// 	fmt.Printf("translationInitiationRate: %v\n", bindingSite.TranslationInitiationRate)
+// 	// Output:
+// 	// write output
+// }
