@@ -37,20 +37,22 @@ Keoni
 
 ******************************************************************************/
 
-// ReadUniprot reads a gzipped Uniprot XML dump.
+// ReadUniprot reads a gzipped Uniprot XML dump. Failing to open the XML dump
+// gives a single error, while errors encountered while decoding the XML dump
+// are added to the errors channel.
 func ReadUniprot(path string) (chan Entry, chan error, error) {
 	entries := make(chan Entry, 100) // if you don't have a buffered channel, nothing will be read in loops on the channel.
-	errors := make(chan error, 100)
+	decoderErrors := make(chan error, 100)
 	xmlFile, err := os.Open(path)
 	if err != nil {
-		return entries, errors, err
+		return entries, decoderErrors, err
 	}
 	r, err := gzip.NewReader(xmlFile)
 	if err != nil {
-		return entries, errors, err
+		return entries, decoderErrors, err
 	}
-	go ParseUniprot(r, entries, errors)
-	return entries, errors, nil
+	go ParseUniprot(r, entries, decoderErrors)
+	return entries, decoderErrors, nil
 }
 
 // ParseUniprot parses Uniprot entries into a channel.
