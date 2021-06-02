@@ -47,11 +47,11 @@ func ReadUniprot(path string) (chan Entry, chan error, error) {
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	r, err := gzip.NewReader(xmlFile)
+	gzipReaderThatReallCantBeASingleCharacterBecauseThatWouldBeTooConfusing, err := gzip.NewReader(xmlFile)
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	go ParseUniprot(r, entries, decoderErrors)
+	go ParseUniprot(gzipReaderThatReallCantBeASingleCharacterBecauseThatWouldBeTooConfusing, entries, decoderErrors)
 	return entries, decoderErrors, nil
 }
 
