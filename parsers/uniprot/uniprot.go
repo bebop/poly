@@ -47,11 +47,11 @@ func ReadUniprot(path string) (chan Entry, chan error, error) {
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	gzipReaderThatReallCantBeASingleCharacterBecauseThatWouldBeTooConfusing, err := gzip.NewReader(xmlFile)
+	unzippedBytes, err := gzip.NewReader(xmlFile)
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	go ParseUniprot(gzipReaderThatReallCantBeASingleCharacterBecauseThatWouldBeTooConfusing, entries, decoderErrors)
+	go ParseUniprot(unzippedBytes, entries, decoderErrors)
 	return entries, decoderErrors, nil
 }
 
@@ -66,8 +66,7 @@ func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
 		if decoderToken == nil {
 			break
 		}
-		//switch startElement := decoderToken.(type) {
-		//case xml.StartElement:
+		// type assertion
 		startElement, ok := decoderToken.(xml.StartElement)
 		if ok && startElement.Name.Local == "entry" {
 				var e Entry
