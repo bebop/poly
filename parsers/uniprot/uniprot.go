@@ -62,7 +62,6 @@ func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
 		decoderToken, err := decoder.Token()
 		if err != nil {
 			errors <- err
-			continue
 		}
 		if decoderToken == nil {
 			break
