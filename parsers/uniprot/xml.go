@@ -174,18 +174,6 @@ type Entry struct {
 	Version          int                  `xml:"version,attr"`
 }
 
-func (t *Entry) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	type T Entry
-	var layout struct {
-		*T
-		Created  *xsdDate `xml:"created,attr"`
-		Modified *xsdDate `xml:"modified,attr"`
-	}
-	layout.T = (*T)(t)
-	layout.Created = (*xsdDate)(&layout.T.Created)
-	layout.Modified = (*xsdDate)(&layout.T.Modified)
-	return e.EncodeElement(layout, start)
-}
 func (t *Entry) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	type T Entry
 	var overlay struct {
@@ -261,13 +249,6 @@ type ImportedFromType struct {
 
 type IntListType []int
 
-func (x *IntListType) MarshalText() ([]byte, error) {
-	result := make([][]byte, 0, len(*x))
-	for _, v := range *x {
-		result = append(result, []byte(strconv.Itoa(v)))
-	}
-	return bytes.Join(result, []byte(" ")), nil
-}
 func (x *IntListType) UnmarshalText(text []byte) error {
 	for _, v := range strings.Fields(string(text)) {
 		if i, err := strconv.Atoi(v); err != nil {
@@ -453,16 +434,6 @@ type SequenceType struct {
 	Fragment  Fragment  `xml:"fragment,attr,omitempty"`
 }
 
-func (t *SequenceType) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	type T SequenceType
-	var layout struct {
-		*T
-		Modified *xsdDate `xml:"modified,attr"`
-	}
-	layout.T = (*T)(t)
-	layout.Modified = (*xsdDate)(&layout.T.Modified)
-	return e.EncodeElement(layout, start)
-}
 func (t *SequenceType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	type T SequenceType
 	var overlay struct {
@@ -497,16 +468,6 @@ type StatusType struct {
 	Status Status `xml:"status,attr,omitempty"`
 }
 
-func (t *StatusType) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	type T StatusType
-	var overlay struct {
-		*T
-		Status *Status `xml:"status,attr,omitempty"`
-	}
-	overlay.T = (*T)(t)
-	overlay.Status = (*Status)(&overlay.T.Status)
-	return d.DecodeElement(&overlay, &start)
-}
 
 type Strain struct {
 	Value    string      `xml:",chardata"`
@@ -552,26 +513,6 @@ type xsdDate time.Time
 func (t *xsdDate) UnmarshalText(text []byte) error {
 	return _unmarshalTime(text, (*time.Time)(t), "2006-01-02")
 }
-func (t xsdDate) MarshalText() ([]byte, error) {
-	return _marshalTime((time.Time)(t), "2006-01-02")
-}
-func (t xsdDate) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	if (time.Time)(t).IsZero() {
-		return nil
-	}
-	m, err := t.MarshalText()
-	if err != nil {
-		return err
-	}
-	return e.EncodeElement(m, start)
-}
-func (t xsdDate) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
-	if (time.Time)(t).IsZero() {
-		return xml.Attr{}, nil
-	}
-	m, err := t.MarshalText()
-	return xml.Attr{Name: name, Value: string(m)}, err
-}
 func _unmarshalTime(text []byte, t *time.Time, format string) (err error) {
 	s := string(bytes.TrimSpace(text))
 	*t, err = time.Parse(format, s)
@@ -579,7 +520,4 @@ func _unmarshalTime(text []byte, t *time.Time, format string) (err error) {
 		*t, err = time.Parse(format+"Z07:00", s)
 	}
 	return err
-}
-func _marshalTime(t time.Time, format string) ([]byte, error) {
-	return []byte(t.Format(format + "Z07:00")), nil
 }

@@ -11,7 +11,7 @@ import (
 May 18, 2021
 
 Uniprot is comprehensive, high-quality and freely accessible resource of protein
-sequence and functional information. It the best(1) protein database out there.
+sequence and functional information. It is the best(1) protein database out there.
 
 Uniprot database dumps are available as gzipped FASTA files or gzipped XML files.
 The XML files have significantly more information than the FASTA files, and this
@@ -39,8 +39,8 @@ Keoni
 
 // ReadUniprot reads a gzipped Uniprot XML dump.
 func ReadUniprot(path string) (chan Entry, chan error, error) {
-	entries := make(chan Entry)
-	errors := make(chan error)
+	entries := make(chan Entry, 100) // if you don't have a buffered channel, nothing will be read in loops on the channel.
+	errors := make(chan error, 100)
 	xmlFile, err := os.Open(path)
 	if err != nil {
 		return entries, errors, err
@@ -68,14 +68,12 @@ func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
 		//case xml.StartElement:
 		startElement, ok := decoderToken.(xml.StartElement)
 		if ok && startElement.Name.Local == "entry" {
-			if startElement.Name.Local == "entry" {
 				var e Entry
 				err = decoder.DecodeElement(&e, &startElement)
 				if err != nil {
 					errors <- err
 				}
 				entries <- e
-			}
 		}
 	}
 	close(entries)
