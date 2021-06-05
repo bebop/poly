@@ -23,10 +23,10 @@ xml.go from uniprot.xsd
 
 Each protein in Uniprot is known as an "Entry" (as defined in xml.go).
 
-The function ParseUniprot stream-reads Uniprot into an Entry channel, from which
-you can use the entries however you want. ReadUniprot simplifies reading gzipped
+The function Parse stream-reads Uniprot into an Entry channel, from which
+you can use the entries however you want. Read simplifies reading gzipped
 files from a disk into an Entry channel, essentially just preparing the reader for
-ParseUniprot.
+Parse.
 
 Cheers,
 Keoni
@@ -37,10 +37,10 @@ Keoni
 
 ******************************************************************************/
 
-// ReadUniprot reads a gzipped Uniprot XML dump. Failing to open the XML dump
+// Read reads a gzipped Uniprot XML dump. Failing to open the XML dump
 // gives a single error, while errors encountered while decoding the XML dump
 // are added to the errors channel.
-func ReadUniprot(path string) (chan Entry, chan error, error) {
+func Read(path string) (chan Entry, chan error, error) {
 	entries := make(chan Entry, 100) // if you don't have a buffered channel, nothing will be read in loops on the channel.
 	decoderErrors := make(chan error, 100)
 	xmlFile, err := os.Open(path)
@@ -51,12 +51,12 @@ func ReadUniprot(path string) (chan Entry, chan error, error) {
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	go ParseUniprot(unzippedBytes, entries, decoderErrors)
+	go Parse(unzippedBytes, entries, decoderErrors)
 	return entries, decoderErrors, nil
 }
 
-// ParseUniprot parses Uniprot entries into a channel.
-func ParseUniprot(r io.Reader, entries chan<- Entry, errors chan<- error) {
+// Parse parses Uniprot entries into a channel.
+func Parse(r io.Reader, entries chan<- Entry, errors chan<- error) {
 	decoder := xml.NewDecoder(r)
 	for {
 		decoderToken, err := decoder.Token()
