@@ -60,13 +60,13 @@ func Parse(r io.Reader, entries chan<- Entry, errors chan<- error) {
 	decoder := xml.NewDecoder(r)
 	for {
 		decoderToken, err := decoder.Token()
+
 		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
 			errors <- err
 		}
-		if decoderToken == nil {
-			break
-		}
-		// type assertion
 		startElement, ok := decoderToken.(xml.StartElement)
 		if ok && startElement.Name.Local == "entry" {
 			var e Entry
