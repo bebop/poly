@@ -166,8 +166,8 @@ type Enzyme struct {
 	References             string   `json:"references"`
 }
 
-// ParseRebase parses the Rebase database into a map of enzymes
-func ParseRebase(file []byte) map[string]Enzyme {
+// Parse parses the Rebase database into a map of enzymes
+func Parse(file []byte) map[string]Enzyme {
 	// Setup some variables
 	var enzyme Enzyme
 	enzymeMap := make(map[string]Enzyme)
@@ -244,18 +244,18 @@ func ParseRebase(file []byte) map[string]Enzyme {
 	return enzymeMap
 }
 
-// ReadRebase returns an enzymeMap from a Rebase data dump
-func ReadRebase(path string) (map[string]Enzyme, error) {
+// Read returns an enzymeMap from a Rebase data dump
+func Read(path string) (map[string]Enzyme, error) {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		return map[string]Enzyme{}, err
 	}
-	enzymeMap := ParseRebase(file)
+	enzymeMap := Parse(file)
 	return enzymeMap, nil
 }
 
-// ExportRebase returns a json file of the Rebase database
-func ExportRebase(enzymeMap map[string]Enzyme) []byte {
+// Export returns a json file of the Rebase database
+func Export(enzymeMap map[string]Enzyme) []byte {
 	jsonRebase, _ := json.Marshal(enzymeMap)
 	return jsonRebase
 }
