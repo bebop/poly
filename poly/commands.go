@@ -221,8 +221,6 @@ func parseStdin(c *cli.Context) poly.Sequence {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
 		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
-	} else if c.String("i") == "fasta" {
-		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -237,8 +235,6 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 		sequence = poly.ParseGbk(file)
 	} else if flag == "gff" {
 		sequence = poly.ParseGff(file)
-	} else if flag == "fasta" {
-		sequence = poly.ParseFASTA(file)
 	}
 	return sequence
 }
@@ -287,8 +283,6 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 		output = poly.BuildGff(sequence)
 	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 		output = poly.BuildGbk(sequence)
-	} else if c.String("o") == "fasta" {
-		output = poly.BuildFASTA(sequence)
 	}
 	return output
 }
@@ -315,10 +309,7 @@ func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
 		poly.WriteGff(sequence, outputPath)
 	} else if outputExtension == "gbk" || c.String("o") == "gb" {
 		poly.WriteGbk(sequence, outputPath)
-	} else if outputExtension == "fasta" {
-		poly.WriteFASTA(sequence, outputPath)
 	}
-
 }
 
 func printHash(c *cli.Context, hash string, path string) {
@@ -341,8 +332,6 @@ func parseExt(match string) poly.Sequence {
 		sequence = poly.ReadGbk(match)
 	} else if extension == ".json" {
 		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" {
-		sequence = poly.ReadFASTA(match)
 	}
 	return sequence
 }
