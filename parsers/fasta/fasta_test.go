@@ -6,37 +6,37 @@ import (
 	"os"
 )
 
-// ExampleReadFASTA shows basic usage for ReadFASTA.
-func ExampleReadFASTA() {
-	fastas := ReadFASTA("data/base.fasta")
+// ExampleRead shows basic usage for Read.
+func ExampleRead() {
+	fastas := Read("data/base.fasta")
 	fmt.Println(fastas[0].Name)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
 
-// ExampleParseFASTA shows basic usage for ParseFASTA.
-func ExampleParseFASTA() {
+// ExampleParse shows basic usage for Parse.
+func ExampleParse() {
 	file, _ := os.Open("data/base.fasta")
-	fastas := ParseFASTA(file)
+	fastas := Parse(file)
 
 	fmt.Println(fastas[0].Name)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
 
-// ExampleBuildFASTA shows basic usage for BuildFASTA
-func ExampleBuildFASTA() {
-	fastas := ReadFASTA("data/base.fasta") // get example data
-	fasta := BuildFASTA(fastas)            // build a fasta byte array
+// ExampleBuild shows basic usage for Build
+func ExampleBuild() {
+	fastas := Read("data/base.fasta") // get example data
+	fasta := Build(fastas)            // build a fasta byte array
 	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
 
 	fmt.Println(firstLine)
 	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
 
-// ExampleWriteFASTA shows basic usage of the FASTA writer.
-func ExampleWriteFASTA() {
-	fastas := ReadFASTA("data/base.fasta")       // get example data
-	WriteFASTA(fastas, "data/test.fasta")        // write it out again
-	testSequence := ReadFASTA("data/test.fasta") // read it in again
+// ExampleWrite shows basic usage of the  writer.
+func ExampleWrite() {
+	fastas := Read("data/base.fasta")       // get example data
+	Write(fastas, "data/test.fasta")        // write it out again
+	testSequence := Read("data/test.fasta") // read it in again
 
 	os.Remove("data/test.fasta") // getting rid of test file
 
@@ -44,9 +44,9 @@ func ExampleWriteFASTA() {
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
 
-// ExampleReadFASTAGz shows basic usage for ReadFASTAGz on a gzip'd file.
-func ExampleReadFASTAGz() {
-	fastas := ReadFASTAGz("data/uniprot_1mb_test.fasta.gz")
+// ExampleReadGz shows basic usage for ReadGz on a gzip'd file.
+func ExampleReadGz() {
+	fastas := ReadGz("data/uniprot_1mb_test.fasta.gz")
 	var name string
 	for _, fasta := range fastas {
 		name = fasta.Name
@@ -56,10 +56,10 @@ func ExampleReadFASTAGz() {
 	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
 }
 
-// ExampleReadFASTAGzConcurrent shows how to use the concurrent FASTA parser for larger files.
-func ExampleReadFASTAGzConcurrent() {
+// ExampleReadGzConcurrent shows how to use the concurrent  parser for larger files.
+func ExampleReadGzConcurrent() {
 	fastas := make(chan Fasta, 1000)
-	go ReadFASTAGzConcurrent("data/uniprot_1mb_test.fasta.gz", fastas)
+	go ReadGzConcurrent("data/uniprot_1mb_test.fasta.gz", fastas)
 	var name string
 	for fasta := range fastas {
 		name = fasta.Name
@@ -69,10 +69,10 @@ func ExampleReadFASTAGzConcurrent() {
 	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
 }
 
-// ExampleReadFASTAConcurrent shows how to use the concurrent FASTA parser for decompressed fasta files.
-func ExampleReadFASTAConcurrent() {
+// ExampleReadConcurrent shows how to use the concurrent  parser for decompressed fasta files.
+func ExampleReadConcurrent() {
 	fastas := make(chan Fasta, 100)
-	go ReadFASTAConcurrent("data/base.fasta", fastas)
+	go ReadConcurrent("data/base.fasta", fastas)
 	var name string
 	for fasta := range fastas {
 		name = fasta.Name

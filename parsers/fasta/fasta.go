@@ -13,27 +13,27 @@ import (
 /******************************************************************************
 Apr 25, 2021
 
-FASTA Parser begins here
+ Parser begins here
 
 Many thanks to Jordan Campbell (https://github.com/0x106) for building the first
-FASTA parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
+ parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
 for helping complete that PR. This work expands on the previous work by allowing
-for concurrent FASTA parsing and giving Poly a specific FASTA parser subpackage,
+for concurrent  parsing and giving Poly a specific  parser subpackage,
 as well as few bug fixes.
 
-FASTA is a very simple file format for working with DNA, RNA, or protein sequences.
+ is a very simple file format for working with DNA, RNA, or protein sequences.
 It was first released in 1985 and is still widely used in bioinformatics.
 
-https://en.wikipedia.org/wiki/FASTA_format
+https://en.wikipedia.org/wiki/_format
 
-One interesting use of the concurrent FASTA parser is working with the Uniprot
-FASTA dump files, which are far too large to fit into RAM. This parser is able
+One interesting use of the concurrent  parser is working with the Uniprot
+ dump files, which are far too large to fit into RAM. This parser is able
 to easily handle those files by doing computation actively while the data dump
 is getting parsed.
 
 https://www.uniprot.org/downloads
 
-I have removed the FASTA Parsers from the io.go file and moved them into this
+I have removed the  Parsers from the io.go file and moved them into this
 subpackage.
 
 Hack the Planet,
@@ -48,10 +48,10 @@ type Fasta struct {
 	Sequence string `json:"sequence"`
 }
 
-// ParseFASTA parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
-func ParseFASTA(r io.Reader) []Fasta {
+// Parse parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
+func Parse(r io.Reader) []Fasta {
 	fastas := make(chan Fasta, 1000) // A buffer is used so that the functions runs as it is appending to outputFastas
-	go ParseFASTAConcurrent(r, fastas)
+	go ParseConcurrent(r, fastas)
 
 	var outputFastas []Fasta
 	for fasta := range fastas {
@@ -60,8 +60,8 @@ func ParseFASTA(r io.Reader) []Fasta {
 	return outputFastas
 }
 
-// ParseFASTAConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
-func ParseFASTAConcurrent(r io.Reader, sequences chan<- Fasta) {
+// ParseConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
+func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
 	// Initialize necessary variables
 	var sequenceLines []string
 	var name string
@@ -109,46 +109,46 @@ func ParseFASTAConcurrent(r io.Reader, sequences chan<- Fasta) {
 
 /******************************************************************************
 
-Start of FASTA Read functions
+Start of  Read functions
 
 ******************************************************************************/
 
-// ReadFASTAGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
-func ReadFASTAGzConcurrent(path string, sequences chan<- Fasta) {
+// ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
+func ReadGzConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
 	r, _ := gzip.NewReader(file)
-	go ParseFASTAConcurrent(r, sequences)
+	go ParseConcurrent(r, sequences)
 }
 
-// ReadFASTAConcurrent concurrently reads a flat Fasta file into a Fasta channel.
-func ReadFASTAConcurrent(path string, sequences chan<- Fasta) {
+// ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
+func ReadConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path)
-	go ParseFASTAConcurrent(file, sequences)
+	go ParseConcurrent(file, sequences)
 }
 
-// ReadFASTAGz reads a gzipped FASTA file into an array of Fasta structs.
-func ReadFASTAGz(path string) []Fasta {
+// ReadGz reads a gzipped  file into an array of Fasta structs.
+func ReadGz(path string) []Fasta {
 	file, _ := os.Open(path)
 	r, _ := gzip.NewReader(file)
-	fastas := ParseFASTA(r)
+	fastas := Parse(r)
 	return fastas
 }
 
-// ReadFASTA reads a FASTA file into an array of Fasta structs
-func ReadFASTA(path string) []Fasta {
+// Read reads a  file into an array of Fasta structs
+func Read(path string) []Fasta {
 	file, _ := os.Open(path)
-	fastas := ParseFASTA(file)
+	fastas := Parse(file)
 	return fastas
 }
 
 /******************************************************************************
 
-Start of FASTA Write functions
+Start of  Write functions
 
 ******************************************************************************/
 
-// BuildFASTA writes a Fasta struct to a FASTA string.
-func BuildFASTA(fastas []Fasta) []byte {
+// Build writes a Fasta struct to a  string.
+func Build(fastas []Fasta) []byte {
 	var fastaString bytes.Buffer
 	for _, fasta := range fastas {
 		fastaString.WriteString(">")
@@ -160,7 +160,7 @@ func BuildFASTA(fastas []Fasta) []byte {
 	return fastaString.Bytes()
 }
 
-// WriteFASTA writes a FASTA string to a file.
-func WriteFASTA(fastas []Fasta, path string) {
-	_ = ioutil.WriteFile(path, BuildFASTA(fastas), 0644)
+// Write writes a  string to a file.
+func Write(fastas []Fasta, path string) {
+	_ = ioutil.WriteFile(path, Build(fastas), 0644)
 }
