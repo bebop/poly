@@ -24,7 +24,7 @@ func ExampleParse() {
 
 	entries := make(chan Entry, 100) // if you don't have a buffered channel, nothing will be read in loops on the channel.
 	decoderErrors := make(chan error, 100)
-  
+
 	go Parse(unzippedBytes, entries, decoderErrors)
 
 	var entry Entry
@@ -46,7 +46,7 @@ func TestRead(t *testing.T) {
 		t.Errorf("Failed to fail on empty file")
 	}
 
-	_, errors, err := ReadUniprot("data/uniprot_sprot_mini.xml.gz")
+	_, errors, err := Read("data/uniprot_sprot_mini.xml.gz")
 	if err != nil {
 		t.Errorf("Failed on real file with error: %v", err)
 	}
