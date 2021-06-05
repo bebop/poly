@@ -82,7 +82,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
 		case line[0:1] != ">":
 			sequenceLines = append(sequenceLines, line)
 		// Process normal new lines
-		case line[0:1] == ">" && start == false:
+		case line[0:1] == ">" && !start:
 			sequence := strings.Join(sequenceLines, "")
 			newFasta := Fasta{
 				Name:     name,
@@ -93,7 +93,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
 			name = line[1:]
 			sequences <- newFasta
 		// Process first line of file
-		case line[0:1] == ">" && start == true:
+		case line[0:1] == ">" && start:
 			name = line[1:]
 			start = false
 		}
