@@ -22,7 +22,7 @@ via cli.app.reader and cli.app.writer. This is the only way to get true stack
 traceable coverage.
 ******************************************************************************/
 
-var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655-short.gff", "../data/sample.json", "../data/base.fasta"}
+var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655-short.gff", "../data/sample.json"}
 
 func TestMain(t *testing.T) {
 	rescueStdout := os.Stdout
