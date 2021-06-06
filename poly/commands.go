@@ -3,21 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/TimothyStiles/poly"
 	"github.com/urfave/cli/v2"
-	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -28,30 +23,19 @@ File is structured as so:
 	Top level commands:
 		Convert
 		Hash
-		Translate
-		Optimize
 
-	Helper functions
+These commands are mainly for developer utility.
+They are well tested but really, really shouldn't be used in production.
+Unless there's a strong case for a new command line utility tool it's very unlikely that I'll
+merge a new command so please ask before developing one with the intent of merging a pull request.
+Too much effort for not enough pay off just to maintain it in most cases.
 
-
-This file contains a majority of the code that runs when command line routines
-are run. The one exception is that argument flags and helper text for each
-command are defined in main.go which then makes calls to their corresponding
-function in this file. This keeps main.go clean and readable.
-
-To ease development you'll notice there's a common command line template in
-the section below along with helper functions for parsing stdin, getting blob
-matches, etc which almost every command ends up using.
-
-Each command must also have a test in commands_test.go that demonstrates its
-correct usage by executing a bash subprocess. You can read more about that at
-the top of commands_test.go itself.
-
-Happy hacking,
+TTFN,
 Tim
 
-https://github.com/urfave/cli/issues/731
 ******************************************************************************/
+
+var errIllegalInputFlag error = errors.New("the '-i' flag can only be used with pipes")
 
 /******************************************************************************
 
@@ -90,11 +74,12 @@ func convertCommand(c *cli.Context) error {
 		fmt.Fprint(c.App.Writer, string(output))
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalInputFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
-
-		// TODO write basic check to see if input flag or all paths have accepted file extensions.
 
 		// TODO write basic check for reduduncy. I.E converting gff to gff, etc.
 
@@ -109,7 +94,7 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := parseExt(match)
 				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
@@ -157,11 +142,14 @@ parse them, and then spit out a similiarly named file with the .json extension a
 func hashCommand(c *cli.Context) error {
 
 	if isPipe(c) {
-		sequence := parseStdin(c)                   // get sequence from stdin
-		sequenceHash := flagSwitchHash(c, sequence) // get hash include no-op which only rotates the sequence
-		printHash(c, sequenceHash, "-")
+		sequence := parseStdin(c) // get sequence from stdin
+		hash, _ := sequence.Hash()
+		printHash(c, hash, "-")
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalInputFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
@@ -177,9 +165,9 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
-				sequenceHash := flagSwitchHash(c, sequence)
-				printHash(c, sequenceHash, match)
+				sequence := parseExt(match)
+				hash, _ := sequence.Hash()
+				printHash(c, hash, match)
 
 				// decrementing wait group.
 				wg.Done()
@@ -190,95 +178,6 @@ func hashCommand(c *cli.Context) error {
 
 		// waiting outside for loop for Go routines so they can run concurrently.
 		wg.Wait()
-
-	}
-	return nil
-}
-
-/******************************************************************************
-
-poly optimize currently has one mode. Pipe io.
-
-The function isPipe() detects if input is coming from a pipe like:
-
-	cat data/DNAsequence.txt | poly optimize > test.txt
-
-	poly optimize can also have it's codon table specified
-	and files can be provided to add weight to the codon table
-
-	cat data/DNAsequence.txt | poly optimize -ct 11 -wt data/puc19.gbk > test.txt
-
-In the future there will be multi file support. Check our issues on github to see what's up.
-
-******************************************************************************/
-func optimizeCommand(c *cli.Context) error {
-
-	// get appropriate codon table from flag
-	var codonTable poly.CodonTable
-
-	if isNumeric(c.String("ct")) {
-		codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-		codonTable = poly.GetCodonTable(codonTableNumber)
-	}
-
-	// if a file exists to weigh the table. Weigh it.
-	if fileExists(c.String("wt")) {
-		targetOrganism := fileParser(c, c.String("wt"))
-		codonTable.OptimizeTable(targetOrganism.Sequence)
-	}
-
-	if isPipe(c) {
-
-		// uncomment below to parse sequence from pipe
-		sequence := parseStdin(c)
-		var aminoAcids string
-
-		if c.Bool("aa") {
-			aminoAcids = sequence.Sequence
-		} else {
-			aminoAcids = poly.Translate(sequence.Sequence, codonTable)
-		}
-
-		optimizedSequence := poly.Optimize(aminoAcids, codonTable)
-		fmt.Fprintln(c.App.Writer, optimizedSequence)
-
-	}
-	return nil
-}
-
-/******************************************************************************
-
-poly translate currently has one mode. Pipe io.
-
-The function isPipe() detects if input is coming from a pipe like:
-
-	cat data/DNAsequence.txt | poly translate > test.txt
-
-	poly optimize can also have it's codon table specified
-
-	cat data/DNAsequence.txt | poly translate --codon-table Standard > test.txt
-
-In the future there will be multi file support. Check our issues on github to see what's up.
-
-******************************************************************************/
-
-func translateCommand(c *cli.Context) error {
-
-	if isPipe(c) {
-
-		// get appropriate codon table from flag
-		var codonTable poly.CodonTable
-
-		if isNumeric(c.String("ct")) {
-			codonTableNumber, _ := strconv.Atoi(c.String("ct"))
-			codonTable = poly.GetCodonTable(codonTableNumber)
-		}
-
-		sequence := parseStdin(c)
-
-		aminoAcids := poly.Translate(sequence.Sequence, codonTable)
-
-		fmt.Fprintln(c.App.Writer, aminoAcids)
 
 	}
 	return nil
@@ -312,25 +211,16 @@ func isPipe(c *cli.Context) bool {
 	return flag
 }
 
-func isNumeric(s string) bool {
-	_, err := strconv.ParseFloat(s, 64)
-	return err == nil
-}
-
 // a simple helper function to take stdin from a pipe and parse it into an Sequence
 func parseStdin(c *cli.Context) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if c.String("i") == "json" {
-		json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
+		_ = json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
 		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
-	} else if c.String("i") == "fasta" {
-		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
-	} else if c.String("i") == "string" {
-		sequence.Sequence = parseText(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -340,68 +230,13 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 	var sequence poly.Sequence
 	// logic for determining input format, then parses accordingly.
 	if flag == "json" {
-		json.Unmarshal(file, &sequence)
+		_ = json.Unmarshal(file, &sequence)
 	} else if flag == "gbk" || flag == "gb" {
 		sequence = poly.ParseGbk(file)
 	} else if flag == "gff" {
 		sequence = poly.ParseGff(file)
-	} else if flag == "fasta" {
-		sequence = poly.ParseFASTA(file)
-	} else if flag == "string" {
-		sequence.Sequence = string(file)
 	}
 	return sequence
-}
-
-// helper function to hash sequence based on flag using generic hash.
-func flagSwitchHash(c *cli.Context, sequence poly.Sequence) string {
-
-	var hashString string
-	hashFunctionName := strings.ToUpper(c.String("f"))
-	switch hashFunctionName {
-	case "MD5":
-		hashString = sequence.Hash(crypto.MD5.New())
-	case "SHA1":
-		hashString = sequence.Hash(crypto.SHA1.New())
-	case "SHA244":
-		hashString = sequence.Hash(crypto.SHA224.New())
-	case "SHA256":
-		hashString = sequence.Hash(crypto.SHA256.New())
-	case "SHA384":
-		hashString = sequence.Hash(crypto.SHA384.New())
-	case "SHA512":
-		hashString = sequence.Hash(crypto.SHA512.New())
-	case "RIPEMD160":
-		hashString = sequence.Hash(crypto.RIPEMD160.New())
-	case "SHA3_224":
-		hashString = sequence.Hash(crypto.SHA3_224.New())
-	case "SHA3_256":
-		hashString = sequence.Hash(crypto.SHA3_256.New())
-	case "SHA3_384":
-		hashString = sequence.Hash(crypto.SHA3_384.New())
-	case "SHA3_512":
-		hashString = sequence.Hash(crypto.SHA3_512.New())
-	case "SHA512_224":
-		hashString = sequence.Hash(crypto.SHA512_224.New())
-	case "SHA512_256":
-		hashString = sequence.Hash(crypto.SHA512_256.New())
-	case "BLAKE2S_256":
-		hashString = sequence.Hash(crypto.BLAKE2s_256.New())
-	case "BLAKE2B_256":
-		hashString = sequence.Hash(crypto.BLAKE2b_256.New())
-	case "BLAKE2B_384":
-		hashString = sequence.Hash(crypto.BLAKE2b_384.New())
-	case "BLAKE2B_512":
-		hashString = sequence.Hash(crypto.BLAKE2b_512.New())
-	case "BLAKE3":
-		hashString = sequence.Hash(blake3.New(32, nil))
-	case "NO":
-		hashString = poly.RotateSequence(sequence.Sequence)
-	default:
-		hashString = sequence.Hash(blake3.New(32, nil))
-		break
-	}
-	return hashString
 }
 
 // helper function to get unique glob patterns from cli.context
@@ -440,25 +275,6 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 
 }
 
-// function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) poly.Sequence {
-	extension := filepath.Ext(match)
-	var sequence poly.Sequence
-
-	// determining which reader to use and parse into Sequence struct.
-	if extension == ".gff" || c.String("i") == "gff" {
-		sequence = poly.ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-		sequence = poly.ReadGbk(match)
-	} else if extension == ".json" || c.String("i") == "json" {
-		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" || c.String("i") == "fasta" {
-		sequence = poly.ReadFASTA(match)
-	}
-	// TODO put default error handling here.
-	return sequence
-}
-
 func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 	var output []byte
 	if c.String("o") == "json" {
@@ -467,10 +283,6 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 		output = poly.BuildGff(sequence)
 	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 		output = poly.BuildGbk(sequence)
-	} else if c.String("o") == "fasta" {
-		output = poly.BuildFASTA(sequence)
-	} else if c.String("o") == "string" || c.String("o") == "txt" {
-		output = []byte(sequence.Sequence)
 	}
 	return output
 }
@@ -497,10 +309,7 @@ func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
 		poly.WriteGff(sequence, outputPath)
 	} else if outputExtension == "gbk" || c.String("o") == "gb" {
 		poly.WriteGbk(sequence, outputPath)
-	} else if outputExtension == "fasta" {
-		poly.WriteFASTA(sequence, outputPath)
 	}
-
 }
 
 func printHash(c *cli.Context, hash string, path string) {
@@ -523,30 +332,6 @@ func parseExt(match string) poly.Sequence {
 		sequence = poly.ReadGbk(match)
 	} else if extension == ".json" {
 		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" {
-		sequence = poly.ReadFASTA(match)
 	}
 	return sequence
-}
-
-// fileExists checks if a file exists and is not a directory before we
-// try using it to prevent further errors.
-// from https://golangcode.com/check-if-a-file-exists/
-
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
-func parseText(file []byte) string {
-	fileString := string(file)
-	reg, err := regexp.Compile("\\*[^a-zA-Z]+")
-	if err != nil {
-		log.Fatal(err)
-	}
-	processedString := reg.ReplaceAllString(fileString, "")
-	return processedString
 }

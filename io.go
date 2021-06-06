@@ -167,10 +167,10 @@ func ParseGff(file []byte) Sequence {
 			continue
 		} else if line[0:2] == "##" {
 			continue
-		} else if fastaFlag == true && line[0:1] != ">" {
+		} else if fastaFlag && line[0:1] != ">" {
 			// sequence.Sequence = sequence.Sequence + line
 			sequenceBuffer.WriteString(line)
-		} else if fastaFlag == true && line[0:1] == ">" {
+		} else if fastaFlag && line[0:1] == ">" {
 			sequence.Description = line
 		} else {
 			record := Feature{}
@@ -327,8 +327,7 @@ func BuildGff(sequence Sequence) []byte {
 // ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated Sequence struct.
 func ReadGff(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGff(file)
+	sequence := ParseGff(file)
 	return sequence
 }
 
@@ -353,7 +352,7 @@ JSON specific IO related things begin here.
 // ParseJSON parses an Sequence JSON file and adds appropriate pointers to struct.
 func ParseJSON(file []byte) Sequence {
 	var sequence Sequence
-	json.Unmarshal([]byte(file), &sequence)
+	_ = json.Unmarshal([]byte(file), &sequence)
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 
@@ -379,133 +378,6 @@ func WriteJSON(sequence Sequence, path string) {
 /******************************************************************************
 
 JSON specific IO related things end here.
-
-******************************************************************************/
-
-/******************************************************************************
-
-FASTA specific IO related things begin here.
-
-******************************************************************************/
-
-// ParseFASTA parses a Sequence struct from a FASTA file and adds appropriate pointers to the structs.
-func ParseFASTA(file []byte) Sequence {
-	fasta := string(file)
-	var sequence Sequence
-	var feature Feature
-	var features []Feature
-	var sequenceBuffer bytes.Buffer
-	var start int
-	var end int
-
-	lines := strings.Split(fasta, "\n")
-	linesLength := len(lines) - 1
-
-	for lineIndex, line := range lines {
-
-		// if there's nothing on this line skip this iteration of the loop
-		if len(line) == 0 {
-			continue
-		}
-
-		// if it's a comment skip this line
-		if line[0:1] == ";" {
-			continue
-		}
-
-		if line[0:1] == ">" && lineIndex == 0 { // if it's the first description
-			feature.Description = line[1:]
-
-		} else if line[0:1] == ">" || lineIndex == linesLength { // if it's a description or the last line
-
-			// if end of file write line to buffer
-			if lineIndex == linesLength {
-				sequenceBuffer.WriteString(line)
-			}
-
-			// setting sequence location
-			feature.SequenceLocation.Start = start
-			end = len(sequenceBuffer.String())
-			feature.SequenceLocation.End = end
-
-			// setting start to end after assigning to location in feature.
-			start = end
-
-			// adding new feature to features slice
-			features = append(features, feature)
-
-			// resetting feature
-			feature = Feature{}
-
-			// if it's the last line
-			if lineIndex != linesLength {
-				feature.Description = line[1:]
-			}
-
-		} else {
-			sequenceBuffer.WriteString(line)
-		}
-	}
-
-	sequence.Sequence = sequenceBuffer.String()
-
-	// add features last so that internal pointer to parent sequence is accurate
-	for _, feature := range features {
-		sequence.AddFeature(feature)
-	}
-
-	return sequence
-}
-
-// BuildFASTA builds a FASTA string from a Sequence struct.
-func BuildFASTA(sequence Sequence) []byte {
-	var fastaBuffer bytes.Buffer
-	const maxLineLength = 70
-
-	for featureIndex, feature := range sequence.Features {
-
-		// if there isn't a descriptive comment don't write out feature to fasta file.
-		if feature.Description == "" {
-			continue
-		}
-		// write feature comment
-		fastaBuffer.WriteString(">" + feature.Description + "\n")
-
-		// range over sequence and add spacing
-		for characterIndex, character := range feature.GetSequence() {
-			characterIndex++
-			if characterIndex%maxLineLength == 0 && characterIndex != 0 {
-				fastaBuffer.WriteRune(character)
-				fastaBuffer.WriteString("\n")
-			} else {
-				fastaBuffer.WriteRune(character)
-			}
-		}
-
-		// if it's the end write new line.
-		if featureIndex != len(sequence.Features)-1 {
-			fastaBuffer.WriteString("\n\n")
-		}
-	}
-
-	return fastaBuffer.Bytes()
-}
-
-// ReadFASTA reads a Sequence struct from a FASTA file.
-func ReadFASTA(path string) Sequence {
-	file, _ := ioutil.ReadFile(path)
-	sequence := ParseFASTA(file)
-	return sequence
-}
-
-// WriteFASTA writes a Sequence struct out to FASTA.
-func WriteFASTA(sequence Sequence, path string) {
-	_ = ioutil.WriteFile(path, BuildFASTA(sequence), 0644)
-}
-
-/******************************************************************************
-
-FASTA specific IO related things end here.
 
 ******************************************************************************/
 
@@ -540,7 +412,7 @@ func ParseGbk(file []byte) Sequence {
 		// Break has to be in scope and can't be called within switch statement.
 		// Otherwise it will just break the switch which is redundant.
 		sequenceBreakFlag := false
-		if sequenceBreakFlag == true {
+		if sequenceBreakFlag {
 			break
 		}
 
@@ -707,8 +579,7 @@ func BuildGbk(sequence Sequence) []byte {
 // ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
 func ReadGbk(path string) Sequence {
 	file, _ := ioutil.ReadFile(path)
-	var sequence Sequence
-	sequence = ParseGbk(file)
+	sequence := ParseGbk(file)
 	return sequence
 }
 
@@ -766,176 +637,6 @@ var genbankTopLevelFeatures = []string{
 	"REFERENCE",
 	"FEATURES",
 	"ORIGIN",
-}
-
-// used in feature check functions.
-var genbankSubLevelFeatures = []string{
-	"ORGANISM",
-	"AUTHORS",
-	"TITLE",
-	"JOURNAL",
-	"PUBMED",
-	"REMARK",
-}
-
-// all gene feature types in genbank
-var genbankGeneFeatureTypes = []string{
-	"assembly_gap",
-	"C_region",
-	"CDS",
-	"centromere",
-	"D-loop",
-	"D_segment",
-	"exon",
-	"gap",
-	"gene",
-	"iDNA",
-	"intron",
-	"J_segment",
-	"mat_peptide",
-	"misc_binding",
-	"misc_difference",
-	"misc_feature",
-	"misc_recomb",
-	"misc_RNA",
-	"misc_structure",
-	"mobile_element",
-	"modified_base",
-	"mRNA",
-	"ncRNA",
-	"N_region",
-	"old_sequence",
-	"operon",
-	"oriT",
-	"polyA_site",
-	"precursor_RNA",
-	"prim_transcript",
-	"primer_bind",
-	"propeptide",
-	"protein_bind",
-	"regulatory",
-	"repeat_region",
-	"rep_origin",
-	"rRNA",
-	"S_region",
-	"sig_peptide",
-	"source",
-	"stem_loop",
-	"STS",
-	"telomere",
-	"tmRNA",
-	"transit_peptide",
-	"tRNA",
-	"unsure",
-	"V_region",
-	"V_segment",
-	"variation",
-	"3'UTR",
-	"5'UTR",
-}
-
-// all genbank feature qualifiers
-var genbankGeneQualifierTypes = []string{
-	"/allele=",
-	"/altitude=",
-	"/anticodon=",
-	"/artificial_location",
-	"/bio_material=",
-	"/bound_moiety=",
-	"/cell_line=",
-	"/cell_type=",
-	"/chromosome=",
-	"/citation=",
-	"/clone=",
-	"/clone_lib=",
-	"/codon_start=",
-	"/collected_by=",
-	"/collection_date=",
-	"/compare=",
-	"/country=",
-	"/cultivar=",
-	"/culture_collection=",
-	"/db_xref=",
-	"/dev_stage=",
-	"/direction=",
-	"/EC_number=",
-	"/ecotype=",
-	"/environmental_sample",
-	"/estimated_length=",
-	"/exception=",
-	"/experiment=",
-	"/focus",
-	"/frequency=",
-	"/function=",
-	"/gap_type=",
-	"/gene=",
-	"/gene_synonym=",
-	"/germline",
-	"/haplogroup=",
-	"/haplotype=",
-	"/host=",
-	"/identified_by=",
-	"/inference=",
-	"/isolate=",
-	"/isolation_source=",
-	"/lab_host=",
-	"/lat_lon=",
-	"/linkage_evidence=",
-	"/locus_tag=",
-	"/macronuclear",
-	"/map=",
-	"/mating_type=",
-	"/metagenome_source",
-	"/mobile_element_type=",
-	"/mod_base=",
-	"/mol_type=",
-	"/ncRNA_class=",
-	"/note=",
-	"/number=",
-	"/old_locus_tag=",
-	"/operon=",
-	"/organelle=",
-	"/organism=",
-	"/partial",
-	"/PCR_conditions=",
-	"/PCR_primers=",
-	"/phenotype=",
-	"/plasmid=",
-	"/pop_variant=",
-	"/product=",
-	"/protein_id=",
-	"/proviral",
-	"/pseudo",
-	"/pseudogene=",
-	"/rearranged",
-	"/replace=",
-	"/ribosomal_slippage",
-	"/rpt_family=",
-	"/rpt_type=",
-	"/rpt_unit_range=",
-	"/rpt_unit_seq=",
-	"/satellite=",
-	"/segment=",
-	"/serotype=",
-	"/serovar=",
-	"/sex=",
-	"/specimen_voucher=",
-	"/standard_name=",
-	"/strain=",
-	"/sub_clone=",
-	"/submitter_seqid=",
-	"/sub_species=",
-	"/sub_strain=",
-	"/tag_peptide=",
-	"/tissue_lib=",
-	"/tissue_type=",
-	"/transgenic",
-	"/translation=",
-	"/transl_except=",
-	"/transl_table=",
-	"/trans_splicing",
-	"/type_material=",
-	"/variety=",
 }
 
 // indeces for random points of interests on a gbk line.
@@ -1169,6 +870,20 @@ func getFeatures(lines []string) []Feature {
 		feature.Type = strings.TrimSpace(splitLine[0])
 		// feature.GbkLocationString is the string used by GBK to denote location
 		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+
+		// Check if the location string is multiple lines.
+		nextLineNum := 0
+		for {
+			nextLineNum++
+			nextLine := lines[lineIndex+nextLineNum]
+			// Check if the next line is not a qualifier, it is part of the
+			// GbkLocation String
+			if !strings.Contains(nextLine, "/") {
+				feature.GbkLocationString = feature.GbkLocationString + strings.TrimSpace(nextLine)
+			} else {
+				break
+			}
+		}
 		feature.SequenceLocation = parseGbkLocation(feature.GbkLocationString)
 
 		// initialize attributes.
@@ -1176,7 +891,7 @@ func getFeatures(lines []string) []Feature {
 
 		// end of feature declaration line. Bump to next line and begin looking for qualifiers.
 		lineIndex++
-		line = lines[lineIndex]
+		line = lines[lineIndex+nextLineNum-1]
 
 		// loop through potential qualifiers. Break if not a qualifier or sub line.
 		// Definition of qualifiers here: http://www.insdc.org/files/feature_table.html#3.3
@@ -1305,7 +1020,7 @@ func parseGbkLocation(locationString string) Location {
 	}
 
 	// if excess root node then trim node. Maybe should just be handled with second arg?
-	if location.Start == 0 && location.End == 0 && location.Join == false && location.Complement == false {
+	if location.Start == 0 && location.End == 0 && !location.Join && !location.Complement {
 		location = location.SubLocations[0]
 	}
 

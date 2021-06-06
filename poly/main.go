@@ -50,6 +50,15 @@ func run(args []string) {
 
 // application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
 func application() *cli.App {
+	inputFlag := cli.StringFlag{
+		Name:  "i",
+		Usage: "Specify file input type. Options are gff, gbk/gb, and json. For use with pipes.",
+	}
+	outputFlag := cli.StringFlag{
+		Name:  "o",
+		Value: "json",
+		Usage: "Specify file output type or path. Defaults to json.",
+	}
 
 	app := &cli.App{
 		Name:  "poly",
@@ -57,21 +66,12 @@ func application() *cli.App {
 
 		// This is where you define global flags. Each sub command can also have its own flags that overide globals
 		Flags: []cli.Flag{
-
 			&cli.BoolFlag{
 				Name:  "y",
 				Usage: "Answers yes for all confirmations before doing something possibly destructive.",
 			},
-
-			&cli.StringFlag{
-				Name:  "i",
-				Usage: "Specify file input type or input path.",
-			},
-
-			&cli.StringFlag{
-				Name:  "o",
-				Usage: "Specify file output type or output path.",
-			},
+			&inputFlag,
+			&outputFlag,
 		},
 
 		// This is where you start defining subcommands there's a lot of spacing to enhance readability since these nested brackets can be a little much.
@@ -85,111 +85,27 @@ func application() *cli.App {
 
 				// defining flags for this specific sub command
 				Flags: []cli.Flag{
-
-					&cli.StringFlag{
-						Name:  "o",
-						Value: "json",
-						Usage: "Specify file output type or path. Defaults to json.",
-					},
-
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "",
-						Usage: "Specify file input type. Options are Gff, gbk/gb, and json. Defaults to none.",
-					},
+					&inputFlag,
+					&outputFlag,
 				},
 				// where we provide the actual function that is called by the subcommand.
 				Action: func(c *cli.Context) error {
-					convertCommand(c)
-					return nil
+					err := convertCommand(c)
+					return err
 				},
 			},
 
 			{
 				Name:    "hash",
 				Aliases: []string{"ha"},
-				Usage:   "Hash a sequence while accounting for circularity.",
+				Usage:   "Hash a sequence while accounting for circularity using SeqhashV1.",
 
 				Flags: []cli.Flag{
-
-					&cli.StringFlag{
-						Name:  "f",
-						Value: "blake3",
-						Usage: "Specify hash function type. Has many options. Blake3 is probably fastest.",
-					},
-
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "json",
-						Usage: "Specify file input type.",
-					},
-
-					&cli.StringFlag{
-						Name:  "o",
-						Value: "string",
-						Usage: "Specify output type. Defaults to string.",
-					},
+					&inputFlag,
 				},
 				Action: func(c *cli.Context) error {
-					hashCommand(c)
-					return nil
-				},
-			},
-			{
-				Name:    "translate",
-				Aliases: []string{"tr"},
-				Usage:   "Translate a coding sequence into an amino acid string",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "Standard",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					translateCommand(c)
-					return nil
-				},
-			},
-			{
-				Name:    "optimize",
-				Aliases: []string{"op"},
-				Usage:   "Optimize a sequence for a specific organism.",
-
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "string",
-						Usage: "Specify file input type.",
-					},
-					&cli.StringFlag{
-						Name:    "ct",
-						Aliases: []string{"--codon-table"},
-						Value:   "1",
-						Usage:   "Specify codon table used for organism. Defaults to Standard NCBI table.",
-					},
-					&cli.BoolFlag{
-						Name:    "aa",
-						Aliases: []string{"--amino-acid"},
-						Value:   false,
-						Usage:   "Specify that the input sequence is an amino acid sequence.",
-					},
-					&cli.StringFlag{
-						Name:    "wt",
-						Aliases: []string{"--weight-table"},
-						Usage:   "Specify file to weigh table with",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					optimizeCommand(c)
-					return nil
+					err := hashCommand(c)
+					return err
 				},
 			},
 		}, // subcommands list ends here

@@ -43,3 +43,6 @@ checks:
     enabled: true
     config:
       threshold: #language-specific defaults. overrides affect all languages.
+engines:
+  markdownlint:
+    enabled: false
