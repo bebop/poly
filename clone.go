@@ -101,7 +101,9 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 	return enzymeMap
 }
 
-// CutWithEnzymeByName cuts a given sequence with an enzyme represented by the enzyme's name.
+// CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
+// enzyme's name. It is a convenience wrapper around CutWithEnzyme that
+// allows us to specify the enzyme by name.
 func CutWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; ok == false {
