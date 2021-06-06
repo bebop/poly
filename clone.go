@@ -102,7 +102,8 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 }
 
 // RestrictionEnzymeCut cuts a given sequence with an enzyme represented by the enzyme's name.
-func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
+// a convenience wrapper around CutSequenceWithEnzyme that allows us to specify the enzyme by name.
+func CutSequenceWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; ok == false {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
