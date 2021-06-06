@@ -106,10 +106,10 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 // allows us to specify the enzyme by name.
 func CutWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
-	if _, ok := enzymeMap[enzymeStr]; ok == false {
+	if _, ok := enzymeMap[enzymeStr]; !ok {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
-	enzyme, _ := enzymeMap[enzymeStr]
+	enzyme := enzymeMap[enzymeStr]
 	return CutWithEnzyme(seq, enzyme), nil
 }
 
@@ -117,7 +117,7 @@ func CutWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error
 func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 	var fragmentSeqs []string
 	var sequence string
-	if seq.Circular == true {
+	if seq.Circular {
 		sequence = strings.ToUpper(seq.Sequence + seq.Sequence)
 	} else {
 		sequence = strings.ToUpper(seq.Sequence)
@@ -134,7 +134,7 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 	}
 
 	// If, on a linear sequence, the last overhang's position plus EnzymeSkip is over the length of the sequence, remove that overhang.
-	if (seq.Circular == false) && (overhangs[len(overhangs)-1].Position+enzyme.EnzymeSkip > len(sequence)) {
+	if seq.Circular && (overhangs[len(overhangs)-1].Position+enzyme.EnzymeSkip > len(sequence)) {
 		overhangs = overhangs[:len(overhangs)-1]
 	}
 
