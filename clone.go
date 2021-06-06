@@ -101,18 +101,18 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 	return enzymeMap
 }
 
-// RestrictionEnzymeCut cuts a given sequence with an enzyme represented by the enzyme's name.
-func RestrictionEnzymeCut(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
+// CutWithEnzymeByName cuts a given sequence with an enzyme represented by the enzyme's name.
+func CutWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; ok == false {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
 	enzyme, _ := enzymeMap[enzymeStr]
-	return RestrictionEnzymeCutEnzymeStruct(seq, enzyme), nil
+	return CutWithEnzyme(seq, enzyme), nil
 }
 
-// RestrictionEnzymeCutEnzymeStruct cuts a given sequence with an enzyme represented by an Enzyme struct.
-func RestrictionEnzymeCutEnzymeStruct(seq CloneSequence, enzyme Enzyme) []Fragment {
+// CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
+func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 	var fragmentSeqs []string
 	var sequence string
 	if seq.Circular == true {
@@ -211,8 +211,8 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 	}
 }
 
-// Ligate simulates ligation of all possible fragment combinations into circular plasmids.
-func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
+// CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
+func CircularLigate(fragments []Fragment, maxClones int) []CloneSequence {
 	var wg sync.WaitGroup
 	c := make(chan string, maxClones) // A buffered channel is needed to prevent blocking.
 	wg.Add(len(fragments))
@@ -226,18 +226,14 @@ func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
 	// a valid rotation of the complete build. This sorts those sequences out using their unique Seqhashes.
 	var outputConstructs []CloneSequence
 	var seqhashConstruct string
-	var withinConstructs bool
 	for construct := range c {
 		seqhashConstruct, _ = Seqhash(construct, "DNA", true, true)
-		withinConstructs = false
 		for _, outputConstruct := range outputConstructs {
 			if outputConstruct.Sequence == seqhashConstruct {
-				withinConstructs = true
+				continue
 			}
 		}
-		if withinConstructs == false {
-			outputConstructs = append(outputConstructs, CloneSequence{construct, true})
-		}
+		outputConstructs = append(outputConstructs, CloneSequence{construct, true})
 	}
 	return outputConstructs
 }
@@ -248,15 +244,16 @@ Specific cloning functions begin here.
 
 ******************************************************************************/
 
-// GoldenGate simulates a GoldenGate cloning reaction.
+// GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
+// support BsaI, BbsI, BtgZI, and BsmBI.
 func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := RestrictionEnzymeCut(sequence, enzymeStr)
+		newFragments, err := CutWithEnzymeByName(sequence, enzymeStr)
 		if err != nil {
 			return []CloneSequence{}, err
 		}
 		fragments = append(fragments, newFragments...)
 	}
-	return Ligate(fragments, 1000), nil
+	return CircularLigate(fragments, 1000), nil
 }
