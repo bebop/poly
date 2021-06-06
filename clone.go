@@ -235,7 +235,7 @@ func Ligate(fragments []Fragment, maxClones int) []CloneSequence {
 				withinConstructs = true
 			}
 		}
-		if withinConstructs == false {
+		if !withinConstructs  {
 			outputConstructs = append(outputConstructs, CloneSequence{construct, true})
 		}
 	}
