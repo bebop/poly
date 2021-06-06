@@ -165,7 +165,7 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 			currentOverhang = overhangs[overhangIndex]
 			nextOverhang = overhangs[overhangIndex+1]
 			if enzyme.Directional {
-				if currentOverhang.Forward  && !nextOverhang.Forward {
+				if currentOverhang.Forward && !nextOverhang.Forward {
 					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
 				if nextOverhang.Position > len(seq.Sequence) {
@@ -229,7 +229,7 @@ func CircularLigate(fragments []Fragment, maxClones int) []CloneSequence {
 	var outputConstructs []CloneSequence
 	var seqhashConstruct string
 	for construct := range c {
-		seqhashConstruct, _ = Seqhash(construct, "DNA", true, true)
+		seqhashConstruct, _ = Hash(construct, "DNA", true, true)
 		for _, outputConstruct := range outputConstructs {
 			if outputConstruct.Sequence == seqhashConstruct {
 				continue
