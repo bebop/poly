@@ -165,7 +165,7 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 			currentOverhang = overhangs[overhangIndex]
 			nextOverhang = overhangs[overhangIndex+1]
 			if enzyme.Directional == true {
-				if (currentOverhang.Forward == true) && (nextOverhang.Forward == false) {
+				if currentOverhang.Forward  && !nextOverhang.Forward {
 					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
 				if nextOverhang.Position > len(seq.Sequence) {
