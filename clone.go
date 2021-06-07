@@ -75,12 +75,12 @@ type Fragment struct {
 
 // Enzyme is a struct that represents restriction enzymes.
 type Enzyme struct {
-	EnzymeName            string
-	RegexpFor             *regexp.Regexp
-	RegexpRev             *regexp.Regexp
-	EnzymeSkip            int
-	EnzymeOverhangLen     int
-	EnzymeRecognitionSite string
+	Name            string
+	RegexpFor       *regexp.Regexp
+	RegexpRev       *regexp.Regexp
+	Skip            int
+	OverhangLen     int
+	RecognitionSite string
 }
 
 /******************************************************************************
@@ -126,7 +126,7 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 	}
 
 	// Check for palindromes
-	palindromic := IsPalindromic(enzyme.EnzymeRecognitionSite)
+	palindromic := IsPalindromic(enzyme.RecognitionSite)
 
 	// Find and define overhangs
 	var overhangs []Overhang
@@ -134,20 +134,20 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 	var reverseOverhangs []Overhang
 	forwardCuts := enzyme.RegexpFor.FindAllStringIndex(sequence, -1)
 	for _, forwardCut := range forwardCuts {
-		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: forwardCut[1] + enzyme.EnzymeSkip, Forward: true})
+		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.OverhangLen, Position: forwardCut[1] + enzyme.Skip, Forward: true})
 	}
 	// Palindromic enzymes won't need reverseCuts
 	if !palindromic {
 		reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
 		for _, reverseCut := range reverseCuts {
-			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
+			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.OverhangLen, Position: reverseCut[0] - enzyme.Skip, Forward: false})
 		}
 	}
 
 	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLen is over the length of the sequence, remove that overhang.
 	for _, overhangSet := range [][]Overhang{forwardOverhangs, reverseOverhangs} {
 		if len(overhangSet) > 0 {
-			if !seq.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.EnzymeSkip+enzyme.EnzymeOverhangLen > len(sequence)) {
+			if !seq.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.Skip+enzyme.OverhangLen > len(sequence)) {
 				overhangSet = overhangSet[:len(overhangSet)-1]
 			}
 		}
@@ -218,7 +218,7 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 		}
 		// Convert fragment sequences into fragments
 		for _, fragment := range fragmentSeqs {
-			fragments = append(fragments, Fragment{Sequence: fragment[enzyme.EnzymeOverhangLen : len(fragment)-enzyme.EnzymeOverhangLen], ForwardOverhang: fragment[:enzyme.EnzymeOverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.EnzymeOverhangLen:]})
+			fragments = append(fragments, Fragment{Sequence: fragment[enzyme.OverhangLen : len(fragment)-enzyme.OverhangLen], ForwardOverhang: fragment[:enzyme.OverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.OverhangLen:]})
 		}
 	}
 
