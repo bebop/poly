@@ -101,8 +101,9 @@ func TestCircularLigate(t *testing.T) {
 	// newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}
 	fragment1 := Fragment{"AAAAAA", "GTTG", "CTAT"}
 	fragment2 := Fragment{"AAAAAA", "CAAC", "ATAG"}
-	outputConstructs := CircularLigate([]Fragment{fragment1, fragment2}, 100)
+	outputConstructs := CircularLigate([]Fragment{fragment1, fragment2})
 	if len(outputConstructs) != 1 {
+		fmt.Println(outputConstructs)
 		log.Fatalf("Circular ligation with complementing overhangs should only output 1 valid rotated sequence.")
 	}
 }

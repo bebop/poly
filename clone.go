@@ -248,36 +248,48 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 	}
 }
 
+func getConstructs(c chan string, constructSequences chan []CloneSequence) {
+	var constructs []CloneSequence
+	var exists bool
+	var existingSeqhashes []string
+	for {
+		construct, more := <-c
+		if more {
+			exists = false
+			seqhashConstruct, _ := Hash(construct, "DNA", true, true)
+			// Check if this construct is unique
+			for _, existingSeqhash := range existingSeqhashes {
+				if existingSeqhash == seqhashConstruct {
+					exists = true
+				}
+			}
+			if !exists {
+				constructs = append(constructs, CloneSequence{construct, true})
+				existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
+			}
+		} else {
+			constructSequences <- constructs
+			close(constructSequences)
+			return
+		}
+	}
+}
+
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
-func CircularLigate(fragments []Fragment, maxClones int) []CloneSequence {
+func CircularLigate(fragments []Fragment) []CloneSequence {
 	var wg sync.WaitGroup
-	c := make(chan string, maxClones) // A buffered channel is needed to prevent blocking.
-	wg.Add(len(fragments))
+	var constructs []CloneSequence
+	c := make(chan string) //, maxClones) // A buffered channel is needed to prevent blocking.
+	constructSequences := make(chan []CloneSequence)
 	for _, fragment := range fragments {
+		wg.Add(1)
 		go recurseLigate(&wg, c, fragment, fragments)
 	}
+	go getConstructs(c, constructSequences)
 	wg.Wait()
 	close(c)
-
-	// Due to how recurseLigate works, any sequence which is used in a complete build can be used to seed
-	// a valid rotation of the complete build. This sorts those sequences out using their unique Seqhashes.
-	var outputConstructs []CloneSequence
-	var existingSeqhashes []string
-	var exists bool
-	for construct := range c {
-		exists = false
-		seqhashConstruct, _ := Hash(construct, "DNA", true, true)
-		for _, existingSeqhash := range existingSeqhashes {
-			if existingSeqhash == seqhashConstruct {
-				exists = true
-			}
-		}
-		if !exists {
-			outputConstructs = append(outputConstructs, CloneSequence{construct, true})
-			existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
-		}
-	}
-	return outputConstructs
+	constructs, _ = <-constructSequences
+	return constructs
 }
 
 /******************************************************************************
@@ -297,5 +309,5 @@ func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, e
 		}
 		fragments = append(fragments, newFragments...)
 	}
-	return CircularLigate(fragments, 1000), nil
+	return CircularLigate(fragments), nil
 }
