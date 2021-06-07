@@ -73,10 +73,7 @@ func ComplementBase(basePair rune) rune {
 // IsPalindromic accepts a sequence of even length and returns if it is
 // palindromic. More here - https://en.wikipedia.org/wiki/Palindromic_sequence
 func IsPalindromic(sequence string) bool {
-	if sequence == ReverseComplement(sequence) {
-		return true
-	}
-	return false
+	return sequence == ReverseComplement(sequence)
 }
 
 //RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
