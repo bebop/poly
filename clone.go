@@ -48,6 +48,9 @@ Let's build some DNA!
 
 Keoni
 
+PS: We do NOT (yet) handle restriction enzymes which recognize one site but cut
+in multiple places.
+
 ******************************************************************************/
 
 // CloneSequence is a simple struct that can carry a circular or linear DNA sequence.
@@ -77,7 +80,7 @@ type Enzyme struct {
 	RegexpRev         *regexp.Regexp
 	EnzymeSkip        int
 	EnzymeOverhangLen int
-	Directional       bool
+	Palindromic       bool
 }
 
 /******************************************************************************
@@ -92,10 +95,10 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 	enzymeMap := make(map[string]Enzyme)
 
 	// Build default enzymes
-	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, true}
-	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, true}
-	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, true}
-	enzymeMap["BsmBI"] = Enzyme{"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, true}
+	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, false}
+	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, false}
+	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, false}
+	enzymeMap["BsmBI"] = Enzyme{"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, false}
 
 	// Return EnzymeMap
 	return enzymeMap
@@ -104,17 +107,17 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
 // allows us to specify the enzyme by name.
-func CutWithEnzymeByName(seq CloneSequence, enzymeStr string) ([]Fragment, error) {
+func CutWithEnzymeByName(seq CloneSequence, directional bool, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; !ok {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
 	enzyme := enzymeMap[enzymeStr]
-	return CutWithEnzyme(seq, enzyme), nil
+	return CutWithEnzyme(seq, directional, enzyme), nil
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
-func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
+func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragment {
 	var fragmentSeqs []string
 	var sequence string
 	if seq.Circular {
@@ -122,20 +125,31 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 	} else {
 		sequence = strings.ToUpper(seq.Sequence)
 	}
+
 	// Find and define overhangs
 	var overhangs []Overhang
+	var forwardOverhangs []Overhang
+	var reverseOverhangs []Overhang
 	forwardCuts := enzyme.RegexpFor.FindAllStringIndex(sequence, -1)
-	reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
 	for _, forwardCut := range forwardCuts {
-		overhangs = append(overhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: forwardCut[1] + enzyme.EnzymeSkip, Forward: true})
+		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: forwardCut[1] + enzyme.EnzymeSkip, Forward: true})
 	}
-	for _, reverseCut := range reverseCuts {
-		overhangs = append(overhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
+	// Palindromic enzymes won't need reverseCuts
+	if !enzyme.Palindromic {
+		reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
+		for _, reverseCut := range reverseCuts {
+			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
+		}
 	}
 
-	// If, on a linear sequence, the last overhang's position plus EnzymeSkip is over the length of the sequence, remove that overhang.
-	if seq.Circular && (overhangs[len(overhangs)-1].Position+enzyme.EnzymeSkip > len(sequence)) {
-		overhangs = overhangs[:len(overhangs)-1]
+	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLen is over the length of the sequence, remove that overhang.
+	for _, overhangSet := range [][]Overhang{forwardOverhangs, reverseOverhangs} {
+		if len(overhangSet) > 0 {
+			if !seq.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.EnzymeSkip+enzyme.EnzymeOverhangLen > len(sequence)) {
+				overhangSet = overhangSet[:len(overhangSet)-1]
+			}
+		}
+		overhangs = append(overhangs, overhangSet...)
 	}
 
 	// Sort overhangs
@@ -144,16 +158,35 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 	})
 
 	// Convert Overhangs into Fragments
+	var fragments []Fragment
 	var currentOverhang Overhang
 	var nextOverhang Overhang
-	if len(overhangs) == 1 { // Check the case of a single cut
-		if seq.Circular {
-			fragmentSeqs = append(fragmentSeqs, sequence[overhangs[0].Position:]+sequence[:overhangs[0].Position])
-		} else {
-			fragmentSeqs = append(fragmentSeqs, sequence[overhangs[0].Position:])
-			fragmentSeqs = append(fragmentSeqs, sequence[:overhangs[0].Position])
-		}
-	} else {
+	// Linear fragments with 1 cut that are no directional will always give a
+	// 2 fragments
+	if len(overhangs) == 1 && !directional && !seq.Circular { // Check the case of a single cut
+		// In the case of a single cut in a linear sequence, we get two fragments with only 1 stick end
+		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length:]
+		fragmentSeq2 := sequence[:overhangs[0].Position]
+		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSeq1, overhangSeq, ""})
+		fragments = append(fragments, Fragment{fragmentSeq2, "", overhangSeq})
+		return fragments
+	}
+
+	// Circular fragments with 1 cut will always have 2 overhangs (because of the
+	// concat earlier). If we don't require directionality, this will always get
+	// cut into a single fragment
+	if len(overhangs) == 2 && !directional && seq.Circular {
+		// In the case of a single cut in a circular sequence, we get one fragment out with sticky overhangs
+		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length : len(seq.Sequence)]
+		fragmentSeq2 := sequence[:overhangs[0].Position]
+		fragmentSeq := fragmentSeq1 + fragmentSeq2
+		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSeq, overhangSeq, overhangSeq})
+		return fragments
+	}
+
+	if len(overhangs) > 1 {
 		// The following will iterate over the overhangs list to turn them into fragments
 		// There are two important variables: if the sequence is circular, and if the enzyme cutting is directional. All Type IIS enzymes
 		// are directional, and in normal GoldenGate reactions these fragments would be constantly cut with enzyme as the reaction runs,
@@ -164,7 +197,10 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 		for overhangIndex := 0; overhangIndex < len(overhangs)-1; overhangIndex++ {
 			currentOverhang = overhangs[overhangIndex]
 			nextOverhang = overhangs[overhangIndex+1]
-			if enzyme.Directional {
+			// If we want directional cutting and the enzyme is not palindromic, we
+			// can remove fragments that are continuously cut by the enzyme. This is
+			// the basis of GoldenGate assembly.
+			if directional && !enzyme.Palindromic {
 				if currentOverhang.Forward && !nextOverhang.Forward {
 					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
@@ -178,13 +214,12 @@ func CutWithEnzyme(seq CloneSequence, enzyme Enzyme) []Fragment {
 				}
 			}
 		}
+		// Convert fragment sequences into fragments
+		for _, fragment := range fragmentSeqs {
+			fragments = append(fragments, Fragment{Sequence: fragment[enzyme.EnzymeOverhangLen : len(fragment)-enzyme.EnzymeOverhangLen], ForwardOverhang: fragment[:enzyme.EnzymeOverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.EnzymeOverhangLen:]})
+		}
 	}
 
-	// Convert fragment sequences into fragments
-	var fragments []Fragment
-	for _, fragment := range fragmentSeqs {
-		fragments = append(fragments, Fragment{Sequence: fragment[enzyme.EnzymeOverhangLen : len(fragment)-enzyme.EnzymeOverhangLen], ForwardOverhang: fragment[:enzyme.EnzymeOverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.EnzymeOverhangLen:]})
-	}
 	return fragments
 }
 
@@ -227,15 +262,20 @@ func CircularLigate(fragments []Fragment, maxClones int) []CloneSequence {
 	// Due to how recurseLigate works, any sequence which is used in a complete build can be used to seed
 	// a valid rotation of the complete build. This sorts those sequences out using their unique Seqhashes.
 	var outputConstructs []CloneSequence
-	var seqhashConstruct string
+	var existingSeqhashes []string
+	var exists bool
 	for construct := range c {
-		seqhashConstruct, _ = Hash(construct, "DNA", true, true)
-		for _, outputConstruct := range outputConstructs {
-			if outputConstruct.Sequence == seqhashConstruct {
-				continue
+		exists = false
+		seqhashConstruct, _ := Hash(construct, "DNA", true, true)
+		for _, existingSeqhash := range existingSeqhashes {
+			if existingSeqhash == seqhashConstruct {
+				exists = true
 			}
 		}
-		outputConstructs = append(outputConstructs, CloneSequence{construct, true})
+		if !exists {
+			outputConstructs = append(outputConstructs, CloneSequence{construct, true})
+			existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
+		}
 	}
 	return outputConstructs
 }
@@ -251,7 +291,7 @@ Specific cloning functions begin here.
 func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := CutWithEnzymeByName(sequence, enzymeStr)
+		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr)
 		if err != nil {
 			return []CloneSequence{}, err
 		}
