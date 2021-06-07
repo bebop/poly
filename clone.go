@@ -75,12 +75,12 @@ type Fragment struct {
 
 // Enzyme is a struct that represents restriction enzymes.
 type Enzyme struct {
-	EnzymeName        string
-	RegexpFor         *regexp.Regexp
-	RegexpRev         *regexp.Regexp
-	EnzymeSkip        int
-	EnzymeOverhangLen int
-	Palindromic       bool
+	EnzymeName            string
+	RegexpFor             *regexp.Regexp
+	RegexpRev             *regexp.Regexp
+	EnzymeSkip            int
+	EnzymeOverhangLen     int
+	EnzymeRecognitionSite string
 }
 
 /******************************************************************************
@@ -95,10 +95,9 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 	enzymeMap := make(map[string]Enzyme)
 
 	// Build default enzymes
-	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, false}
-	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, false}
-	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, false}
-	enzymeMap["BsmBI"] = Enzyme{"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, false}
+	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"}
+	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"}
+	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"}
 
 	// Return EnzymeMap
 	return enzymeMap
@@ -126,6 +125,9 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 		sequence = strings.ToUpper(seq.Sequence)
 	}
 
+	// Check for palindromes
+	palindromic := IsPalindromic(enzyme.EnzymeRecognitionSite)
+
 	// Find and define overhangs
 	var overhangs []Overhang
 	var forwardOverhangs []Overhang
@@ -135,7 +137,7 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: forwardCut[1] + enzyme.EnzymeSkip, Forward: true})
 	}
 	// Palindromic enzymes won't need reverseCuts
-	if !enzyme.Palindromic {
+	if !palindromic {
 		reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
 		for _, reverseCut := range reverseCuts {
 			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.EnzymeOverhangLen, Position: reverseCut[0] - enzyme.EnzymeSkip, Forward: false})
@@ -200,7 +202,7 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 			// If we want directional cutting and the enzyme is not palindromic, we
 			// can remove fragments that are continuously cut by the enzyme. This is
 			// the basis of GoldenGate assembly.
-			if directional && !enzyme.Palindromic {
+			if directional && !palindromic {
 				if currentOverhang.Forward && !nextOverhang.Forward {
 					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
