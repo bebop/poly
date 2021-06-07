@@ -288,7 +288,7 @@ func CircularLigate(fragments []Fragment) []CloneSequence {
 	go getConstructs(c, constructSequences)
 	wg.Wait()
 	close(c)
-	constructs, _ = <-constructSequences
+	constructs = <-constructSequences
 	return constructs
 }
 
