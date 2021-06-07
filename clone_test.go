@@ -117,6 +117,9 @@ func TestGoldenGate(t *testing.T) {
 	if err == nil {
 		log.Fatalf("GoldenGate should fail when using enzyme EcoRFake")
 	}
+	if err.Error() != "Enzyme EcoRFake not found in enzymeMap" {
+		log.Fatalf("Failure of GoldenGate on incorrect enzyme should follow the exact string `Enzyme EcoRFake not found in enzymeMap`. Got: %s", err.Error())
+	}
 }
 
 func ExampleGoldenGate() {
