@@ -89,7 +89,7 @@ func TestCutWithEnzyme(t *testing.T) {
 	// but have more than 1 cut site in our fragment. We can use pOpen for this.
 	frag, err = CutWithEnzymeByName(popen, false, "BbsI")
 	if err != nil {
-		log.Fatalf("CutWithEnzyme should not have failed on test(4). Got error: %s", err)
+		log.Fatalf("CutWithEnzyme should not have failed on test(5). Got error: %s", err)
 	}
 	if len(frag) != 2 {
 		log.Fatalf("Cutting pOpen without a direction should yield 2 fragments")
