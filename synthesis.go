@@ -59,45 +59,29 @@ type DnaSuggestion struct {
 	Id             int    `db:"id"`
 }
 
-// FindBsaI is a simple problematicSequenceFunc, for use in testing
-func FindBsaI(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-	re := regexp.MustCompile(`GGTCTC`)
-	locs := re.FindAllStringIndex(sequence, -1)
-	for _, loc := range locs {
-		position := loc[0] / 3
-		leftover := loc[0] % 3
-		switch {
-		case leftover == 0:
-			c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "BsaI removal", 0, 0}
-		case leftover != 0:
-			c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, "BsaI removal", 0, 0}
-		}
-	}
-	wg.Done()
-}
-
-// FindTypeIIS is a problematicSequenceFunc used for finding TypeIIS restriction enzymes. It finds BbsI, BsaI, BtgZI, BsmBI, SapI, and PaqCI(AarI)
-func FindTypeIIS(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-	enzymeSites := []string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"}
-	var enzymes []string
-	for _, enzyme := range enzymeSites {
-		enzymes = []string{enzyme, ReverseComplement(enzyme)}
-		for _, site := range enzymes {
-			re := regexp.MustCompile(site)
-			locs := re.FindAllStringIndex(sequence, -1)
-			for _, loc := range locs {
-				position := loc[0] / 3
-				leftover := loc[0] % 3
-				switch {
-				case leftover == 0:
-					c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "TypeIIS removal", 0, 0}
-				case leftover != 0:
-					c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, "TypeIIS removal", 0, 0}
+// RemoveSequence is a generator for a problematicSequenceFuncs for specific sequences.
+func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		var enzymes []string
+		for _, enzyme := range sequencesToRemove {
+			enzymes = []string{enzyme, ReverseComplement(enzyme)}
+			for _, site := range enzymes {
+				re := regexp.MustCompile(site)
+				locs := re.FindAllStringIndex(sequence, -1)
+				for _, loc := range locs {
+					position := loc[0] / 3
+					leftover := loc[0] % 3
+					switch {
+					case leftover == 0:
+						c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "Remove sequence", 0, 0}
+					case leftover != 0:
+						c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, "Remove sequence", 0, 0}
+					}
 				}
 			}
 		}
+		wg.Done()
 	}
-	wg.Done()
 }
 
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
