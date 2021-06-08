@@ -64,7 +64,8 @@ func TestFixCds(t *testing.T) {
 	for _, enzyme := range []string{phusion} {
 		var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 		functions = append(functions, FindTypeIIS)
-		optimizedSeq, err := FixCds(":memory:", Optimize(enzyme, ct), ct, functions)
+		seq, _ := Optimize(enzyme, ct)
+		optimizedSeq, err := FixCds(":memory:", seq, ct, functions)
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -3,6 +3,7 @@ package poly
 import (
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -78,5 +79,49 @@ func TestMeltingTemp(t *testing.T) {
 	expectedTM := 52.8
 	if calcTM := MeltingTemp(testSeq); math.Abs(expectedTM-calcTM)/expectedTM >= 0.02 {
 		t.Errorf("MeltingTemp has changed on test. Got %f instead of %f", calcTM, expectedTM)
+	}
+}
+
+func ExampleNucleobaseDeBruijnSequence() {
+	a := NucleobaseDeBruijnSequence(4)
+
+	fmt.Println(a)
+	// Output: AAAATAAAGAAACAATTAATGAATCAAGTAAGGAAGCAACTAACGAACCATATAGATACATTTATTGATTCATGTATGGATGCATCTATCGATCCAGAGACAGTTAGTGAGTCAGGTAGGGAGGCAGCTAGCGAGCCACACTTACTGACTCACGTACGGACGCACCTACCGACCCTTTTGTTTCTTGGTTGCTTCGTTCCTGTGTCTGGGTGGCTGCGTGCCTCTCGGTCGCTCCGTCCCGGGGCGGCCGCGCCCCAAA
+}
+
+func ExampleCreateBarcodesWithBannedSequences() {
+	barcodes := CreateBarcodesWithBannedSequences(20, 4, []string{"CTCTCGGTCGCTCC"}, []func(string) bool{})
+
+	fmt.Println(barcodes[0])
+	// Output: AAAATAAAGAAACAATTAAT
+}
+
+func ExampleCreateBarcodes() {
+	barcodes := CreateBarcodes(20, 4)
+
+	fmt.Println(barcodes[0])
+	// Output: AAAATAAAGAAACAATTAAT
+}
+
+func TestCreateBarcode(t *testing.T) {
+	testFunc := func(s string) bool {
+		return !strings.Contains(s, "GGCCGCGCCCC")
+	}
+	barcodes := CreateBarcodesWithBannedSequences(20, 4, []string{}, []func(string) bool{testFunc})
+	output := barcodes[len(barcodes)-1]
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence function should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
+	}
+
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{"GGCCGCGCCCC"}, []func(string) bool{})
+	output = barcodes[len(barcodes)-1]
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
+	}
+
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{ReverseComplement("GGCCGCGCCCC")}, []func(string) bool{})
+	output = barcodes[len(barcodes)-1]
+	if output != "CTCTCGGTCGCTCCGTCCCG" {
+		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 }
