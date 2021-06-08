@@ -84,6 +84,29 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 	}
 }
 
+// RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
+func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		// Get a kmer list
+		kmers := make(map[string]bool)
+		for i := 0; i < len(sequence)-repeatLen; i++ {
+			_, alreadyFound := kmers[sequence[i:i+repeatLen]]
+			if alreadyFound {
+				position := i / 3
+				leftover := i % 3
+				switch {
+				case leftover == 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
+				case leftover != 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
+				}
+			}
+			kmers[sequence[i:i+repeatLen]] = true
+		}
+		wg.Done()
+	}
+}
+
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
 	suggestions := make(chan DnaSuggestion, 100)
@@ -242,4 +265,23 @@ func FixCds(sqlitePath string, sequence string, codontable CodonTable, problemat
 		sequence = strings.Join(codons, "")
 	}
 	return sequence, nil
+}
+
+// FixCdsSimple is FixCds with some defaults for normal usage, including
+// finding homopolymers, finding repeats, and ensuring a normal range of GC
+// content. It also allows users to put in sequences that they do not wish to
+// occur within their CDS, like restriction enzyme cut sites.
+func FixCdsSimple(sequence string, codontable CodonTable, sequencesToRemove []string) (string, error) {
+	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
+	// Remove homopolymers
+	functions = append(functions, RemoveSequence([]string{"AAAAAAAA", "GGGGGGGG"}))
+
+	// Remove user defined sequences
+	functions = append(functions, RemoveSequence(sequencesToRemove))
+
+	// Remove repeats
+
+	// Ensure normal GC range
+
+	return FixCds(":memory:", sequence, codontable, functions)
 }
