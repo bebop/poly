@@ -120,8 +120,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sqlitePath string, sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
-	var db *sqlx.DB
-	db = sqlx.MustConnect("sqlite3", sqlitePath)
+	db := sqlx.MustConnect("sqlite3", sqlitePath)
 	createMemoryDbSql := `
 	CREATE TABLE codon (
 		codon TEXT PRIMARY KEY,
@@ -242,7 +241,7 @@ func FixCds(sqlitePath string, sequence string, codontable CodonTable, problemat
 		LIMIT  ?; `
 
 		independentSuggestions := []DnaSuggestion{}
-		db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
+		_ = db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
 
 		for _, independentSuggestion := range independentSuggestions {
 			switch independentSuggestion.Bias {
@@ -255,7 +254,7 @@ func FixCds(sqlitePath string, sequence string, codontable CodonTable, problemat
 			}
 		}
 		var codons []string
-		db.Select(&codons, `SELECT codon FROM (SELECT codon, pos FROM history ORDER BY step DESC) GROUP BY pos`)
+		_ = db.Select(&codons, `SELECT codon FROM (SELECT codon, pos FROM history ORDER BY step DESC) GROUP BY pos`)
 		sequence = strings.Join(codons, "")
 	}
 	return sequence, nil
