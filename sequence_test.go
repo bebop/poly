@@ -139,3 +139,10 @@ func TestRandomProteinSequenceError(t *testing.T) {
 		t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
 	}
 }
+
+func ExampleGcContent() {
+	gcContent := GcContent("ATGC")
+
+	fmt.Println(gcContent)
+	// Output: 0.5
+}

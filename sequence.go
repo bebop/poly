@@ -70,6 +70,19 @@ func ComplementBase(basePair rune) rune {
 	return complementBaseRuneMap[basePair]
 }
 
+// GcContent returns the percent GC content of a sequence.
+func GcContent(sequence string) float64 {
+	var gcPairs int
+	for _, basepair := range sequence {
+		if basepair == 'G' || basepair == 'C' {
+			gcPairs++
+			continue
+		}
+	}
+	gcContent := float64(gcPairs) / float64(len(sequence))
+	return gcContent
+}
+
 //RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
 func RandomProteinSequence(length int, seed int64) (string, error) {
 	//The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons
