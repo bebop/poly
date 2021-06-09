@@ -1,4 +1,4 @@
-package poly
+package sequence
 
 import (
 	"fmt"

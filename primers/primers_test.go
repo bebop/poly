@@ -1,4 +1,4 @@
-package poly
+package primers
 
 import (
 	"fmt"
