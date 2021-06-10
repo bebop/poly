@@ -90,13 +90,26 @@ func fileNameWithUNIXTimestamp(file string) string {
 	return strings.Join(colonSeperatedFileName, ".")
 }
 
-// CreateFile creates the file `file` and all the directories sepcified in
+// Re-export os's constants so that packages that depend on csv_helper's
+// OpenFile doesn't need to depend on package os as well
+const (
+	APPEND int = os.O_APPEND
+	CREATE int = os.O_CREATE
+)
+
+// OpenFile creates the file `file` and all the directories sepcified in
 // `file`'s path if they don't exist
-func CreateFile(file string) (*os.File, error) {
+func OpenFile(file string, osFlag int) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(file), 0770); err != nil {
 		return nil, err
 	}
-	return os.Create(file)
+	// osFile, err := os.Stat(file)
+	// if os.IsNotExist(err) {
+	// return os.Create(file)
+	// }
+	// return osFile, nil
+	flags := os.O_RDWR | osFlag
+	return os.OpenFile(file, flags, 0770)
 }
 
 // keepColumns saves the csv file `inputFile` as `outputFile` with only the
@@ -109,7 +122,7 @@ func KeepColumns(inputFile, outputFile string, cols []int) error {
 	defer f.Close()
 	csvr := csv.NewReader(f)
 
-	wFile, err := CreateFile(outputFile)
+	wFile, err := OpenFile(outputFile, os.O_CREATE)
 	if err != nil {
 		return err
 	}
