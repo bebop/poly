@@ -1,55 +1,67 @@
 package dataset
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/TimothyStiles/poly/rbs_calculator/csv_helper"
+)
 
 // func ExampleGenerateVariables_1014IC() {
 // 	fmt.Println("done")
-// 	generateVariables("./processed_dataset/1014IC.csv", "./processed_dataset/1014IC_vars.csv", 5, 3, 4, 8, 6, DefaultProperies)
+// 	generateVariables("./with_folded_structure/1014IC.csv", "./processed_dataset/1014IC_vars.csv", 5, 3, 4, 8, 6, DefaultProperies)
 // Output: AB000100
 // }
 
+// run with `go test -timeout 0 -run ^ExampleAddFoldedStructure_1014IC`
 func ExampleAddFoldedStructure_1014IC() {
 	datasetCSV := "./1014IC.csv"
 	// Column number of mRNA sequence in datasetCSV
 	sequenceColNum := 5
-	datasetWithStructureCSV := "./processed_dataset/1014IC.csv"
-	AddFoldedStructure(datasetCSV, datasetWithStructureCSV, sequenceColNum)
+	// The (1-indexed) row at which to start parsing datasetCSV from. Min is 0
+	// (which means parsing the mRNA sequences from line number 1). Min: 0 Max:
+	// Number of mRNA sequences to parse in CSV (Example: 1015 for `1014IC.csv`)
+	datasetCSVLineNumber := 999
+	datasetWithStructureCSV := "./with_folded_structure/1014IC.csv"
+	AddFoldedStructure(datasetCSV, datasetWithStructureCSV, datasetCSVLineNumber, sequenceColNum)
+	// Random output to cause test to run
+	// Output: 1
+	// 2
 }
 
 func ExampleComputeProperties_1014IC() {
-	datasetWithStructureCSV := "./processed_dataset/1014IC.csv"
-	sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum := 5, 3, 4, 8, 6
-
+	datasetWithStructureCSV := "./with_folded_structure/1014IC.csv"
 	var wg sync.WaitGroup
 
 	// run this function and it outputs mRNAs to a channel
 	wg.Add(1)
 	mrnaChannel := make(chan MRNA)
-	go func() {
-		createDataset(datasetWithStructureCSV, sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum, mrnaChannel)
-		wg.Done()
-	}()
+	sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum := 5, 3, 4, 8, 6
+	go createDataset(datasetWithStructureCSV, sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum, mrnaChannel, &wg)
 
 	// take the mRNA channel and then output to a computed properties channel
 	wg.Add(1)
 	csvOutputChannel := make(chan []string)
-	go func() {
-		computeProperties2(mrnaChannel, DefaultProperies, csvOutputChannel)
-		wg.Done()
-	}()
+	go computeProperties2(mrnaChannel, DefaultProperies, csvOutputChannel, &wg)
 
 	// take the computed properties channel and print to CSV
 	wg.Add(1)
-	datasetOutputFile := "./processed_dataset/1014IC_vars.csv"
-	go func() {
-		writeToCSV(datasetOutputFile, csvOutputChannel)
-		wg.Done()
-	}()
+	datasetOutputFile := "./with_variables/1014IC.csv"
+	go writeToCSV(datasetOutputFile, csv_helper.CREATE, csvOutputChannel, &wg)
 
 	wg.Wait()
 
 	// datasetWithProperties := computeProperties(dataset, DefaultProperies)
 	// writeDatasetWithPropertiesToCSV(datasetWithProperties, datasetOutputFile)
+
+	// Output: AB000100
+	// Hello
+}
+
+func ExampleABD() {
+	_, err := csv_helper.OpenFile("./with_variables/1014IC.csv", csv_helper.CREATE)
+	if err != nil {
+		panic(err)
+	}
 
 	// Output: AB000100
 	// Hello

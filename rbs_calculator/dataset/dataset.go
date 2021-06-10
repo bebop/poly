@@ -4,12 +4,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/rbs_calculator/csv_helper"
@@ -21,55 +22,64 @@ Step 1: Add folded structrue to dataset
 Helper functions to add the folded structure of a sequence to a dataset
 ***********************/
 
-func AddFoldedStructure(dataset, datasetOutputFile string, mRNAColNumber int) error {
+func AddFoldedStructure(dataset, datasetOutputFile string, csvStartRowIdx int, mRNAColNumber int) {
+	if csvStartRowIdx < 1 {
+		panic("csvStartRowIdx should be >= 1")
+	}
 
-	// csvOutputChannel := make(chan []string)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	csvOutputChannel := make(chan []string)
+	if csvStartRowIdx == 1 {
+		go writeToCSV(datasetOutputFile, csv_helper.CREATE, csvOutputChannel, &wg)
+	} else {
+		go writeToCSV(datasetOutputFile, csv_helper.APPEND, csvOutputChannel, &wg)
+	}
+
+	defer close(csvOutputChannel)
+	defer wg.Wait()
 
 	f, err := os.Open(dataset)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer f.Close()
 	csvr := csv.NewReader(f)
 
-	wFile, err := csv_helper.CreateFile(datasetOutputFile)
-	if err != nil {
-		return err
-	}
-	defer wFile.Close()
-	csvWriter := csv.NewWriter(wFile)
-	defer csvWriter.Flush()
+	// read header line only if starting at first row
+	if csvStartRowIdx == 1 {
 
-	// consume header line
-	header, err := csvr.Read()
-	if err != nil {
-		if err == io.EOF {
-			err = nil
-		}
-		return err
-	}
-
-	header = append(header, "STRUCTURE")
-	if err := csvWriter.Write(header); err != nil {
-		log.Fatalln("error writing record to file", err)
-	}
-
-	for {
-		csvRow, err := csvr.Read()
+		// read header line
+		header, err := csvr.Read()
 		if err != nil {
 			if err == io.EOF {
 				err = nil
 			}
-			return err
+			panic(err)
 		}
 
+		header = append(header, "STRUCTURE")
+		csvOutputChannel <- header
+	}
+
+	for i := 1; i < csvStartRowIdx; i++ {
+		csvr.Read()
+	}
+
+	csvRow, err := csvr.Read()
+	for err == nil {
 		mRNA := csvRow[mRNAColNumber]
 		structure, _ := poly.LinearFold(mRNA, poly.DefaultBeamSize)
 		csvRow = append(csvRow, structure)
 
-		if err := csvWriter.Write(csvRow); err != nil {
-			log.Fatalln("error writing record to file", err)
-		}
+		csvOutputChannel <- csvRow
+
+		csvRow, err = csvr.Read()
+	}
+
+	if err != io.EOF {
+		panic(err)
 	}
 }
 
@@ -86,6 +96,7 @@ type MRNA struct {
 	FivePrimeUTR          string
 	ProteinCodingSequence string
 	Output                float64
+	properties            map[string]interface{}
 	// energyContributions   []mfe.EnergyContribution
 }
 
@@ -100,8 +111,9 @@ func cleanRNA(rna string) string {
 }
 
 // createDataset parses a csv to a Dataset struct
-func createDataset(csvFile string, sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum int, mrnaChannel chan MRNA) {
+func createDataset(csvFile string, sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum int, mrnaChannel chan MRNA, wg *sync.WaitGroup) {
 	defer close(mrnaChannel)
+	defer wg.Done()
 
 	f, err := os.Open(csvFile)
 	if err != nil {
@@ -134,6 +146,7 @@ func createDataset(csvFile string, sequenceColNum, fivePrimeUTRColNum, cdsColNum
 			Output:                output,
 			FivePrimeUTR:          cleanRNA(csvRow[fivePrimeUTRColNum]),
 			ProteinCodingSequence: cleanRNA(csvRow[cdsColNum]),
+			properties:            make(map[string]interface{}),
 			// energyContributions:   energyContributions,
 		}
 		// mrnas = append(mrnas, mRNA)
@@ -209,31 +222,32 @@ type DatasetWithProperties struct {
 	propertyNames      []string
 }
 
-func computeProperties(dataset Dataset, properties [](func(MRNA) string)) DatasetWithProperties {
-	var mrnasWithProperties []MRNAWithProperties
+// func computeProperties(dataset Dataset, properties [](func(MRNA) string)) DatasetWithProperties {
+// 	var mrnasWithProperties []MRNAWithProperties
 
-	for _, mrna := range dataset {
-		var propertyValues []string
-		for _, property := range properties {
-			propertyValues = append(propertyValues, property(mrna))
-		}
+// 	for _, mrna := range dataset {
+// 		var propertyValues []string
+// 		for _, property := range properties {
+// 			propertyValues = append(propertyValues, property(mrna))
+// 		}
 
-		mrnaWithProperties := MRNAWithProperties{
-			mrna:           mrna,
-			propertyValues: propertyValues,
-		}
-		mrnasWithProperties = append(mrnasWithProperties, mrnaWithProperties)
-	}
+// 		mrnaWithProperties := MRNAWithProperties{
+// 			mrna:           mrna,
+// 			propertyValues: propertyValues,
+// 		}
+// 		mrnasWithProperties = append(mrnasWithProperties, mrnaWithProperties)
+// 	}
 
-	return DatasetWithProperties{
-		mrnaWithProperties: mrnasWithProperties,
-		propertyNames:      GetFunctionNames(properties),
-	}
-}
+// 	return DatasetWithProperties{
+// 		mrnaWithProperties: mrnasWithProperties,
+// 		propertyNames:      GetFunctionNames(properties),
+// 	}
+// }
 
-func computeProperties2(mrnaChannel chan MRNA, properties [](func(MRNA) string), csvOutputChannel chan []string) {
+func computeProperties2(mrnaChannel chan MRNA, properties []Property, csvOutputChannel chan []string, wg *sync.WaitGroup) {
 	// var mrnasWithProperties []MRNAWithProperties
 	defer close(csvOutputChannel)
+	defer wg.Done()
 
 	//
 	header := append(getMRNAFields(), GetFunctionNames(properties)...)
@@ -247,8 +261,22 @@ func computeProperties2(mrnaChannel chan MRNA, properties [](func(MRNA) string),
 			}
 
 			var propertyValues []string
+			// var mrnaProperties map[string]interface{}
 			for _, property := range properties {
-				propertyValues = append(propertyValues, property(mrna))
+				propertyValue := property.computeFn(mrna)
+				// p := reflect.ValueOf(mrna).MethodByName(property)
+				// if !p.IsValid() {
+				// 	panic(property)
+				// }
+				// reflectValues := p.Call([]reflect.Value{})
+				// propertyValue := reflectValues[0].Interface()
+				mrna.properties[GetFunctionName(property.computeFn)] = propertyValue
+				if property.includeInOutput {
+					propertyValues = append(propertyValues, toString(propertyValue))
+				}
+				// mapValue, propertyValue := property(mrna, mrnaProperties)
+				// mapKey := GetFunctionName(property)
+				// mrnaProperties[mapKey] = mapValue
 			}
 
 			mrnaWithProperties := MRNAWithProperties{
@@ -256,21 +284,14 @@ func computeProperties2(mrnaChannel chan MRNA, properties [](func(MRNA) string),
 				propertyValues: propertyValues,
 			}
 
-			// fmt.Println(mrnaWithProperties)
 			csvOutputChannel <- mrnaWithProperties.ToSlice()
-			// computedPropChannel <- mrnaWithProperties
 		}
 	}
-
-	// return DatasetWithProperties{
-	// 	mrnaWithProperties: mrnasWithProperties,
-	// 	propertyNames:      GetFunctionNames(properties),
-	// }
 }
 
-func writeToCSV(outputFile string, csvOutputChannel chan []string) {
-	// defer wg.Done()
-	wFile, err := csv_helper.CreateFile(outputFile)
+func writeToCSV(outputFile string, osFlags int, csvOutputChannel chan []string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	wFile, err := csv_helper.OpenFile(outputFile, osFlags)
 	if err != nil {
 		panic(err)
 	}
@@ -292,31 +313,7 @@ func writeToCSV(outputFile string, csvOutputChannel chan []string) {
 	}
 }
 
-func writeDatasetWithPropertiesToCSV(dataset DatasetWithProperties, outputFile string) {
-	wFile, err := csv_helper.CreateFile(outputFile)
-	if err != nil {
-		panic(err)
-	}
-	defer wFile.Close()
-	csvWriter := csv.NewWriter(wFile)
-	defer csvWriter.Flush()
-
-	headers := dataset.getHeaders()
-	if err := csvWriter.Write(headers); err != nil {
-		panic(err)
-	}
-
-	for _, mrnaWithProperties := range dataset.mrnaWithProperties {
-		values := mrnaWithProperties.ToSlice()
-		if err := csvWriter.Write(values); err != nil {
-			panic(err)
-		}
-	}
-}
-
 func (d DatasetWithProperties) getHeaders() []string {
-	// valueOfDatasetWithProperties := reflect.ValueOf(d)
-	// typeOfDatasetWithProperties := valueOfDatasetWithProperties.Type()
 
 	mrna := d.mrnaWithProperties[0].mrna
 
@@ -344,7 +341,9 @@ func getMRNAFields() []string {
 	typeOfMRNA := valueOfMRNA.Type()
 	var headers []string
 	for i := 0; i < valueOfMRNA.NumField(); i++ {
-		headers = append(headers, typeOfMRNA.Field(i).Name)
+		if valueOfMRNA.Field(i).CanInterface() {
+			headers = append(headers, typeOfMRNA.Field(i).Name)
+		}
 	}
 	return headers
 }
@@ -375,11 +374,15 @@ func GetFunctionName(fn interface{}) string {
 	return functionName
 }
 
-func GetFunctionNames(i [](func(MRNA) string)) []string {
+func GetFunctionNames(i []Property) []string {
 	var names []string
-	for _, fn := range i {
-		names = append(names, GetFunctionName(fn))
+	for _, property := range i {
+		if property.includeInOutput {
+			names = append(names, GetFunctionName(property.computeFn))
+		}
 	}
+	// for _, fn := range i {
+	// }
 	return names
 }
 
@@ -388,9 +391,111 @@ Functions to compute properties of mRNAs
 ***********************/
 
 // The default properties to compute values of and add to DatasetWithProperties
-var DefaultProperies [](func(MRNA) string) = [](func(MRNA) string){
-	// same,
+// var DefaultProperies [](func(MRNA, map[string]interface{}) (interface{}, string)) = [](func(MRNA, map[string]interface{}) (interface{}, string)){
+// 	// same,
+// 	lenFivePrimeUTR,
+// 	sdSequence,
+// }
+type Property struct {
+	computeFn       func(MRNA) interface{}
+	includeInOutput bool
 }
+
+// var DefaultProperies map[string]bool = map[string]bool{
+// 	"LenFivePrimeUTR": true,
+// 	"SDSequence":      true,
+// 	"LenSDSequence":   true,
+// }
+var DefaultProperies []Property = []Property{
+	Property{MRNA.LenFivePrimeUTR, true},
+	Property{MRNA.SDSequence, false},
+	Property{MRNA.LenSDSequence, true},
+}
+
+func toString(i interface{}) string {
+	return fmt.Sprint(i)
+}
+
+func (mrna MRNA) LenFivePrimeUTR() interface{} {
+	lenFivePrimeUTR := len(mrna.FivePrimeUTR)
+	return lenFivePrimeUTR
+}
+
+func (mrna MRNA) SDSequence() interface{} {
+	fivePrimeUTR := mrna.FivePrimeUTR
+	// fivePrimeUTR = Reverse(fivePrimeUTR)
+	// antiSDSequence := "ACCUCCUUA"
+	smallestSDSequence := "GAG"
+	// 18 is because SD sequence can end max nine nucelotides from the start codon
+	// and is at max 9 nucleotides long. We remove 2 because GAG is two away from
+	// the start of the SD sequence
+	smallestSDSequenceStartPos := 2
+	maxDistFromStartCodonForSDSequece := 18 - smallestSDSequenceStartPos
+	minDistForSDSequence := 3
+
+	// The sequences of the mRNA to search for the SD sequence in
+	sdMRNASearchSequence := fivePrimeUTR[len(fivePrimeUTR)-maxDistFromStartCodonForSDSequece : len(fivePrimeUTR)-minDistForSDSequence]
+	smallestSDSequenceRegex := regexp.MustCompile(smallestSDSequence)
+
+	matches := smallestSDSequenceRegex.FindAllStringIndex(sdMRNASearchSequence, -1)
+	if matches == nil {
+		// No SD sequence in 5' untranslated region
+		return ""
+	} else {
+		maxLenSDSequence := 0
+		var bestSDSequence string
+		for _, match := range matches {
+			smallestSDSequenceStartIdx, smallestSDSequenceEndIdx := len(fivePrimeUTR)-maxDistFromStartCodonForSDSequece+match[0], len(fivePrimeUTR)-maxDistFromStartCodonForSDSequece+match[1]
+			lenSDSequence, sdSequence := getFullSDSequence(fivePrimeUTR, smallestSDSequence, smallestSDSequenceStartPos, smallestSDSequenceStartIdx, smallestSDSequenceEndIdx)
+			if lenSDSequence >= maxLenSDSequence {
+				maxLenSDSequence = lenSDSequence
+				bestSDSequence = sdSequence
+			}
+		}
+		return bestSDSequence
+	}
+}
+
+func (mrna MRNA) LenSDSequence() interface{} {
+	// panic(len(mrna.properties["SDSequence"].(string)))
+	sdSequence := mrna.properties["SDSequence"]
+	if sdSequence == nil {
+		return 0
+	} else {
+		return len(mrna.properties["SDSequence"].(string))
+	}
+}
+
+func getFullSDSequence(fivePrimeUTR, smallestSDSequence string, smallestSDSequenceStartPos, smallestSDSequenceStartIdx, smallestSDSequenceEndIdx int) (int, string) {
+	smallestSDSequenceEndPos := smallestSDSequenceStartPos + len(smallestSDSequence)
+	minSDSequenceIdx, maxSDSequenceIdx := smallestSDSequenceStartIdx, smallestSDSequenceEndIdx
+	fullSdSequence := "ACCUCCUUA"
+	for i := smallestSDSequenceStartPos - 1; i >= 0; i-- {
+		if minSDSequenceIdx-1 == 0 {
+			panic("here")
+		}
+		if fullSdSequence[i] == fivePrimeUTR[minSDSequenceIdx-1] {
+			minSDSequenceIdx--
+		} else {
+			break
+		}
+	}
+
+	for i := smallestSDSequenceEndPos + 1; i < len(fullSdSequence); i++ {
+		if fullSdSequence[i] == fivePrimeUTR[maxSDSequenceIdx+1] {
+			maxSDSequenceIdx++
+		} else {
+			break
+		}
+	}
+
+	lenSDSequence := maxSDSequenceIdx - minSDSequenceIdx
+	return lenSDSequence, fivePrimeUTR[minSDSequenceIdx : maxSDSequenceIdx+1]
+}
+
+/********************
+Helper functions used to compute properties
+*********************/
 
 func Reverse(s string) string {
 	runes := []rune(s)
