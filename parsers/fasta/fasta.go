@@ -16,7 +16,7 @@ Apr 25, 2021
  Parser begins here
 
 Many thanks to Jordan Campbell (https://github.com/0x106) for building the first
- parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
+parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
 for helping complete that PR. This work expands on the previous work by allowing
 for concurrent  parsing and giving Poly a specific  parser subpackage,
 as well as few bug fixes.
