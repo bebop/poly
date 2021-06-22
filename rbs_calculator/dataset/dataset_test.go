@@ -15,28 +15,31 @@ import (
 // run with `go test -timeout 0 -run ^ExampleAddFoldedStructure_1014IC`
 func ExampleAddFoldedStructure_1014IC() {
 	datasetCSV := "./1014IC.csv"
-	// Column number of mRNA sequence in datasetCSV
-	sequenceColNum := 5
 	// The (1-indexed) row at which to start parsing datasetCSV from. Min is 0
 	// (which means parsing the mRNA sequences from line number 1). Min: 0 Max:
 	// Number of mRNA sequences to parse in CSV (Example: 1015 for `1014IC.csv`)
-	datasetCSVLineNumber := 999
+	datasetCSVLineNumber := 1015
 	datasetWithStructureCSV := "./with_folded_structure/1014IC.csv"
-	AddFoldedStructure(datasetCSV, datasetWithStructureCSV, datasetCSVLineNumber, sequenceColNum)
+	sequenceColNum, fivePrimeUTRColNum, cdsColNum := 5, 3, 4
+	AddFoldedStructure(datasetCSV, datasetWithStructureCSV, datasetCSVLineNumber, sequenceColNum, fivePrimeUTRColNum, cdsColNum)
 	// Random output to cause test to run
+
 	// Output: 1
 	// 2
 }
 
+// run with `go test -timeout 0 -run ^ExampleComputeProperties_1014IC`
 func ExampleComputeProperties_1014IC() {
-	datasetWithStructureCSV := "./with_folded_structure/1014IC.csv"
+	// datasetName := "1014IC_1"
+	datasetName := "1014IC"
+	datasetCSV := "./" + datasetName + ".csv"
 	var wg sync.WaitGroup
 
 	// run this function and it outputs mRNAs to a channel
 	wg.Add(1)
 	mrnaChannel := make(chan MRNA)
-	sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum := 5, 3, 4, 8, 6
-	go createDataset(datasetWithStructureCSV, sequenceColNum, fivePrimeUTRColNum, cdsColNum, structureColNum, outputColNum, mrnaChannel, &wg)
+	sequenceColNum, fivePrimeUTRColNum, cdsColNum, proteinMeanColNum, proteinStdColNum, orgnaismColNum, proteinColNum := 5, 3, 4, 6, 7, 1, 2
+	go createDataset(datasetCSV, sequenceColNum, fivePrimeUTRColNum, cdsColNum, proteinMeanColNum, proteinStdColNum, orgnaismColNum, proteinColNum, mrnaChannel, &wg)
 
 	// take the mRNA channel and then output to a computed properties channel
 	wg.Add(1)
@@ -45,7 +48,7 @@ func ExampleComputeProperties_1014IC() {
 
 	// take the computed properties channel and print to CSV
 	wg.Add(1)
-	datasetOutputFile := "./with_variables/1014IC.csv"
+	datasetOutputFile := "./with_variables/" + datasetName + ".csv"
 	go writeToCSV(datasetOutputFile, csv_helper.CREATE, csvOutputChannel, &wg)
 
 	wg.Wait()
