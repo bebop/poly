@@ -1,10 +1,14 @@
 package mfe
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"math"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -139,7 +143,7 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 
 	fc := &foldCompound{
 		length:              lenSequence,
-		energyParams:        scaleEnergyParams(temperature),
+		energyParams:        turner2004Params().scaleByTemperature(temperature),
 		sequence:            sequence,
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
@@ -270,6 +274,7 @@ type energyParams struct {
 	```
 	corresponds to the entry stackingPair[2][5] (GC=2, AU=5) which should be
 	identical to stackingPair[5][2] (AU=5, GC=2).
+	size: [nbPairs + 1][nbPairs + 1]int
 	*/
 	stackingPair [nbPairs + 1][nbPairs + 1]int
 	/**
@@ -1142,49 +1147,113 @@ func min(a, b int) int {
 	return b
 }
 
+func turner2004Params() rawEnergyParams {
+	return rawEnergyParams{
+		interior2x2LoopEnergy37: interior2x2LoopEnergy37,
+		interior2x2LoopEnthalpy: interior2x2LoopEnthalpy,
+
+		interior2x1LoopEnergy37: interior2x1LoopEnergy37,
+		interior2x1LoopEnthalpy: interior2x1LoopEnthalpy,
+
+		interior1x1LoopEnergy37C: interior1x1LoopEnergy37C,
+		interior1x1LoopEnthalpy:  interior1x1LoopEnthalpy,
+
+		mismatchInteriorLoopEnergy37C:    mismatchInteriorLoopEnergy37C,
+		mismatchInteriorLoopEnthalpy:     mismatchInteriorLoopEnthalpy,
+		mismatchHairpinLoopEnergy37C:     mismatchHairpinLoopEnergy37C,
+		mismatchHairpinLoopEnthalpy:      mismatchHairpinLoopEnthalpy,
+		mismatchMultiLoopEnergy37C:       mismatchMultiLoopEnergy37C,
+		mismatchMultiLoopEnthalpy:        mismatchMultiLoopEnthalpy,
+		mismatch1xnInteriorLoopEnergy37C: mismatch1xnInteriorLoopEnergy37C,
+		mismatch1xnInteriorLoopEnthalpy:  mismatch1xnInteriorLoopEnthalpy,
+		mismatch2x3InteriorLoopEnergy37C: mismatch2x3InteriorLoopEnergy37C,
+		mismatch2x3InteriorLoopEnthalpy:  mismatch2x3InteriorLoopEnthalpy,
+		mismatchExteriorLoopEnergy37C:    mismatchExteriorLoopEnergy37C,
+		mismatchExteriorLoopEnthalpy:     mismatchExteriorLoopEnthalpy,
+
+		dangle5Energy37C:      dangle5Energy37C,
+		dangle5Enthalpy:       dangle5Enthalpy,
+		dangle3Energy37C:      dangle3Energy37C,
+		dangle3Enthalpy:       dangle3Enthalpy,
+		stackingPairEnergy37C: stackingPairEnergy37C,
+		stackingPairEnthalpy:  stackingPairEnthalpy,
+
+		hairpinLoopEnergy37C:  hairpinLoopEnergy37C[:],
+		hairpinLoopEnthalpy:   hairpinLoopEnthalpy[:],
+		bulgeEnergy37C:        bulgeEnergy37C[:],
+		bulgeEnthalpy:         bulgeEnthalpy[:],
+		interiorLoopEnergy37C: interiorLoopEnergy37C[:],
+		interiorLoopEnthalpy:  interiorLoopEnthalpy[:],
+
+		multiLoopIntern37C:       multiLoopIntern37C,
+		multiLoopInternEnthalpy:  multiLoopInternEnthalpy,
+		multiLoopClosing37C:      multiLoopClosing37C,
+		multiLoopClosingEnthalpy: multiLoopClosingEnthalpy,
+		multiLoopBase37C:         multiLoopBase37C,
+		multiLoopBaseEnthalpy:    multiLoopBaseEnthalpy,
+		maxNinio:                 maxNinio,
+		ninio37C:                 ninio37C,
+		ninioEnthalpy:            ninioEnthalpy,
+		terminalAU37C:            terminalAU37C,
+		terminalAUEnthalpy:       terminalAUEnthalpy,
+
+		tetraLoops:         tetraLoops,
+		tetraLoopEnergy37C: tetraLoopEnergy37C,
+		tetraLoopEnthalpy:  tetraLoopEnthalpy,
+
+		triLoops:         triLoops,
+		triLoopEnergy37C: triLoopEnergy37C,
+		triLoopEnthalpy:  triLoopEnthalpy,
+
+		hexaLoops:         hexaLoops,
+		hexaLoopEnergy37C: hexaLoopEnergy37C,
+		hexaLoopEnthalpy:  hexaLoopEnthalpy,
+	}
+}
+
 // scales energy paramaters according to the specificed temperatue
-func scaleEnergyParams(temperature float64) *energyParams {
+func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *energyParams {
 
 	// set the non-matix energy parameters
 	var params *energyParams = &energyParams{
 		lxc:                              rescaleDgFloat64(lxc37, 0, temperature),
-		terminalAUPenalty:                rescaleDg(terminalAU37C, terminalAUEnthalpy, temperature),
-		multiLoopUnpairedNucelotideBonus: rescaleDg(multiLoopBase37C, multiLoopBaseEnthalpy, temperature),
-		multiLoopClosingPenalty:          rescaleDg(multiLoopClosing37C, multiLoopClosingEnthalpy, temperature),
-		ninio:                            rescaleDg(ninio37C, ninioEnthalpy, temperature),
+		terminalAUPenalty:                rescaleDg(rawEnergyParams.terminalAU37C, rawEnergyParams.terminalAUEnthalpy, temperature),
+		multiLoopUnpairedNucelotideBonus: rescaleDg(rawEnergyParams.multiLoopBase37C, rawEnergyParams.multiLoopBaseEnthalpy, temperature),
+		multiLoopClosingPenalty:          rescaleDg(rawEnergyParams.multiLoopClosing37C, rawEnergyParams.multiLoopClosingEnthalpy, temperature),
+		ninio:                            rescaleDg(rawEnergyParams.ninio37C, rawEnergyParams.ninioEnthalpy, temperature),
 	}
 
 	// scale and set hairpin, bulge and interior energy params
 	for i := 0; i <= maxLenLoop; i++ {
-		params.hairpinLoop[i] = rescaleDg(hairpinLoopEnergy37C[i], hairpinLoopEnthalpy[i], temperature)
-		params.bulge[i] = rescaleDg(bulgeEnergy37C[i], bulgeEnthalpy[i], temperature)
-		params.interiorLoop[i] = rescaleDg(interiorLoopEnergy37C[i], interiorLoopEnthalpy[i], temperature)
+		params.hairpinLoop[i] = rescaleDg(rawEnergyParams.hairpinLoopEnergy37C[i], rawEnergyParams.hairpinLoopEnthalpy[i], temperature)
+		params.bulge[i] = rescaleDg(rawEnergyParams.bulgeEnergy37C[i], rawEnergyParams.bulgeEnthalpy[i], temperature)
+		params.interiorLoop[i] = rescaleDg(rawEnergyParams.interiorLoopEnergy37C[i], rawEnergyParams.interiorLoopEnthalpy[i], temperature)
 	}
 
 	params.tetraLoop = make(map[string]int)
 	for k := range tetraLoops {
-		params.tetraLoop[k] = rescaleDg(tetraLoopEnergy37C[k], tetraLoopEnthalpy[k], temperature)
+		params.tetraLoop[k] = rescaleDg(rawEnergyParams.tetraLoopEnergy37C[k], rawEnergyParams.tetraLoopEnthalpy[k], temperature)
 	}
 
 	params.triLoop = make(map[string]int)
 	for k := range triLoops {
-		params.triLoop[k] = rescaleDg(triLoopEnergy37C[k], triLoopEnthalpy[k], temperature)
+		params.triLoop[k] = rescaleDg(rawEnergyParams.triLoopEnergy37C[k], rawEnergyParams.triLoopEnthalpy[k], temperature)
 	}
 
 	params.hexaLoop = make(map[string]int)
 	for k := range hexaLoops {
-		params.hexaLoop[k] = rescaleDg(hexaLoopEnergy37C[k], hexaLoopEnthalpy[k], temperature)
+		params.hexaLoop[k] = rescaleDg(rawEnergyParams.hexaLoopEnergy37C[k], rawEnergyParams.hexaLoopEnthalpy[k], temperature)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
-		params.multiLoopIntern[i] = rescaleDg(multiLoopIntern37C, multiLoopInternEnthalpy, temperature)
+		params.multiLoopIntern[i] = rescaleDg(rawEnergyParams.multiLoopIntern37C, rawEnergyParams.multiLoopInternEnthalpy, temperature)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			params.stackingPair[i][j] = rescaleDg(stackingPairEnergy37C[i][j],
-				stackingPairEnthalpy[i][j],
+			params.stackingPair[i][j] = rescaleDg(rawEnergyParams.stackingPairEnergy37C[i][j],
+				rawEnergyParams.stackingPairEnthalpy[i][j],
 				temperature)
 		}
 	}
@@ -1194,26 +1263,26 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbNucleobase; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				var mismatch int
-				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchInteriorLoopEnergy37C[i][j][k],
-					mismatchInteriorLoopEnthalpy[i][j][k],
+				params.mismatchInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchInteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatchHairpinLoop[i][j][k] = rescaleDg(mismatchHairpinLoopEnergy37C[i][j][k],
-					mismatchHairpinLoopEnthalpy[i][j][k],
+				params.mismatchHairpinLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchHairpinLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchHairpinLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(mismatch1xnInteriorLoopEnergy37C[i][j][k],
-					mismatch1xnInteriorLoopEnthalpy[i][j][k],
+				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatch1xnInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch2x3InteriorLoopEnergy37C[i][j][k],
-					mismatch2x3InteriorLoopEnthalpy[i][j][k],
+				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatch2x3InteriorLoopEnthalpy[i][j][k],
 					temperature)
 
-				mismatch = rescaleDg(mismatchMultiLoopEnergy37C[i][j][k],
-					mismatchMultiLoopEnthalpy[i][j][k],
+				mismatch = rescaleDg(rawEnergyParams.mismatchMultiLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchMultiLoopEnthalpy[i][j][k],
 					temperature)
 				params.mismatchMultiLoop[i][j][k] = min(0, mismatch)
 
-				mismatch = rescaleDg(mismatchExteriorLoopEnergy37C[i][j][k],
-					mismatchExteriorLoopEnthalpy[i][j][k],
+				mismatch = rescaleDg(rawEnergyParams.mismatchExteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchExteriorLoopEnthalpy[i][j][k],
 					temperature)
 				params.mismatchExteriorLoop[i][j][k] = min(0, mismatch)
 			}
@@ -1224,13 +1293,13 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbNucleobase; j++ {
 			var dd int
-			dd = rescaleDg(dangle5Energy37C[i][j],
-				dangle5Enthalpy[i][j],
+			dd = rescaleDg(rawEnergyParams.dangle5Energy37C[i][j],
+				rawEnergyParams.dangle5Enthalpy[i][j],
 				temperature)
 			params.dangle5[i][j] = min(0, dd)
 
-			dd = rescaleDg(dangle3Energy37C[i][j],
-				dangle3Enthalpy[i][j],
+			dd = rescaleDg(rawEnergyParams.dangle3Energy37C[i][j],
+				rawEnergyParams.dangle3Enthalpy[i][j],
 				temperature)
 			params.dangle3[i][j] = min(0, dd)
 		}
@@ -1241,8 +1310,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
-					params.interior1x1Loop[i][j][k][l] = rescaleDg(interior1x1LoopEnergy37C[i][j][k][l],
-						interior1x1LoopEnthalpy[i][j][k][l],
+					params.interior1x1Loop[i][j][k][l] = rescaleDg(rawEnergyParams.interior1x1LoopEnergy37C[i][j][k][l],
+						rawEnergyParams.interior1x1LoopEnthalpy[i][j][k][l],
 						temperature)
 				}
 			}
@@ -1250,13 +1319,13 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	/* interior 2x1 loops */
-	for i := 0; i <= nbPairs; i++ {
+	for i := 0; i < nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
-						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(interior2x1LoopEnergy37[i][j][k][l][m],
-							interior2x1LoopEnthalpy[i][j][k][l][m],
+						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37[i][j][k][l][m],
+							rawEnergyParams.interior2x1LoopEnthalpy[i][j][k][l][m],
 							temperature)
 					}
 				}
@@ -1265,14 +1334,14 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	/* interior 2x2 loops */
-	for i := 0; i <= nbPairs; i++ {
+	for i := 0; i < nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
 						for n := 0; n <= nbNucleobase; n++ {
-							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(interior2x2LoopEnergy37[i][j][k][l][m][n],
-								interior2x2LoopEnthalpy[i][j][k][l][m][n],
+							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37[i][j][k][l][m][n],
+								rawEnergyParams.interior2x2LoopEnthalpy[i][j][k][l][m][n],
 								temperature)
 						}
 					}
@@ -1359,3 +1428,400 @@ func PrintEnergyContributions(energyContribution []EnergyContribution, sequence 
 		}
 	}
 }
+
+type rawEnergyParams struct {
+	interior2x2LoopEnergy37 [][][][][][]int
+	interior2x2LoopEnthalpy [][][][][][]int
+
+	interior2x1LoopEnergy37 [][][][][]int
+	interior2x1LoopEnthalpy [][][][][]int
+
+	interior1x1LoopEnergy37C [][][][]int
+	interior1x1LoopEnthalpy  [][][][]int
+
+	mismatchInteriorLoopEnergy37C    [][][]int
+	mismatchInteriorLoopEnthalpy     [][][]int
+	mismatchHairpinLoopEnergy37C     [][][]int
+	mismatchHairpinLoopEnthalpy      [][][]int
+	mismatchMultiLoopEnergy37C       [][][]int
+	mismatchMultiLoopEnthalpy        [][][]int
+	mismatch1xnInteriorLoopEnergy37C [][][]int
+	mismatch1xnInteriorLoopEnthalpy  [][][]int
+	mismatch2x3InteriorLoopEnergy37C [][][]int
+	mismatch2x3InteriorLoopEnthalpy  [][][]int
+	mismatchExteriorLoopEnergy37C    [][][]int
+	mismatchExteriorLoopEnthalpy     [][][]int
+
+	dangle5Energy37C      [][]int
+	dangle5Enthalpy       [][]int
+	dangle3Energy37C      [][]int
+	dangle3Enthalpy       [][]int
+	stackingPairEnergy37C [][]int
+	stackingPairEnthalpy  [][]int
+
+	hairpinLoopEnergy37C  []int
+	hairpinLoopEnthalpy   []int
+	bulgeEnergy37C        []int
+	bulgeEnthalpy         []int
+	interiorLoopEnergy37C []int
+	interiorLoopEnthalpy  []int
+
+	multiLoopIntern37C       int
+	multiLoopInternEnthalpy  int
+	multiLoopClosing37C      int
+	multiLoopClosingEnthalpy int
+	multiLoopBase37C         int
+	multiLoopBaseEnthalpy    int
+	maxNinio                 int
+	ninio37C                 int
+	ninioEnthalpy            int
+	terminalAU37C            int
+	terminalAUEnthalpy       int
+
+	tetraLoops         map[string]bool
+	tetraLoopEnergy37C map[string]int
+	tetraLoopEnthalpy  map[string]int
+
+	triLoops         map[string]bool
+	triLoopEnergy37C map[string]int
+	triLoopEnthalpy  map[string]int
+
+	hexaLoops         map[string]bool
+	hexaLoopEnergy37C map[string]int
+	hexaLoopEnthalpy  map[string]int
+}
+
+func readLine(scanner *bufio.Scanner) (string, bool) {
+	lineAvailable := scanner.Scan()
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	if lineAvailable {
+		line := scanner.Text()
+		return line, lineAvailable
+	} else {
+		return "", false
+	}
+}
+
+func setEnergyParamsFromFile(fileName string) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	headerLine, lineAvailable := readLine(scanner)
+	if lineAvailable && headerLine != "## RNAfold parameter file v2.0" {
+		panic("Missing header line in file.\nMay be this file has not v2.0 format.\n")
+	}
+
+	// size_t      line_no;
+	// char        *line, ident[256];
+	// enum parset type;
+	// int         r;
+
+	// line_no = 0
+
+	// if ((!file_content) ||
+	//     (!file_content[line_no])) {
+	//   return 0
+	// }
+
+	// if (strncmp(file_content[line_no++], "## RNAfold parameter file v2.0", 30) != 0) {
+	//   vrna_message_warning("Missing header line in file.\n"
+	//                        "May be this file has not v2.0 format.\n"
+	//                        "Use INTERRUPT-key to stop.");
+	// }
+
+	energyParams := energyParams{}
+	line, lineAvailable := readLine(scanner)
+	for lineAvailable {
+		var energyParamSet string
+		n, _ := fmt.Sscanf(line, "# %255s", &energyParamSet)
+
+		if n == 1 {
+			fmt.Println(energyParamSet)
+			switch energyParamSet {
+			case "END":
+				break
+			case "stack":
+				// stackParamLines := getUncommentedLines(scanner, 7)
+				// var s interface{}
+				// s.([5]int)
+				// parseParamValues(scanner, nbPairs, nbPairs).([][]int)
+				// stackingPairSlice :=
+				// copy2DimSliceIntoArray(energyParams.stackingPair[:], stackingPairSlice)
+				// for i := 0; i < len(stackingPairSlice); i++ {
+				// 	copy(energyParams.stackingPair[i][:], stackingPairSlice[i])
+				// }
+				fmt.Println(energyParams.stackingPair)
+				// rd_2dim_slice(file_content, &line_no, &(stack37[0][0]), stack_dim, stack_shift)
+			case "stack_enthalpies":
+			case "hairpin":
+			case "hairpin_enthalpies":
+			case "bulge":
+			case "bulge_enthalpies":
+			case "interior":
+			case "interior_enthalpies":
+			case "mismatch_exterior":
+			case "mismatch_exterior_enthalpies":
+
+			case "mismatch_hairpin":
+			case "mismatch_hairpin_enthalpies":
+			case "mismatch_interior":
+			case "mismatch_interior_enthalpies":
+
+			case "mismatch_interior_1n":
+			case "mismatch_interior_1n_enthalpies":
+			case "mismatch_interior_23":
+			case "mismatch_interior_23_enthalpies":
+
+			case "mismatch_multi":
+			case "mismatch_multi_enthalpies":
+			case "int11":
+			case "int11_enthalpies":
+
+			case "int21":
+			case "int21_enthalpies":
+			case "int22":
+			case "int22_enthalpies":
+			case "dangle5":
+			case "dangle5_enthalpies":
+			case "dangle3":
+			case "dangle3_enthalpies":
+
+			case "ML_params":
+			case "NINIO":
+			case "Triloops":
+			case "Tetraloops":
+			case "Hexaloops":
+			case "Misc":
+			}
+		}
+		// else { // skip all other lines
+		// 	if len(strings.TrimSpace(removeComments(line))) == 0 {
+		// 		fmt.Println(line)
+		// 	}
+		// }
+		line, lineAvailable = readLine(scanner)
+	}
+}
+
+// func readLineIntoIntArray(line string, arraySize int) ([]int, error) {
+// 	lineSlice := readLineIntoSlice(line)
+// 	var slice [4]int
+// 	return slice
+// }
+
+func parseParamValues(scanner *bufio.Scanner, dims ...int) interface{} {
+	switch len(dims) {
+	case 0:
+		panic("invalid number of dims passed to parseParamValues")
+	case 1:
+		return parseParamValuesIntoSlice(scanner, dims[0])
+	case 2:
+		return parseParamValuesInto2DimSlice(scanner, dims[0], dims[1])
+		// case 3:
+		// 	return nil
+	}
+	return nil
+}
+
+func copySliceIntoArray(array interface{}, slice interface{}, dims ...int) {
+	switch len(dims) {
+	case 0:
+		panic("invalid number of dims passed to parseParamValues")
+	case 1:
+	case 2:
+		copy2DimSliceIntoArray(array.([][]int), slice.([][]int))
+		// case 3:
+		// 	return nil
+	}
+}
+
+func copy1DimSliceIntoArray(arr, slice []int) {
+	copy(arr[:], slice)
+}
+
+func copy2DimSliceIntoArray(arr [][]int, slice [][]int) {
+	for i := 0; i < len(arr); i++ {
+		copy1DimSliceIntoArray(arr[i], slice[i])
+	}
+}
+
+func parseParamValuesIntoSlice(scanner *bufio.Scanner, lenArray int) interface{} {
+	line := readUncommentedLine(scanner)
+	values := strings.Fields(line)
+	if len(values) < lenArray {
+		panic("too few values to parse into array")
+	}
+
+	var paramArray []int = make([]int, lenArray)
+	for idx, value := range values {
+		if value == "INF" {
+			paramArray[idx] = INF
+		} else {
+			valueInt, err := strconv.ParseInt(value, 10, 0)
+			if err != nil {
+				panic(err)
+			}
+			paramArray[idx] = int(valueInt)
+		}
+	}
+
+	return paramArray
+}
+
+func parseParamValuesInto2DimSlice(scanner *bufio.Scanner, lenFirstDim, lenSecondDim int) interface{} {
+	var retArray [][]int = make([][]int, lenFirstDim)
+	for i := 0; i < lenFirstDim; i++ {
+		retArray[i] = parseParamValuesIntoSlice(scanner, lenSecondDim).([]int)
+	}
+
+	return retArray
+}
+
+// func rd_2dim_slice(content []string, line_no int, array []int, dim [2]int, shift [2]int) {
+// 	var post [2]int = int{0, 0}
+// 	delta_pre := shift[0] + shift[1]
+// 	delta_post := post[0] + post[1]
+
+// 	if delta_pre + delta_post == 0 {
+// 		rd_1dim(content, line_no, array, dim[0]*dim[1], 0)
+// 		return
+// 	}
+
+// 	for i := shift[0]; i < dim[0]-post[0]; i++ {
+// 		rd_1dim_slice(content, line_no, array+(i*dim[1]), dim[1], shift[1], post[1])
+// 	}
+// }
+
+func readUncommentedLine(scanner *bufio.Scanner) (ret string) {
+	line, lineAvailable := readLine(scanner)
+	for lineAvailable {
+		line = removeComments(line)
+		if len(strings.TrimSpace(line)) == 0 {
+			// line only contain comments so continue reading
+			line, lineAvailable = readLine(scanner)
+		} else {
+			ret = line
+			return
+		}
+	}
+	panic("no more lines to read")
+}
+
+func getUncommentedLines(scanner *bufio.Scanner, numLines int) (ret []string) {
+	line, lineAvailable := readLine(scanner)
+	numUncommentedLines := 0
+
+	for lineAvailable {
+		line = removeComments(line)
+		if len(strings.TrimSpace(line)) != 0 {
+			ret = append(ret, line)
+			numUncommentedLines++
+		} // skip white space lines and full line comments
+	}
+
+	return
+}
+
+func removeComments(source string) string {
+	commentStartIdx := strings.Index(source, "/*")
+	for commentStartIdx != -1 {
+		commentEndIdx := strings.Index(source, "*/")
+		if commentEndIdx == -1 {
+			panic("unclosed comment in parameter file")
+		}
+
+		source = source[:commentStartIdx] + source[commentEndIdx+2:]
+
+		commentStartIdx = strings.Index(source, "/*")
+	}
+	return source
+}
+
+// func rd_1dim_slice(char **content, size_t *line_no, int *array, int dim, int shift) {
+// 	var cp string
+// 	cp = get_array1(content, line_no, array+shift, dim-shift)
+// 	if cp {
+// 		vrna_message_error("\nrd_1dim: %s", cp)
+// 		exit(1)
+// 	}
+// }
+
+// func get_array1(content []string, line_no int, arr []int, numLines int) string {
+//   var i, p, pos, pp, r, last int
+// 	var line string
+// 	var buf [16]rune
+
+//   i := 0
+// 	last := 0
+//   for i < numLines {
+//     line = content[(*line_no)++]
+//     if (!line)
+//       vrna_message_error("unexpected end of file in get_array1");
+
+//     ignore_comment(line);
+//     pos = 0;
+//     while ((i < numLines) && (sscanf(line + pos, "%15s%n", buf, &pp) == 1)) {
+//       pos += pp;
+//       if (buf[0] == '*') {
+//         i++;
+//         continue;
+//       } else if (buf[0] == 'x') {
+//         /* should only be used for loop parameters */
+//         if (i == 0)
+//           vrna_message_error("can't extrapolate first value");
+
+//         p = arr[last] + (int)(0.5 + lxc37 * log(((double)i) / (double)(last)));
+//       } else if (strcmp(buf, "DEF") == 0) {
+//         p = DEF;
+//       } else if (strcmp(buf, "INF") == 0) {
+//         p = INF;
+//       } else if (strcmp(buf, "NST") == 0) {
+//         p = NST;
+//       } else {
+//         r = sscanf(buf, "%d", &p);
+//         if (r != 1) {
+//           return line + pos;
+//           vrna_message_error("can't interpret `%s' in get_array1", buf);
+//           exit(1);
+//         }
+
+//         last = i;
+//       }
+
+//       arr[i++] = p;
+//     }
+//   }
+
+//   return NULL;
+// }
+
+// ignore_comment(char *line)
+// {
+//   /*
+//    * excise C style comments
+//    * only one comment per line, no multiline comments
+//    */
+//   char *cp1, *cp2;
+
+//   if ((cp1 = strstr(line, "/*"))) {
+//     cp2 = strstr(cp1, "*/");
+//     if (cp2 == NULL)
+//       vrna_message_error("unclosed comment in parameter file");
+
+//     /* can't use strcpy for overlapping strings */
+//     for (cp2 += 2; *cp2 != '\0'; cp2++, cp1++)
+//       *cp1 = *cp2;
+//     *cp1 = '\0';
+//   }
+
+//   return;
+// }

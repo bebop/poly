@@ -1370,3 +1370,8 @@ func logEnergyContributions(energyContribution []EnergyContribution, sequence st
 		}
 	}
 }
+
+func ExampleReadParams() {
+	setEnergyParamsFromFile("energy_params/rna_andronescu2007.par")
+	// Output: AB000100
+}
