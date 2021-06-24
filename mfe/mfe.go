@@ -143,7 +143,7 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 
 	fc := &foldCompound{
 		length:              lenSequence,
-		energyParams:        turner2004Params().scaleByTemperature(temperature),
+		energyParams:        rawEnergyParamsFromFile("energy_params/rna_turner2004.par").scaleByTemperature(temperature),
 		sequence:            sequence,
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
@@ -1149,11 +1149,11 @@ func min(a, b int) int {
 
 func turner2004Params() rawEnergyParams {
 	return rawEnergyParams{
-		interior2x2LoopEnergy37: interior2x2LoopEnergy37,
-		interior2x2LoopEnthalpy: interior2x2LoopEnthalpy,
+		interior2x2LoopEnergy37C: interior2x2LoopEnergy37,
+		interior2x2LoopEnthalpy:  interior2x2LoopEnthalpy,
 
-		interior2x1LoopEnergy37: interior2x1LoopEnergy37,
-		interior2x1LoopEnthalpy: interior2x1LoopEnthalpy,
+		interior2x1LoopEnergy37C: interior2x1LoopEnergy37,
+		interior2x1LoopEnthalpy:  interior2x1LoopEnthalpy,
 
 		interior1x1LoopEnergy37C: interior1x1LoopEnergy37C,
 		interior1x1LoopEnthalpy:  interior1x1LoopEnthalpy,
@@ -1324,7 +1324,7 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
-						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37[i][j][k][l][m],
+						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37C[i][j][k][l][m],
 							rawEnergyParams.interior2x1LoopEnthalpy[i][j][k][l][m],
 							temperature)
 					}
@@ -1340,7 +1340,7 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
 						for n := 0; n <= nbNucleobase; n++ {
-							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37[i][j][k][l][m][n],
+							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37C[i][j][k][l][m][n],
 								rawEnergyParams.interior2x2LoopEnthalpy[i][j][k][l][m][n],
 								temperature)
 						}
@@ -1351,6 +1351,21 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 	}
 
 	return params
+}
+
+func (rawEnergyParams *rawEnergyParams) setMultiLoopParams(parsedMultiLoopParams []int) {
+	rawEnergyParams.multiLoopBase37C = parsedMultiLoopParams[0]
+	rawEnergyParams.multiLoopBaseEnthalpy = parsedMultiLoopParams[1]
+	rawEnergyParams.multiLoopClosing37C = parsedMultiLoopParams[2]
+	rawEnergyParams.multiLoopClosingEnthalpy = parsedMultiLoopParams[3]
+	rawEnergyParams.multiLoopIntern37C = parsedMultiLoopParams[4]
+	rawEnergyParams.multiLoopInternEnthalpy = parsedMultiLoopParams[5]
+}
+
+func (rawEnergyParams *rawEnergyParams) setNinioParams(parsedNinioParams []int) {
+	rawEnergyParams.ninio37C = parsedNinioParams[0]
+	rawEnergyParams.ninioEnthalpy = parsedNinioParams[1]
+	rawEnergyParams.maxNinio = parsedNinioParams[2]
 }
 
 /**
@@ -1430,11 +1445,11 @@ func PrintEnergyContributions(energyContribution []EnergyContribution, sequence 
 }
 
 type rawEnergyParams struct {
-	interior2x2LoopEnergy37 [][][][][][]int
-	interior2x2LoopEnthalpy [][][][][][]int
+	interior2x2LoopEnergy37C [][][][][][]int
+	interior2x2LoopEnthalpy  [][][][][][]int
 
-	interior2x1LoopEnergy37 [][][][][]int
-	interior2x1LoopEnthalpy [][][][][]int
+	interior2x1LoopEnergy37C [][][][][]int
+	interior2x1LoopEnthalpy  [][][][][]int
 
 	interior1x1LoopEnergy37C [][][][]int
 	interior1x1LoopEnthalpy  [][][][]int
@@ -1492,6 +1507,7 @@ type rawEnergyParams struct {
 }
 
 func readLine(scanner *bufio.Scanner) (string, bool) {
+	// scanner.Split(bufio.ScanLines)
 	lineAvailable := scanner.Scan()
 
 	if err := scanner.Err(); err != nil {
@@ -1506,7 +1522,7 @@ func readLine(scanner *bufio.Scanner) (string, bool) {
 	}
 }
 
-func setEnergyParamsFromFile(fileName string) {
+func rawEnergyParamsFromFile(fileName string) (rawEnergyParams rawEnergyParams) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -1537,70 +1553,158 @@ func setEnergyParamsFromFile(fileName string) {
 	//                        "May be this file has not v2.0 format.\n"
 	//                        "Use INTERRUPT-key to stop.");
 	// }
-
-	energyParams := energyParams{}
 	line, lineAvailable := readLine(scanner)
 	for lineAvailable {
 		var energyParamSet string
 		n, _ := fmt.Sscanf(line, "# %255s", &energyParamSet)
 
 		if n == 1 {
-			fmt.Println(energyParamSet)
 			switch energyParamSet {
 			case "END":
 				break
 			case "stack":
-				// stackParamLines := getUncommentedLines(scanner, 7)
-				// var s interface{}
-				// s.([5]int)
-				// parseParamValues(scanner, nbPairs, nbPairs).([][]int)
-				// stackingPairSlice :=
-				// copy2DimSliceIntoArray(energyParams.stackingPair[:], stackingPairSlice)
-				// for i := 0; i < len(stackingPairSlice); i++ {
-				// 	copy(energyParams.stackingPair[i][:], stackingPairSlice[i])
-				// }
-				fmt.Println(energyParams.stackingPair)
-				// rd_2dim_slice(file_content, &line_no, &(stack37[0][0]), stack_dim, stack_shift)
+				rawEnergyParams.stackingPairEnergy37C = parseParamValues(scanner, nbPairs, nbPairs).([][]int)
+				rawEnergyParams.stackingPairEnergy37C = addPreOffset2Dim(rawEnergyParams.stackingPairEnergy37C, 1, 1)
+				// fmt.Println(testEq(rawEnergyParams.stackingPairEnergy37C, stackingPairEnergy37C, 2))
 			case "stack_enthalpies":
+				rawEnergyParams.stackingPairEnthalpy = parseParamValues(scanner, nbPairs, nbPairs).([][]int)
+				rawEnergyParams.stackingPairEnthalpy = addPreOffset(rawEnergyParams.stackingPairEnthalpy, 1, 1).([][]int)
+				// fmt.Println(testEq(rawEnergyParams.stackingPairEnthalpy, stackingPairEnthalpy, 2))
 			case "hairpin":
+				rawEnergyParams.hairpinLoopEnergy37C = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.hairpinLoopEnergy37C, hairpinLoopEnergy37C[:], 1))
 			case "hairpin_enthalpies":
+				rawEnergyParams.hairpinLoopEnthalpy = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.hairpinLoopEnthalpy, hairpinLoopEnthalpy[:], 1))
 			case "bulge":
+				rawEnergyParams.bulgeEnergy37C = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.bulgeEnergy37C, bulgeEnergy37C[:], 1))
 			case "bulge_enthalpies":
+				rawEnergyParams.bulgeEnthalpy = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.bulgeEnthalpy, bulgeEnthalpy[:], 1))
 			case "interior":
+				rawEnergyParams.interiorLoopEnergy37C = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.interiorLoopEnergy37C, interiorLoopEnergy37C[:], 1))
 			case "interior_enthalpies":
+				rawEnergyParams.interiorLoopEnthalpy = parseParamValues(scanner, 31).([]int)
+				// fmt.Println(testEq(rawEnergyParams.interiorLoopEnthalpy, interiorLoopEnthalpy[:], 1))
 			case "mismatch_exterior":
+				rawEnergyParams.mismatchExteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchExteriorLoopEnergy37C, mismatchExteriorLoopEnergy37C, 3))
 			case "mismatch_exterior_enthalpies":
-
+				rawEnergyParams.mismatchExteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchExteriorLoopEnthalpy, mismatchExteriorLoopEnthalpy, 3))
 			case "mismatch_hairpin":
+				rawEnergyParams.mismatchHairpinLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchHairpinLoopEnergy37C, mismatchHairpinLoopEnergy37C, 3))
 			case "mismatch_hairpin_enthalpies":
+				rawEnergyParams.mismatchHairpinLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchHairpinLoopEnthalpy, mismatchHairpinLoopEnthalpy, 3))
 			case "mismatch_interior":
+				rawEnergyParams.mismatchInteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchInteriorLoopEnergy37C, mismatchInteriorLoopEnergy37C, 3))
 			case "mismatch_interior_enthalpies":
-
+				rawEnergyParams.mismatchInteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchInteriorLoopEnthalpy, mismatchInteriorLoopEnthalpy, 3))
 			case "mismatch_interior_1n":
+				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, mismatch1xnInteriorLoopEnergy37C, 3))
 			case "mismatch_interior_1n_enthalpies":
+				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, mismatch1xnInteriorLoopEnthalpy, 3))
 			case "mismatch_interior_23":
+				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, mismatch2x3InteriorLoopEnergy37C, 3))
 			case "mismatch_interior_23_enthalpies":
+				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, mismatch2x3InteriorLoopEnthalpy, 3))
 
 			case "mismatch_multi":
+				rawEnergyParams.mismatchMultiLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchMultiLoopEnergy37C, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchMultiLoopEnergy37C, mismatchMultiLoopEnergy37C, 3))
 			case "mismatch_multi_enthalpies":
+				rawEnergyParams.mismatchMultiLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchMultiLoopEnthalpy, 1, 0, 0).([][][]int)
+				// fmt.Println(testEq(rawEnergyParams.mismatchMultiLoopEnthalpy, mismatchMultiLoopEnthalpy, 3))
 			case "int11":
+				rawEnergyParams.interior1x1LoopEnergy37C = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior1x1LoopEnergy37C, 1, 1, 0, 0).([][][][]int)
+				// fmt.Println(testEq(rawEnergyParams.interior1x1LoopEnergy37C, interior1x1LoopEnergy37C, 4))
 			case "int11_enthalpies":
+				rawEnergyParams.interior1x1LoopEnthalpy = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior1x1LoopEnthalpy, 1, 1, 0, 0).([][][][]int)
+				// fmt.Println(testEq(rawEnergyParams.interior1x1LoopEnthalpy, interior1x1LoopEnthalpy, 4))
 
 			case "int21":
+				rawEnergyParams.interior2x1LoopEnergy37C = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1, nbNucleobase+1).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x1LoopEnergy37C, 1, 1, 0, 0, 0).([][][][][]int)
+				// fmt.Println(testEq(rawEnergyParams.interior2x1LoopEnergy37C, interior2x1LoopEnergy37, 5))
 			case "int21_enthalpies":
+				rawEnergyParams.interior2x1LoopEnthalpy = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1, nbNucleobase+1).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x1LoopEnthalpy, 1, 1, 0, 0, 0).([][][][][]int)
+				// fmt.Println(testEq(rawEnergyParams.interior2x1LoopEnthalpy, interior2x1LoopEnthalpy, 5))
 			case "int22":
+				rawEnergyParams.interior2x2LoopEnergy37C = parseParamValues(scanner, nbPairs-1, nbPairs-1, nbNucleobase, nbNucleobase, nbNucleobase, nbNucleobase).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 1, 1, 1, 1).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = addPostOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 0, 0, 0, 0).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = updateNST(rawEnergyParams.interior2x2LoopEnergy37C)
+				// fmt.Println(testEq(rawEnergyParams.interior2x2LoopEnergy37C, interior2x2LoopEnergy37, 6))
 			case "int22_enthalpies":
+				rawEnergyParams.interior2x2LoopEnthalpy = parseParamValues(scanner, nbPairs-1, nbPairs-1, nbNucleobase, nbNucleobase, nbNucleobase, nbNucleobase).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 1, 1, 1, 1).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = addPostOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 0, 0, 0, 0).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = updateNST(rawEnergyParams.interior2x2LoopEnthalpy)
+				// fmt.Println(testEq(rawEnergyParams.interior2x2LoopEnthalpy, interior2x2LoopEnthalpy, 6))
 			case "dangle5":
+				rawEnergyParams.dangle5Energy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
+				rawEnergyParams.dangle5Energy37C = addPreOffset(rawEnergyParams.dangle5Energy37C, 1, 0).([][]int)
+				// fmt.Println(testEq(rawEnergyParams.dangle5Energy37C, dangle5Energy37C, 2))
 			case "dangle5_enthalpies":
+				rawEnergyParams.dangle5Enthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
+				rawEnergyParams.dangle5Enthalpy = addPreOffset(rawEnergyParams.dangle5Enthalpy, 1, 0).([][]int)
+				// fmt.Println(testEq(rawEnergyParams.dangle5Enthalpy, dangle5Enthalpy, 2))
 			case "dangle3":
+				rawEnergyParams.dangle3Energy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
+				rawEnergyParams.dangle3Energy37C = addPreOffset(rawEnergyParams.dangle3Energy37C, 1, 0).([][]int)
+				// fmt.Println(testEq(rawEnergyParams.dangle3Energy37C, dangle3Energy37C, 2))
 			case "dangle3_enthalpies":
+				rawEnergyParams.dangle3Enthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
+				rawEnergyParams.dangle3Enthalpy = addPreOffset(rawEnergyParams.dangle3Enthalpy, 1, 0).([][]int)
+				// fmt.Println(testEq(rawEnergyParams.dangle3Enthalpy, dangle3Enthalpy, 2))
 
 			case "ML_params":
+				mlParams := parseParamValues(scanner, 6).([]int)
+				rawEnergyParams.setMultiLoopParams(mlParams)
 			case "NINIO":
+				ninioParams := parseParamValues(scanner, 3).([]int)
+				rawEnergyParams.setNinioParams(ninioParams)
 			case "Triloops":
+				rawEnergyParams.triLoops,
+					rawEnergyParams.triLoopEnergy37C,
+					rawEnergyParams.triLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
 			case "Tetraloops":
+				rawEnergyParams.tetraLoops,
+					rawEnergyParams.tetraLoopEnergy37C,
+					rawEnergyParams.tetraLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
 			case "Hexaloops":
+				rawEnergyParams.hexaLoops,
+					rawEnergyParams.hexaLoopEnergy37C,
+					rawEnergyParams.hexaLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
 			case "Misc":
+				miscParams := parseParamValues(scanner, 4).([]int)
+				rawEnergyParams.terminalAU37C = miscParams[2]
+				rawEnergyParams.terminalAUEnthalpy = miscParams[3]
 			}
 		}
 		// else { // skip all other lines
@@ -1610,6 +1714,285 @@ func setEnergyParamsFromFile(fileName string) {
 		// }
 		line, lineAvailable = readLine(scanner)
 	}
+
+	// fmt.Println("and the answer is...")
+	// fmt.Println(reflect.DeepEqual(turner2004Params(), rawEnergyParams))
+	return
+}
+
+func parseTriTetraHexaLoopParams(scanner *bufio.Scanner) (loops map[string]bool, energies map[string]int, enthalpies map[string]int) {
+	loops, energies, enthalpies = make(map[string]bool), make(map[string]int), make(map[string]int)
+	line, lineAvailable := readLine(scanner)
+	for lineAvailable {
+		if len(strings.TrimSpace(line)) == 0 {
+			// blank line encountered
+			return
+		} else {
+			line = removeComments(line)
+
+			if len(strings.TrimSpace(line)) != 0 {
+				values := strings.Fields(line)
+				if len(values) != 3 {
+					panic(fmt.Sprintf("encountered incorrect number of values. expected 3, got %v", len(values)))
+				}
+				loop, energy, enthalpy := values[0], parseInt(values[1]), parseInt(values[2])
+				loops[loop] = true
+				energies[loop] = energy
+				enthalpies[loop] = enthalpy
+			} // else line only contain comments so continue reading
+
+			line, lineAvailable = readLine(scanner)
+		}
+	}
+	return
+}
+
+func printDims(arr interface{}, dims int) {
+	switch dims {
+	case 0:
+		fmt.Println()
+	case 1:
+		array := arr.([]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	case 2:
+		array := arr.([][]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	case 3:
+		array := arr.([][][]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	case 4:
+		array := arr.([][][][]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	case 5:
+		array := arr.([][][][][]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	case 6:
+		array := arr.([][][][][][]int)
+		fmt.Printf("%v ", len(array))
+		printDims(array[0], dims-1)
+	}
+}
+
+// returns a slice of length numINF with all values set to INF
+func infSlice(numINF int) (ret []int) {
+	ret = make([]int, numINF)
+	for i := 0; i < numINF; i++ {
+		ret[i] = INF
+	}
+	return
+}
+
+// adds numINF `INF`s to the front of a slice
+func prependInfsToSlice(slice []int, numINF int) []int {
+	return append(infSlice(numINF), slice...)
+}
+
+func appendInfsToSlice(slice []int, numINF int) []int {
+	return append(slice, infSlice(numINF)...)
+}
+
+func addPreOffset(values interface{}, dims ...int) interface{} {
+	switch len(dims) {
+	case 0:
+		panic("invalid number of dims passed to parseParamValues")
+	case 1:
+		return prependInfsToSlice(values.([]int), dims[0])
+	case 2:
+		return addPreOffset2Dim(values.([][]int), dims[0], dims[1])
+	case 3:
+		return addPreOffset3Dim(values.([][][]int), dims[0], dims[1], dims[2])
+	case 4:
+		return addPreOffset4Dim(values.([][][][]int), dims[0], dims[1], dims[2], dims[3])
+	case 5:
+		return addPreOffset5Dim(values.([][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4])
+	case 6:
+		return addPreOffset6Dim(values.([][][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], dims[5])
+	}
+	return nil
+}
+
+func addPreOffset2Dim(values [][]int, dim1Offset, dim2Offset int) (ret [][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim2 += len(values[0])
+	}
+	for i := 0; i < dim1Offset; i++ {
+		infSlice := infSlice(newLenDim2)
+		ret = append(ret, infSlice)
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, prependInfsToSlice(values[i], dim2Offset))
+	}
+	return
+}
+
+func addPreOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int) (ret [][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim3 += len(values[0][0])
+	}
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][]int
+		infMatrix = addPreOffset2Dim(infMatrix, newLenDim2, newLenDim3)
+		ret = append(ret, infMatrix)
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, addPreOffset2Dim(values[i], dim2Offset, dim3Offset))
+	}
+	return
+}
+
+func addPreOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset int) (ret [][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim4 += len(values[0][0][0])
+	}
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][]int
+		infMatrix = addPreOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4)
+		ret = append(ret, infMatrix)
+	}
+
+	for i := 0; i < len(values); i++ {
+		ret = append(ret, addPreOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset))
+	}
+	return
+}
+
+func addPreOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset int) (ret [][][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	var currLenDim4 int = 0
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim4 = len(values[0][0][0])
+		newLenDim4 += currLenDim4
+	}
+	var newLenDim5 int = dim5Offset
+	if currLenDim4 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim5 += len(values[0][0][0][0])
+	}
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][][]int
+		infMatrix = addPreOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5)
+		ret = append(ret, infMatrix)
+	}
+
+	for i := 0; i < len(values); i++ {
+		ret = append(ret, addPreOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset))
+	}
+	return
+}
+
+func addPreOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset int) (ret [][][][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	var currLenDim4 int = 0
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim4 = len(values[0][0][0])
+		newLenDim4 += currLenDim4
+	}
+	var newLenDim5 int = dim5Offset
+	var currLenDim5 int = 0
+	if currLenDim4 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim5 = len(values[0][0][0][0])
+		newLenDim5 += currLenDim5
+	}
+	var newLenDim6 int = dim6Offset
+	if currLenDim5 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim6 += len(values[0][0][0][0][0])
+	}
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][][][]int
+		infMatrix = addPreOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6)
+		ret = append(ret, infMatrix)
+	}
+
+	for i := 0; i < len(values); i++ {
+		ret = append(ret, addPreOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset))
+	}
+	return
 }
 
 // func readLineIntoIntArray(line string, arraySize int) ([]int, error) {
@@ -1623,67 +2006,479 @@ func parseParamValues(scanner *bufio.Scanner, dims ...int) interface{} {
 	case 0:
 		panic("invalid number of dims passed to parseParamValues")
 	case 1:
-		return parseParamValuesIntoSlice(scanner, dims[0])
+		return parseUntilEnoughValuesIntoSlice(scanner, dims[0])
 	case 2:
 		return parseParamValuesInto2DimSlice(scanner, dims[0], dims[1])
-		// case 3:
-		// 	return nil
+	case 3:
+		return parseParamValuesInto3DimSlice(scanner, dims[0], dims[1], dims[2])
+	case 4:
+		return parseParamValuesInto4DimSlice(scanner, dims[0], dims[1], dims[2], dims[3])
+	case 5:
+		return parseParamValuesInto5DimSlice(scanner, dims[0], dims[1], dims[2], dims[3], dims[4])
+	case 6:
+		return parseParamValuesInto6DimSlice(scanner, dims[0], dims[1], dims[2], dims[3], dims[4], dims[5])
 	}
 	return nil
 }
 
-func copySliceIntoArray(array interface{}, slice interface{}, dims ...int) {
+func parseUntilEnoughValuesIntoSlice(scanner *bufio.Scanner, numValuesToParse int) (ret []int) {
+	totalValuesParsed := 0
+	ret = make([]int, 0, numValuesToParse)
+	for totalValuesParsed < numValuesToParse {
+		parsedParamsSlice := parseLineIntoSlice(scanner)
+		ret = append(ret, parsedParamsSlice...)
+		totalValuesParsed += len(parsedParamsSlice)
+	}
+	if totalValuesParsed > numValuesToParse {
+		panic("parsed too many values")
+	}
+	return
+}
+
+func addPostOffset(values interface{}, dims ...int) interface{} {
 	switch len(dims) {
 	case 0:
 		panic("invalid number of dims passed to parseParamValues")
 	case 1:
+		return appendInfsToSlice(values.([]int), dims[0])
 	case 2:
-		copy2DimSliceIntoArray(array.([][]int), slice.([][]int))
-		// case 3:
-		// 	return nil
+		return addPostOffset2Dim(values.([][]int), dims[0], dims[1])
+	case 3:
+		return addPostOffset3Dim(values.([][][]int), dims[0], dims[1], dims[2])
+	case 4:
+		return addPostOffset4Dim(values.([][][][]int), dims[0], dims[1], dims[2], dims[3])
+	case 5:
+		return addPostOffset5Dim(values.([][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4])
+	case 6:
+		return addPostOffset6Dim(values.([][][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], dims[5])
 	}
+	return nil
 }
 
-func copy1DimSliceIntoArray(arr, slice []int) {
-	copy(arr[:], slice)
-}
+func addPostOffset2Dim(values [][]int, dim1Offset, dim2Offset int) (ret [][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][]int, 0, newLenDim1)
 
-func copy2DimSliceIntoArray(arr [][]int, slice [][]int) {
-	for i := 0; i < len(arr); i++ {
-		copy1DimSliceIntoArray(arr[i], slice[i])
+	var newLenDim2 int = dim2Offset
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim2 += len(values[0])
 	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, appendInfsToSlice(values[i], dim2Offset))
+	}
+
+	for i := 0; i < dim1Offset; i++ {
+		infSlice := infSlice(newLenDim2)
+		ret = append(ret, infSlice)
+	}
+
+	return
 }
 
-func parseParamValuesIntoSlice(scanner *bufio.Scanner, lenArray int) interface{} {
+func addPostOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int) (ret [][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim3 += len(values[0][0])
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, addPostOffset2Dim(values[i], dim2Offset, dim3Offset))
+	}
+
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][]int
+		infMatrix = addPostOffset2Dim(infMatrix, newLenDim2, newLenDim3)
+		ret = append(ret, infMatrix)
+	}
+	return
+}
+
+func addPostOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset int) (ret [][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim4 += len(values[0][0][0])
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, addPostOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset))
+	}
+
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][]int
+		infMatrix = addPostOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4)
+		ret = append(ret, infMatrix)
+	}
+
+	return
+}
+
+func addPostOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset int) (ret [][][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	var currLenDim4 int = 0
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim4 = len(values[0][0][0])
+		newLenDim4 += currLenDim4
+	}
+	var newLenDim5 int = dim5Offset
+	if currLenDim4 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim5 += len(values[0][0][0][0])
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, addPostOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset))
+	}
+
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][][]int
+		infMatrix = addPostOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5)
+		ret = append(ret, infMatrix)
+	}
+
+	return
+}
+
+func addPostOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset int) (ret [][][][][][]int) {
+	currLenDim1 := len(values)
+	newLenDim1 := currLenDim1 + dim1Offset
+	ret = make([][][][][][]int, 0, newLenDim1)
+
+	var newLenDim2 int = dim2Offset
+	var currLenDim2 int = 0
+	if currLenDim1 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim2 = len(values[0])
+		newLenDim2 += currLenDim2
+	}
+	var newLenDim3 int = dim3Offset
+	var currLenDim3 int = 0
+	if currLenDim2 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim3 = len(values[0][0])
+		newLenDim3 += currLenDim3
+	}
+	var newLenDim4 int = dim4Offset
+	var currLenDim4 int = 0
+	if currLenDim3 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim4 = len(values[0][0][0])
+		newLenDim4 += currLenDim4
+	}
+	var newLenDim5 int = dim5Offset
+	var currLenDim5 int = 0
+	if currLenDim4 > 0 {
+		// add check to ensure we don't index an empty slice
+		currLenDim5 = len(values[0][0][0][0])
+		newLenDim5 += currLenDim5
+	}
+	var newLenDim6 int = dim6Offset
+	if currLenDim5 > 0 {
+		// add check to ensure we don't index an empty slice
+		newLenDim6 += len(values[0][0][0][0][0])
+	}
+
+	for i := 0; i < currLenDim1; i++ {
+		ret = append(ret, addPostOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset))
+	}
+
+	for i := 0; i < dim1Offset; i++ {
+		var infMatrix [][][][][]int
+		infMatrix = addPostOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6)
+		ret = append(ret, infMatrix)
+	}
+
+	return
+}
+
+// func parseUntilEnoughValuesIntoSlice(scanner *bufio.Scanner, numValuesToParse int) (ret []int) {
+// 	scanner.Split(bufio.ScanWords)
+// 	totalValuesParsed := 0
+// 	ret = make([]int, 0, numValuesToParse)
+// 	for totalValuesParsed < numValuesToParse {
+// 		scanner.Scan()
+// 		token := scanner.Text()
+// 		if token == "/*" {
+// 			readUntilCommentEnd(scanner)
+// 		} else {
+// 			ret = append(ret, parseToken(token))
+// 			totalValuesParsed++
+// 		}
+// 		// parsedParamsSlice := parseLineIntoSlice(scanner)
+// 		// ret = append(ret, parsedParamsSlice...)
+// 		// totalValuesParsed += len(parsedParamsSlice)
+// 	}
+// 	if totalValuesParsed > numValuesToParse {
+// 		panic("parsed too many values")
+// 	}
+// 	return
+// }
+
+// func readUntilCommentEnd(scanner *bufio.Scanner) {
+// 	scanner.Split(bufio.ScanWords)
+// 	token := ""
+// 	for token != "*/" {
+// 		scanner.Scan()
+// 		token = scanner.Text()
+// 	}
+// }
+
+// func parseToken(token string) int {
+// 	if token == "INF" {
+// 		return INF
+// 	} else {
+// 		valueInt64, err := strconv.ParseInt(token, 10, 0)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		return int(valueInt64)
+// 	}
+// }
+
+func parseInt(token string) int {
+	valueInt64, err := strconv.ParseInt(token, 10, 0)
+	if err != nil {
+		panic(err)
+	}
+	return int(valueInt64)
+}
+
+func parseLineIntoSlice(scanner *bufio.Scanner) (paramArray []int) {
 	line := readUncommentedLine(scanner)
 	values := strings.Fields(line)
-	if len(values) < lenArray {
-		panic("too few values to parse into array")
-	}
+	// if len(values) < lenArray {
+	// 	panic("too few values to parse into array")
+	// }
 
-	var paramArray []int = make([]int, lenArray)
-	for idx, value := range values {
+	for _, value := range values {
 		if value == "INF" {
-			paramArray[idx] = INF
+			paramArray = append(paramArray, INF)
 		} else {
-			valueInt, err := strconv.ParseInt(value, 10, 0)
-			if err != nil {
-				panic(err)
-			}
-			paramArray[idx] = int(valueInt)
+			paramArray = append(paramArray, parseInt(value))
 		}
 	}
 
-	return paramArray
+	return
 }
 
-func parseParamValuesInto2DimSlice(scanner *bufio.Scanner, lenFirstDim, lenSecondDim int) interface{} {
-	var retArray [][]int = make([][]int, lenFirstDim)
-	for i := 0; i < lenFirstDim; i++ {
-		retArray[i] = parseParamValuesIntoSlice(scanner, lenSecondDim).([]int)
+func parseParamValuesInto2DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2 int) (ret [][]int) {
+	ret = make([][]int, lenDim1)
+	for i := 0; i < lenDim1; i++ {
+		ret[i] = parseUntilEnoughValuesIntoSlice(scanner, lenDim2)
 	}
 
-	return retArray
+	return ret
+}
+
+func parseParamValuesInto3DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, lenDim3 int) (ret [][][]int) {
+	ret = make([][][]int, lenDim1)
+	for i := 0; i < lenDim1; i++ {
+		ret[i] = parseParamValuesInto2DimSlice(scanner, lenDim2, lenDim3)
+	}
+	return
+}
+
+func parseParamValuesInto4DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, lenDim3, lenDim4 int) (ret [][][][]int) {
+	ret = make([][][][]int, lenDim1)
+	for i := 0; i < lenDim1; i++ {
+		ret[i] = parseParamValuesInto3DimSlice(scanner, lenDim2, lenDim3, lenDim4)
+	}
+	return
+}
+
+func parseParamValuesInto5DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, lenDim3, lenDim4, lenDim5 int) (ret [][][][][]int) {
+	ret = make([][][][][]int, lenDim1)
+	for i := 0; i < lenDim1; i++ {
+		ret[i] = parseParamValuesInto4DimSlice(scanner, lenDim2, lenDim3, lenDim4, lenDim5)
+	}
+	return
+}
+
+func parseParamValuesInto6DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, lenDim3, lenDim4, lenDim5, lenDim6 int) (ret [][][][][][]int) {
+	ret = make([][][][][][]int, lenDim1)
+	for i := 0; i < lenDim1; i++ {
+		ret[i] = parseParamValuesInto5DimSlice(scanner, lenDim2, lenDim3, lenDim4, lenDim5, lenDim6)
+	}
+	return
+}
+
+/* update nonstandard nucleotide/basepair involved contributions for int22 */
+// array[nbPairs + 1][nbPairs + 1][5][5][5][5]
+func updateNST(arrayPointer [][][][][][]int) (array [][][][][][]int) {
+	array = arrayPointer
+	var max, max2, max3, max4, max5, max6 int
+	/* get maxima for one nonstandard nucleotide */
+	for i := 1; i < nbPairs; i++ {
+		for j := 1; j < nbPairs; j++ {
+			for k := 1; k < 5; k++ {
+				for l := 1; l < 5; l++ {
+					for m := 1; m < 5; m++ {
+						max, max2, max3, max4 = -INF, -INF, -INF, -INF /* max of {CGAU} */
+						for n := 1; n < 5; n++ {
+							max = maxInt(max, array[i][j][k][l][m][n])
+							max2 = maxInt(max2, array[i][j][k][l][n][m])
+							max3 = maxInt(max3, array[i][j][k][n][l][m])
+							max4 = maxInt(max4, array[i][j][n][k][l][m])
+						}
+						array[i][j][k][l][m][0] = max
+						array[i][j][k][l][0][m] = max2
+						array[i][j][k][0][l][m] = max3
+						array[i][j][0][k][l][m] = max4
+					}
+				}
+			}
+		}
+	}
+	/* get maxima for two nonstandard nucleotides */
+	for i := 1; i < nbPairs; i++ {
+		for j := 1; j < nbPairs; j++ {
+			for k := 1; k < 5; k++ {
+				for l := 1; l < 5; l++ {
+					max, max2, max3, max4, max5, max6 = -INF, -INF, -INF, -INF, -INF, -INF /* max of {CGAU} */
+					for m := 1; m < 5; m++ {
+						max = maxInt(max, array[i][j][k][l][m][0])
+						max2 = maxInt(max2, array[i][j][k][m][0][l])
+						max3 = maxInt(max3, array[i][j][m][0][k][l])
+						max4 = maxInt(max4, array[i][j][0][k][l][m])
+						max5 = maxInt(max5, array[i][j][0][k][m][l])
+						max6 = maxInt(max6, array[i][j][k][0][l][m])
+					}
+					array[i][j][k][l][0][0] = max
+					array[i][j][k][0][0][l] = max2
+					array[i][j][0][0][k][l] = max3
+					array[i][j][k][0][l][0] = max6
+					array[i][j][0][k][0][l] = max5
+					array[i][j][0][k][l][0] = max4
+				}
+			}
+		}
+	}
+	/* get maxima for three nonstandard nucleotides */
+	for i := 1; i < nbPairs; i++ {
+		for j := 1; j < nbPairs; j++ {
+			for k := 1; k < 5; k++ {
+				max, max2, max3, max4 = -INF, -INF, -INF, -INF /* max of {CGAU} */
+				for l := 1; l < 5; l++ {
+					/* should be arbitrary where index l resides in last 3 possible locations */
+					max = maxInt(max, array[i][j][k][l][0][0])
+					max2 = maxInt(max2, array[i][j][0][k][l][0])
+					max3 = maxInt(max3, array[i][j][0][0][k][l])
+					max4 = maxInt(max4, array[i][j][0][0][l][k])
+				}
+				array[i][j][k][0][0][0] = max
+				array[i][j][0][k][0][0] = max2
+				array[i][j][0][0][k][0] = max3
+				array[i][j][0][0][0][k] = max4
+			}
+		}
+	}
+	/* get maxima for 4 nonstandard nucleotides */
+	for i := 1; i < nbPairs; i++ {
+		for j := 1; j < nbPairs; j++ {
+			max = -INF /* max of {CGAU} */
+			for k := 1; k < 5; k++ {
+				max = maxInt(max, array[i][j][k][0][0][0])
+			}
+			array[i][j][0][0][0][0] = max
+		}
+	}
+
+	/*
+	 * now compute contributions for nonstandard base pairs ...
+	 * first, 1 nonstandard bp
+	 */
+	for i := 1; i < nbPairs; i++ {
+		for k := 0; k < 5; k++ {
+			for l := 0; l < 5; l++ {
+				for m := 0; m < 5; m++ {
+					for n := 0; n < 5; n++ {
+						max, max2 = -INF, -INF
+						for j := 1; j < nbPairs; j++ {
+							max = maxInt(max, array[i][j][k][l][m][n])
+							max2 = maxInt(max2, array[j][i][k][l][m][n])
+						}
+						array[i][nbPairs][k][l][m][n] = max
+						array[nbPairs][i][k][l][m][n] = max2
+					}
+				}
+			}
+		}
+	}
+
+	/* now 2 nst base pairs */
+	for k := 0; k < 5; k++ {
+		for l := 0; l < 5; l++ {
+			for m := 0; m < 5; m++ {
+				for n := 0; n < 5; n++ {
+					max = -INF
+					for j := 1; j < nbPairs; j++ {
+						max = maxInt(max, array[nbPairs][j][k][l][m][n])
+					}
+					array[nbPairs][nbPairs][k][l][m][n] = max
+				}
+			}
+		}
+	}
+	return
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // func rd_2dim_slice(content []string, line_no int, array []int, dim [2]int, shift [2]int) {
@@ -1714,6 +2509,96 @@ func readUncommentedLine(scanner *bufio.Scanner) (ret string) {
 		}
 	}
 	panic("no more lines to read")
+}
+
+func testEq1DimSlice(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq2DimSlice(a, b [][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !testEq1DimSlice(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq3DimSlice(a, b [][][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !testEq2DimSlice(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq4DimSlice(a, b [][][][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !testEq3DimSlice(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq5DimSlice(a, b [][][][][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !testEq4DimSlice(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq6DimSlice(a, b [][][][][][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !testEq5DimSlice(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func testEq(a, b interface{}, dims int) bool {
+	switch dims {
+	case 1:
+		return testEq1DimSlice(a.([]int), b.([]int))
+	case 2:
+		return testEq2DimSlice(a.([][]int), b.([][]int))
+	case 3:
+		return testEq3DimSlice(a.([][][]int), b.([][][]int))
+	case 4:
+		return testEq4DimSlice(a.([][][][]int), b.([][][][]int))
+	case 5:
+		return testEq5DimSlice(a.([][][][][]int), b.([][][][][]int))
+	case 6:
+		return testEq6DimSlice(a.([][][][][][]int), b.([][][][][][]int))
+	}
+	return false
 }
 
 func getUncommentedLines(scanner *bufio.Scanner, numLines int) (ret []string) {
