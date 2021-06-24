@@ -86,8 +86,12 @@ type foldCompound struct {
 }
 
 const (
-	noDangles     = 0
-	doubleDangles = 2
+	// NoDangles specifies no dangling end energies to be added to energy calcualtions
+	NoDangles = 0
+	// DoubleDangles specifies energies due to dangling ends (on both five and three prime sides)
+	// should be added to energy calcualtions
+	DoubleDangles            = 2
+	DefaultDanglingEndsModel = DoubleDangles
 )
 
 /**
@@ -112,11 +116,12 @@ type EnergyContribution struct {
  *  @param sequence         A RNA sequence
  *  @param structure        Secondary structure in dot-bracket notation
  *  @param temperature      Temperature at which to evaluate the free energy of the structure
+ *  @param danglingEndsModel  Specify whether to include energy from dangling ends (NoDangles or DoubleDangles)
  *  @return                 The free energy of the input structure given the input sequence in kcal/mol,
 														and a slice of `EnergyContribution` (which gives information about the
 														energy contribution of each loop present in the secondary structure)
 */
-func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64, []EnergyContribution, error) {
+func MinimumFreeEnergy(sequence, structure string, temperature float64, danglingEndsModel int) (float64, []EnergyContribution, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
@@ -150,7 +155,7 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
 		basePairEncodedType: basePairEncodedTypeMap(),
-		dangleModel:         noDangles,
+		dangleModel:         danglingEndsModel,
 	}
 
 	energyInt, energyContributions := evaluateFoldCompound(fc)
@@ -525,10 +530,10 @@ func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 			pairThreePrimeIdx)
 
 		switch fc.dangleModel {
-		case noDangles:
+		case NoDangles:
 			energy += exteriorStemEnergy(basePairType, -1, -1, fc.energyParams)
 
-		case doubleDangles:
+		case DoubleDangles:
 			var fivePrimeMismatch, threePrimeMismatch int
 			if pairFivePrimeIdx > 0 {
 				fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
@@ -1079,7 +1084,7 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 	substructuresEnergy := 0
 
 	switch fc.dangleModel {
-	case noDangles:
+	case NoDangles:
 
 		for enclosedFivePrimeIdx < closingThreePrimeIdx {
 			// add up the contributions of the substructures of the multi loop
@@ -1111,17 +1116,17 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
 		}
 
-	case doubleDangles:
+	case DoubleDangles:
 
 		// add energy due to closing pair of multi-loop
 		// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
 		// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
-		closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+		// closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
 
-		closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-		closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
-		multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
-			closingThreePrimeMismatch, fc.energyParams)
+		// closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+		// closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+		// multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+		// 	closingThreePrimeMismatch, fc.energyParams)
 
 		// iterate through structure and find all enclosed base pairs
 		for enclosedFivePrimeIdx < closingThreePrimeIdx {
@@ -1153,19 +1158,19 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
 		}
 
-		// if closingFivePrimeIdx > 0 {
-		// 	// actual closing pair
-		// 	closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+		if closingFivePrimeIdx > 0 {
+			// actual closing pair
+			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
 
-		// 	closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-		// 	closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+			closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+			closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
 
-		// 	multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
-		// 		closingThreePrimeMismatch, fc.energyParams)
-		// } else {
-		// 	// virtual closing pair
-		// 	multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
-		// }
+			multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+				closingThreePrimeMismatch, fc.energyParams)
+		} else {
+			// virtual closing pair
+			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+		}
 	}
 
 	// add bonus energies for unpaired nucleotides

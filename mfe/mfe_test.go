@@ -10,7 +10,7 @@ import (
 )
 
 func ExampleMinimumFreeEnergy() {
-	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", DefaultTemperature)
+	mfe, _, _ := MinimumFreeEnergy("ACGAUCAGAGAUCAGAGCAUACGACAGCAG", "..((((...))))...((........))..", DefaultTemperature, DefaultDanglingEndsModel)
 	fmt.Println(mfe)
 	// Output:
 	// -2.9
@@ -19,7 +19,7 @@ func ExampleMinimumFreeEnergy() {
 func TestAndronescu2007ParamsNoDanglingEnergies(t *testing.T) {
 	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
-		DefaultTemperature,
+		DefaultTemperature, NoDangles,
 		`External loop                           :     0
 		Interior loop (  3, 13) GC; (  4, 12) AU:  -211
 		Interior loop (  4, 12) AU; (  5, 11) UA:   -99
@@ -32,7 +32,7 @@ func TestAndronescu2007ParamsNoDanglingEnergies(t *testing.T) {
 	compareMFEOutputToViennaRNA(
 		"AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
 		"........(((((...((((.......(((((((.((....((((...((((((...((((..(((((((..........))).))))...))))...((((.(((.((..........(((((((((.(((((............)).)))..)))))))))......)).)))))))..)))))).)))).....)).)))))))..(((.(((....))).))).......((((..((((.((((......)))).)))).......))))(((((........)))))..(((((.((((..((((((....((((.....)))).....((((((((((.((((....(((((((............(((((((.(((........(((((.(((((((((.(((...........((((((......((((((.....(((((((((((.........)))))))))))...))))))...))))))..))).)))))...))))))))).......))).)))))))...........)))))))...)))).))))))))))...((((((..((((((((........(((((((.....((((((((((((((.....))))))))).)))))....))))))))))))))).))))))...........((((((((.((((.(((........(((((...)))))((((..(((..(((...............)))..)))..)))).(((((((.........)))))))....))).)))).))))))))))))...))..)))))))))......((((.....)))).))))...)))))..",
-		DefaultTemperature,
+		DefaultTemperature, NoDangles,
 		`External loop                           :    11
 		Interior loop (  9,859) AU; ( 10,858) UG:   -88
 		Interior loop ( 10,858) UG; ( 11,857) AU:     0
@@ -291,7 +291,7 @@ func TestAndronescu2007ParamsNoDanglingEnergies(t *testing.T) {
 func TestAndronescu2007Params(t *testing.T) {
 	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -350
 		Interior loop (  3, 13) GC; (  4, 12) AU:  -211
 		Interior loop (  4, 12) AU; (  5, 11) UA:   -99
@@ -303,7 +303,7 @@ func TestAndronescu2007Params(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -139
 		Interior loop (  1, 68) GC; (  2, 67) GC:  -271
 		Interior loop (  2, 67) GC; (  3, 66) GU:  -127
@@ -333,7 +333,7 @@ func TestAndronescu2007Params(t *testing.T) {
 	compareMFEOutputToViennaRNA(
 		"AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
 		"........(((((...((((.......(((((((.((....((((...((((((...((((..(((((((..........))).))))...))))...((((.(((.((..........(((((((((.(((((............)).)))..)))))))))......)).)))))))..)))))).)))).....)).)))))))..(((.(((....))).))).......((((..((((.((((......)))).)))).......))))(((((........)))))..(((((.((((..((((((....((((.....)))).....((((((((((.((((....(((((((............(((((((.(((........(((((.(((((((((.(((...........((((((......((((((.....(((((((((((.........)))))))))))...))))))...))))))..))).)))))...))))))))).......))).)))))))...........)))))))...)))).))))))))))...((((((..((((((((........(((((((.....((((((((((((((.....))))))))).)))))....))))))))))))))).))))))...........((((((((.((((.(((........(((((...)))))((((..(((..(((...............)))..)))..)))).(((((((.........)))))))....))).)))).))))))))))))...))..)))))))))......((((.....)))).))))...)))))..",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :   -16
 			Interior loop (  9,859) AU; ( 10,858) UG:   -88
 			Interior loop ( 10,858) UG; ( 11,857) AU:     0
@@ -592,7 +592,7 @@ func TestAndronescu2007Params(t *testing.T) {
 func TestMinimumFreeEnergy(t *testing.T) {
 	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -300
 		Interior loop (  3, 13) GC; (  4, 12) AU:  -240
 		Interior loop (  4, 12) AU; (  5, 11) UA:  -110
@@ -603,7 +603,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		-2.9`, t)
 
 	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
-		"..((((...))))...((........))..",
+		"..((((...))))...((........))..", DoubleDangles,
 		4,
 		`External loop                           :  -423
 		Interior loop (  3, 13) GC; (  4, 12) AU:  -346
@@ -616,7 +616,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("AAAACGGUCCUUAUCAGGACCAAACA",
 		".....((((((....)))))).....",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -150
 		Interior loop (  6, 21) GC; (  7, 20) GC:  -330
 		Interior loop (  7, 20) GC; (  8, 19) UA:  -220
@@ -629,13 +629,13 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("AUUCUUGCUUCAACAGUGUUUGAACGGAAU",
 		"..............................",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :     0
 		0`, t)
 
 	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
 		"(((((((...................)))))))",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :    50
 		Interior loop (  1, 33) UA; (  2, 32) CG:  -240
 		Interior loop (  2, 32) CG; (  3, 31) GC:  -240
@@ -648,7 +648,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
 		"(((((((...................)))))))",
-		58.0,
+		58.0, DoubleDangles,
 		`External loop                           :    28
 		Interior loop (  1, 33) UA; (  2, 32) CG:  -172
 		Interior loop (  2, 32) CG; (  3, 31) GC:  -184
@@ -661,7 +661,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("GUUUUUAUCUUACACACGCUUGUGUAAGAUAGUUA",
 		".....(((((((((((....)))))))))))....",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :   -50
 		Interior loop (  6, 31) UA; (  7, 30) AU:  -130
 		Interior loop (  7, 30) AU; (  8, 29) UA:  -110
@@ -678,7 +678,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -170
 		Interior loop (  1, 68) GC; (  2, 67) GC:  -330
 		Interior loop (  2, 67) GC; (  3, 66) GU:  -150
@@ -707,7 +707,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 
 	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
-		22.19,
+		22.19, DoubleDangles,
 		`External loop                           :  -204
 		Interior loop (  1, 68) GC; (  2, 67) GC:  -378
 		Interior loop (  2, 67) GC; (  3, 66) GU:  -182
@@ -737,7 +737,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 	compareMFEOutputToViennaRNA(
 		"AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
 		"........(((((...((((.......(((((((.((....((((...((((((...((((..(((((((..........))).))))...))))...((((.(((.((..........(((((((((.(((((............)).)))..)))))))))......)).)))))))..)))))).)))).....)).)))))))..(((.(((....))).))).......((((..((((.((((......)))).)))).......))))(((((........)))))..(((((.((((..((((((....((((.....)))).....((((((((((.((((....(((((((............(((((((.(((........(((((.(((((((((.(((...........((((((......((((((.....(((((((((((.........)))))))))))...))))))...))))))..))).)))))...))))))))).......))).)))))))...........)))))))...)))).))))))))))...((((((..((((((((........(((((((.....((((((((((((((.....))))))))).)))))....))))))))))))))).))))))...........((((((((.((((.(((........(((((...)))))((((..(((..(((...............)))..)))..)))).(((((((.........)))))))....))).)))).))))))))))))...))..)))))))))......((((.....)))).))))...)))))..",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :   -50
 		Interior loop (  9,859) AU; ( 10,858) UG:  -140
 		Interior loop ( 10,858) UG; ( 11,857) AU:  -100
@@ -995,7 +995,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 	compareMFEOutputToViennaRNA(
 		"GAGAUACCUACAGCGUGAGCUAUGAGAAAGCGCCACGCUUCCCGAAGGGAGAAAGGCGGACAGGUAUCCGGUAAGCGGCAGGGUCGGAACAGGAGAGCGCACGAGGGAGCUUCCAGGGGGAAACGCCUGGUAUCUUUAUAGUCCUGUCGGGUUUCGCCACCUCUGACUUGAGCGUCGAUUUUUGUGAUGCUCGUCAGGGGGGCGGAGCCUAUGGAAAAACGCCAGCAACGCGGCCUUUUUACGGUUCCUGGCCUUUUGCUGGCCUUUUGCUCACAUGUUCUUUCCUGCGUUAUCCCCUGAUUCUGUGGAUAACCGUAUUACCGCCUUUGAGUGAGCUGAUACCGCUCGCCGCAGCCGAACGACCGAGCGCAGCGAGUCAGUGAGCGAGGAAGCGGAAGAGCGCCCAAUACGCAAACCGCCUCUCCCCGCGCGUUGGCCGAUUCAUUAAUGCAGCUGGCACGACAGGUUUCCCGACUGGAAAGCGGGCAGUGAGCGCAACGCAAUUAAUGUGAGUUAGCUCACUCAUUAGGCACCCCAGGCUUUACACUUUAUGCUUCCGGCUCGUAUGUUGUGUGGAAUUGUGAGCGGAUAACAAUUUCACACAGGAAACAGCUAUGACCAUGAUUACGCCAAGCUUGCAUGCCUGCAGGUCGACUCUAGAGGAUCCCCGGGUACCGAGCUCGAAUUCACUGGCCGUCGUUUUACAACGUCGUGACUGGGAAAACCCUGGCGUUACCCAACUUAAUCGCCUUGCAGCACAUCCCCCUUUCGCCAGCUGGCGUAAUAGCGAAGAGGCCCGCACCGAUCGCCCUUCCCAACAGUUGCGCAGCCUGAAUGGCGAAUGGCGCCUGAUGCGGUAUUUUCUCCUUACGCAUCUGUGCGGUAUUUCACACCGCAUAUGGUGCACUCUCAGUACAAUCUGCUCUGAUGCCGCAUAGUUAAGCCAGCCCCGACACCCGCCAACACCCGCUGACGCGCCCUGACGGGCUUGUCUGCUCCCGGCAUCCGCUUACAGACAAGCUGUGACCGUCUCCGGGAGCUGCAUGUGUCAGAGGUUUUCACCGUCAUCACCGAAACGCGCGAGACGAAAGGGCCUCGUGAUACGCCUAUUUUUAUAGGUUAAUGUCAUGAUAAUAAUGGUUUCUUAGACGUCAGGUGGCACUUUUCGGGGAAAUGUGCGCGGAACCCCUAUUUGUUUAUUUUUCUAAAUACAUUCAAAUAUGUAUCCGCUCAUGAGACAAUAACCCUGAUAAAUGCUUCAAUAAUAUUGAAAAAGGAAGAGUAUGAGUAUUCAACAUUUCCGUGUCGCCCUUAUUCCCUUUUUUGCGGCAUUUUGCCUUCCUGUUUUUGCUCACCCAGAAACGCUGGUGAAAGUAAAAGAUGCUGAAGAUCAGUUGGGUGCACGAGUGGGUUACAUCGAACUGGAUCUCAACAGCGGUAAGAUCCUUGAGAGUUUUCGCCCCGAAGAACGUUUUCCAAUGAUGAGCACUUUUAAAGUUCUGCUAUGUGGCGCGGUAUUAUCCCGUAUUGACGCCGGGCAAGAGCAACUCGGUCGCCGCAUACACUAUUCUCAGAAUGACUUGGUUGAGUACUCACCAGUCACAGAAAAGCAUCUUACGGAUGGCAUGACAGUAAGAGAAUUAUGCAGUGCUGCCAUAACCAUGAGUGAUAACACUGCGGCCAACUUACUUCUGACAACGAUCGGAGGACCGAAGGAGCUAACCGCUUUUUUGCACAACAUGGGGGAUCAUGUAACUCGCCUUGAUCGUUGGGAACCGGAGCUGAAUGAAGCCAUACCAAACGACGAGCGUGACACCACGAUGCCUGUAGCAAUGGCAACAACGUUGCGCAAACUAUUAACUGGCGAACUACUUACUCUAGCUUCCCGGCAACAAUUAAUAGACUGGAUGGAGGCGGAUAAAGUUGCAGGACCACUUCUGCGCUCGGCCCUUCCGGCUGGCUGGUUUAUUGCUGAUAAAUCUGGAGCCGGUGAGCGUGGGUCUCGCGGUAUCAUUGCAGCACUGGGGCCAGAUGGUAAGCCCUCCCGUAUCGUAGUUAUCUACACGACGGGGAGUCAGGCAACUAUGGAUGAACGAAAUAGACAGAUCGCUGAGAUAGGUGCCUCACUGAUUAAGCAUUGGUAACUGUCAGACCAAGUUUACUCAUAUAUACUUUAGAUUGAUUUAAAACUUCAUUUUUAAUUUAAAAGGAUCUAGGUGAAGAUCCUUUUUGAUAAUCUCAUGACCAAAAUCCCUUAACGUGAGUUUUCGUUCCACUGAGCGUCAGACCCCGUAGAAAAGAUCAAAGGAUCUUCUUGAGAUCCUUUUUUUCUGCGCGUAAUCUGCUGCUUGCAAACAAAAAAACCACCGCUACCAGCGGUGGUUUGUUUGCCGGAUCAAGAGCUACCAACUCUUUUUCCGAAGGUAACUGGCUUCAGCAGAGCGCAGAUACCAAAUACUGUUCUUCUAGUGUAGCCGUAGUUAGGCCACCACUUCAAGAACUCUGUAGCACCGCCUACAUACCUCGCUCUGCUAAUCCUGUUACCAGUGGCUGCUGCCAGUGGCGAUAAGUCGUGUCUUACCGGGUUGGACUCAAGACGAUAGUUACCGGAUAAGGCGCAGCGGUCGGGCUGAACGGGGGGUUCGUGCACACAGCCCAGCUUGGAGCGAACGACCUACACCGAACU",
 		"(((((......((((((.(((.......)))..))))))((((...)))).((((((((...((((..((((.....((((((((((....(((.((((((.((((((((..(((((........)))))...........(((....((((((((((.((((((((..((((((((.......))))))))))))))))))))))))))..)))((((.((((((((...((((..............))))..)))))))).))))........)))))))).)))))).))).)))))))))).....)))))))).))))))))((((((((((((...((((((.((.((((......)).)))).))))))......(((.(((.((((....(((.......)))...))))...))).)))((((((..((.((((((......(((.((....(((.........)))....)).)))))))))))))))))...........))))))))))))..((((((...(((((((......(((((.((..((((.((...((((((((((((((.........))))))))))))))...))))))..)).))))).......)))))))..)))))).(((((((.(((((((......(((((.....))))).......(((((((.((.(((..((.(((((...(((....))).(((((((.......))).))))..(((((((.....((.(((((((((((.((((((...((((.(((.((...))...)))))))......)))))))))).....))))))).))(((.....)))((((.(((((.(((((((((((((((((.......)))))))).))))).....(((......)))....(((((((((.((............((((((..((........)).((((.((((....)))).)))).((((((((....((.((((((.....)))))).))...)))))))).((((.((((((.((((......(((.((.((((((.((((..((((.(((((((((((((((.((((((....))))))...)))))))).......)).)))))...))))..)).))...))))))......(((.(((((((...((((((..(((((....)))))....)))))).)).))))).))))))))...)))))))))).))))((((((...))))))...(((((.((.(((....))))).))))))))))).............)).))))))))).((((.(((.....(((((((((.((.....)))))))..))))((((((((..(((..(((((((((..((((((((((..((((..(((........)))))))..)))))((((((((.((((....(((((...)))))......)))).)))))))).((((((((...(((((((((((......)))))).)))))))).))))).)))))..)))).))...)))..))).....(((((.(((.((....))))))))))......))))))))..))).)))).....)))))))))..)))).)))))))......)))))))..))).)).))))))).(((((((((..(((((((((.(((..(((((((((.....)))))))))....((((((....))))))......))))))))))))((..((((.(((((((((.(((..............(((.(((.(((((.....(((.((((((.......)))))))))..(((((((((((.((((((.......))).)))))))......))))))).(((((.((.(((.((....((.((((((....)))))))))).))))))))))((((((((((((((...))))))))...))))))....)))))))).)))))).))))).)))).))))..))))).))))))...((((((...((((....))))...))))))(((.(((((.((((.......(((..........))).....)))).))))).)))((.(((((.(((((.........)))))))))).)).......))))))))))))))...............(((.((((((((((......)))))))))).))).)))))...................(((.((((((((((((..(((((.((((...(((((((((((....((((((((...))))))))))))))))))).....)))).)))))((((((((....(((((((((...)))))))))))))))))((((..(((((.......)))))..))))..((((((.((.((.(((((((((.((............((((((..((((..(((.......)))...))))..))))))..(((((......)))))...))))))))))))).)).))))))...(((((((((....(((.....)))..((((((((((((((.........)))).....)))).)))))))))))))))((((((.((((.....)))).....))))))....))))))))).))).)))........",
-		DefaultTemperature,
+		DefaultTemperature, DoubleDangles,
 		`External loop                           :  -320
 		Interior loop (  1,2240) GC; (  2,2239) AU:  -240
 		Interior loop (  2,2239) AU; (  3,2238) GC:  -210
@@ -1879,9 +1879,9 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		-936.5`, t)
 }
 
-func compareMFEOutputToViennaRNA(sequence, structure string, temperature float64, expected_output string, t *testing.T) {
+func compareMFEOutputToViennaRNA(sequence, structure string, temperature float64, dangleModel int, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, energyContributions, _ := MinimumFreeEnergy(sequence, structure, temperature)
+		mfe, energyContributions, _ := MinimumFreeEnergy(sequence, structure, temperature, dangleModel)
 		logEnergyContributions(energyContributions, sequence)
 		log.Printf("%v", mfe)
 	})
