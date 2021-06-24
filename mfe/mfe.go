@@ -400,6 +400,8 @@ type energyParams struct {
 	tetraLoop map[string]int
 	triLoop   map[string]int
 	hexaLoop  map[string]int
+
+	maxNinio int
 }
 
 /**
@@ -858,7 +860,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				} else {
 					energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLenLoop)))
 				}
-				energy += min(maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
+				energy += min(energyParams.maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 				energy += energyParams.mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 				return energy
 			}
@@ -887,7 +889,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLenLoop)))
 			}
 
-			energy += min(maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
+			energy += min(energyParams.maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 
 			energy += energyParams.mismatchInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatchInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 			return energy
@@ -1147,70 +1149,6 @@ func min(a, b int) int {
 	return b
 }
 
-func turner2004Params() rawEnergyParams {
-	return rawEnergyParams{
-		interior2x2LoopEnergy37C: interior2x2LoopEnergy37,
-		interior2x2LoopEnthalpy:  interior2x2LoopEnthalpy,
-
-		interior2x1LoopEnergy37C: interior2x1LoopEnergy37,
-		interior2x1LoopEnthalpy:  interior2x1LoopEnthalpy,
-
-		interior1x1LoopEnergy37C: interior1x1LoopEnergy37C,
-		interior1x1LoopEnthalpy:  interior1x1LoopEnthalpy,
-
-		mismatchInteriorLoopEnergy37C:    mismatchInteriorLoopEnergy37C,
-		mismatchInteriorLoopEnthalpy:     mismatchInteriorLoopEnthalpy,
-		mismatchHairpinLoopEnergy37C:     mismatchHairpinLoopEnergy37C,
-		mismatchHairpinLoopEnthalpy:      mismatchHairpinLoopEnthalpy,
-		mismatchMultiLoopEnergy37C:       mismatchMultiLoopEnergy37C,
-		mismatchMultiLoopEnthalpy:        mismatchMultiLoopEnthalpy,
-		mismatch1xnInteriorLoopEnergy37C: mismatch1xnInteriorLoopEnergy37C,
-		mismatch1xnInteriorLoopEnthalpy:  mismatch1xnInteriorLoopEnthalpy,
-		mismatch2x3InteriorLoopEnergy37C: mismatch2x3InteriorLoopEnergy37C,
-		mismatch2x3InteriorLoopEnthalpy:  mismatch2x3InteriorLoopEnthalpy,
-		mismatchExteriorLoopEnergy37C:    mismatchExteriorLoopEnergy37C,
-		mismatchExteriorLoopEnthalpy:     mismatchExteriorLoopEnthalpy,
-
-		dangle5Energy37C:      dangle5Energy37C,
-		dangle5Enthalpy:       dangle5Enthalpy,
-		dangle3Energy37C:      dangle3Energy37C,
-		dangle3Enthalpy:       dangle3Enthalpy,
-		stackingPairEnergy37C: stackingPairEnergy37C,
-		stackingPairEnthalpy:  stackingPairEnthalpy,
-
-		hairpinLoopEnergy37C:  hairpinLoopEnergy37C[:],
-		hairpinLoopEnthalpy:   hairpinLoopEnthalpy[:],
-		bulgeEnergy37C:        bulgeEnergy37C[:],
-		bulgeEnthalpy:         bulgeEnthalpy[:],
-		interiorLoopEnergy37C: interiorLoopEnergy37C[:],
-		interiorLoopEnthalpy:  interiorLoopEnthalpy[:],
-
-		multiLoopIntern37C:       multiLoopIntern37C,
-		multiLoopInternEnthalpy:  multiLoopInternEnthalpy,
-		multiLoopClosing37C:      multiLoopClosing37C,
-		multiLoopClosingEnthalpy: multiLoopClosingEnthalpy,
-		multiLoopBase37C:         multiLoopBase37C,
-		multiLoopBaseEnthalpy:    multiLoopBaseEnthalpy,
-		maxNinio:                 maxNinio,
-		ninio37C:                 ninio37C,
-		ninioEnthalpy:            ninioEnthalpy,
-		terminalAU37C:            terminalAU37C,
-		terminalAUEnthalpy:       terminalAUEnthalpy,
-
-		tetraLoops:         tetraLoops,
-		tetraLoopEnergy37C: tetraLoopEnergy37C,
-		tetraLoopEnthalpy:  tetraLoopEnthalpy,
-
-		triLoops:         triLoops,
-		triLoopEnergy37C: triLoopEnergy37C,
-		triLoopEnthalpy:  triLoopEnthalpy,
-
-		hexaLoops:         hexaLoops,
-		hexaLoopEnergy37C: hexaLoopEnergy37C,
-		hexaLoopEnthalpy:  hexaLoopEnthalpy,
-	}
-}
-
 // scales energy paramaters according to the specificed temperatue
 func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *energyParams {
 
@@ -1221,6 +1159,7 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 		multiLoopUnpairedNucelotideBonus: rescaleDg(rawEnergyParams.multiLoopBase37C, rawEnergyParams.multiLoopBaseEnthalpy, temperature),
 		multiLoopClosingPenalty:          rescaleDg(rawEnergyParams.multiLoopClosing37C, rawEnergyParams.multiLoopClosingEnthalpy, temperature),
 		ninio:                            rescaleDg(rawEnergyParams.ninio37C, rawEnergyParams.ninioEnthalpy, temperature),
+		maxNinio:                         rawEnergyParams.maxNinio,
 	}
 
 	// scale and set hairpin, bulge and interior energy params
@@ -1231,17 +1170,17 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 	}
 
 	params.tetraLoop = make(map[string]int)
-	for k := range tetraLoops {
+	for k := range rawEnergyParams.tetraLoops {
 		params.tetraLoop[k] = rescaleDg(rawEnergyParams.tetraLoopEnergy37C[k], rawEnergyParams.tetraLoopEnthalpy[k], temperature)
 	}
 
 	params.triLoop = make(map[string]int)
-	for k := range triLoops {
+	for k := range rawEnergyParams.tetraLoops {
 		params.triLoop[k] = rescaleDg(rawEnergyParams.triLoopEnergy37C[k], rawEnergyParams.triLoopEnthalpy[k], temperature)
 	}
 
 	params.hexaLoop = make(map[string]int)
-	for k := range hexaLoops {
+	for k := range rawEnergyParams.hexaLoops {
 		params.hexaLoop[k] = rescaleDg(rawEnergyParams.hexaLoopEnergy37C[k], rawEnergyParams.hexaLoopEnthalpy[k], temperature)
 	}
 
