@@ -71,6 +71,14 @@ const (
 	// The temperature at which the energy parameters in `energy_params.go` have
 	// been measured at
 	energyParamsMeasurementTemperature float64 = 37.0
+
+	// NoDangles specifies no dangling end energies to be added to energy calcualtions
+	NoDangles = 0
+	// DoubleDangles specifies energies due to dangling ends (on both five and three prime sides)
+	// should be added to energy calcualtions
+	DoubleDangles = 2
+	// DefaultDanglingEndsModel defaults to DoubleDangles
+	DefaultDanglingEndsModel = DoubleDangles
 )
 
 // foldCompound holds all information needed to compute the free energy of a
@@ -82,35 +90,45 @@ type foldCompound struct {
 	encodedSequence     []int                 // Numerical encoding of the sequence (see `encodeSequence()` for more information)
 	pairTable           []int                 // (see `pairTable()`)
 	basePairEncodedType map[byte]map[byte]int // (see `basePairEncodedTypeMap()`)
+	dangleModel         int
 }
 
-/**
-* EnergyContribution contains the energy contribution of a loop
-* The fields `loopType` and `energy` will always have a value for all loop types.
-* Except for `loopType == ExteriorLoop`, all loops will have a
-* `closingFivePrimeIdx` and `closingThreePrimeIdx`.
-* Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
-* and `enclosedThreePrimeIdx`.
- */
-type EnergyContribution struct {
+// StructuralMotif is a struct to represent the various secondary strcutures
+// present in folded RNA sequences.
+// The fields `loopType` and `energy` will always have a value for all loop types.
+// Except for `loopType == ExteriorLoop`, all loops will have a
+// `closingFivePrimeIdx` and `closingThreePrimeIdx`.
+// Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
+// and `enclosedThreePrimeIdx`.
+type StructuralMotif struct {
 	closingFivePrimeIdx, closingThreePrimeIdx   int // The closing base pair is the base pair that closes the loop
 	loopType                                    int // The type of loop (ExteriorLoop, InteriorLoop, HairpinLoop, or MultiLoop)
-	energy                                      int // The free energy contribution of the loop in dcal / mol
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int // The base pair (that is enclosed by a closing base pair) which delimits an interior loop (only available for interior loops)
 }
 
-/**
- *  MinimumFreeEnergy returns the free energy of an already folded RNA and a list of
- *  energy contribution of each loop.
- *
- *  @param sequence         A RNA sequence
- *  @param structure        Secondary structure in dot-bracket notation
- *  @param temperature      Temperature at which to evaluate the free energy of the structure
- *  @return                 The free energy of the input structure given the input sequence in kcal/mol,
-														and a slice of `EnergyContribution` (which gives information about the
-														energy contribution of each loop present in the secondary structure)
-*/
-func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64, []EnergyContribution, error) {
+// StructuralMotifWithEnergy contains information about a secondary structure
+// present in a folded RNA strucutre with the structure's energy contribution
+type StructuralMotifWithEnergy struct {
+	structure StructuralMotif
+	energy    int // The free energy contribution of the loop in dcal / mol
+}
+
+//
+//  MinimumFreeEnergy returns the free energy of an already folded RNA and a list of
+//  energy contribution of each loop.
+//
+//  @param sequence         		A RNA sequence
+//  @param structure        		Secondary structure in dot-bracket notation
+//  @param temperature      		Temperature at which to evaluate the free energy
+//															 of the structure
+//  @param danglingEndsModel  	Specify whether to include energy from dangling
+// 															ends (NoDangles or DoubleDangles)
+//  @return                 		The free energy of the input structure given the
+// 															input sequence in kcal/mol, and a slice of
+// 															`StructuralMotifWithEnergy` (which gives
+// 															information about the energy contribution of
+// 															each loop present in the secondary structure)
+func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet, danglingEndsModel int) (float64, []StructuralMotifWithEnergy, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
@@ -139,11 +157,12 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 
 	fc := &foldCompound{
 		length:              lenSequence,
-		energyParams:        scaleEnergyParams(temperature),
+		energyParams:        rawEnergyParamsFromFile(energyParamFileNames[energyParamsSet]).scaleByTemperature(temperature),
 		sequence:            sequence,
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
 		basePairEncodedType: basePairEncodedTypeMap(),
+		dangleModel:         danglingEndsModel,
 	}
 
 	energyInt, energyContributions := evaluateFoldCompound(fc)
@@ -270,6 +289,7 @@ type energyParams struct {
 	```
 	corresponds to the entry stackingPair[2][5] (GC=2, AU=5) which should be
 	identical to stackingPair[5][2] (AU=5, GC=2).
+	size: [nbPairs + 1][nbPairs + 1]int
 	*/
 	stackingPair [nbPairs + 1][nbPairs + 1]int
 	/**
@@ -395,6 +415,8 @@ type energyParams struct {
 	tetraLoop map[string]int
 	triLoop   map[string]int
 	hexaLoop  map[string]int
+
+	maxNinio int
 }
 
 /**
@@ -455,8 +477,8 @@ func pairTable(structure string) ([]int, error) {
 	return pairTable, nil
 }
 
-func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func evaluateFoldCompound(fc *foldCompound) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 
 	// get the energy contributions due to exterior loops
 	energy, contribution := exteriorLoopEnergy(fc)
@@ -481,8 +503,8 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 /**
 * (see `basePairEncodedTypeMap()`)
  */
-func encodedBasePairType(fc *foldCompound, basePairFivePrime, basePairThreePrime int) int {
-	return fc.basePairEncodedType[fc.sequence[basePairFivePrime]][fc.sequence[basePairThreePrime]]
+func encodedBasePairType(fc *foldCompound, basePairFivePrimeIdx, basePairThreePrimeIdx int) int {
+	return fc.basePairEncodedType[fc.sequence[basePairFivePrimeIdx]][fc.sequence[basePairThreePrimeIdx]]
 }
 
 /**
@@ -495,7 +517,7 @@ func encodedBasePairType(fc *foldCompound, basePairFivePrime, basePairThreePrime
 * See `exteriorStemEnergy()` for information of how exterior loops are evaluated.
 * More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
  */
-func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
+func exteriorLoopEnergy(fc *foldCompound) (int, StructuralMotifWithEnergy) {
 	pairTable := fc.pairTable
 	var energy int = 0
 	length := fc.length
@@ -514,20 +536,27 @@ func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 		basePairType := encodedBasePairType(fc, pairFivePrimeIdx,
 			pairThreePrimeIdx)
 
-		var fivePrimeMismatch, threePrimeMismatch int
-		if pairFivePrimeIdx > 0 {
-			fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
-		} else {
-			fivePrimeMismatch = -1
-		}
+		switch fc.dangleModel {
+		case NoDangles:
+			energy += exteriorStemEnergy(basePairType, -1, -1, fc.energyParams)
 
-		if pairThreePrimeIdx < length-1 {
-			threePrimeMismatch = fc.encodedSequence[pairThreePrimeIdx+1]
-		} else {
-			threePrimeMismatch = -1
-		}
+		case DoubleDangles:
+			var fivePrimeMismatch, threePrimeMismatch int
+			if pairFivePrimeIdx > 0 {
+				fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
+			} else {
+				fivePrimeMismatch = -1
+			}
 
-		energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
+			if pairThreePrimeIdx < length-1 {
+				threePrimeMismatch = fc.encodedSequence[pairThreePrimeIdx+1]
+			} else {
+				threePrimeMismatch = -1
+			}
+
+			energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
+
+		}
 
 		// seek to the next stem
 		pairFivePrimeIdx = pairThreePrimeIdx + 1
@@ -536,7 +565,7 @@ func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 		}
 	}
 
-	return energy, EnergyContribution{energy: energy}
+	return energy, StructuralMotifWithEnergy{energy: energy}
 }
 
 /**
@@ -629,8 +658,8 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 		pair), we know we're in some sort of multi-loop. Note that multi-loops
 		have atleast two enclosed pairs.
 */
-func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 
 	pairTable := fc.pairTable
 	energy := 0
@@ -711,7 +740,7 @@ func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContri
  */
 func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 	closingFivePrimeIdx, closingThreePrimeIdx,
-	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) (int, EnergyContribution) {
+	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) (int, StructuralMotifWithEnergy) {
 
 	nbUnpairedFivePrime := enclosedFivePrimeIdx - closingFivePrimeIdx - 1
 	nbUnpairedThreePrime := closingThreePrimeIdx - enclosedThreePrimeIdx - 1
@@ -719,18 +748,21 @@ func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 	closingBasePairType := encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx)
 	enclosedBasePairType := encodedBasePairType(fc, enclosedThreePrimeIdx, enclosedFivePrimeIdx)
 
+	// something happens here if the ends of the pair are on different strands
 	energy := evaluateStackBulgeInteriorLoop(nbUnpairedFivePrime, nbUnpairedThreePrime,
 		closingBasePairType, enclosedBasePairType,
 		fc.encodedSequence[closingFivePrimeIdx+1], fc.encodedSequence[closingThreePrimeIdx-1],
 		fc.encodedSequence[enclosedFivePrimeIdx-1], fc.encodedSequence[enclosedThreePrimeIdx+1], fc.energyParams)
 
-	energyContribution := EnergyContribution{
-		closingFivePrimeIdx:   closingFivePrimeIdx,
-		closingThreePrimeIdx:  closingThreePrimeIdx,
-		enclosedFivePrimeIdx:  enclosedFivePrimeIdx,
-		enclosedThreePrimeIdx: enclosedThreePrimeIdx,
-		energy:                energy,
-		loopType:              InteriorLoop,
+	energyContribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:   closingFivePrimeIdx,
+			closingThreePrimeIdx:  closingThreePrimeIdx,
+			enclosedFivePrimeIdx:  enclosedFivePrimeIdx,
+			enclosedThreePrimeIdx: enclosedThreePrimeIdx,
+			loopType:              InteriorLoop,
+		},
+		energy: energy,
 	}
 	return energy, energyContribution
 }
@@ -853,7 +885,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				} else {
 					energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log((float64(nbUnpairedLarger)+1.0)/float64(maxLenLoop)))
 				}
-				energy += min(maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
+				energy += min(energyParams.maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 				energy += energyParams.mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 				return energy
 			}
@@ -882,7 +914,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
 				energy = energyParams.interiorLoop[maxLenLoop] + int(energyParams.lxc*math.Log(float64(nbUnpairedNucleotides)/float64(maxLenLoop)))
 			}
 
-			energy += min(maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
+			energy += min(energyParams.maxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.ninio)
 
 			energy += energyParams.mismatchInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.mismatchInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 			return energy
@@ -900,7 +932,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
  *  @param  pairThreePrimeIdx  3'-position of the base pair enclosing the hairpin loop
  *  @returns                   Free energy of the hairpin loop closed by (pairFivePrimeIdx,pairThreePrimeIdx) in dcal/mol
  */
-func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int) (int, EnergyContribution) {
+func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int) (int, StructuralMotifWithEnergy) {
 	nbUnpairedNucleotides := pairThreePrimeIdx - pairFivePrimeIdx - 1 // also the size of the hairpin loop
 	basePairType := encodedBasePairType(fc, pairFivePrimeIdx, pairThreePrimeIdx)
 
@@ -909,11 +941,13 @@ func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int
 		fc.encodedSequence[pairThreePrimeIdx-1],
 		fc.sequence[pairFivePrimeIdx-1:], fc.energyParams)
 
-	energyContribution := EnergyContribution{
-		closingFivePrimeIdx:  pairFivePrimeIdx,
-		closingThreePrimeIdx: pairThreePrimeIdx,
-		energy:               energy,
-		loopType:             HairpinLoop,
+	energyContribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:  pairFivePrimeIdx,
+			closingThreePrimeIdx: pairThreePrimeIdx,
+			loopType:             HairpinLoop,
+		},
+		energy: energy,
 	}
 	return energy, energyContribution
 }
@@ -1024,8 +1058,8 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
  *
  * More information about multi-loops: https://rna.urmc.rochester.edu/NNDB/turner04/mb.html
  */
-func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 	pairTable := fc.pairTable
 
 	// energetic penalty imposed when a base pair encloses a multi loop
@@ -1036,17 +1070,12 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a pair that closes a loop")
 	}
 
-	closingThreePrimeIdx := pairTable[closingFivePrimeIdx]
-
-	// add energy due to closing pair of multi-loop
-	// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
-	// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
-	basePairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
-
-	closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-	closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
-	multiLoopEnergy += multiLoopStemEnergy(basePairType, closingFivePrimeMismatch,
-		closingThreePrimeMismatch, fc.energyParams)
+	var closingThreePrimeIdx int
+	if closingFivePrimeIdx == 0 {
+		closingThreePrimeIdx = fc.length + 1
+	} else {
+		closingThreePrimeIdx = pairTable[closingFivePrimeIdx]
+	}
 
 	// The index of the enclosed base pair at the 5' end
 	enclosedFivePrimeIdx := closingFivePrimeIdx + 1
@@ -1065,46 +1094,107 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 	// substructure that branch out from this multi-loop
 	substructuresEnergy := 0
 
-	// iterate through structure and find all enclosed base pairs
-	for enclosedFivePrimeIdx < closingThreePrimeIdx {
+	switch fc.dangleModel {
+	case NoDangles:
 
-		// add up the contributions of the substructures of the multi loop
-		en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
-		substructuresEnergy += en
-		energyContributions = append(energyContributions, substructureContributions...)
+		for enclosedFivePrimeIdx < closingThreePrimeIdx {
+			// add up the contributions of the substructures of the multi loop
+			en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
+			substructuresEnergy += en
+			energyContributions = append(energyContributions, substructureContributions...)
 
-		/* enclosedFivePrimeIdx must have a pairing partner */
-		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, -1, -1, fc.energyParams)
 
-		/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
-		basePairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+			// seek to the next stem
+			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
 
-		enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
-		enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
+			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
+				enclosedFivePrimeIdx++
+			}
 
-		multiLoopEnergy += multiLoopStemEnergy(basePairType, enclosedFivePrimeMismatch,
-			enclosedThreePrimeMismatch, fc.energyParams)
-
-		// seek to the next stem
-		enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
-		for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-			enclosedFivePrimeIdx++
+			// add unpaired nucleotides
+			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
 		}
 
-		// add unpaired nucleotides
-		nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+		if closingFivePrimeIdx > 0 {
+			// actual closing pair
+			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+			multiLoopEnergy += multiLoopStemEnergy(closingPairType, -1, -1, fc.energyParams)
+		} else {
+			// virtual closing pair
+			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+		}
+
+	case DoubleDangles:
+
+		// add energy due to closing pair of multi-loop
+		// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
+		// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
+		// closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+
+		// closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+		// closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+		// multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+		// 	closingThreePrimeMismatch, fc.energyParams)
+
+		// iterate through structure and find all enclosed base pairs
+		for enclosedFivePrimeIdx < closingThreePrimeIdx {
+
+			// add up the contributions of the substructures of the multi loop
+			en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
+			substructuresEnergy += en
+			energyContributions = append(energyContributions, substructureContributions...)
+			/* enclosedFivePrimeIdx must have a pairing partner */
+			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+
+			/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
+			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+
+			enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
+			enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
+
+			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, enclosedFivePrimeMismatch,
+				enclosedThreePrimeMismatch, fc.energyParams)
+
+			// seek to the next stem
+			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
+
+			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
+				enclosedFivePrimeIdx++
+			}
+
+			// add unpaired nucleotides
+			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+		}
+
+		if closingFivePrimeIdx > 0 {
+			// actual closing pair
+			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+
+			closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+			closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+
+			multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+				closingThreePrimeMismatch, fc.energyParams)
+		} else {
+			// virtual closing pair
+			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+		}
 	}
 
 	// add bonus energies for unpaired nucleotides
 	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.multiLoopUnpairedNucelotideBonus
 
 	// Add a energy contribution for this multi-loop
-	contribution := EnergyContribution{
-		closingFivePrimeIdx:  closingFivePrimeIdx,
-		closingThreePrimeIdx: closingThreePrimeIdx,
-		energy:               multiLoopEnergy,
-		loopType:             MultiLoop,
+	contribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:  closingFivePrimeIdx,
+			closingThreePrimeIdx: closingThreePrimeIdx,
+			loopType:             MultiLoop,
+		},
+		energy: multiLoopEnergy,
 	}
 	energyContributions = append(energyContributions, contribution)
 	return multiLoopEnergy + substructuresEnergy, energyContributions
@@ -1123,8 +1213,16 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
  *  @return                       The energy contribution of the introduced multi-loop stem
  */
 func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energyParams) int {
-	var energy int = energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch] +
-		energyParams.multiLoopIntern[basePairType]
+	var energy int
+	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
+		energy += energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
+	} else if fivePrimeMismatch >= 0 {
+		energy += energyParams.dangle5[basePairType][fivePrimeMismatch]
+	} else if threePrimeMismatch >= 0 {
+		energy += energyParams.dangle3[basePairType][threePrimeMismatch]
+	}
+
+	energy += energyParams.multiLoopIntern[basePairType]
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
@@ -1143,48 +1241,49 @@ func min(a, b int) int {
 }
 
 // scales energy paramaters according to the specificed temperatue
-func scaleEnergyParams(temperature float64) *energyParams {
+func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *energyParams {
 
 	// set the non-matix energy parameters
 	var params *energyParams = &energyParams{
-		lxc:                              rescaleDgFloat64(lxc37, 0, temperature),
-		terminalAUPenalty:                rescaleDg(terminalAU37C, terminalAUEnthalpy, temperature),
-		multiLoopUnpairedNucelotideBonus: rescaleDg(multiLoopBase37C, multiLoopBaseEnthalpy, temperature),
-		multiLoopClosingPenalty:          rescaleDg(multiLoopClosing37C, multiLoopClosingEnthalpy, temperature),
-		ninio:                            rescaleDg(ninio37C, ninioEnthalpy, temperature),
+		lxc:                              rescaleDgFloat64(rawEnergyParams.lxc, 0, temperature),
+		terminalAUPenalty:                rescaleDg(rawEnergyParams.terminalAU37C, rawEnergyParams.terminalAUEnthalpy, temperature),
+		multiLoopUnpairedNucelotideBonus: rescaleDg(rawEnergyParams.multiLoopBase37C, rawEnergyParams.multiLoopBaseEnthalpy, temperature),
+		multiLoopClosingPenalty:          rescaleDg(rawEnergyParams.multiLoopClosing37C, rawEnergyParams.multiLoopClosingEnthalpy, temperature),
+		ninio:                            rescaleDg(rawEnergyParams.ninio37C, rawEnergyParams.ninioEnthalpy, temperature),
+		maxNinio:                         rawEnergyParams.maxNinio,
 	}
 
 	// scale and set hairpin, bulge and interior energy params
 	for i := 0; i <= maxLenLoop; i++ {
-		params.hairpinLoop[i] = rescaleDg(hairpinLoopEnergy37C[i], hairpinLoopEnthalpy[i], temperature)
-		params.bulge[i] = rescaleDg(bulgeEnergy37C[i], bulgeEnthalpy[i], temperature)
-		params.interiorLoop[i] = rescaleDg(interiorLoopEnergy37C[i], interiorLoopEnthalpy[i], temperature)
+		params.hairpinLoop[i] = rescaleDg(rawEnergyParams.hairpinLoopEnergy37C[i], rawEnergyParams.hairpinLoopEnthalpy[i], temperature)
+		params.bulge[i] = rescaleDg(rawEnergyParams.bulgeEnergy37C[i], rawEnergyParams.bulgeEnthalpy[i], temperature)
+		params.interiorLoop[i] = rescaleDg(rawEnergyParams.interiorLoopEnergy37C[i], rawEnergyParams.interiorLoopEnthalpy[i], temperature)
 	}
 
 	params.tetraLoop = make(map[string]int)
-	for k := range tetraLoops {
-		params.tetraLoop[k] = rescaleDg(tetraLoopEnergy37C[k], tetraLoopEnthalpy[k], temperature)
+	for k := range rawEnergyParams.tetraLoops {
+		params.tetraLoop[k] = rescaleDg(rawEnergyParams.tetraLoopEnergy37C[k], rawEnergyParams.tetraLoopEnthalpy[k], temperature)
 	}
 
 	params.triLoop = make(map[string]int)
-	for k := range triLoops {
-		params.triLoop[k] = rescaleDg(triLoopEnergy37C[k], triLoopEnthalpy[k], temperature)
+	for k := range rawEnergyParams.tetraLoops {
+		params.triLoop[k] = rescaleDg(rawEnergyParams.triLoopEnergy37C[k], rawEnergyParams.triLoopEnthalpy[k], temperature)
 	}
 
 	params.hexaLoop = make(map[string]int)
-	for k := range hexaLoops {
-		params.hexaLoop[k] = rescaleDg(hexaLoopEnergy37C[k], hexaLoopEnthalpy[k], temperature)
+	for k := range rawEnergyParams.hexaLoops {
+		params.hexaLoop[k] = rescaleDg(rawEnergyParams.hexaLoopEnergy37C[k], rawEnergyParams.hexaLoopEnthalpy[k], temperature)
 	}
 
 	for i := 0; i <= nbPairs; i++ {
-		params.multiLoopIntern[i] = rescaleDg(multiLoopIntern37C, multiLoopInternEnthalpy, temperature)
+		params.multiLoopIntern[i] = rescaleDg(rawEnergyParams.multiLoopIntern37C, rawEnergyParams.multiLoopInternEnthalpy, temperature)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
-			params.stackingPair[i][j] = rescaleDg(stackingPairEnergy37C[i][j],
-				stackingPairEnthalpy[i][j],
+			params.stackingPair[i][j] = rescaleDg(rawEnergyParams.stackingPairEnergy37C[i][j],
+				rawEnergyParams.stackingPairEnthalpy[i][j],
 				temperature)
 		}
 	}
@@ -1194,26 +1293,26 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbNucleobase; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				var mismatch int
-				params.mismatchInteriorLoop[i][j][k] = rescaleDg(mismatchInteriorLoopEnergy37C[i][j][k],
-					mismatchInteriorLoopEnthalpy[i][j][k],
+				params.mismatchInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchInteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatchHairpinLoop[i][j][k] = rescaleDg(mismatchHairpinLoopEnergy37C[i][j][k],
-					mismatchHairpinLoopEnthalpy[i][j][k],
+				params.mismatchHairpinLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchHairpinLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchHairpinLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(mismatch1xnInteriorLoopEnergy37C[i][j][k],
-					mismatch1xnInteriorLoopEnthalpy[i][j][k],
+				params.mismatch1xnInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatch1xnInteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(mismatch2x3InteriorLoopEnergy37C[i][j][k],
-					mismatch2x3InteriorLoopEnthalpy[i][j][k],
+				params.mismatch2x3InteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatch2x3InteriorLoopEnthalpy[i][j][k],
 					temperature)
 
-				mismatch = rescaleDg(mismatchMultiLoopEnergy37C[i][j][k],
-					mismatchMultiLoopEnthalpy[i][j][k],
+				mismatch = rescaleDg(rawEnergyParams.mismatchMultiLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchMultiLoopEnthalpy[i][j][k],
 					temperature)
 				params.mismatchMultiLoop[i][j][k] = min(0, mismatch)
 
-				mismatch = rescaleDg(mismatchExteriorLoopEnergy37C[i][j][k],
-					mismatchExteriorLoopEnthalpy[i][j][k],
+				mismatch = rescaleDg(rawEnergyParams.mismatchExteriorLoopEnergy37C[i][j][k],
+					rawEnergyParams.mismatchExteriorLoopEnthalpy[i][j][k],
 					temperature)
 				params.mismatchExteriorLoop[i][j][k] = min(0, mismatch)
 			}
@@ -1224,13 +1323,13 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	for i := 0; i <= nbPairs; i++ {
 		for j := 0; j <= nbNucleobase; j++ {
 			var dd int
-			dd = rescaleDg(dangle5Energy37C[i][j],
-				dangle5Enthalpy[i][j],
+			dd = rescaleDg(rawEnergyParams.dangle5Energy37C[i][j],
+				rawEnergyParams.dangle5Enthalpy[i][j],
 				temperature)
 			params.dangle5[i][j] = min(0, dd)
 
-			dd = rescaleDg(dangle3Energy37C[i][j],
-				dangle3Enthalpy[i][j],
+			dd = rescaleDg(rawEnergyParams.dangle3Energy37C[i][j],
+				rawEnergyParams.dangle3Enthalpy[i][j],
 				temperature)
 			params.dangle3[i][j] = min(0, dd)
 		}
@@ -1241,8 +1340,8 @@ func scaleEnergyParams(temperature float64) *energyParams {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
-					params.interior1x1Loop[i][j][k][l] = rescaleDg(interior1x1LoopEnergy37C[i][j][k][l],
-						interior1x1LoopEnthalpy[i][j][k][l],
+					params.interior1x1Loop[i][j][k][l] = rescaleDg(rawEnergyParams.interior1x1LoopEnergy37C[i][j][k][l],
+						rawEnergyParams.interior1x1LoopEnthalpy[i][j][k][l],
 						temperature)
 				}
 			}
@@ -1250,13 +1349,13 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	/* interior 2x1 loops */
-	for i := 0; i <= nbPairs; i++ {
+	for i := 0; i < nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
-						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(interior2x1LoopEnergy37[i][j][k][l][m],
-							interior2x1LoopEnthalpy[i][j][k][l][m],
+						params.interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37C[i][j][k][l][m],
+							rawEnergyParams.interior2x1LoopEnthalpy[i][j][k][l][m],
 							temperature)
 					}
 				}
@@ -1265,14 +1364,14 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	/* interior 2x2 loops */
-	for i := 0; i <= nbPairs; i++ {
+	for i := 0; i < nbPairs; i++ {
 		for j := 0; j <= nbPairs; j++ {
 			for k := 0; k <= nbNucleobase; k++ {
 				for l := 0; l <= nbNucleobase; l++ {
 					for m := 0; m <= nbNucleobase; m++ {
 						for n := 0; n <= nbNucleobase; n++ {
-							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(interior2x2LoopEnergy37[i][j][k][l][m][n],
-								interior2x2LoopEnthalpy[i][j][k][l][m][n],
+							params.interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37C[i][j][k][l][m][n],
+								rawEnergyParams.interior2x2LoopEnthalpy[i][j][k][l][m][n],
 								temperature)
 						}
 					}
@@ -1282,6 +1381,21 @@ func scaleEnergyParams(temperature float64) *energyParams {
 	}
 
 	return params
+}
+
+func (rawEnergyParams *rawEnergyParams) setMultiLoopParams(parsedMultiLoopParams []int) {
+	rawEnergyParams.multiLoopBase37C = parsedMultiLoopParams[0]
+	rawEnergyParams.multiLoopBaseEnthalpy = parsedMultiLoopParams[1]
+	rawEnergyParams.multiLoopClosing37C = parsedMultiLoopParams[2]
+	rawEnergyParams.multiLoopClosingEnthalpy = parsedMultiLoopParams[3]
+	rawEnergyParams.multiLoopIntern37C = parsedMultiLoopParams[4]
+	rawEnergyParams.multiLoopInternEnthalpy = parsedMultiLoopParams[5]
+}
+
+func (rawEnergyParams *rawEnergyParams) setNinioParams(parsedNinioParams []int) {
+	rawEnergyParams.ninio37C = parsedNinioParams[0]
+	rawEnergyParams.ninioEnthalpy = parsedNinioParams[1]
+	rawEnergyParams.maxNinio = parsedNinioParams[2]
 }
 
 /**
@@ -1330,14 +1444,15 @@ func rescaleDgFloat64(dG, dH, temperature float64) float64 {
 PrintEnergyContributions pretty prints a list of energy contributions returned
 from `MinimumFreeEnergy`.
 */
-func PrintEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+func PrintEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
 	for _, c := range energyContribution {
-		switch c.loopType {
+		structure := c.structure
+		switch structure.loopType {
 		case ExteriorLoop:
 			fmt.Printf("External loop                           : %v\n", c.energy)
 		case InteriorLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
-			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
 			fmt.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),
@@ -1345,13 +1460,13 @@ func PrintEnergyContributions(energyContribution []EnergyContribution, sequence 
 				string(sequence[k]), string(sequence[l]),
 				c.energy)
 		case HairpinLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			fmt.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),
 				c.energy)
 		case MultiLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			fmt.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),
