@@ -82,7 +82,13 @@ type foldCompound struct {
 	encodedSequence     []int                 // Numerical encoding of the sequence (see `encodeSequence()` for more information)
 	pairTable           []int                 // (see `pairTable()`)
 	basePairEncodedType map[byte]map[byte]int // (see `basePairEncodedTypeMap()`)
+	dangleModel         int
 }
+
+const (
+	noDangles     = 0
+	doubleDangles = 2
+)
 
 /**
 * EnergyContribution contains the energy contribution of a loop
@@ -144,6 +150,7 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64) (float64
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
 		basePairEncodedType: basePairEncodedTypeMap(),
+		dangleModel:         noDangles,
 	}
 
 	energyInt, energyContributions := evaluateFoldCompound(fc)
@@ -484,8 +491,8 @@ func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
 /**
 * (see `basePairEncodedTypeMap()`)
  */
-func encodedBasePairType(fc *foldCompound, basePairFivePrime, basePairThreePrime int) int {
-	return fc.basePairEncodedType[fc.sequence[basePairFivePrime]][fc.sequence[basePairThreePrime]]
+func encodedBasePairType(fc *foldCompound, basePairFivePrimeIdx, basePairThreePrimeIdx int) int {
+	return fc.basePairEncodedType[fc.sequence[basePairFivePrimeIdx]][fc.sequence[basePairThreePrimeIdx]]
 }
 
 /**
@@ -517,20 +524,27 @@ func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 		basePairType := encodedBasePairType(fc, pairFivePrimeIdx,
 			pairThreePrimeIdx)
 
-		var fivePrimeMismatch, threePrimeMismatch int
-		if pairFivePrimeIdx > 0 {
-			fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
-		} else {
-			fivePrimeMismatch = -1
-		}
+		switch fc.dangleModel {
+		case noDangles:
+			energy += exteriorStemEnergy(basePairType, -1, -1, fc.energyParams)
 
-		if pairThreePrimeIdx < length-1 {
-			threePrimeMismatch = fc.encodedSequence[pairThreePrimeIdx+1]
-		} else {
-			threePrimeMismatch = -1
-		}
+		case doubleDangles:
+			var fivePrimeMismatch, threePrimeMismatch int
+			if pairFivePrimeIdx > 0 {
+				fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
+			} else {
+				fivePrimeMismatch = -1
+			}
 
-		energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
+			if pairThreePrimeIdx < length-1 {
+				threePrimeMismatch = fc.encodedSequence[pairThreePrimeIdx+1]
+			} else {
+				threePrimeMismatch = -1
+			}
+
+			energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
+
+		}
 
 		// seek to the next stem
 		pairFivePrimeIdx = pairThreePrimeIdx + 1
@@ -722,6 +736,7 @@ func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 	closingBasePairType := encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx)
 	enclosedBasePairType := encodedBasePairType(fc, enclosedThreePrimeIdx, enclosedFivePrimeIdx)
 
+	// something happens here if the ends of the pair are on different strands
 	energy := evaluateStackBulgeInteriorLoop(nbUnpairedFivePrime, nbUnpairedThreePrime,
 		closingBasePairType, enclosedBasePairType,
 		fc.encodedSequence[closingFivePrimeIdx+1], fc.encodedSequence[closingThreePrimeIdx-1],
@@ -1039,17 +1054,12 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a pair that closes a loop")
 	}
 
-	closingThreePrimeIdx := pairTable[closingFivePrimeIdx]
-
-	// add energy due to closing pair of multi-loop
-	// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
-	// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
-	basePairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
-
-	closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-	closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
-	multiLoopEnergy += multiLoopStemEnergy(basePairType, closingFivePrimeMismatch,
-		closingThreePrimeMismatch, fc.energyParams)
+	var closingThreePrimeIdx int
+	if closingFivePrimeIdx == 0 {
+		closingThreePrimeIdx = fc.length + 1
+	} else {
+		closingThreePrimeIdx = pairTable[closingFivePrimeIdx]
+	}
 
 	// The index of the enclosed base pair at the 5' end
 	enclosedFivePrimeIdx := closingFivePrimeIdx + 1
@@ -1068,35 +1078,94 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 	// substructure that branch out from this multi-loop
 	substructuresEnergy := 0
 
-	// iterate through structure and find all enclosed base pairs
-	for enclosedFivePrimeIdx < closingThreePrimeIdx {
+	switch fc.dangleModel {
+	case noDangles:
 
-		// add up the contributions of the substructures of the multi loop
-		en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
-		substructuresEnergy += en
-		energyContributions = append(energyContributions, substructureContributions...)
+		for enclosedFivePrimeIdx < closingThreePrimeIdx {
+			// add up the contributions of the substructures of the multi loop
+			en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
+			substructuresEnergy += en
+			energyContributions = append(energyContributions, substructureContributions...)
 
-		/* enclosedFivePrimeIdx must have a pairing partner */
-		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, -1, -1, fc.energyParams)
 
-		/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
-		basePairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+			// seek to the next stem
+			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
 
-		enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
-		enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
+			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
+				enclosedFivePrimeIdx++
+			}
 
-		multiLoopEnergy += multiLoopStemEnergy(basePairType, enclosedFivePrimeMismatch,
-			enclosedThreePrimeMismatch, fc.energyParams)
-
-		// seek to the next stem
-		enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
-		for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-			enclosedFivePrimeIdx++
+			// add unpaired nucleotides
+			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
 		}
 
-		// add unpaired nucleotides
-		nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+		if closingFivePrimeIdx > 0 {
+			// actual closing pair
+			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+			multiLoopEnergy += multiLoopStemEnergy(closingPairType, -1, -1, fc.energyParams)
+		} else {
+			// virtual closing pair
+			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+		}
+
+	case doubleDangles:
+
+		// add energy due to closing pair of multi-loop
+		// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
+		// Created an issue in the original repo: https://github.com/ViennaRNA/ViennaRNA/issues/126
+		closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+
+		closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+		closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+		multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+			closingThreePrimeMismatch, fc.energyParams)
+
+		// iterate through structure and find all enclosed base pairs
+		for enclosedFivePrimeIdx < closingThreePrimeIdx {
+
+			// add up the contributions of the substructures of the multi loop
+			en, substructureContributions := stackEnergy(fc, enclosedFivePrimeIdx)
+			substructuresEnergy += en
+			energyContributions = append(energyContributions, substructureContributions...)
+			/* enclosedFivePrimeIdx must have a pairing partner */
+			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+
+			/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
+			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+
+			enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
+			enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
+
+			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, enclosedFivePrimeMismatch,
+				enclosedThreePrimeMismatch, fc.energyParams)
+
+			// seek to the next stem
+			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
+
+			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
+				enclosedFivePrimeIdx++
+			}
+
+			// add unpaired nucleotides
+			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+		}
+
+		// if closingFivePrimeIdx > 0 {
+		// 	// actual closing pair
+		// 	closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+
+		// 	closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
+		// 	closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
+
+		// 	multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+		// 		closingThreePrimeMismatch, fc.energyParams)
+		// } else {
+		// 	// virtual closing pair
+		// 	multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+		// }
 	}
 
 	// add bonus energies for unpaired nucleotides
@@ -1126,8 +1195,16 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
  *  @return                       The energy contribution of the introduced multi-loop stem
  */
 func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energyParams) int {
-	var energy int = energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch] +
-		energyParams.multiLoopIntern[basePairType]
+	var energy int
+	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
+		energy += energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
+	} else if fivePrimeMismatch >= 0 {
+		energy += energyParams.dangle5[basePairType][fivePrimeMismatch]
+	} else if threePrimeMismatch >= 0 {
+		energy += energyParams.dangle3[basePairType][threePrimeMismatch]
+	}
+
+	energy += energyParams.multiLoopIntern[basePairType]
 
 	if basePairType > 2 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
