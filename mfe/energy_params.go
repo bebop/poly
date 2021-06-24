@@ -29,9 +29,27 @@ var (
 )
 
 const (
+	// Langdon2018 specifies the set of RNA energy parameters obtained from
+	// Grow and Graft Genetic Programming (GGGP) as published
+	// in Langdon et al. 2018, "Evolving Better RNAfold
+	// Structure Prediction", EuroGP-2018, M. Castelli,
+	// L. Sekanina, M. Zhang Eds., Parma. 4-6 April 2018
 	Langdon2018 = iota
+	// Andronescu2007 specifies the set of RNA energy parameters obtained from
+	// Andronescu M, Condon A, Hoos HH, Mathews DH, Murphy KP. Efficient
+	// parameter estimation for RNA secondary structure prediction.
+	// Bioinformatics. 2007 Jul 1;23(13):i19-28
 	Andronescu2007
+	// Turner2004 specifies the set of RNA energy parameters obtained from
+	// Mathews DH, Disney MD, Childs JL, Schroeder SJ, Zuker M, Turner DH.
+	// Incorporating chemical modification constraints into a dynamic
+	// programming algorithm for prediction of RNA secondary structure.
+	// Proc Natl Acad Sci U S A. 2004;101(19):7287-7292.
 	Turner2004
+	// Turner1999 specifies the set of RNA energy parameters obtained from
+	// Mathews DH, Sabina J, Zuker M, Turner DH. Expanded sequence dependence
+	// of thermodynamic parameters improves prediction of RNA secondary
+	// structure. J Mol Biol. 1999 May 21;288(5):911-40.
 	Turner1999
 )
 
