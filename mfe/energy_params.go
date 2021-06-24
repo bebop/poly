@@ -128,7 +128,6 @@ type rawEnergyParams struct {
 }
 
 func readLine(scanner *bufio.Scanner) (string, bool) {
-	// scanner.Split(bufio.ScanLines)
 	lineAvailable := scanner.Scan()
 
 	if err := scanner.Err(); err != nil {
@@ -157,23 +156,6 @@ func rawEnergyParamsFromFile(fileName string) (rawEnergyParams rawEnergyParams) 
 		panic("Missing header line in file.\nMay be this file has not v2.0 format.\n")
 	}
 
-	// size_t      line_no;
-	// char        *line, ident[256];
-	// enum parset type;
-	// int         r;
-
-	// line_no = 0
-
-	// if ((!file_content) ||
-	//     (!file_content[line_no])) {
-	//   return 0
-	// }
-
-	// if (strncmp(file_content[line_no++], "## RNAfold parameter file v2.0", 30) != 0) {
-	//   vrna_message_warning("Missing header line in file.\n"
-	//                        "May be this file has not v2.0 format.\n"
-	//                        "Use INTERRUPT-key to stop.");
-	// }
 	line, lineAvailable := readLine(scanner)
 	for lineAvailable {
 		var energyParamSet string
@@ -186,142 +168,144 @@ func rawEnergyParamsFromFile(fileName string) (rawEnergyParams rawEnergyParams) 
 			case "stack":
 				rawEnergyParams.stackingPairEnergy37C = parseParamValues(scanner, nbPairs, nbPairs).([][]int)
 				rawEnergyParams.stackingPairEnergy37C = addPreOffset2Dim(rawEnergyParams.stackingPairEnergy37C, 1, 1)
-				// fmt.Println(testEq(rawEnergyParams.stackingPairEnergy37C, stackingPairEnergy37C, 2))
+
 			case "stack_enthalpies":
 				rawEnergyParams.stackingPairEnthalpy = parseParamValues(scanner, nbPairs, nbPairs).([][]int)
 				rawEnergyParams.stackingPairEnthalpy = addPreOffset(rawEnergyParams.stackingPairEnthalpy, 1, 1).([][]int)
-				// fmt.Println(testEq(rawEnergyParams.stackingPairEnthalpy, stackingPairEnthalpy, 2))
+
 			case "hairpin":
 				rawEnergyParams.hairpinLoopEnergy37C = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.hairpinLoopEnergy37C, hairpinLoopEnergy37C[:], 1))
+
 			case "hairpin_enthalpies":
 				rawEnergyParams.hairpinLoopEnthalpy = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.hairpinLoopEnthalpy, hairpinLoopEnthalpy[:], 1))
+
 			case "bulge":
 				rawEnergyParams.bulgeEnergy37C = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.bulgeEnergy37C, bulgeEnergy37C[:], 1))
+
 			case "bulge_enthalpies":
 				rawEnergyParams.bulgeEnthalpy = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.bulgeEnthalpy, bulgeEnthalpy[:], 1))
+
 			case "interior":
 				rawEnergyParams.interiorLoopEnergy37C = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.interiorLoopEnergy37C, interiorLoopEnergy37C[:], 1))
+
 			case "interior_enthalpies":
 				rawEnergyParams.interiorLoopEnthalpy = parseParamValues(scanner, 31).([]int)
-				// fmt.Println(testEq(rawEnergyParams.interiorLoopEnthalpy, interiorLoopEnthalpy[:], 1))
+
 			case "mismatch_exterior":
 				rawEnergyParams.mismatchExteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchExteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchExteriorLoopEnergy37C, mismatchExteriorLoopEnergy37C, 3))
+
 			case "mismatch_exterior_enthalpies":
 				rawEnergyParams.mismatchExteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchExteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchExteriorLoopEnthalpy, mismatchExteriorLoopEnthalpy, 3))
+
 			case "mismatch_hairpin":
 				rawEnergyParams.mismatchHairpinLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchHairpinLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchHairpinLoopEnergy37C, mismatchHairpinLoopEnergy37C, 3))
+
 			case "mismatch_hairpin_enthalpies":
 				rawEnergyParams.mismatchHairpinLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchHairpinLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchHairpinLoopEnthalpy, mismatchHairpinLoopEnthalpy, 3))
+
 			case "mismatch_interior":
 				rawEnergyParams.mismatchInteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchInteriorLoopEnergy37C, mismatchInteriorLoopEnergy37C, 3))
+
 			case "mismatch_interior_enthalpies":
 				rawEnergyParams.mismatchInteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchInteriorLoopEnthalpy, mismatchInteriorLoopEnthalpy, 3))
+
 			case "mismatch_interior_1n":
 				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, mismatch1xnInteriorLoopEnergy37C, 3))
+
 			case "mismatch_interior_1n_enthalpies":
 				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, mismatch1xnInteriorLoopEnthalpy, 3))
+
 			case "mismatch_interior_23":
 				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, mismatch2x3InteriorLoopEnergy37C, 3))
+
 			case "mismatch_interior_23_enthalpies":
 				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, mismatch2x3InteriorLoopEnthalpy, 3))
 
 			case "mismatch_multi":
 				rawEnergyParams.mismatchMultiLoopEnergy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchMultiLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchMultiLoopEnergy37C, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchMultiLoopEnergy37C, mismatchMultiLoopEnergy37C, 3))
+
 			case "mismatch_multi_enthalpies":
 				rawEnergyParams.mismatchMultiLoopEnthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][]int)
 				rawEnergyParams.mismatchMultiLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchMultiLoopEnthalpy, 1, 0, 0).([][][]int)
-				// fmt.Println(testEq(rawEnergyParams.mismatchMultiLoopEnthalpy, mismatchMultiLoopEnthalpy, 3))
+
 			case "int11":
 				rawEnergyParams.interior1x1LoopEnergy37C = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][][]int)
 				rawEnergyParams.interior1x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior1x1LoopEnergy37C, 1, 1, 0, 0).([][][][]int)
-				// fmt.Println(testEq(rawEnergyParams.interior1x1LoopEnergy37C, interior1x1LoopEnergy37C, 4))
+
 			case "int11_enthalpies":
 				rawEnergyParams.interior1x1LoopEnthalpy = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1).([][][][]int)
 				rawEnergyParams.interior1x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior1x1LoopEnthalpy, 1, 1, 0, 0).([][][][]int)
-				// fmt.Println(testEq(rawEnergyParams.interior1x1LoopEnthalpy, interior1x1LoopEnthalpy, 4))
 
 			case "int21":
 				rawEnergyParams.interior2x1LoopEnergy37C = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1, nbNucleobase+1).([][][][][]int)
 				rawEnergyParams.interior2x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x1LoopEnergy37C, 1, 1, 0, 0, 0).([][][][][]int)
-				// fmt.Println(testEq(rawEnergyParams.interior2x1LoopEnergy37C, interior2x1LoopEnergy37, 5))
+
 			case "int21_enthalpies":
 				rawEnergyParams.interior2x1LoopEnthalpy = parseParamValues(scanner, nbPairs, nbPairs, nbNucleobase+1, nbNucleobase+1, nbNucleobase+1).([][][][][]int)
 				rawEnergyParams.interior2x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x1LoopEnthalpy, 1, 1, 0, 0, 0).([][][][][]int)
-				// fmt.Println(testEq(rawEnergyParams.interior2x1LoopEnthalpy, interior2x1LoopEnthalpy, 5))
+
 			case "int22":
 				rawEnergyParams.interior2x2LoopEnergy37C = parseParamValues(scanner, nbPairs-1, nbPairs-1, nbNucleobase, nbNucleobase, nbNucleobase, nbNucleobase).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 1, 1, 1, 1).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnergy37C = addPostOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnergy37C = updateNST(rawEnergyParams.interior2x2LoopEnergy37C)
-				// fmt.Println(testEq(rawEnergyParams.interior2x2LoopEnergy37C, interior2x2LoopEnergy37, 6))
+
 			case "int22_enthalpies":
 				rawEnergyParams.interior2x2LoopEnthalpy = parseParamValues(scanner, nbPairs-1, nbPairs-1, nbNucleobase, nbNucleobase, nbNucleobase, nbNucleobase).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 1, 1, 1, 1).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnthalpy = addPostOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnthalpy = updateNST(rawEnergyParams.interior2x2LoopEnthalpy)
-				// fmt.Println(testEq(rawEnergyParams.interior2x2LoopEnthalpy, interior2x2LoopEnthalpy, 6))
+
 			case "dangle5":
 				rawEnergyParams.dangle5Energy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
 				rawEnergyParams.dangle5Energy37C = addPreOffset(rawEnergyParams.dangle5Energy37C, 1, 0).([][]int)
-				// fmt.Println(testEq(rawEnergyParams.dangle5Energy37C, dangle5Energy37C, 2))
+
 			case "dangle5_enthalpies":
 				rawEnergyParams.dangle5Enthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
 				rawEnergyParams.dangle5Enthalpy = addPreOffset(rawEnergyParams.dangle5Enthalpy, 1, 0).([][]int)
-				// fmt.Println(testEq(rawEnergyParams.dangle5Enthalpy, dangle5Enthalpy, 2))
+
 			case "dangle3":
 				rawEnergyParams.dangle3Energy37C = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
 				rawEnergyParams.dangle3Energy37C = addPreOffset(rawEnergyParams.dangle3Energy37C, 1, 0).([][]int)
-				// fmt.Println(testEq(rawEnergyParams.dangle3Energy37C, dangle3Energy37C, 2))
+
 			case "dangle3_enthalpies":
 				rawEnergyParams.dangle3Enthalpy = parseParamValues(scanner, nbPairs, nbNucleobase+1).([][]int)
 				rawEnergyParams.dangle3Enthalpy = addPreOffset(rawEnergyParams.dangle3Enthalpy, 1, 0).([][]int)
-				// fmt.Println(testEq(rawEnergyParams.dangle3Enthalpy, dangle3Enthalpy, 2))
 
 			case "ML_params":
 				mlParams := parseParamValues(scanner, 6).([]int)
 				rawEnergyParams.setMultiLoopParams(mlParams)
+
 			case "NINIO":
 				ninioParams := parseParamValues(scanner, 3).([]int)
 				rawEnergyParams.setNinioParams(ninioParams)
+
 			case "Triloops":
 				rawEnergyParams.triLoops,
 					rawEnergyParams.triLoopEnergy37C,
 					rawEnergyParams.triLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
+
 			case "Tetraloops":
 				rawEnergyParams.tetraLoops,
 					rawEnergyParams.tetraLoopEnergy37C,
 					rawEnergyParams.tetraLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
+
 			case "Hexaloops":
 				rawEnergyParams.hexaLoops,
 					rawEnergyParams.hexaLoopEnergy37C,
 					rawEnergyParams.hexaLoopEnthalpy = parseTriTetraHexaLoopParams(scanner)
+
 			case "Misc":
 				miscParams := parseFloatParamLineIntoSlice(scanner)
 				rawEnergyParams.terminalAU37C = int(miscParams[2])
@@ -333,16 +317,10 @@ func rawEnergyParamsFromFile(fileName string) (rawEnergyParams rawEnergyParams) 
 				}
 			}
 		}
-		// else { // skip all other lines
-		// 	if len(strings.TrimSpace(removeComments(line))) == 0 {
-		// 		fmt.Println(line)
-		// 	}
-		// }
+
 		line, lineAvailable = readLine(scanner)
 	}
 
-	// fmt.Println("and the answer is...")
-	// fmt.Println(reflect.DeepEqual(turner2004Params(), rawEnergyParams))
 	return
 }
 
@@ -371,37 +349,6 @@ func parseTriTetraHexaLoopParams(scanner *bufio.Scanner) (loops map[string]bool,
 		}
 	}
 	return
-}
-
-func printDims(arr interface{}, dims int) {
-	switch dims {
-	case 0:
-		fmt.Println()
-	case 1:
-		array := arr.([]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	case 2:
-		array := arr.([][]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	case 3:
-		array := arr.([][][]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	case 4:
-		array := arr.([][][][]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	case 5:
-		array := arr.([][][][][]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	case 6:
-		array := arr.([][][][][][]int)
-		fmt.Printf("%v ", len(array))
-		printDims(array[0], dims-1)
-	}
 }
 
 // returns a slice of length numINF with all values set to INF
@@ -901,50 +848,6 @@ func addPostOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offse
 	return
 }
 
-// func parseUntilEnoughValuesIntoSlice(scanner *bufio.Scanner, numValuesToParse int) (ret []int) {
-// 	scanner.Split(bufio.ScanWords)
-// 	totalValuesParsed := 0
-// 	ret = make([]int, 0, numValuesToParse)
-// 	for totalValuesParsed < numValuesToParse {
-// 		scanner.Scan()
-// 		token := scanner.Text()
-// 		if token == "/*" {
-// 			readUntilCommentEnd(scanner)
-// 		} else {
-// 			ret = append(ret, parseToken(token))
-// 			totalValuesParsed++
-// 		}
-// 		// parsedParamsSlice := parseLineIntoSlice(scanner)
-// 		// ret = append(ret, parsedParamsSlice...)
-// 		// totalValuesParsed += len(parsedParamsSlice)
-// 	}
-// 	if totalValuesParsed > numValuesToParse {
-// 		panic("parsed too many values")
-// 	}
-// 	return
-// }
-
-// func readUntilCommentEnd(scanner *bufio.Scanner) {
-// 	scanner.Split(bufio.ScanWords)
-// 	token := ""
-// 	for token != "*/" {
-// 		scanner.Scan()
-// 		token = scanner.Text()
-// 	}
-// }
-
-// func parseToken(token string) int {
-// 	if token == "INF" {
-// 		return INF
-// 	} else {
-// 		valueInt64, err := strconv.ParseInt(token, 10, 0)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		return int(valueInt64)
-// 	}
-// }
-
 func parseInt(token string) int {
 	valueInt64, err := strconv.ParseInt(token, 10, 0)
 	if err != nil {
@@ -1003,9 +906,7 @@ func parseParamValuesInto6DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, len
 }
 
 /* update nonstandard nucleotide/basepair involved contributions for int22 */
-// array[nbPairs + 1][nbPairs + 1][5][5][5][5]
-func updateNST(arrayPointer [][][][][][]int) (array [][][][][][]int) {
-	array = arrayPointer
+func updateNST(array [][][][][][]int) [][][][][][]int {
 	var max, max2, max3, max4, max5, max6 int
 	/* get maxima for one nonstandard nucleotide */
 	for i := 1; i < nbPairs; i++ {
@@ -1119,7 +1020,7 @@ func updateNST(arrayPointer [][][][][][]int) (array [][][][][][]int) {
 			}
 		}
 	}
-	return
+	return array
 }
 
 func maxInt(a, b int) int {
@@ -1128,21 +1029,6 @@ func maxInt(a, b int) int {
 	}
 	return b
 }
-
-// func rd_2dim_slice(content []string, line_no int, array []int, dim [2]int, shift [2]int) {
-// 	var post [2]int = int{0, 0}
-// 	delta_pre := shift[0] + shift[1]
-// 	delta_post := post[0] + post[1]
-
-// 	if delta_pre + delta_post == 0 {
-// 		rd_1dim(content, line_no, array, dim[0]*dim[1], 0)
-// 		return
-// 	}
-
-// 	for i := shift[0]; i < dim[0]-post[0]; i++ {
-// 		rd_1dim_slice(content, line_no, array+(i*dim[1]), dim[1], shift[1], post[1])
-// 	}
-// }
 
 func readUncommentedLine(scanner *bufio.Scanner) (ret string) {
 	line, lineAvailable := readLine(scanner)
@@ -1157,111 +1043,6 @@ func readUncommentedLine(scanner *bufio.Scanner) (ret string) {
 		}
 	}
 	panic("no more lines to read")
-}
-
-func testEq1DimSlice(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq2DimSlice(a, b [][]int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !testEq1DimSlice(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq3DimSlice(a, b [][][]int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !testEq2DimSlice(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq4DimSlice(a, b [][][][]int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !testEq3DimSlice(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq5DimSlice(a, b [][][][][]int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !testEq4DimSlice(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq6DimSlice(a, b [][][][][][]int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if !testEq5DimSlice(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func testEq(a, b interface{}, dims int) bool {
-	switch dims {
-	case 1:
-		return testEq1DimSlice(a.([]int), b.([]int))
-	case 2:
-		return testEq2DimSlice(a.([][]int), b.([][]int))
-	case 3:
-		return testEq3DimSlice(a.([][][]int), b.([][][]int))
-	case 4:
-		return testEq4DimSlice(a.([][][][]int), b.([][][][]int))
-	case 5:
-		return testEq5DimSlice(a.([][][][][]int), b.([][][][][]int))
-	case 6:
-		return testEq6DimSlice(a.([][][][][][]int), b.([][][][][][]int))
-	}
-	return false
-}
-
-func getUncommentedLines(scanner *bufio.Scanner, numLines int) (ret []string) {
-	line, lineAvailable := readLine(scanner)
-	numUncommentedLines := 0
-
-	for lineAvailable {
-		line = removeComments(line)
-		if len(strings.TrimSpace(line)) != 0 {
-			ret = append(ret, line)
-			numUncommentedLines++
-		} // skip white space lines and full line comments
-	}
-
-	return
 }
 
 func removeComments(source string) string {

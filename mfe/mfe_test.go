@@ -1943,8 +1943,3 @@ func logEnergyContributions(energyContribution []EnergyContribution, sequence st
 		}
 	}
 }
-
-func ExampleReadParams() {
-	rawEnergyParamsFromFile("energy_params/rna_turner2004.par")
-	// Output: AB000100
-}
