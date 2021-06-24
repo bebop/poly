@@ -2,9 +2,9 @@ package mfe
 
 import (
 	"bufio"
+	"embed"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -27,6 +27,24 @@ var (
 	// INF is infinity as used in minimization routines (INT_MAX/10)
 	INF int = 10000000
 )
+
+const (
+	Langdon2018 = iota
+	Andronescu2007
+	Turner2004
+	Turner1999
+)
+
+//go:embed energy_params/*
+var embededEnergyParamsDirectory embed.FS
+var energyParamsDirectory = "energy_params"
+
+var energyParamFileNames map[int]string = map[int]string{
+	Langdon2018:    "rna_langdon2018.par",
+	Andronescu2007: "rna_andronescu2007.par",
+	Turner2004:     "rna_turner2004.par",
+	Turner1999:     "rna_turner1999.par",
+}
 
 type rawEnergyParams struct {
 	interior2x2LoopEnergy37C [][][][][][]int
@@ -108,7 +126,7 @@ func readLine(scanner *bufio.Scanner) (string, bool) {
 }
 
 func rawEnergyParamsFromFile(fileName string) (rawEnergyParams rawEnergyParams) {
-	file, err := os.Open(fileName)
+	file, err := embededEnergyParamsDirectory.Open(energyParamsDirectory + "/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}

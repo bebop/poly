@@ -71,6 +71,14 @@ const (
 	// The temperature at which the energy parameters in `energy_params.go` have
 	// been measured at
 	energyParamsMeasurementTemperature float64 = 37.0
+
+	// NoDangles specifies no dangling end energies to be added to energy calcualtions
+	NoDangles = 0
+	// DoubleDangles specifies energies due to dangling ends (on both five and three prime sides)
+	// should be added to energy calcualtions
+	DoubleDangles = 2
+	// DefaultDanglingEndsModel defaults to DoubleDangles
+	DefaultDanglingEndsModel = DoubleDangles
 )
 
 // foldCompound holds all information needed to compute the free energy of a
@@ -84,15 +92,6 @@ type foldCompound struct {
 	basePairEncodedType map[byte]map[byte]int // (see `basePairEncodedTypeMap()`)
 	dangleModel         int
 }
-
-const (
-	// NoDangles specifies no dangling end energies to be added to energy calcualtions
-	NoDangles = 0
-	// DoubleDangles specifies energies due to dangling ends (on both five and three prime sides)
-	// should be added to energy calcualtions
-	DoubleDangles            = 2
-	DefaultDanglingEndsModel = DoubleDangles
-)
 
 /**
 * EnergyContribution contains the energy contribution of a loop
@@ -121,7 +120,7 @@ type EnergyContribution struct {
 														and a slice of `EnergyContribution` (which gives information about the
 														energy contribution of each loop present in the secondary structure)
 */
-func MinimumFreeEnergy(sequence, structure string, temperature float64, danglingEndsModel int) (float64, []EnergyContribution, error) {
+func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet, danglingEndsModel int) (float64, []EnergyContribution, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
@@ -150,7 +149,7 @@ func MinimumFreeEnergy(sequence, structure string, temperature float64, dangling
 
 	fc := &foldCompound{
 		length:              lenSequence,
-		energyParams:        rawEnergyParamsFromFile("energy_params/rna_andronescu2007.par").scaleByTemperature(temperature),
+		energyParams:        rawEnergyParamsFromFile(energyParamFileNames[energyParamsSet]).scaleByTemperature(temperature),
 		sequence:            sequence,
 		encodedSequence:     encodeSequence(sequence),
 		pairTable:           pairTable,
