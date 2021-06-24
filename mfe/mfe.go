@@ -93,34 +93,42 @@ type foldCompound struct {
 	dangleModel         int
 }
 
-/**
-* EnergyContribution contains the energy contribution of a loop
-* The fields `loopType` and `energy` will always have a value for all loop types.
-* Except for `loopType == ExteriorLoop`, all loops will have a
-* `closingFivePrimeIdx` and `closingThreePrimeIdx`.
-* Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
-* and `enclosedThreePrimeIdx`.
- */
-type EnergyContribution struct {
+// StructuralMotif is a struct to represent the various secondary strcutures
+// present in folded RNA sequences.
+// The fields `loopType` and `energy` will always have a value for all loop types.
+// Except for `loopType == ExteriorLoop`, all loops will have a
+// `closingFivePrimeIdx` and `closingThreePrimeIdx`.
+// Only loops with `loopType == InteriorLoop` will have `enclosedFivePrimeIdx`
+// and `enclosedThreePrimeIdx`.
+type StructuralMotif struct {
 	closingFivePrimeIdx, closingThreePrimeIdx   int // The closing base pair is the base pair that closes the loop
 	loopType                                    int // The type of loop (ExteriorLoop, InteriorLoop, HairpinLoop, or MultiLoop)
-	energy                                      int // The free energy contribution of the loop in dcal / mol
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int // The base pair (that is enclosed by a closing base pair) which delimits an interior loop (only available for interior loops)
 }
 
-/**
- *  MinimumFreeEnergy returns the free energy of an already folded RNA and a list of
- *  energy contribution of each loop.
- *
- *  @param sequence         A RNA sequence
- *  @param structure        Secondary structure in dot-bracket notation
- *  @param temperature      Temperature at which to evaluate the free energy of the structure
- *  @param danglingEndsModel  Specify whether to include energy from dangling ends (NoDangles or DoubleDangles)
- *  @return                 The free energy of the input structure given the input sequence in kcal/mol,
-														and a slice of `EnergyContribution` (which gives information about the
-														energy contribution of each loop present in the secondary structure)
-*/
-func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet, danglingEndsModel int) (float64, []EnergyContribution, error) {
+// StructuralMotifWithEnergy contains information about a secondary structure
+// present in a folded RNA strucutre with the structure's energy contribution
+type StructuralMotifWithEnergy struct {
+	structure StructuralMotif
+	energy    int // The free energy contribution of the loop in dcal / mol
+}
+
+//
+//  MinimumFreeEnergy returns the free energy of an already folded RNA and a list of
+//  energy contribution of each loop.
+//
+//  @param sequence         		A RNA sequence
+//  @param structure        		Secondary structure in dot-bracket notation
+//  @param temperature      		Temperature at which to evaluate the free energy
+//															 of the structure
+//  @param danglingEndsModel  	Specify whether to include energy from dangling
+// 															ends (NoDangles or DoubleDangles)
+//  @return                 		The free energy of the input structure given the
+// 															input sequence in kcal/mol, and a slice of
+// 															`StructuralMotifWithEnergy` (which gives
+// 															information about the energy contribution of
+// 															each loop present in the secondary structure)
+func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet, danglingEndsModel int) (float64, []StructuralMotifWithEnergy, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
@@ -469,8 +477,8 @@ func pairTable(structure string) ([]int, error) {
 	return pairTable, nil
 }
 
-func evaluateFoldCompound(fc *foldCompound) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func evaluateFoldCompound(fc *foldCompound) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 
 	// get the energy contributions due to exterior loops
 	energy, contribution := exteriorLoopEnergy(fc)
@@ -509,7 +517,7 @@ func encodedBasePairType(fc *foldCompound, basePairFivePrimeIdx, basePairThreePr
 * See `exteriorStemEnergy()` for information of how exterior loops are evaluated.
 * More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
  */
-func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
+func exteriorLoopEnergy(fc *foldCompound) (int, StructuralMotifWithEnergy) {
 	pairTable := fc.pairTable
 	var energy int = 0
 	length := fc.length
@@ -557,7 +565,7 @@ func exteriorLoopEnergy(fc *foldCompound) (int, EnergyContribution) {
 		}
 	}
 
-	return energy, EnergyContribution{energy: energy}
+	return energy, StructuralMotifWithEnergy{energy: energy}
 }
 
 /**
@@ -650,8 +658,8 @@ func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMisma
 		pair), we know we're in some sort of multi-loop. Note that multi-loops
 		have atleast two enclosed pairs.
 */
-func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 
 	pairTable := fc.pairTable
 	energy := 0
@@ -732,7 +740,7 @@ func stackEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContri
  */
 func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 	closingFivePrimeIdx, closingThreePrimeIdx,
-	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) (int, EnergyContribution) {
+	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) (int, StructuralMotifWithEnergy) {
 
 	nbUnpairedFivePrime := enclosedFivePrimeIdx - closingFivePrimeIdx - 1
 	nbUnpairedThreePrime := closingThreePrimeIdx - enclosedThreePrimeIdx - 1
@@ -746,13 +754,15 @@ func stackBulgeInteriorLoopEnergy(fc *foldCompound,
 		fc.encodedSequence[closingFivePrimeIdx+1], fc.encodedSequence[closingThreePrimeIdx-1],
 		fc.encodedSequence[enclosedFivePrimeIdx-1], fc.encodedSequence[enclosedThreePrimeIdx+1], fc.energyParams)
 
-	energyContribution := EnergyContribution{
-		closingFivePrimeIdx:   closingFivePrimeIdx,
-		closingThreePrimeIdx:  closingThreePrimeIdx,
-		enclosedFivePrimeIdx:  enclosedFivePrimeIdx,
-		enclosedThreePrimeIdx: enclosedThreePrimeIdx,
-		energy:                energy,
-		loopType:              InteriorLoop,
+	energyContribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:   closingFivePrimeIdx,
+			closingThreePrimeIdx:  closingThreePrimeIdx,
+			enclosedFivePrimeIdx:  enclosedFivePrimeIdx,
+			enclosedThreePrimeIdx: enclosedThreePrimeIdx,
+			loopType:              InteriorLoop,
+		},
+		energy: energy,
 	}
 	return energy, energyContribution
 }
@@ -922,7 +932,7 @@ func evaluateStackBulgeInteriorLoop(nbUnpairedLeftLoop, nbUnpairedRightLoop int,
  *  @param  pairThreePrimeIdx  3'-position of the base pair enclosing the hairpin loop
  *  @returns                   Free energy of the hairpin loop closed by (pairFivePrimeIdx,pairThreePrimeIdx) in dcal/mol
  */
-func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int) (int, EnergyContribution) {
+func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int) (int, StructuralMotifWithEnergy) {
 	nbUnpairedNucleotides := pairThreePrimeIdx - pairFivePrimeIdx - 1 // also the size of the hairpin loop
 	basePairType := encodedBasePairType(fc, pairFivePrimeIdx, pairThreePrimeIdx)
 
@@ -931,11 +941,13 @@ func hairpinLoopEnergy(fc *foldCompound, pairFivePrimeIdx, pairThreePrimeIdx int
 		fc.encodedSequence[pairThreePrimeIdx-1],
 		fc.sequence[pairFivePrimeIdx-1:], fc.energyParams)
 
-	energyContribution := EnergyContribution{
-		closingFivePrimeIdx:  pairFivePrimeIdx,
-		closingThreePrimeIdx: pairThreePrimeIdx,
-		energy:               energy,
-		loopType:             HairpinLoop,
+	energyContribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:  pairFivePrimeIdx,
+			closingThreePrimeIdx: pairThreePrimeIdx,
+			loopType:             HairpinLoop,
+		},
+		energy: energy,
 	}
 	return energy, energyContribution
 }
@@ -1046,8 +1058,8 @@ func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
  *
  * More information about multi-loops: https://rna.urmc.rochester.edu/NNDB/turner04/mb.html
  */
-func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyContribution) {
-	energyContributions := make([]EnergyContribution, 0)
+func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []StructuralMotifWithEnergy) {
+	energyContributions := make([]StructuralMotifWithEnergy, 0)
 	pairTable := fc.pairTable
 
 	// energetic penalty imposed when a base pair encloses a multi loop
@@ -1176,11 +1188,13 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []EnergyCo
 	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.multiLoopUnpairedNucelotideBonus
 
 	// Add a energy contribution for this multi-loop
-	contribution := EnergyContribution{
-		closingFivePrimeIdx:  closingFivePrimeIdx,
-		closingThreePrimeIdx: closingThreePrimeIdx,
-		energy:               multiLoopEnergy,
-		loopType:             MultiLoop,
+	contribution := StructuralMotifWithEnergy{
+		structure: StructuralMotif{
+			closingFivePrimeIdx:  closingFivePrimeIdx,
+			closingThreePrimeIdx: closingThreePrimeIdx,
+			loopType:             MultiLoop,
+		},
+		energy: multiLoopEnergy,
 	}
 	energyContributions = append(energyContributions, contribution)
 	return multiLoopEnergy + substructuresEnergy, energyContributions
@@ -1430,14 +1444,15 @@ func rescaleDgFloat64(dG, dH, temperature float64) float64 {
 PrintEnergyContributions pretty prints a list of energy contributions returned
 from `MinimumFreeEnergy`.
 */
-func PrintEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+func PrintEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
 	for _, c := range energyContribution {
-		switch c.loopType {
+		structure := c.structure
+		switch structure.loopType {
 		case ExteriorLoop:
 			fmt.Printf("External loop                           : %v\n", c.energy)
 		case InteriorLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
-			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
 			fmt.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),
@@ -1445,13 +1460,13 @@ func PrintEnergyContributions(energyContribution []EnergyContribution, sequence 
 				string(sequence[k]), string(sequence[l]),
 				c.energy)
 		case HairpinLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			fmt.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),
 				c.energy)
 		case MultiLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			fmt.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
 				i, j,
 				string(sequence[i]), string(sequence[j]),

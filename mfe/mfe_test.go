@@ -1914,14 +1914,15 @@ func stripWhiteSpace(s string) string {
 * everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
 * is 0-indexed.
  */
-func logEnergyContributions(energyContribution []EnergyContribution, sequence string) {
+func logEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
 	for _, c := range energyContribution {
-		switch c.loopType {
+		structure := c.structure
+		switch structure.loopType {
 		case ExteriorLoop:
 			log.Printf("External loop                           : %v\n", c.energy)
 		case InteriorLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
-			var k, l int = c.enclosedFivePrimeIdx, c.enclosedThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
 			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
 				i+1, j+1,
 				string(sequence[i]), string(sequence[j]),
@@ -1929,13 +1930,13 @@ func logEnergyContributions(energyContribution []EnergyContribution, sequence st
 				string(sequence[k]), string(sequence[l]),
 				c.energy)
 		case HairpinLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
 				i+1, j+1,
 				string(sequence[i]), string(sequence[j]),
 				c.energy)
 		case MultiLoop:
-			var i, j int = c.closingFivePrimeIdx, c.closingThreePrimeIdx
+			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
 			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
 				i+1, j+1,
 				string(sequence[i]), string(sequence[j]),
