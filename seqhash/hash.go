@@ -1,4 +1,4 @@
-package poly
+package seqhash
 
 import (
 	"encoding/hex"
@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/TimothyStiles/poly/transformations"
 	"lukechampine.com/blake3"
 )
 
@@ -177,13 +178,13 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	var deterministicSequence string
 	switch {
 	case circular && doubleStranded:
-		potentialSequences := []string{RotateSequence(sequence), RotateSequence(ReverseComplement(sequence))}
+		potentialSequences := []string{RotateSequence(sequence), RotateSequence(transformations.ReverseComplement(sequence))}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case circular && !doubleStranded:
 		deterministicSequence = RotateSequence(sequence)
 	case !circular && doubleStranded:
-		potentialSequences := []string{sequence, ReverseComplement(sequence)}
+		potentialSequences := []string{sequence, transformations.ReverseComplement(sequence)}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case !circular && !doubleStranded:
@@ -219,32 +220,5 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	newhash := blake3.Sum256([]byte(deterministicSequence))
 	seqhash := "v1" + "_" + sequenceTypeLetter + circularLetter + doubleStrandedLetter + "_" + hex.EncodeToString(newhash[:])
 	return seqhash, nil
-
-}
-
-// Hash is a method wrapper for hashing Sequence structs. Note that
-// all sequence structs are, by default, double-stranded sequences,
-// since Genbank does not track whether or not a given sequence in their
-// database is single stranded or double stranded.
-func (sequence Sequence) Hash() (string, error) {
-	if sequence.Meta.Locus.MoleculeType == "" {
-		return "", errors.New("No MoleculeType found for sequence")
-	}
-	var sequenceType string
-	if strings.Contains(sequence.Meta.Locus.MoleculeType, "DNA") {
-		sequenceType = "DNA"
-	}
-	if strings.Contains(sequence.Meta.Locus.MoleculeType, "RNA") {
-		sequenceType = "RNA"
-	}
-	if (sequenceType != "DNA") && (sequenceType != "RNA") {
-		return "", errors.New("SequenceType not found. Looking for MoleculeTypes with DNA or RNA, got: " + sequence.Meta.Locus.MoleculeType)
-	}
-	// If not explicitly circular, assume linear. All sequences are by default doubleStranded
-	newSeqhash, err := Hash(sequence.Sequence, sequenceType, sequence.Meta.Locus.Circular, true)
-	if err != nil {
-		return "", err
-	}
-	return newSeqhash, nil
 
 }

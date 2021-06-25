@@ -1,15 +1,16 @@
-package poly
+package seqhash
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
+	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 func ExampleHash() {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.ReadGbk("data/puc19.gbk")
 
 	seqhash, _ := Hash(sequence.Sequence, "DNA", true, true)
 	fmt.Println(seqhash)
@@ -17,7 +18,7 @@ func ExampleHash() {
 }
 
 func ExampleSequence_Hash() {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.ReadGbk("data/puc19.gbk")
 
 	// Seqhash assumes doubleStranded sequence and defaults to linear
 	// if sequence.Meta.Locus.Circular is not set
@@ -85,7 +86,7 @@ func TestHash(t *testing.T) {
 
 func TestSequence_Hash(t *testing.T) {
 	// Test no MoleculeType
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.ReadGbk("data/puc19.gbk")
 	sequence.Meta.Locus.MoleculeType = ""
 	_, err := sequence.Hash()
 	if err == nil {
@@ -113,7 +114,7 @@ func TestSequence_Hash(t *testing.T) {
 }
 
 func ExampleRotateSequence() {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.ReadGbk("data/puc19.gbk")
 	sequenceLength := len(sequence.Sequence)
 	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
 
@@ -122,7 +123,7 @@ func ExampleRotateSequence() {
 }
 
 func TestLeastRotation(t *testing.T) {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.genbank.ReadGbk("data/puc19.gbk")
 	var sequenceBuffer bytes.Buffer
 
 	sequenceBuffer.WriteString(sequence.Sequence)

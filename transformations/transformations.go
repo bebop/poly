@@ -1,4 +1,4 @@
-package poly
+package transformations
 
 import (
 	"errors"
@@ -77,6 +77,137 @@ type CodonTable struct {
 	AminoAcids  []AminoAcid `json:"amino_acids"`
 }
 
+// complementBaseRuneMap provides 1:1 mapping between bases and their complements
+var complementBaseRuneMap = map[rune]rune{
+	65:  84,  // A -> T
+	66:  86,  // B -> V
+	67:  71,  // C -> G
+	68:  72,  // D -> H
+	71:  67,  // G -> C
+	72:  68,  // H -> D
+	75:  77,  // K -> M
+	77:  75,  // M -> K
+	78:  78,  // N -> N
+	82:  89,  // R -> Y
+	83:  83,  // S -> S
+	84:  65,  // T -> A
+	85:  65,  // U -> A
+	86:  66,  // V -> B
+	87:  87,  // W -> W
+	89:  82,  // Y -> R
+	97:  116, // a -> t
+	98:  118, // b -> v
+	99:  103, // c -> g
+	100: 104, // d -> h
+	103: 99,  // g -> a
+	104: 100, // h -> d
+	107: 109, // k -> m
+	109: 107, // m -> k
+	110: 110, // n -> n
+	114: 121, // r -> y
+	115: 115, // s -> s
+	116: 97,  // t -> a
+	117: 97,  // u -> a
+	118: 98,  // v -> b
+	119: 119, // w -> w
+	121: 114, // y -> r
+}
+
+// ReverseComplement takes the reverse complement of a sequence
+func ReverseComplement(sequence string) string {
+	complementString := strings.Map(ComplementBase, sequence)
+	n := len(complementString)
+	newString := make([]rune, n)
+	for _, base := range complementString {
+		n--
+		newString[n] = base
+	}
+	return string(newString)
+}
+
+// ComplementBase accepts a base pair and returns its complement base pair
+func ComplementBase(basePair rune) rune {
+	return complementBaseRuneMap[basePair]
+}
+
+// AllVariantsIUPAC takes a string as input
+// and returns all iupac variants as output
+func AllVariantsIUPAC(seq string) ([]string, error) {
+	seqVariantList := [][]rune{}
+	seqVariants := []string{}
+
+	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
+		'G': []rune{'G'},
+		'A': []rune{'A'},
+		'T': []rune{'T'},
+		'C': []rune{'C'},
+		'R': []rune{'G', 'A'},
+		'Y': []rune{'T', 'C'},
+		'M': []rune{'A', 'C'},
+		'K': []rune{'G', 'T'},
+		'S': []rune{'G', 'C'},
+		'W': []rune{'A', 'T'},
+		'H': []rune{'A', 'C', 'T'},
+		'B': []rune{'G', 'T', 'C'},
+		'V': []rune{'G', 'C', 'A'},
+		'D': []rune{'G', 'A', 'T'},
+		'N': []rune{'G', 'A', 'T', 'C'},
+	}
+
+	for _, s := range strings.ToUpper(seq) {
+		variantsIUPAC, ok := iupac[s]
+		if ok {
+			seqVariantList = append(seqVariantList, variantsIUPAC)
+		} else {
+			return seqVariants, errors.New("Error:" + string(s) + " is not a supported IUPAC character")
+		}
+
+	}
+
+	cartesianProducts := cartRune(seqVariantList...)
+	for _, product := range cartesianProducts {
+		seqVariants = append(seqVariants, string(product))
+	}
+	return seqVariants, nil
+}
+func cartRune(inList ...[]rune) [][]rune {
+	// An iteratitive approach to calculate Cartesian product of two or more lists
+	// Adapted from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
+	// supposedly "minimizes allocations and computes and fills the result sequentially"
+
+	var possibleVariants int = 1 // a counter used to determine the possible number of variants
+	for _, inList := range inList {
+		possibleVariants *= len(inList)
+	}
+	if possibleVariants == 0 {
+		return nil // in the future this could be part of an error return?
+	}
+	allVariants := make([][]rune, possibleVariants)              // this is the 2D slice where all variants will be stored
+	variantHolders := make([]rune, possibleVariants*len(inList)) // this is an empty slice with a length totaling the size of all input characters
+	variantChoices := make([]int, len(inList))                   // these will be all the possible variants
+	start := 0
+	for variant := range allVariants {
+		end := start + len(inList) // define end point
+		variantHolder := variantHolders[start:end]
+
+		allVariants[variant] = variantHolder
+
+		start = end // start at end point
+
+		for variantChoicesIndex, variantChoice := range variantChoices {
+			variantHolder[variantChoicesIndex] = inList[variantChoicesIndex][variantChoice]
+		}
+		for variantChoicesIndex := len(variantChoices) - 1; variantChoicesIndex >= 0; variantChoicesIndex-- {
+			variantChoices[variantChoicesIndex]++
+			if variantChoices[variantChoicesIndex] < len(inList[variantChoicesIndex]) {
+				break
+			}
+			variantChoices[variantChoicesIndex] = 0
+		}
+	}
+	return allVariants
+}
+
 // Translate translates a codon sequence to an amino acid sequence
 func Translate(sequence string, codonTable CodonTable) (string, error) {
 	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
@@ -126,12 +257,6 @@ func Optimize(aminoAcids string, codonTable CodonTable) (string, error) {
 		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
 	}
 	return codons.String(), nil
-}
-
-// GetOptimizationTable is a Sequence method that takes a CodonTable and weights it to be used to optimize inserts.
-func (sequence Sequence) GetOptimizationTable(codonTable CodonTable) CodonTable {
-	sequenceString := getCodingRegions(sequence)
-	return codonTable.OptimizeTable(sequenceString)
 }
 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
@@ -223,20 +348,6 @@ func (codonTable CodonTable) generateTranslationTable() map[string]string {
 		}
 	}
 	return translationMap
-}
-
-// helper function to pull coding regions out of an Sequence
-func getCodingRegions(sequence Sequence) string {
-	// pick out the each coding region in the Sequence and add it to the sequence Builder
-	var sequenceBuilder strings.Builder
-
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequenceBuilder.WriteString(feature.GetSequence())
-		}
-	}
-
-	return sequenceBuilder.String()
 }
 
 /******************************************************************************

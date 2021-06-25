@@ -6,6 +6,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/TimothyStiles/poly/checks"
+	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/TimothyStiles/poly/transformations"
 )
 
 /******************************************************************************
@@ -126,7 +130,7 @@ func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragmen
 	}
 
 	// Check for palindromes
-	palindromic := IsPalindromic(enzyme.RecognitionSite)
+	palindromic := checks.IsPalindromic(enzyme.RecognitionSite)
 
 	// Find and define overhangs
 	var overhangs []Overhang
@@ -241,8 +245,8 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 			}
 			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
 			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
-			if (seedFragment.ReverseOverhang == ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
-				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}
+			if (seedFragment.ReverseOverhang == transformations.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transformations.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
+				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transformations.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transformations.ReverseComplement(newFragment.ForwardOverhang)}
 				wg.Add(1)
 				go recurseLigate(wg, c, newSeed, fragmentList)
 			}
@@ -258,7 +262,7 @@ func getConstructs(c chan string, constructSequences chan []CloneSequence) {
 		construct, more := <-c
 		if more {
 			exists = false
-			seqhashConstruct, _ := Hash(construct, "DNA", true, true)
+			seqhashConstruct, _ := seqhash.Hash(construct, "DNA", true, true)
 			// Check if this construct is unique
 			for _, existingSeqhash := range existingSeqhashes {
 				if existingSeqhash == seqhashConstruct {
