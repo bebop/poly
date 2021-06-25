@@ -72,13 +72,23 @@ const (
 	// been measured at
 	energyParamsMeasurementTemperature float64 = 37.0
 
-	// NoDangles specifies no dangling end energies to be added to energy calcualtions
-	NoDangles = 0
-	// DoubleDangles specifies energies due to dangling ends (on both five and three prime sides)
-	// should be added to energy calcualtions
-	DoubleDangles = 2
+	// NoDanglingEnds = 0
+
+	// DoubleDanglingEnds = 2
 	// DefaultDanglingEndsModel defaults to DoubleDangles
-	DefaultDanglingEndsModel = DoubleDangles
+	// DefaultDanglingEndsModel = DoubleDanglingEnds
+)
+
+type DanglingEndsModel int
+
+const (
+	// NoDanglingEnds specifies no dangling end energies to be added to energy calcualtions
+	NoDanglingEnds DanglingEndsModel = 0
+	// DoubleDanglingEnds specifies energies due to dangling ends (on both five and three prime sides)
+	// should be added to energy calcualtions
+	DoubleDanglingEnds DanglingEndsModel = 2
+	// DefaultDanglingEndsModel defaults to DoubleDangles
+	DefaultDanglingEndsModel = DoubleDanglingEnds
 )
 
 // foldCompound holds all information needed to compute the free energy of a
@@ -90,7 +100,7 @@ type foldCompound struct {
 	encodedSequence     []int                 // Numerical encoding of the sequence (see `encodeSequence()` for more information)
 	pairTable           []int                 // (see `pairTable()`)
 	basePairEncodedType map[byte]map[byte]int // (see `basePairEncodedTypeMap()`)
-	dangleModel         int
+	dangleModel         DanglingEndsModel
 }
 
 // StructuralMotif is a struct to represent the various secondary strcutures
@@ -122,13 +132,13 @@ type StructuralMotifWithEnergy struct {
 //  @param temperature      		Temperature at which to evaluate the free energy
 //															 of the structure
 //  @param danglingEndsModel  	Specify whether to include energy from dangling
-// 															ends (NoDangles or DoubleDangles)
+// 															ends (NoDanglingEnds or DoubleDangles)
 //  @return                 		The free energy of the input structure given the
 // 															input sequence in kcal/mol, and a slice of
 // 															`StructuralMotifWithEnergy` (which gives
 // 															information about the energy contribution of
 // 															each loop present in the secondary structure)
-func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet, danglingEndsModel int) (float64, []StructuralMotifWithEnergy, error) {
+func MinimumFreeEnergy(sequence, structure string, temperature float64, energyParamsSet EnergyParamsSet, danglingEndsModel DanglingEndsModel) (float64, []StructuralMotifWithEnergy, error) {
 	lenSequence := len(sequence)
 	lenStructure := len(structure)
 
@@ -537,10 +547,10 @@ func exteriorLoopEnergy(fc *foldCompound) (int, StructuralMotifWithEnergy) {
 			pairThreePrimeIdx)
 
 		switch fc.dangleModel {
-		case NoDangles:
+		case NoDanglingEnds:
 			energy += exteriorStemEnergy(basePairType, -1, -1, fc.energyParams)
 
-		case DoubleDangles:
+		case DoubleDanglingEnds:
 			var fivePrimeMismatch, threePrimeMismatch int
 			if pairFivePrimeIdx > 0 {
 				fivePrimeMismatch = fc.encodedSequence[pairFivePrimeIdx-1]
@@ -1095,7 +1105,7 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []Structur
 	substructuresEnergy := 0
 
 	switch fc.dangleModel {
-	case NoDangles:
+	case NoDanglingEnds:
 
 		for enclosedFivePrimeIdx < closingThreePrimeIdx {
 			// add up the contributions of the substructures of the multi loop
@@ -1127,7 +1137,7 @@ func multiLoopEnergy(fc *foldCompound, closingFivePrimeIdx int) (int, []Structur
 			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
 		}
 
-	case DoubleDangles:
+	case DoubleDanglingEnds:
 
 		// add energy due to closing pair of multi-loop
 		// vivek: Is this a bug? Why are the five and three prime mismatches opposite?
