@@ -19,8 +19,8 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseGbk takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func ParseGbk(file []byte) poly.Sequence {
+// Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
+func Parse(file []byte) poly.Sequence {
 
 	gbk := string(file)
 	lines := strings.Split(gbk, "\n")
@@ -208,15 +208,15 @@ func BuildGbk(sequence poly.Sequence) []byte {
 	return gbkString.Bytes()
 }
 
-// ReadGbk reads a Gbk from path and parses into an Annotated sequence struct.
-func ReadGbk(path string) poly.Sequence {
+// Read reads a Gbk from path and parses into an Annotated sequence struct.
+func Read(path string) poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
-	sequence := ParseGbk(file)
+	sequence := Parse(file)
 	return sequence
 }
 
-// WriteGbk takes an Sequence struct and a path string and writes out a gff to that path.
-func WriteGbk(sequence poly.Sequence, path string) {
+// Write takes an Sequence struct and a path string and writes out a gff to that path.
+func Write(sequence poly.Sequence, path string) {
 	gbk := BuildGbk(sequence)
 	_ = ioutil.WriteFile(path, gbk, 0644)
 }
@@ -516,7 +516,7 @@ func getFeatures(lines []string) []poly.Feature {
 				break
 			}
 		}
-		feature.SequenceLocation = parseGbkLocation(feature.GbkLocationString)
+		feature.SequenceLocation = ParseLocation(feature.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -594,7 +594,7 @@ func getSequence(subLines []string) string {
 	return sequence
 }
 
-func parseGbkLocation(locationString string) poly.Location {
+func ParseLocation(locationString string) poly.Location {
 	var location poly.Location
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
@@ -629,15 +629,15 @@ func parseGbkLocation(locationString string) poly.Location {
 						ParenthesesCount--
 					}
 				}
-				location.SubLocations = append(location.SubLocations, parseGbkLocation(expression[:firstInnerParentheses+comma+1]), parseGbkLocation(expression[2+firstInnerParentheses+comma:]))
+				location.SubLocations = append(location.SubLocations, ParseLocation(expression[:firstInnerParentheses+comma+1]), ParseLocation(expression[2+firstInnerParentheses+comma:]))
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
-					location.SubLocations = append(location.SubLocations, parseGbkLocation(numberRange))
+					location.SubLocations = append(location.SubLocations, ParseLocation(numberRange))
 				}
 			}
 
 		case "complement":
-			subLocation := parseGbkLocation(expression)
+			subLocation := ParseLocation(expression)
 			subLocation.Complement = true
 			location.SubLocations = append(location.SubLocations, subLocation)
 		}
@@ -758,8 +758,8 @@ Genbank Flat specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseGbkMulti parses multiple Genbank files in a byte array to multiple sequences
-func ParseGbkMulti(file []byte) []poly.Sequence {
+// ParseMulti parses multiple Genbank files in a byte array to multiple sequences
+func ParseMulti(file []byte) []poly.Sequence {
 
 	gbk := string(file)
 	genbankFiles := strings.SplitAfter(gbk, "//\n")
@@ -769,20 +769,20 @@ func ParseGbkMulti(file []byte) []poly.Sequence {
 	genbankFiles = genbankFiles[:len(genbankFiles)-1]
 
 	//Iterate through each genbankFile in genbankFiles list and Parse it
-	//using the ParseGbk function. Return output.
+	//using the Parse function. Return output.
 	var sequences []poly.Sequence
 	for _, f := range genbankFiles {
-		sequences = append(sequences, ParseGbk([]byte(f)))
+		sequences = append(sequences, Parse([]byte(f)))
 	}
 
 	return sequences
 
 }
 
-// ParseGbkFlat specifically takes the output of a Genbank Flat file that from
+// ParseFlat specifically takes the output of a Genbank Flat file that from
 // the genbank ftp dumps. These files have 10 line headers, which are entirely
 // removed
-func ParseGbkFlat(file []byte) []poly.Sequence {
+func ParseFlat(file []byte) []poly.Sequence {
 
 	gbk := string(file)
 
@@ -791,33 +791,33 @@ func ParseGbkFlat(file []byte) []poly.Sequence {
 	// application. Header data is not needed to parse the Genbank files, though
 	gbkWithoutHeader := []byte(strings.Join(strings.Split(gbk, "\n")[10:], "\n"))
 
-	// Pass gbkWithoutHeader to ParseGbkMulti, which should handle
+	// Pass gbkWithoutHeader to ParseMulti, which should handle
 	// the rest of the parsing just fine
-	sequences := ParseGbkMulti(gbkWithoutHeader)
+	sequences := ParseMulti(gbkWithoutHeader)
 	return sequences
 }
 
-// ReadGbkMulti reads multiple genbank files from a single file
-func ReadGbkMulti(path string) []poly.Sequence {
+// ReadMulti reads multiple genbank files from a single file
+func ReadMulti(path string) []poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
-	sequences := ParseGbkMulti(file)
+	sequences := ParseMulti(file)
 	return sequences
 }
 
-// ReadGbkFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
-func ReadGbkFlat(path string) []poly.Sequence {
+// ReadFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
+func ReadFlat(path string) []poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
-	sequences := ParseGbkFlat(file)
+	sequences := ParseFlat(file)
 	return sequences
 }
 
-// ReadGbkFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
-func ReadGbkFlatGz(path string) []poly.Sequence {
+// ReadFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
+func ReadFlatGz(path string) []poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
 	rdata := bytes.NewReader(file)
 	r, _ := gzip.NewReader(rdata)
 	s, _ := ioutil.ReadAll(r)
-	sequences := ParseGbkFlat(s)
+	sequences := ParseFlat(s)
 	return sequences
 }
 

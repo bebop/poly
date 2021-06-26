@@ -1,4 +1,4 @@
-package json
+package pson
 
 import (
 	"fmt"
@@ -21,34 +21,34 @@ JSON related tests begin here.
 
 ******************************************************************************/
 
-func ExampleReadJSON() {
-	sequence := ReadJSON("data/sample.json")
+func ExampleRead() {
+	sequence := Read("../../data/sample.json")
 
 	fmt.Println(sequence.Meta.Source)
 	//output: Saccharomyces cerevisiae (baker's yeast)
 }
 
-func ExampleParseJSON() {
-	file, _ := ioutil.ReadFile("data/sample.json")
-	sequence := ParseJSON(file)
+func ExampleParse() {
+	file, _ := ioutil.ReadFile("../../data/sample.json")
+	sequence := Parse(file)
 
 	fmt.Println(sequence.Meta.Source)
 	//output: Saccharomyces cerevisiae (baker's yeast)
 }
 
-func ExampleWriteJSON() {
+func ExampleWrite() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequence := ReadJSON("data/sample.json")
+	sequence := Read("../../data/sample.json")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	WriteJSON(sequence, tmpJSONFilePath)
+	Write(sequence, tmpJSONFilePath)
 
-	testSequence := ReadJSON(tmpJSONFilePath)
+	testSequence := Read(tmpJSONFilePath)
 
 	fmt.Println(testSequence.Meta.Source)
 	//output: Saccharomyces cerevisiae (baker's yeast)
@@ -61,12 +61,12 @@ func TestGbkToJSON(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	testSequence := genbank.ReadGbk("data/puc19.gbk")
+	testSequence := genbank.Read("../../data/puc19.gbk")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "puc19.json")
-	WriteJSON(testSequence, tmpJSONFilePath)
+	Write(testSequence, tmpJSONFilePath)
 
-	readTestSequence := ReadJSON(tmpJSONFilePath)
+	readTestSequence := Read(tmpJSONFilePath)
 
 	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
@@ -80,12 +80,12 @@ func TestGffToJSON(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	gffTestSequence := gff.ReadGff("data/ecoli-mg1655-short.gff")
+	gffTestSequence := gff.Read("../../data/ecoli-mg1655-short.gff")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.json")
-	WriteJSON(gffTestSequence, tmpJSONFilePath)
+	Write(gffTestSequence, tmpJSONFilePath)
 
-	gffReadTestSequence := ReadJSON(tmpJSONFilePath)
+	gffReadTestSequence := Read(tmpJSONFilePath)
 
 	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)

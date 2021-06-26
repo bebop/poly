@@ -12,6 +12,9 @@ import (
 	"sync"
 
 	"github.com/TimothyStiles/poly"
+	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/gff"
+	"github.com/TimothyStiles/poly/io/pson"
 	"github.com/urfave/cli/v2"
 )
 
@@ -218,9 +221,9 @@ func parseStdin(c *cli.Context) poly.Sequence {
 	if c.String("i") == "json" {
 		_ = json.Unmarshal([]byte(stdinToBytes(c.App.Reader)), &sequence)
 	} else if c.String("i") == "gbk" || c.String("i") == "gb" {
-		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
+		sequence = genbank.Parse(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
-		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
+		sequence = gff.Parse(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -232,9 +235,9 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 	if flag == "json" {
 		_ = json.Unmarshal(file, &sequence)
 	} else if flag == "gbk" || flag == "gb" {
-		sequence = poly.ParseGbk(file)
+		sequence = genbank.Parse(file)
 	} else if flag == "gff" {
-		sequence = poly.ParseGff(file)
+		sequence = gff.Parse(file)
 	}
 	return sequence
 }
@@ -280,9 +283,9 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 	if c.String("o") == "json" {
 		output, _ = json.MarshalIndent(sequence, "", " ")
 	} else if c.String("o") == "gff" {
-		output = poly.BuildGff(sequence)
+		output = gff.Build(sequence)
 	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-		output = poly.BuildGbk(sequence)
+		output = genbank.BuildGbk(sequence)
 	}
 	return output
 }
@@ -304,11 +307,11 @@ func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
 	if match == outputPath {
 		fmt.Fprintln(c.App.Writer, "WARNING: "+"input path and output path match. File: "+match+". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.")
 	} else if outputExtension == "json" {
-		poly.WriteJSON(sequence, outputPath)
+		pson.Write(sequence, outputPath)
 	} else if outputExtension == "gff" {
-		poly.WriteGff(sequence, outputPath)
+		gff.Write(sequence, outputPath)
 	} else if outputExtension == "gbk" || c.String("o") == "gb" {
-		poly.WriteGbk(sequence, outputPath)
+		genbank.Write(sequence, outputPath)
 	}
 }
 
@@ -327,11 +330,11 @@ func parseExt(match string) poly.Sequence {
 
 	// determining which reader to use and parse into Sequence struct.
 	if extension == ".gff" {
-		sequence = poly.ReadGff(match)
+		sequence = gff.Read(match)
 	} else if extension == ".gbk" || extension == ".gb" {
-		sequence = poly.ReadGbk(match)
+		sequence = genbank.Read(match)
 	} else if extension == ".json" {
-		sequence = poly.ReadJSON(match)
+		sequence = pson.Read(match)
 	}
 	return sequence
 }

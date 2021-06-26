@@ -12,8 +12,8 @@ import (
 	"github.com/TimothyStiles/poly"
 )
 
-// ParseGff Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func ParseGff(file []byte) poly.Sequence {
+// Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
+func Parse(file []byte) poly.Sequence {
 
 	gff := string(file)
 	sequence := poly.Sequence{}
@@ -79,8 +79,8 @@ func ParseGff(file []byte) poly.Sequence {
 	return sequence
 }
 
-// BuildGff takes an Annotated sequence and returns a byte array representing a gff to be written out.
-func BuildGff(sequence poly.Sequence) []byte {
+// Build takes an Annotated sequence and returns a byte array representing a gff to be written out.
+func Build(sequence poly.Sequence) []byte {
 	var gffBuffer bytes.Buffer
 
 	var versionString string
@@ -196,15 +196,15 @@ func BuildGff(sequence poly.Sequence) []byte {
 	return gffBuffer.Bytes()
 }
 
-// ReadGff takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
-func ReadGff(path string) poly.Sequence {
+// Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
+func Read(path string) poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
-	sequence := ParseGff(file)
+	sequence := Parse(file)
 	return sequence
 }
 
-// WriteGff takes an poly.Sequence struct and a path string and writes out a gff to that path.
-func WriteGff(sequence poly.Sequence, path string) {
-	gff := BuildGff(sequence)
+// Write takes an poly.Sequence struct and a path string and writes out a gff to that path.
+func Write(sequence poly.Sequence, path string) {
+	gff := Build(sequence)
 	_ = ioutil.WriteFile(path, gff, 0644)
 }

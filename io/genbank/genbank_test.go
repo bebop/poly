@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/TimothyStiles/poly"
-	"github.com/TimothyStiles/poly/io/json"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -20,42 +19,42 @@ Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
 
-func ExampleReadGbk() {
-	sequence := ReadGbk("../../data/puc19.gbk")
+func ExampleRead() {
+	sequence := Read("../../data/puc19.gbk")
 	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
-func ExampleParseGbk() {
+func ExampleParse() {
 	file, _ := ioutil.ReadFile("../../data/puc19.gbk")
-	sequence := ParseGbk(file)
+	sequence := Parse(file)
 
 	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
 func ExampleBuildGbk() {
-	sequence := ReadGbk("../../data/puc19.gbk")
+	sequence := Read("../../data/puc19.gbk")
 	gbkBytes := BuildGbk(sequence)
-	testSequence := ParseGbk(gbkBytes)
+	testSequence := Parse(gbkBytes)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
-func ExampleWriteGbk() {
+func ExampleWrite() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequence := ReadGbk("../../data/puc19.gbk")
+	sequence := Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	WriteGbk(sequence, tmpGbkFilePath)
+	Write(sequence, tmpGbkFilePath)
 
-	testSequence := ReadGbk(tmpGbkFilePath)
+	testSequence := Read(tmpGbkFilePath)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -68,18 +67,18 @@ func TestGbkIO(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	gbk := ReadGbk("../../data/puc19.gbk")
+	gbk := Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	WriteGbk(gbk, tmpGbkFilePath)
+	Write(gbk, tmpGbkFilePath)
 
-	writeTestGbk := ReadGbk(tmpGbkFilePath)
+	writeTestGbk := Read(tmpGbkFilePath)
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
 	// Test multiline Genbank features
-	pichia := ReadGbk("../../data/pichia_chr1_head.gb")
+	pichia := Read("../../data/pichia_chr1_head.gb")
 	var multilineOutput string
 	for _, feature := range pichia.Features {
 		multilineOutput = feature.GbkLocationString
@@ -96,7 +95,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGbk := ReadGbk("../../data/sample.gbk")
+	scrubbedGbk := Read("../../data/sample.gbk")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGbk.Features {
@@ -104,13 +103,13 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	}
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "../../sample.gbk")
-	WriteGbk(scrubbedGbk, tmpGbkFilePath)
+	Write(scrubbedGbk, tmpGbkFilePath)
 
-	testInputGbk := ReadGbk("../../data/sample.gbk")
-	testOutputGbk := ReadGbk(tmpGbkFilePath)
+	testInputGbk := Read("../../data/sample.gbk")
+	testOutputGbk := Read(tmpGbkFilePath)
 
 	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
 
@@ -121,7 +120,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGb := ReadGbk("../../data/t4_intron.gb")
+	scrubbedGb := Read("../../data/t4_intron.gb")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGb.Features {
@@ -129,39 +128,30 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
-	WriteGbk(scrubbedGb, tmpGbFilePath)
+	Write(scrubbedGb, tmpGbFilePath)
 
-	testInputGb := ReadGbk("../../data/t4_intron.gb")
-	testOutputGb := ReadGbk(tmpGbFilePath)
+	testInputGb := Read("../../data/t4_intron.gb")
+	testOutputGb := Read(tmpGbFilePath)
 
 	if diff := cmp.Diff(testInputGb, testOutputGb, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk(). Got this diff:\n%s", diff)
+		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
 
 func TestPartialLocationParseRegression(t *testing.T) {
-	gbk := ReadGbk("../../data/sample.gbk")
+	gbk := Read("../../data/sample.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.GbkLocationString == "687..3158>" && (feature.SequenceLocation.Start != 686 || feature.SequenceLocation.End != 3158) {
-			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk()")
+			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read()")
 		} else if feature.GbkLocationString == "<1..206" && (feature.SequenceLocation.Start != 0 || feature.SequenceLocation.End != 206) {
-			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with ReadGbk().")
+			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read().")
 		}
 	}
 }
 
-func TestLocusParseRegression(t *testing.T) {
-	gbk := ReadGbk("../../data/puc19.gbk").Meta.Locus
-	json := json.ReadJSON("../../data/puc19static.json").Meta.Locus
-
-	if diff := cmp.Diff(gbk, json, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
-	}
-}
-
 func TestSnapgeneGenbankRegression(t *testing.T) {
-	snapgene := ReadGbk("../../data/puc19_snapgene.gb")
+	snapgene := Read("../../data/puc19_snapgene.gb")
 
 	if snapgene.Sequence == "" {
 		t.Errorf("Parsing snapgene returned an empty string")
@@ -170,7 +160,7 @@ func TestSnapgeneGenbankRegression(t *testing.T) {
 
 func TestGetSequenceMethods(t *testing.T) {
 
-	gbk := ReadGbk("../../data/t4_intron.gb")
+	gbk := Read("../../data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Annotated struct
 	if gbk.GetSequence() != gbk.Sequence {
@@ -192,7 +182,7 @@ func TestGetSequenceMethods(t *testing.T) {
 }
 
 func TestLocationParser(t *testing.T) {
-	gbk := ReadGbk("../../data/t4_intron.gb")
+	gbk := Read("../../data/t4_intron.gb")
 
 	// Read 1..243
 	feature := gbk.Features[1].GetSequence()
@@ -235,7 +225,7 @@ func TestLocationParser(t *testing.T) {
 }
 
 func TestGenbankNewlineParsingRegression(t *testing.T) {
-	gbk := ReadGbk("../../data/puc19.gbk")
+	gbk := Read("../../data/puc19.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.SequenceLocation.Start == 410 && feature.SequenceLocation.End == 1750 && feature.Type == "CDS" {
@@ -247,17 +237,17 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	}
 }
 
-func BenchmarkReadGbk(b *testing.B) {
+func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ReadGbk("../../data/bsub.gbk")
+		Read("../../data/bsub.gbk")
 	}
 }
 
-func BenchmarkReadGbk1(b *testing.B)     { BenchmarkReadGbk(b) }
-func BenchmarkReadGbk10(b *testing.B)    { BenchmarkReadGbk(b) }
-func BenchmarkReadGbk100(b *testing.B)   { BenchmarkReadGbk(b) }
-func BenchmarkReadGbk1000(b *testing.B)  { BenchmarkReadGbk(b) }
-func BenchmarkReadGbk10000(b *testing.B) { BenchmarkReadGbk(b) }
+func BenchmarkRead1(b *testing.B)     { BenchmarkRead(b) }
+func BenchmarkRead10(b *testing.B)    { BenchmarkRead(b) }
+func BenchmarkRead100(b *testing.B)   { BenchmarkRead(b) }
+func BenchmarkRead1000(b *testing.B)  { BenchmarkRead(b) }
+func BenchmarkRead10000(b *testing.B) { BenchmarkRead(b) }
 
 /******************************************************************************
 
@@ -271,8 +261,8 @@ GbkMulti/GbkFlat related tests begin here.
 
 ******************************************************************************/
 
-func ExampleReadGbkMulti() {
-	sequences := ReadGbkMulti("../../data/multiGbk_test.seq")
+func ExampleReadMulti() {
+	sequences := ReadMulti("../../data/multiGbk_test.seq")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -282,8 +272,8 @@ func ExampleReadGbkMulti() {
 	// Output: AB000100, AB000106
 }
 
-func ExampleReadGbkFlat() {
-	sequences := ReadGbkFlat("../../data/long_comment.seq")
+func ExampleReadFlat() {
+	sequences := ReadFlat("../../data/long_comment.seq")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -293,9 +283,9 @@ func ExampleReadGbkFlat() {
 	// Output: AB000100, AB000106
 }
 
-func ExampleReadGbkFlatGz() {
-	sequences := ReadGbkFlatGz("../../data/flatGbk_test.seq.gz")
-	//sequences := ReadGbkFlatGz("../../data/gbbct358.seq.gz")
+func ExampleReadFlatGz() {
+	sequences := ReadFlatGz("../../data/flatGbk_test.seq.gz")
+	//sequences := ReadFlatGz("../../data/gbbct358.seq.gz")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -304,9 +294,9 @@ func ExampleReadGbkFlatGz() {
 	// Output: AB000100, AB000106
 }
 
-func ExampleParseGbkMulti() {
+func ExampleParseMulti() {
 	file, _ := ioutil.ReadFile("../../data/multiGbk_test.seq")
-	sequences := ParseGbkMulti(file)
+	sequences := ParseMulti(file)
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -316,9 +306,9 @@ func ExampleParseGbkMulti() {
 	// Output: AB000100, AB000106
 }
 
-func ExampleParseGbkFlat() {
+func ExampleParseFlat() {
 	file, _ := ioutil.ReadFile("../../data/flatGbk_test.seq")
-	sequences := ParseGbkFlat(file)
+	sequences := ParseFlat(file)
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
