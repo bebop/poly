@@ -52,7 +52,7 @@ func TestSantaLucia(t *testing.T) {
 func TestSantaLuciaReverseComplement(t *testing.T) {
 	testSeq := "ACGTAGATCTACGT" //"GTAAAACGACGGCCAGT" // M13 fwd
 
-	testReverseComplement := reverse.ReverseComplement(testSeq)
+	testReverseComplement := reverse.Complement(testSeq)
 	if testSeq != testReverseComplement {
 		t.Errorf("Input is not a reverse complement of it's. Got %q instead of %q", testSeq, testReverseComplement)
 	}
@@ -121,7 +121,7 @@ func TestCreateBarcode(t *testing.T) {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 
-	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{reverse.ReverseComplement("GGCCGCGCCCC")}, []func(string) bool{})
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{reverse.Complement("GGCCGCGCCCC")}, []func(string) bool{})
 	output = barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)

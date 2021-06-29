@@ -139,7 +139,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 
 	// reverse complements resulting string if needed.
 	if location.Complement {
-		sequenceString = reverse.ReverseComplement(sequenceBuffer.String())
+		sequenceString = reverse.Complement(sequenceBuffer.String())
 	} else {
 		sequenceString = sequenceBuffer.String()
 	}

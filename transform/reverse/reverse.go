@@ -38,8 +38,8 @@ var complementBaseRuneMap = map[rune]rune{
 	121: 114, // y -> r
 }
 
-// ReverseComplement takes the reverse complement of a sequence
-func ReverseComplement(sequence string) string {
+// Complement takes the reverse complement of a sequence
+func Complement(sequence string) string {
 	complementString := strings.Map(ComplementBase, sequence)
 	n := len(complementString)
 	newString := make([]rune, n)

@@ -178,13 +178,13 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	var deterministicSequence string
 	switch {
 	case circular && doubleStranded:
-		potentialSequences := []string{RotateSequence(sequence), RotateSequence(reverse.ReverseComplement(sequence))}
+		potentialSequences := []string{RotateSequence(sequence), RotateSequence(reverse.Complement(sequence))}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case circular && !doubleStranded:
 		deterministicSequence = RotateSequence(sequence)
 	case !circular && doubleStranded:
-		potentialSequences := []string{sequence, reverse.ReverseComplement(sequence)}
+		potentialSequences := []string{sequence, reverse.Complement(sequence)}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case !circular && !doubleStranded:

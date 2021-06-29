@@ -58,7 +58,7 @@ func SantaLucia(sequence string, primerConcentration, saltConcentration, magnesi
 	dH += initialThermodynamicPenalty.H
 	dS += initialThermodynamicPenalty.S
 	// apply symmetry penalty if sequence is self-complementary
-	if sequence == reverse.ReverseComplement(sequence) {
+	if sequence == reverse.Complement(sequence) {
 		dH += symmetryThermodynamicPenalty.H
 		dS += symmetryThermodynamicPenalty.S
 		symmetryFactor = 1
@@ -256,7 +256,7 @@ func CreateBarcodesWithBannedSequences(length int, maxSubSequence int, bannedSeq
 				barcodeNum++
 			}
 			// Check reverse complement as well for the banned sequence
-			for strings.Contains(debruijn[start:end], reverse.ReverseComplement(bannedSequence)) {
+			for strings.Contains(debruijn[start:end], reverse.Complement(bannedSequence)) {
 				if end+1 > len(debruijn) {
 					return barcodes
 				}
