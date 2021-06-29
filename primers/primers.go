@@ -5,7 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/transformations"
+	"github.com/TimothyStiles/poly/transform/reverse"
 )
 
 // For reference: https://www.sigmaaldrich.com/technical-documents/articles/biology/oligos-melting-temp.html
@@ -58,7 +58,7 @@ func SantaLucia(sequence string, primerConcentration, saltConcentration, magnesi
 	dH += initialThermodynamicPenalty.H
 	dS += initialThermodynamicPenalty.S
 	// apply symmetry penalty if sequence is self-complementary
-	if sequence == transformations.ReverseComplement(sequence) {
+	if sequence == reverse.ReverseComplement(sequence) {
 		dH += symmetryThermodynamicPenalty.H
 		dS += symmetryThermodynamicPenalty.S
 		symmetryFactor = 1
@@ -256,7 +256,7 @@ func CreateBarcodesWithBannedSequences(length int, maxSubSequence int, bannedSeq
 				barcodeNum++
 			}
 			// Check reverse complement as well for the banned sequence
-			for strings.Contains(debruijn[start:end], transformations.ReverseComplement(bannedSequence)) {
+			for strings.Contains(debruijn[start:end], reverse.ReverseComplement(bannedSequence)) {
 				if end+1 > len(debruijn) {
 					return barcodes
 				}

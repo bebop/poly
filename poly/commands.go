@@ -15,6 +15,7 @@ import (
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/io/gff"
 	"github.com/TimothyStiles/poly/io/pson"
+	"github.com/TimothyStiles/poly/seqhash"
 	"github.com/urfave/cli/v2"
 )
 
@@ -146,7 +147,7 @@ func hashCommand(c *cli.Context) error {
 
 	if isPipe(c) {
 		sequence := parseStdin(c) // get sequence from stdin
-		hash, _ := sequence.Hash()
+		hash, _ := seqhash.Hash(sequence.Sequence, sequence.Meta.Locus.MoleculeType, sequence.Meta.Locus.Circular, true)
 		printHash(c, hash, "-")
 
 	} else {
@@ -169,7 +170,7 @@ func hashCommand(c *cli.Context) error {
 			// executing Go routine.
 			go func(match string) {
 				sequence := parseExt(match)
-				hash, _ := sequence.Hash()
+				hash, _ := seqhash.Hash(sequence.Sequence, sequence.Meta.Locus.MoleculeType, sequence.Meta.Locus.Circular, true)
 				printHash(c, hash, match)
 
 				// decrementing wait group.

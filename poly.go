@@ -2,9 +2,8 @@ package poly
 
 import (
 	"bytes"
-	"strings"
 
-	"github.com/TimothyStiles/poly/transformations"
+	"github.com/TimothyStiles/poly/transform/reverse"
 )
 
 /******************************************************************************
@@ -118,26 +117,6 @@ func (sequence Sequence) GetSequence() string {
 	return sequence.Sequence
 }
 
-// // GetOptimizationTable is a Sequence method that takes a CodonTable and weights it to be used to optimize inserts.
-// func (sequence Sequence) GetOptimizationTable(codonTable transformations.CodonTable) transformations.CodonTable {
-// 	sequenceString := getCodingRegions(sequence)
-// 	return codonTable.OptimizeTable(sequenceString)
-// }
-
-// helper function to pull coding regions out of an Sequence
-func getCodingRegions(sequence Sequence) string {
-	// pick out the each coding region in the Sequence and add it to the sequence Builder
-	var sequenceBuilder strings.Builder
-
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequenceBuilder.WriteString(feature.GetSequence())
-		}
-	}
-
-	return sequenceBuilder.String()
-}
-
 // GetSequence is a method wrapper to get a Feature's sequence. Mutates with Sequence.
 func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.SequenceLocation)
@@ -160,7 +139,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 
 	// reverse complements resulting string if needed.
 	if location.Complement {
-		sequenceString = transformations.ReverseComplement(sequenceBuffer.String())
+		sequenceString = reverse.ReverseComplement(sequenceBuffer.String())
 	} else {
 		sequenceString = sequenceBuffer.String()
 	}
