@@ -57,8 +57,8 @@ in multiple places (Type IIG enzymes) such as BcgI.
 
 ******************************************************************************/
 
-// CloneSequence is a simple struct that can carry a circular or linear DNA sequence.
-type CloneSequence struct {
+// Vector is a simple struct that can carry a circular or linear DNA sequence.
+type Vector struct {
 	Sequence string
 	Circular bool
 }
@@ -110,7 +110,7 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
 // allows us to specify the enzyme by name.
-func CutWithEnzymeByName(seq CloneSequence, directional bool, enzymeStr string) ([]Fragment, error) {
+func CutWithEnzymeByName(seq Vector, directional bool, enzymeStr string) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; !ok {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
@@ -120,7 +120,7 @@ func CutWithEnzymeByName(seq CloneSequence, directional bool, enzymeStr string) 
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
-func CutWithEnzyme(seq CloneSequence, directional bool, enzyme Enzyme) []Fragment {
+func CutWithEnzyme(seq Vector, directional bool, enzyme Enzyme) []Fragment {
 	var fragmentSeqs []string
 	var sequence string
 	if seq.Circular {
@@ -254,8 +254,8 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 	}
 }
 
-func getConstructs(c chan string, constructSequences chan []CloneSequence) {
-	var constructs []CloneSequence
+func getConstructs(c chan string, constructSequences chan []Vector) {
+	var constructs []Vector
 	var exists bool
 	var existingSeqhashes []string
 	for {
@@ -270,7 +270,7 @@ func getConstructs(c chan string, constructSequences chan []CloneSequence) {
 				}
 			}
 			if !exists {
-				constructs = append(constructs, CloneSequence{construct, true})
+				constructs = append(constructs, Vector{construct, true})
 				existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
 			}
 		} else {
@@ -282,11 +282,11 @@ func getConstructs(c chan string, constructSequences chan []CloneSequence) {
 }
 
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
-func CircularLigate(fragments []Fragment) []CloneSequence {
+func CircularLigate(fragments []Fragment) []Vector {
 	var wg sync.WaitGroup
-	var constructs []CloneSequence
+	var constructs []Vector
 	c := make(chan string) //, maxClones) // A buffered channel is needed to prevent blocking.
-	constructSequences := make(chan []CloneSequence)
+	constructSequences := make(chan []Vector)
 	for _, fragment := range fragments {
 		wg.Add(1)
 		go recurseLigate(&wg, c, fragment, fragments)
@@ -306,12 +306,12 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func GoldenGate(sequences []CloneSequence, enzymeStr string) ([]CloneSequence, error) {
+func GoldenGate(sequences []Vector, enzymeStr string) ([]Vector, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
 		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr)
 		if err != nil {
-			return []CloneSequence{}, err
+			return []Vector{}, err
 		}
 		fragments = append(fragments, newFragments...)
 	}
