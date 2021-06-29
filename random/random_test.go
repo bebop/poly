@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func ExampleRandomProteinSequence() {
+func ExampleProteinSequence() {
 	// RandomProteinSequence builds a Protein Sequence by only passing through arguments a length and a seed that will be use to generate a randomly the sequence. The length needs to be greater than two because every sequence already have a start and stop codon. Seed makes this test deterministic.
-	randomProtein, _ := RandomProteinSequence(15, 2)
+	randomProtein, _ := ProteinSequence(15, 2)
 	fmt.Println(randomProtein)
 
 	// Output: MHHPAFRMFNTMYG*
@@ -17,7 +17,7 @@ func ExampleRandomProteinSequence() {
 func TestRandomProteinSequence(t *testing.T) {
 	const length = 10
 	const seed = 2
-	sequence, _ := RandomProteinSequence(length, seed)
+	sequence, _ := ProteinSequence(length, seed)
 
 	if sequence[0] != 'M' {
 		t.Errorf("Random sequence doesn't have the correct initial aminoacid in sequence 'RandomSequence(10, 2)'. Got this: \n%s instead of \n%s", string(sequence[0]), "M")
@@ -36,7 +36,7 @@ func TestRandomProteinSequence(t *testing.T) {
 func TestRandomProteinSequenceError(t *testing.T) {
 	const length = 2
 	const seed = 4
-	sequence, _ := RandomProteinSequence(length, seed)
+	sequence, _ := ProteinSequence(length, seed)
 
 	if len(sequence) != 0 {
 		t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
