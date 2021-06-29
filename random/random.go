@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-//RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
+// ProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
 func ProteinSequence(length int, seed int64) (string, error) {
 	//The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons
 	if length <= 2 {
