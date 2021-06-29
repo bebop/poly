@@ -102,7 +102,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
 	}
 
-	tmpGbkFilePath := filepath.Join(tmpDataDir, "../../sample.gbk")
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
 	Write(scrubbedGbk, tmpGbkFilePath)
 
 	testInputGbk := Read("../../data/sample.gbk")
