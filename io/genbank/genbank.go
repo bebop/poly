@@ -516,7 +516,7 @@ func getFeatures(lines []string) []poly.Feature {
 				break
 			}
 		}
-		feature.SequenceLocation = ParseLocation(feature.GbkLocationString)
+		feature.SequenceLocation = parseLocation(feature.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -594,7 +594,7 @@ func getSequence(subLines []string) string {
 	return sequence
 }
 
-func ParseLocation(locationString string) poly.Location {
+func parseLocation(locationString string) poly.Location {
 	var location poly.Location
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
@@ -629,15 +629,15 @@ func ParseLocation(locationString string) poly.Location {
 						ParenthesesCount--
 					}
 				}
-				location.SubLocations = append(location.SubLocations, ParseLocation(expression[:firstInnerParentheses+comma+1]), ParseLocation(expression[2+firstInnerParentheses+comma:]))
+				location.SubLocations = append(location.SubLocations, parseLocation(expression[:firstInnerParentheses+comma+1]), parseLocation(expression[2+firstInnerParentheses+comma:]))
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
-					location.SubLocations = append(location.SubLocations, ParseLocation(numberRange))
+					location.SubLocations = append(location.SubLocations, parseLocation(numberRange))
 				}
 			}
 
 		case "complement":
-			subLocation := ParseLocation(expression)
+			subLocation := parseLocation(expression)
 			subLocation.Complement = true
 			location.SubLocations = append(location.SubLocations, subLocation)
 		}
