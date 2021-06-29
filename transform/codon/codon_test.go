@@ -31,7 +31,7 @@ func TestTranslation(t *testing.T) {
 
 }
 func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := CodonTable{}
+	emtpyCodonTable := Table{}
 	_, err := Translate("A", emtpyCodonTable)
 
 	if err != errEmtpyCodonTable {
@@ -101,7 +101,7 @@ func TestOptimize(t *testing.T) {
 }
 
 func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := CodonTable{}
+	emtpyCodonTable := Table{}
 	_, err := Optimize("A", emtpyCodonTable)
 
 	if err != errEmtpyCodonTable {
