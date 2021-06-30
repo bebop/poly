@@ -1,4 +1,4 @@
 data/genbank
 public
 node_modules
-rbs_calculator/rbs_analysis/data/processed
+*.DS_Store

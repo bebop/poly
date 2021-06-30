@@ -52,7 +52,7 @@ func run(args []string) {
 func application() *cli.App {
 	inputFlag := cli.StringFlag{
 		Name:  "i",
-		Usage: "Specify file input type. Options are gff, gbk/gb, fasta, and json. For use with pipes.",
+		Usage: "Specify file input type. Options are gff, gbk/gb, and json. For use with pipes.",
 	}
 	outputFlag := cli.StringFlag{
 		Name:  "o",
