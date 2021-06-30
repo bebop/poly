@@ -1,4 +1,4 @@
-package seconday_structure
+package secondary_structure
 
 import "fmt"
 

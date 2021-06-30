@@ -1,4 +1,4 @@
-package seconday_structure
+package secondary_structure
 
 // A RNA's SecondaryStructure is composed of a list of MultiLoops, HairpinLoops,
 // and SingleStrandedRegions. Note that since Go doesn't support inheritance,
