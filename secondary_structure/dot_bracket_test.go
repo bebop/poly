@@ -1,10 +1,10 @@
-package dot_bracket_parser
+package seconday_structure
 
 import "fmt"
 
 func ExampleGetSecondaryStructure() {
 	dotBracket := "..((((...))))...((........)).."
-	annotatedStructure, secondaryStructure := SecondaryStructureFromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure := FromDotBracket(dotBracket)
 	fmt.Println(annotatedStructure)
 	fmt.Println(DotBracket(secondaryStructure, 0) == dotBracket)
 	// Output:
@@ -14,7 +14,7 @@ func ExampleGetSecondaryStructure() {
 
 func ExampleGetSecondaryStructure2() {
 	dotBracket := "(((((((((...((((((.........))))))........((((((.......))))))..)))))))))"
-	annotatedStructure, secondaryStructure := SecondaryStructureFromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure := FromDotBracket(dotBracket)
 	fmt.Println(annotatedStructure)
 	fmt.Println(DotBracket(secondaryStructure, 0) == dotBracket)
 	// Output:
@@ -24,7 +24,7 @@ func ExampleGetSecondaryStructure2() {
 
 func ExampleGetSecondaryStructure3() {
 	dotBracket := "((((.((((......))))((((...))....)).))))"
-	annotatedStructure, secondaryStructure := SecondaryStructureFromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure := FromDotBracket(dotBracket)
 	fmt.Println(annotatedStructure)
 	fmt.Println(DotBracket(secondaryStructure, 0) == dotBracket)
 	// Output:
@@ -34,7 +34,7 @@ func ExampleGetSecondaryStructure3() {
 
 func ExampleGetSecondaryStructure4() {
 	dotBracket := "......((((((.(((..(((((.(((....(((((......)))))..))).))))).)))....))))))..................."
-	annotatedStructure, secondaryStructure := SecondaryStructureFromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure := FromDotBracket(dotBracket)
 	fmt.Println(annotatedStructure)
 	fmt.Println(DotBracket(secondaryStructure, 0) == dotBracket)
 	// Output:
