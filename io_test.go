@@ -1,7 +1,6 @@
 package poly
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -21,7 +20,6 @@ File is structured as so:
 Gff - io tests, and benchmarks.
 Gbk/gb/genbank - benchmarks.
 JSON - io tests.
-FASTA - fasta tests.
 
 ******************************************************************************/
 
@@ -398,84 +396,6 @@ func TestGffToJSON(t *testing.T) {
 /******************************************************************************
 
 JSON related tests end here.
-
-******************************************************************************/
-
-/******************************************************************************
-
-FASTA related tests begin here.
-
-******************************************************************************/
-
-// ExampleReadFASTA shows basic usage for ReadFASTA
-func ExampleReadFASTA() {
-	sequence := ReadFASTA("data/base.fasta")
-	fmt.Println(sequence.Features[0].Description)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-func ExampleParseFASTA() {
-	file, _ := ioutil.ReadFile("data/base.fasta")
-	sequence := ParseFASTA(file)
-
-	fmt.Println(sequence.Features[0].Description)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-func ExampleBuildFASTA() {
-	sequence := ReadFASTA("data/base.fasta") // get example data
-	fasta := BuildFASTA(sequence)            // build a fasta byte array
-	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
-
-	fmt.Println(firstLine)
-	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-func ExampleWriteFASTA() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	sequence := ReadFASTA("data/base.fasta") // get example data
-
-	tmpFASTAFilePath := filepath.Join(tmpDataDir, "base.fasta")
-	WriteFASTA(sequence, tmpFASTAFilePath) // write it out again
-
-	testSequence := ReadFASTA(tmpFASTAFilePath) // read it in again
-
-	fmt.Println(testSequence.Features[0].Description)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-func TestFASTAIO(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	inputFilename := "data/base.fasta"
-	tmpFASTAFilePath := filepath.Join(tmpDataDir, "test.fasta")
-
-	// read FASTA file
-	testSequence := ReadFASTA(inputFilename)
-
-	// write FASTA file
-	WriteFASTA(testSequence, tmpFASTAFilePath)
-
-	// read back and diff
-	readTestSequence := ReadFASTA(tmpFASTAFilePath)
-
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
-	}
-}
-
-/******************************************************************************
-
-FASTA related tests end here.
 
 ******************************************************************************/
 
