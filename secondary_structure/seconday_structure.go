@@ -1,6 +1,7 @@
 package secondary_structure
 
 /******************************************************************************
+July, 01, 2021
 
 This file defines the structs needed to contain information about a RNA's
 secondary structure.
@@ -14,24 +15,6 @@ by a closing and enclosed base pair with the requirement that there are no base
 pairs between the closing and enclosed base pair. A `StemStrcture` is classified
 into a `StemStructureType` based on the number of unpaired nucleotides between
 the closing and enclosed base pairs.
-
-At the end of the `Stem`, a `Hairpin` has a single stranded region that forms
-the actual hairpin. Sometimes a `Hairpin` may only consist of a Stem without
-a single stranded region. In such cases, the `SingleStrandedFivePrimeIdx` and
-`SingleStrandedThreePrimeIdx` of the hairpin are set to `-1`.
-
-Note that `Hairpin`s and `MultiLoop`s stem may not contain any stem structures.
-This occurs in cases where there is only one base pair that delimits a `Hairpin`
-or `MultiLoop`.
-(For example, "eee(hhh)eee" would be a Hairpin (Stem at idx 3 and 7) and
-"ee(mmm((hh))mm)ee" would be a Multiloop (Stem at idx 2 and 14) whose stems
-don't contain any structures)
-In such cases, the Stem will only have its `ClosingFivePrimeIdx` and
-`ClosingThreePrimeIdx` set. The `EnclosedFivePrimeIdx` and
-`EnclosedThreePrimeIdx` will be set to -1, and the list of `StemStructres`
-will be empty.
-
-Note that a `Multiloop` will always contain atleast one substrcture.
 
 ******************************************************************************/
 
@@ -79,9 +62,9 @@ type SingleStrandedRegion struct {
 //
 // Note that a `Stem` may not contain any stem structures. This occurs in cases
 // where there is only one base pair that delimits a `Hairpin` or `MultiLoop`.
-// (For example, "eee(hhh)eee" would be a Hairpin (Stem at idx 3 and 7) and
-// "ee(mmm((hh))mm)ee" would be a Multiloop (Stem at idx 2 and 14) whose stems
-// don't contain any structures)
+// (For example, "eee(hhh)eee" would be a Hairpin (Stem at indexs 3 and 7) and
+// "ee(mmm((hh))mm)ee" would be a Multiloop (Stem at indexs 2 and 14) whose
+// stems don't contain any structures)
 // In such cases, the stem will only have its `ClosingFivePrimeIdx` and
 // `ClosingThreePrimeIdx` set. The `EnclosedFivePrimeIdx` and
 // `EnclosedThreePrimeIdx` will be set to -1, and the list of `StemStructres`
@@ -208,4 +191,22 @@ func (structure *StemStructure) setStructureType() {
 			return
 		}
 	}
+}
+
+// newStemStructure is a wrapper to create a `StemStructure` and call the
+// functions (`(*StemStructure).setStructureType`) required to initalise the
+// struct
+func newStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
+	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {
+
+	stemStructure := StemStructure{
+		ClosingFivePrimeIdx:   closingFivePrimeIdx,
+		EnclosedFivePrimeIdx:  enclosedFivePrimeIdx,
+		EnclosedThreePrimeIdx: enclosedThreePrimeIdx,
+		ClosingThreePrimeIdx:  closingThreePrimeIdx,
+	}
+
+	stemStructure.setStructureType()
+
+	return stemStructure
 }

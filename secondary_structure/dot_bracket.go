@@ -6,38 +6,76 @@ import (
 )
 
 /******************************************************************************
+July, 01, 2021
+
+This file defines the structs and functions needed to get the 'annotated'
+structure and `SecondaryStructure` of a RNA from its 'dot-bracket' notation.
+
+'Dot-bracket' notation of a secondary structure is a string where each
+character represents a base. Unpaired nucleotides are represented with a '.'
+and base pairs are represented by paranthesis. '(' denotes the opening base
+and ')' denotes the closing base of a base pair.
+For example, "..((..)).." denotes a hairpin where the bases at index 2 and 7,
+and at index 3 and 6 are paired.
+
+'Annotated' structure of a secondary structure is a string where each
+character represents a base. In this notation, unpaired nucleotides are set
+to a character depending on what part of the secondary structure is in.
+The character mapping for the unpaired nucleotides is:
+* On the exterior part of a RNA structure (not part of any loop): 'e'
+* On the single stranded region of a hairpin: 'h'
+* On a single stranded region of a multiloop: 'm'
+* Part of an interior loop in a stem of a hairpin or multiloop: 'i'
+For example, "..((..)).." would have an annotated structure of "ee((hh))ee".
+Note that the paranthesis surrounding one or more 'h' or 'm' characters form
+the stem of that hairpin or multiloop respectively. Thus, in the example above,
+the bases at index 2, 3, 6, and 7 form the stem of the hairpin loop enclosed
+by the bases at index 3 and 6.
 
  ******************************************************************************/
 
-// parseCompound holds all information needed to compute the free energy of a
-// RNA secondary structure (a RNA sequence along with its folded structure).
+const (
+	dotBracketUnpairedNucleotide       byte = '.'
+	dotBracketStemFivePrimeNucleotide  byte = '('
+	dotBracketStemThreePrimeNucleotide byte = ')'
+
+	exteriorLoopUnpairedNucleotide          byte = 'e'
+	interiorLoopUnpairedNucleotide          byte = 'i'
+	hairpinLoopNucleotide                   byte = 'h'
+	multiLoopSingleStrandedRegionNucleotide byte = 'm'
+)
+
+// parseCompound holds all information needed to compute the annotated structure
+// and `SecondaryStructure` of a RNA sequence
 type parseCompound struct {
 	length             int   // length of `sequence`
 	pairTable          []int // (see `pairTable()`)
 	annotatedStructure []byte
 }
 
-func FromDotBracket(dotBracketStructure string) (string, SecondaryStructure) {
-	err := ensureValidAnnotatedStructure(dotBracketStructure)
+// FromDotBracket returns the annotated structure and `SecondaryStructure` of
+// a RNA sequence from its 'dot-bracket' structure.
+func FromDotBracket(dotBracketStructure string) (string, *SecondaryStructure, error) {
+	err := ensureValidDotBracketStructure(dotBracketStructure)
 	if err != nil {
-		panic(err)
+		return "", nil, err
 	}
 
 	pairTable, err := pairTable(dotBracketStructure)
 	if err != nil {
-		panic(err)
+		return "", nil, err
 	}
 
 	lenStructure := len(dotBracketStructure)
-	fc := &parseCompound{
+	pc := &parseCompound{
 		length:             lenStructure,
 		pairTable:          pairTable,
 		annotatedStructure: make([]byte, lenStructure),
 	}
 
-	secondaryStructure := evaluateParseCompound(fc)
+	secondaryStructure := evaluateParseCompound(pc)
 
-	return string(fc.annotatedStructure), secondaryStructure
+	return string(pc.annotatedStructure), &secondaryStructure, nil
 }
 
 /**
@@ -98,40 +136,31 @@ func pairTable(structure string) ([]int, error) {
 	return pairTable, nil
 }
 
-func ensureValidAnnotatedStructure(structure string) error {
-	annotatedStructureRegex, _ := regexp.Compile("^[().]+")
-	structureIdxs := annotatedStructureRegex.FindStringIndex(structure)
+func ensureValidDotBracketStructure(structure string) error {
+	dotBracketStructureRegex, _ := regexp.Compile("^[().]+")
+	structureIdxs := dotBracketStructureRegex.FindStringIndex(structure)
 
-	if structureIdxs[0] != 0 || structureIdxs[1] != len(structure) {
-		return fmt.Errorf("found invalid characters in structure. Only annotated structure notation allowed")
+	if len(structureIdxs) == 0 || structureIdxs[0] != 0 || structureIdxs[1] != len(structure) {
+		return fmt.Errorf("found invalid characters in structure. Only dot-bracket notation allowed")
 	}
 	return nil
 }
 
-var (
-	exteriorLoopUnpairedNucleotide byte = 'e'
-	interiorLoopUnpairedNucleotide byte = 'i'
-	hairpinLoopNucleotide          byte = 'h'
-	multiLoopNucleotide            byte = 'm'
-	fivePrimeStemNucleotide        byte = '('
-	threePrimeStemNucleotide       byte = ')'
-)
-
-func evaluateParseCompound(fc *parseCompound) SecondaryStructure {
+func evaluateParseCompound(pc *parseCompound) SecondaryStructure {
 	secondaryStructures := make([]interface{}, 0)
 
-	// get structure of exterior loop
-	exteriorLoopStructure(fc)
-
-	annotatedStructure := fc.annotatedStructure
+	pairTable := pc.pairTable
 	lenExteriorLoop := 0
-	for i := 0; i < fc.length; i++ {
-		if annotatedStructure[i] == exteriorLoopUnpairedNucleotide {
+	for i := 0; i < pc.length; i++ {
+		if pairTable[i] == -1 {
+			pc.annotatedStructure[i] = exteriorLoopUnpairedNucleotide
 			lenExteriorLoop++
 			continue
 		}
 
 		if lenExteriorLoop != 0 {
+			// add single stranded region of exterior loop to structures and reset
+			// lenExteriorLoop for next iteration of for-loop
 			ssr := SingleStrandedRegion{
 				FivePrimeIdx:  i - lenExteriorLoop,
 				ThreePrimeIdx: i - 1,
@@ -140,137 +169,109 @@ func evaluateParseCompound(fc *parseCompound) SecondaryStructure {
 			lenExteriorLoop = 0
 		}
 
-		structures := stackEnergy(fc, i)
+		structures := evaluateLoop(pc, i)
 		secondaryStructures = append(secondaryStructures, structures)
+
 		// seek to end of current loop
-		i = fc.pairTable[i]
+		i = pairTable[i]
 	}
 
+	// add the single stranded region at the three prime end (if it exists)
 	if lenExteriorLoop != 0 {
 		ssr := SingleStrandedRegion{
-			FivePrimeIdx:  fc.length - lenExteriorLoop,
-			ThreePrimeIdx: fc.length - 1,
+			FivePrimeIdx:  pc.length - lenExteriorLoop,
+			ThreePrimeIdx: pc.length - 1,
 		}
 		secondaryStructures = append(secondaryStructures, ssr)
 	}
 
 	return SecondaryStructure{
 		Structures: secondaryStructures,
-		Length:     fc.length,
+		Length:     pc.length,
 	}
 }
 
-/**
-* Calculate the energy contribution of stabilizing dangling-ends/mismatches
-* for all stems branching off the exterior loop.
-* For example, if the structure is
-* Structure: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
-* Index:       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-* then the exterior loops in the structure are as follows: (2, 12) and (16, 27).
-* See `exteriorStemEnergy()` for information of how exterior loops are evaluated.
-* More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
- */
-func exteriorLoopStructure(fc *parseCompound) {
-	pairTable := fc.pairTable
-	length := fc.length
-	pairFivePrimeIdx := 0
+// evaluateLoop evaluates and returns the loop enclosed by (closingFivePrimeIdx,
+// closingThreePrimeIdx) which can be either a `Hairpin` or `MultiLoop`.
+//
+// evaluateLoop proceeds in a stack-wise manner from the closing base pair of
+// a stem till the enclosing base pair of the stem. While iterating from the
+// closing base pair to the enclosed base pair, each substructure of the
+// stem is categoried and added to the list of substructures of the stem.
+//
+// Once the enclosing base pair of the stem are encountered, `evaluateLoop`
+// evaluates whether the loop is a `Hairpin` or `Multiloop` and passes the
+// computed stem to the relevant function (`hairpinLoop()` and `multiLoop()`
+// respectively). The relevant function then returns the secondary structure
+// with the stem set as the stem computed in this function.
+//
+// The logic for how a loop is evaluated as a `Hairpin` or `Multiloop` is
+// described below:
 
-	// seek to opening base of first stem
-	for pairFivePrimeIdx < length && pairTable[pairFivePrimeIdx] == -1 {
-		fc.annotatedStructure[pairFivePrimeIdx] = exteriorLoopUnpairedNucleotide
-		pairFivePrimeIdx++
-	}
+// evaluateLoop proceeds in a stack-wise manner from the 5' and 3' ends of the
+// closing base pair until the iterators come across pairs that don't pair
+// with each other
+// For example,
+// 5' -- X · · U - A ...
+// 		   |    /    |
+// 3' -- Y · V · · B ...
+// where (X,Y), (U,V), and (A,B) are base pairs and `·`s are arbitrary number
+// of unpaired nucleotides. (X,Y) is the base pair which closes this loop so
+// X would be the nucleotide at `closingFivePrimeIdx`.
+// In this sequence, `evaluateLoop`'s for-loop would proceed normally and pass
+// on (X,Y) and (U,V) to `stackBulgeInteriorLoop` to classify the
+// `StemStructure` closed and enclosed by (X,Y) and (U,V).
+// On the next iteration of the for loop, (U,V) and (A,B) will be passed on to
+// `stackBulgeInteriorLoop` to classify the  `StemStructure` closed and
+// enclosed by (U,V) and (A,B).
+//
+// But if the continuation of the sequence was
+// 5' -- X · · U - A · ·
+// 			 |    /    |	   ·
+// 3' -- Y · V · · B · ·
+// then the last encounted base pair would be (A,B) so `enclosedFivePrimeIdx`
+// is A and `enclosedThreePrimeIdx` is B. On the next iteration of the for-loop,
+// `enclosedThreePrimeIdx` will point to A and `enclosedThreePrimeIdx` will
+// point to B. Thus, the for-loop breaks and since
+// `enclosedFivePrimeIdx > enclosedThreePrimeIdx`, we know we have a hairpin.
+//
+// In the other scenario, suppose the contiuation of the sequence was
+// 									 ·   ·
+// 									 ·   ·
+// 								 	 E - F ...
+// 								  ·
+// 5' -- X · · U - A
+// 			 |    /    |
+// 3' -- Y · V · · B · · C - D ...
+// 											 ·   ·
+// 											 ·   ·
+// then on the next iteration, `enclosedFivePrimeIdx` would point to E, and
+// `enclosedThreePrimeIdx` would point to C, but since
+// `pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx` (as C and E don't
+// pair), we know we're in some sort of multi-loop.
+func evaluateLoop(pc *parseCompound, closingFivePrimeIdx int) interface{} {
 
-	for pairFivePrimeIdx < length {
-		/* pairFivePrimeIdx must have a pairing partner */
-		pairThreePrimeIdx := pairTable[pairFivePrimeIdx]
-
-		// seek to the next stem
-		pairFivePrimeIdx = pairThreePrimeIdx + 1
-		for pairFivePrimeIdx < length && pairTable[pairFivePrimeIdx] == -1 {
-			fc.annotatedStructure[pairFivePrimeIdx] = exteriorLoopUnpairedNucleotide
-			pairFivePrimeIdx++
-		}
-	}
-}
-
-/**
-    stackEnergy recursively calculate energy of substructure enclosed by
-    (closingFivePrimeIdx, closingThreePrimeIdx).
-
-    vivek: I think this function should be better named.
-    Given a base pair (closingFivePrimeIdx, closingThreePrimeIdx), this function
-    finds all loops that the base pair encloses. For each enclosed base pair,
-    we find out if it belongs to one of the three groups:
-    - stacking pair, bulge, or interior loop
-    - hairpin loop
-    - multi-loop
-    and pass on the indexes of the closing pair and enclosed pair to the relevant
-    functions.
-    I think it's called stackEnergy because it proceeds in a stack-wise manner
-    from the 5' and 3' ends until the iterators come across pairs that don't pair
-    with each other
-		For example,
-    5' -- X · · U - A ...
-					|    /    |
-		3' -- Y · V · · B ...
-		where (X,Y), (U,V), and (A,B) are base pairs and `·`s are arbitrary number
-		of unpaired nucleotides. (X,Y) is the base pair which closes this loop so
-		X would be the nucleotide at `closingFivePrimeIdx`.
-
-		In this sequence, `stackEnergy`'s for-loop would proceed normally and pass on
-		(U,V) and (A,B) to `stackBulgeInteriorLoopEnergy`.
-
-		But if the continuation of the sequence was
-		5' -- X · · U - A · ·
-					|    /    |	   ·
-		3' -- Y · V · · B · ·
-		then the last encounted base pair would be (A,B) so `enclosedFivePrimeIdx`
-		is A and `enclosedThreePrimeIdx` is B. On the next iteration of the for-loop,
-		`enclosedThreePrimeIdx` will point to A and `enclosedThreePrimeIdx` will point
-		to B. Thus, the for-loop breaks and since `enclosedFivePrimeIdx > enclosedThreePrimeIdx`,
-		we know we have a hairpin loop.
-
-		In the other scenario, suppose the contiuation of the sequence was
-											·   ·
-											·   ·
-											E - F ...
-										 ·
-		5' -- X · · U - A
-					|    /    |
-		3' -- Y · V · · B · · C - D ...
-													·   ·
-													·   ·
-		then on the next iteration, `enclosedFivePrimeIdx` would point to E, and
-		`enclosedThreePrimeIdx` would point to C, but since
-		`pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx` (as C and E don't
-		pair), we know we're in some sort of multi-loop. Note that multi-loops
-		have atleast two enclosed pairs.
-*/
-func stackEnergy(fc *parseCompound, closingFivePrimeIdx int) interface{} {
-	// energyContributions := make([]StructuralMotifWithEnergy, 0)
-
-	pairTable := fc.pairTable
+	pairTable := pc.pairTable
 	closingThreePrimeIdx := pairTable[closingFivePrimeIdx]
 
-	fc.annotatedStructure[closingFivePrimeIdx] = fivePrimeStemNucleotide
-	fc.annotatedStructure[closingThreePrimeIdx] = threePrimeStemNucleotide
+	pc.annotatedStructure[closingFivePrimeIdx] = dotBracketStemFivePrimeNucleotide
+	pc.annotatedStructure[closingThreePrimeIdx] = dotBracketStemThreePrimeNucleotide
 
+	// init the stem structure for this loop
 	stem := Stem{
 		ClosingFivePrimeIdx:  closingFivePrimeIdx,
 		ClosingThreePrimeIdx: closingThreePrimeIdx,
 	}
-
 	stemStructures := make([]StemStructure, 0)
 
-	// iterator from the 5' to 3' direction starting at `pairFivePrimeIdx`
+	// iterator from the 5' to 3' direction
 	enclosedFivePrimeIdx := closingFivePrimeIdx
 
-	// iterator from the 3' to 5' direction starting at `pairThreePrimeIdx`
+	// iterator from the 3' to 5' direction
 	enclosedThreePrimeIdx := closingThreePrimeIdx
 
 	for enclosedFivePrimeIdx < enclosedThreePrimeIdx {
-		// process all enclosed stacks and interior loops
+		// process all enclosed `StemStructure`s
 
 		// seek to a base pair from 5' end
 		enclosedFivePrimeIdx++
@@ -288,118 +289,131 @@ func stackEnergy(fc *parseCompound, closingFivePrimeIdx int) interface{} {
 			// enclosedFivePrimeIdx & enclosedThreePrimeIdx don't pair. Must have found hairpin or multi-loop.
 			break
 		} else {
-			// we have either a stacking pair, bulge, or interior loop
-			stemStructure := stackBulgeInteriorLoopEnergy(fc,
+			// We have found a `StemStructure` closed by (`closingFivePrimeIdx`,
+			// `closingThreePrimeIdx`) and enclosed by (`enclosedFivePrimeIdx`,
+			// `enclosedThreePrimeIdx`)
+
+			// pass the base pairs on to get the StemStructure along with its type.
+			stemStructure := stemStructure(pc,
 				closingFivePrimeIdx, closingThreePrimeIdx,
 				enclosedFivePrimeIdx, enclosedThreePrimeIdx,
 			)
 			stemStructures = append(stemStructures, stemStructure)
 
-			fc.annotatedStructure[enclosedFivePrimeIdx] = fivePrimeStemNucleotide
-			fc.annotatedStructure[enclosedThreePrimeIdx] = threePrimeStemNucleotide
+			pc.annotatedStructure[enclosedFivePrimeIdx] = dotBracketStemFivePrimeNucleotide
+			pc.annotatedStructure[enclosedThreePrimeIdx] = dotBracketStemThreePrimeNucleotide
 
 			closingFivePrimeIdx = enclosedFivePrimeIdx
 			closingThreePrimeIdx = enclosedThreePrimeIdx
 		}
-	} /* end for */
+	} // end for
 
-	// Finished with the stem
-	stem.EnclosedFivePrimeIdx = closingFivePrimeIdx
-	stem.EnclosedThreePrimeIdx = closingThreePrimeIdx
-	stem.structures = stemStructures
+	// Set remaining fields of the stem
+	if closingFivePrimeIdx == stem.ClosingFivePrimeIdx {
+		// stem doesn't have any StemStructures. Thus only consists of its closing
+		// base pairs
+		if len(stemStructures) > 0 {
+			// sanity check
+			panic("stem contains StemStructures")
+		}
+	} else {
+		// stem has stem structures
+		stem.EnclosedFivePrimeIdx = closingFivePrimeIdx
+		stem.EnclosedThreePrimeIdx = closingThreePrimeIdx
+		stem.structures = stemStructures
+	}
 
 	if enclosedFivePrimeIdx > enclosedThreePrimeIdx {
 		// hairpin
-		return hairpinLoopEnergy(fc, closingFivePrimeIdx, closingThreePrimeIdx, stem)
+		return hairpin(pc, closingFivePrimeIdx, closingThreePrimeIdx, stem)
 	} else {
 		// we have a multi-loop
-		return multiLoopEnergy(fc, closingFivePrimeIdx, stem)
+		return multiLoop(pc, closingFivePrimeIdx, stem)
 	}
 }
 
-/**
- *  Evaluate the free energy contribution of an interior loop with delimiting
- *  base pairs (i,j) and (k,l). See `evaluateStackBulgeInteriorLoop()` for more details.
- */
-func stackBulgeInteriorLoopEnergy(fc *parseCompound,
+// stemStructure sets the required interior loop nucleotides of a
+// `parseCompound`'s annotatedStructure and returns `StemStructure` closed
+// by (`closingFivePrimeIdx`, `closingThreePrimeIdx`) and enclosed by
+// (`enclosedFivePrimeIdx`, `enclosedThreePrimeIdx`)
+func stemStructure(pc *parseCompound,
 	closingFivePrimeIdx, closingThreePrimeIdx,
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {
 
 	for i := closingFivePrimeIdx + 1; i < enclosedFivePrimeIdx; i++ {
-		fc.annotatedStructure[i] = interiorLoopUnpairedNucleotide
+		pc.annotatedStructure[i] = interiorLoopUnpairedNucleotide
 	}
 
 	for i := enclosedThreePrimeIdx + 1; i < closingThreePrimeIdx; i++ {
-		fc.annotatedStructure[i] = interiorLoopUnpairedNucleotide
+		pc.annotatedStructure[i] = interiorLoopUnpairedNucleotide
 	}
 
-	stemStructure := StemStructure{
-		ClosingFivePrimeIdx: closingFivePrimeIdx, EnclosedFivePrimeIdx: enclosedFivePrimeIdx,
-		EnclosedThreePrimeIdx: enclosedThreePrimeIdx, ClosingThreePrimeIdx: closingThreePrimeIdx,
-	}
-
-	stemStructure.setStructureType()
+	stemStructure := newStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
+		enclosedFivePrimeIdx, enclosedThreePrimeIdx)
 
 	return stemStructure
 }
 
-func hairpinLoopEnergy(fc *parseCompound, pairFivePrimeIdx, pairThreePrimeIdx int, stem Stem) HairpinLoop {
+// stemStructure sets the required single stranded hairpin nucleotides of a
+// `parseCompound`'s annotatedStructure and returns `Hairpin` closed
+// by (`closingFivePrimeIdx`, `closingThreePrimeIdx`)
+func hairpin(pc *parseCompound, closingFivePrimeIdx, closingThreePrimeIdx int,
+	stem Stem) Hairpin {
 
 	hairpinHasSingleStrandedNucleotides := false
-	for i := pairFivePrimeIdx + 1; i < pairThreePrimeIdx; i++ {
+	for i := closingFivePrimeIdx + 1; i < closingThreePrimeIdx; i++ {
+		pc.annotatedStructure[i] = hairpinLoopNucleotide
 		hairpinHasSingleStrandedNucleotides = true
-		fc.annotatedStructure[i] = hairpinLoopNucleotide
 	}
 
 	var singleStrandedFivePrimeIdx, singleStrandedThreePrimeIdx int
 	if hairpinHasSingleStrandedNucleotides {
-		singleStrandedFivePrimeIdx = pairFivePrimeIdx + 1
-		singleStrandedThreePrimeIdx = pairThreePrimeIdx - 1
+		singleStrandedFivePrimeIdx = closingFivePrimeIdx + 1
+		singleStrandedThreePrimeIdx = closingThreePrimeIdx - 1
 	} else {
 		// There is no hairpin
 		singleStrandedFivePrimeIdx = -1
 		singleStrandedThreePrimeIdx = -1
 	}
 
-	return HairpinLoop{
+	return Hairpin{
 		Stem:                        stem,
-		StemFivePrimeIdx:            stem.ClosingFivePrimeIdx,
-		StemThreePrimeIdx:           stem.ClosingThreePrimeIdx,
 		SingleStrandedFivePrimeIdx:  singleStrandedFivePrimeIdx,
 		SingleStrandedThreePrimeIdx: singleStrandedThreePrimeIdx,
 	}
 }
 
-func multiLoopEnergy(fc *parseCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
-	// energyContributions := make([]StructuralMotifWithEnergy, 0)
-	pairTable := fc.pairTable
+// multiLoop sets the nucleotides present in a multi-loops's single stranded
+// region in a `parseCompound`'s annotatedStructure and returns the
+// `MultiLoop` closed by (`closingFivePrimeIdx`, `closingThreePrimeIdx`)
+func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
+	stem Stem) MultiLoop {
+	pairTable := pc.pairTable
 
+	// the substructures present in the multi-loop
 	var substructures []interface{}
 
-	// (pairFivePrimeIdx, pairThreePrimeIdx) is exterior pair of multi loop
 	if closingFivePrimeIdx >= pairTable[closingFivePrimeIdx] {
-		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a pair that closes a loop")
+		panic("multiLoopEnergy: closingFivePrimeIdx is not 5' base of a pair that closes a loop")
 	}
 
-	var closingThreePrimeIdx int
-	if closingFivePrimeIdx == 0 {
-		closingThreePrimeIdx = fc.length + 1
-	} else {
-		closingThreePrimeIdx = pairTable[closingFivePrimeIdx]
-	}
+	// the multi-loop's closing three prime base
+	var closingThreePrimeIdx int = pairTable[closingFivePrimeIdx]
 
-	// The index of the enclosed base pair at the 5' end
+	// iterator from the 5' to 3' direction
 	enclosedFivePrimeIdx := closingFivePrimeIdx + 1
 
 	lenMultiLoopSingleStrandedRegion := 0
 
 	// seek to the first stem (i.e. the first enclosed base pair)
 	for enclosedFivePrimeIdx <= closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-		fc.annotatedStructure[enclosedFivePrimeIdx] = multiLoopNucleotide
+		pc.annotatedStructure[enclosedFivePrimeIdx] = multiLoopSingleStrandedRegionNucleotide
 		lenMultiLoopSingleStrandedRegion++
 		enclosedFivePrimeIdx++
 	}
 
+	// add single stranded region of multi-loop to structures and reset
+	// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
 	if lenMultiLoopSingleStrandedRegion != 0 {
 		ssr := SingleStrandedRegion{
 			FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
@@ -410,17 +424,14 @@ func multiLoopEnergy(fc *parseCompound, closingFivePrimeIdx int, stem Stem) Mult
 	}
 
 	for enclosedFivePrimeIdx < closingThreePrimeIdx {
-		// add up the contributions of the substructures of the multi loop
-		substructure := stackEnergy(fc, enclosedFivePrimeIdx)
+		// process all enclosed in the multi-loop
+		substructure := evaluateLoop(pc, enclosedFivePrimeIdx)
 		substructures = append(substructures, substructure)
 
-		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
-
 		// seek to the next stem
-		enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
+		enclosedFivePrimeIdx = pairTable[enclosedFivePrimeIdx] + 1
 		for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-			fc.annotatedStructure[enclosedFivePrimeIdx] = multiLoopNucleotide
+			pc.annotatedStructure[enclosedFivePrimeIdx] = multiLoopSingleStrandedRegionNucleotide
 			lenMultiLoopSingleStrandedRegion++
 			enclosedFivePrimeIdx++
 		}
@@ -433,16 +444,11 @@ func multiLoopEnergy(fc *parseCompound, closingFivePrimeIdx int, stem Stem) Mult
 			substructures = append(substructures, ssr)
 			lenMultiLoopSingleStrandedRegion = 0
 		}
-
-		// add unpaired nucleotides
-		// nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
 	}
 
 	substructuresFivePrimeIdx, substructuresThreePrimeIdx := stem.EnclosedFivePrimeIdx+1, stem.EnclosedThreePrimeIdx-1
 	return MultiLoop{
 		Stem:                       stem,
-		StemFivePrimeIdx:           stem.ClosingFivePrimeIdx,
-		StemThreePrimeIdx:          stem.ClosingThreePrimeIdx,
 		SubstructuresFivePrimeIdx:  stem.EnclosedFivePrimeIdx + 1,
 		SubstructuresThreePrimeIdx: stem.EnclosedThreePrimeIdx - 1,
 		Substructures: SecondaryStructure{
@@ -452,21 +458,39 @@ func multiLoopEnergy(fc *parseCompound, closingFivePrimeIdx int, stem Stem) Mult
 	}
 }
 
-const (
-	unpairedNucleotide byte = '.'
-)
+/************************************************************************
 
-func DotBracket(secondaryStructure SecondaryStructure, offset int) string {
+The following are functions to help test the code the `FromDotBracket` function.
+
+They are for internal use only, but also serve as an example for how to parse
+a `SecondaryStructure` recursively.
+
+***********************************************************************/
+
+// doDotBracketFromSecondaryStructure returns the dot-bracket structure of
+// a `SecondaryStructure`.
+func dotBracketFromSecondaryStructure(secondaryStructure SecondaryStructure) string {
+	return doDotBracketFromSecondaryStructure(secondaryStructure, 0)
+}
+
+// Since we'd like to call this code recursively for the substructures
+// enclosed in a multi-loop, we include a `offset` param as the index fields of
+// the substructures of a `MultiLoop` have an absolute reference to the indexes
+// of the original `SecondaryStructure`, but when we process a `MultiLoop`
+// recursively, we need to get the relative reference for the indexes for the
+// output.
+func doDotBracketFromSecondaryStructure(secondaryStructure SecondaryStructure, offset int) string {
 	var dotBracket []byte = make([]byte, secondaryStructure.Length)
+
 	for _, structure := range secondaryStructure.Structures {
 		switch structure := structure.(type) {
 		case SingleStrandedRegion:
 			for i := structure.FivePrimeIdx; i <= structure.ThreePrimeIdx; i++ {
-				dotBracket[i-offset] = unpairedNucleotide
+				dotBracket[i-offset] = dotBracketUnpairedNucleotide
 			}
 		case MultiLoop:
 			dotBracketFromStem(&dotBracket, structure.Stem, offset)
-			substructuresDotBracket := DotBracket(structure.Substructures, structure.SubstructuresFivePrimeIdx)
+			substructuresDotBracket := doDotBracketFromSecondaryStructure(structure.Substructures, structure.SubstructuresFivePrimeIdx)
 			lenSubstructuresDotBracket := len(substructuresDotBracket)
 			if lenSubstructuresDotBracket != structure.SubstructuresThreePrimeIdx-structure.SubstructuresFivePrimeIdx+1 {
 				panic("len of dot bracket from substructures != len substructure")
@@ -475,11 +499,11 @@ func DotBracket(secondaryStructure SecondaryStructure, offset int) string {
 				dotBracket[i] = substructuresDotBracket[j]
 				j++
 			}
-		case HairpinLoop:
+		case Hairpin:
 			dotBracketFromStem(&dotBracket, structure.Stem, offset)
 			if structure.SingleStrandedFivePrimeIdx != -1 {
 				for i := structure.SingleStrandedFivePrimeIdx; i <= structure.SingleStrandedThreePrimeIdx; i++ {
-					dotBracket[i-offset] = unpairedNucleotide
+					dotBracket[i-offset] = dotBracketUnpairedNucleotide
 				}
 			}
 		}
@@ -489,8 +513,8 @@ func DotBracket(secondaryStructure SecondaryStructure, offset int) string {
 }
 
 func dotBracketFromStem(dotBracket *[]byte, stem Stem, offset int) {
-	(*dotBracket)[stem.ClosingFivePrimeIdx-offset] = fivePrimeStemNucleotide
-	(*dotBracket)[stem.ClosingThreePrimeIdx-offset] = threePrimeStemNucleotide
+	(*dotBracket)[stem.ClosingFivePrimeIdx-offset] = dotBracketStemFivePrimeNucleotide
+	(*dotBracket)[stem.ClosingThreePrimeIdx-offset] = dotBracketStemThreePrimeNucleotide
 	for _, stemStructure := range stem.structures {
 		dotBracketFromStemStructure(dotBracket, stemStructure, offset)
 	}
@@ -498,14 +522,12 @@ func dotBracketFromStem(dotBracket *[]byte, stem Stem, offset int) {
 
 func dotBracketFromStemStructure(dotBracket *[]byte, stemStructure StemStructure, offset int) {
 	for i := stemStructure.ClosingFivePrimeIdx + 1; i < stemStructure.EnclosedFivePrimeIdx; i++ {
-		(*dotBracket)[i-offset] = unpairedNucleotide
+		(*dotBracket)[i-offset] = dotBracketUnpairedNucleotide
 	}
-
-	(*dotBracket)[stemStructure.EnclosedFivePrimeIdx-offset] = fivePrimeStemNucleotide
+	(*dotBracket)[stemStructure.EnclosedFivePrimeIdx-offset] = dotBracketStemFivePrimeNucleotide
 
 	for i := stemStructure.EnclosedThreePrimeIdx + 1; i < stemStructure.ClosingThreePrimeIdx; i++ {
-		(*dotBracket)[i-offset] = unpairedNucleotide
+		(*dotBracket)[i-offset] = dotBracketUnpairedNucleotide
 	}
-
-	(*dotBracket)[stemStructure.EnclosedThreePrimeIdx-offset] = threePrimeStemNucleotide
+	(*dotBracket)[stemStructure.EnclosedThreePrimeIdx-offset] = dotBracketStemThreePrimeNucleotide
 }
