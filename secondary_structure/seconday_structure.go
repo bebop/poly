@@ -72,7 +72,7 @@ type SingleStrandedRegion struct {
 type Stem struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
-	structures                                  []StemStructure
+	Structures                                  []StemStructure
 }
 
 // StemStructure contains all the information needed to denote the substructures
