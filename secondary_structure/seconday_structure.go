@@ -145,51 +145,34 @@ func (structure *StemStructure) setStructureType() {
 		nbUnpairedSmaller = nbUnpairedFivePrime
 	}
 
-	if nbUnpairedLarger == 0 {
-		// stacking pair
-		structure.Type = StackingPair
-		return
-	}
-
-	if nbUnpairedSmaller == 0 {
-		// bulge
-		structure.Type = Bulge
-		return
-	} else {
-		// interior loop
-		if nbUnpairedSmaller == 1 {
-			if nbUnpairedLarger == 1 {
-				// 1x1 loop
-				structure.Type = Interior1x1Loop
-				return
-			}
-
-			if nbUnpairedLarger == 2 {
-				// 2x1 loop
-				structure.Type = Interior2x1Loop
-				return
-			} else {
-				// 1xn loop
-				structure.Type = Interior1xnLoop
-				return
-			}
-		} else if nbUnpairedSmaller == 2 {
-			if nbUnpairedLarger == 2 {
-				// 2x2 loop
-				structure.Type = Interior2x2Loop
-				return
-			} else if nbUnpairedLarger == 3 {
-				// 2x3 loop
-				structure.Type = Interior2x3Loop
-				return
-			}
+	switch nbUnpairedSmaller {
+	case 0:
+		if nbUnpairedLarger == 0 {
+			structure.Type = StackingPair
+		} else {
+			structure.Type = Bulge
 		}
-
-		{
-			// generic interior loop (no else here!)
+	case 1:
+		switch nbUnpairedLarger {
+		case 1:
+			structure.Type = Interior1x1Loop
+		case 2:
+			structure.Type = Interior2x1Loop
+		default:
+			structure.Type = Interior1xnLoop
+		}
+	case 2:
+		switch nbUnpairedLarger {
+		case 2:
+			structure.Type = Interior2x2Loop
+		case 3:
+			structure.Type = Interior2x3Loop
+		default:
 			structure.Type = GenericInteriorLoop
-			return
 		}
+
+	default:
+		structure.Type = GenericInteriorLoop
 	}
 }
 
