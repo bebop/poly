@@ -13,7 +13,7 @@ JSON specific IO related things begin here.
 
 ******************************************************************************/
 
-// Parse parses an poly.Sequence JSON file and adds appropriate pointers to struct.
+// Parse parses a poly.Sequence JSON file and adds appropriate pointers to struct.
 func Parse(file []byte) poly.Sequence {
 	var sequence poly.Sequence
 	_ = json.Unmarshal([]byte(file), &sequence)
@@ -26,14 +26,14 @@ func Parse(file []byte) poly.Sequence {
 	return sequence
 }
 
-// Read reads an poly.Sequence JSON file.
+// Read reads a poly.Sequence JSON file.
 func Read(path string) poly.Sequence {
 	file, _ := ioutil.ReadFile(path)
 	sequence := Parse(file)
 	return sequence
 }
 
-// Write writes an poly.Sequence struct out to json.
+// Write writes a poly.Sequence struct out to json.
 func Write(sequence poly.Sequence, path string) {
 	file, _ := json.MarshalIndent(sequence, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
