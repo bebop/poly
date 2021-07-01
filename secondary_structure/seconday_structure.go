@@ -18,7 +18,7 @@ the closing and enclosed base pairs.
 
 ******************************************************************************/
 
-// A RNA's SecondaryStructure is composed of a list of `MultiLoop`s, `Hairpin`s,
+// SecondaryStructure is composed of a list of `MultiLoop`s, `Hairpin`s,
 // and `SingleStrandedRegion`s. Note that since Go doesn't support inheritance,
 // we use `interface{}` as the type for the structures list, but the only types
 // that are allowed/used are `MultiLoop`, `Hairpin` and `SingleStrandedRegion`.
@@ -79,7 +79,7 @@ type Stem struct {
 // present in a `Stem`. A `StemStructure` is delimited by a closing and
 // enclosed base pair with the requirement that there are no base pairs between
 // the closing and enclosed base pair.
-
+//
 // A `StemStrcture` is classified into a `StemStructureType` based on the
 // number of unpaired nucleotides between the closing and enclosed base pairs.
 // (See (*StemStructure).setStructureType for more details)
