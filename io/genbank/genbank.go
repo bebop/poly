@@ -92,8 +92,8 @@ func Parse(file []byte) poly.Sequence {
 	return sequence
 }
 
-// BuildGbk builds a GBK string to be written out to db or file.
-func BuildGbk(sequence poly.Sequence) []byte {
+// Build builds a GBK string to be written out to db or file.
+func Build(sequence poly.Sequence) []byte {
 	var gbkString bytes.Buffer
 	locus := sequence.Meta.Locus
 	var shape string
@@ -173,7 +173,7 @@ func BuildGbk(sequence poly.Sequence) []byte {
 	// start writing features section.
 	gbkString.WriteString("FEATURES             Location/Qualifiers\n")
 	for _, feature := range sequence.Features {
-		gbkString.WriteString(buildGbkFeatureString(feature))
+		gbkString.WriteString(BuildFeatureString(feature))
 	}
 
 	// start writing sequence section.
@@ -217,7 +217,7 @@ func Read(path string) poly.Sequence {
 
 // Write takes an Sequence struct and a path string and writes out a gff to that path.
 func Write(sequence poly.Sequence, path string) {
-	gbk := BuildGbk(sequence)
+	gbk := Build(sequence)
 	_ = ioutil.WriteFile(path, gbk, 0644)
 }
 
@@ -681,19 +681,19 @@ func buildMetaString(name string, data string) string {
 	return returnData
 }
 
-// buildGbkLocationString is a recursive function that takes a location object and creates a gbk location string for BuildGbk()
-func buildGbkLocationString(location poly.Location) string {
+// BuildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
+func BuildLocationString(location poly.Location) string {
 
 	var locationString string
 
 	if location.Complement {
 		location.Complement = false
-		locationString = "complement(" + buildGbkLocationString(location) + ")"
+		locationString = "complement(" + BuildLocationString(location) + ")"
 
 	} else if location.Join {
 		locationString = "join("
 		for _, sublocation := range location.SubLocations {
-			locationString += buildGbkLocationString(sublocation) + ","
+			locationString += BuildLocationString(sublocation) + ","
 		}
 		locationString = strings.TrimSuffix(locationString, ",") + ")"
 	} else {
@@ -710,8 +710,8 @@ func buildGbkLocationString(location poly.Location) string {
 	return locationString
 }
 
-// buildGbkFeatureString is a helper function to build gbk feature strings for BuildGbk()
-func buildGbkFeatureString(feature poly.Feature) string {
+// BuildFeatureString is a helper function to build gbk feature strings for Build()
+func BuildFeatureString(feature poly.Feature) string {
 	whiteSpaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
 	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
@@ -719,7 +719,7 @@ func buildGbkFeatureString(feature poly.Feature) string {
 	if feature.GbkLocationString != "" {
 		location = feature.GbkLocationString
 	} else {
-		location = buildGbkLocationString(feature.SequenceLocation)
+		location = BuildLocationString(feature.SequenceLocation)
 	}
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader

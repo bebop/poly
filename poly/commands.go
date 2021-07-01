@@ -286,7 +286,7 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 	} else if c.String("o") == "gff" {
 		output = gff.Build(sequence)
 	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
-		output = genbank.BuildGbk(sequence)
+		output = genbank.Build(sequence)
 	}
 	return output
 }

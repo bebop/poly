@@ -33,9 +33,9 @@ func ExampleParse() {
 	// Output: 22-OCT-2019
 }
 
-func ExampleBuildGbk() {
+func ExampleBuild() {
 	sequence := Read("../../data/puc19.gbk")
-	gbkBytes := BuildGbk(sequence)
+	gbkBytes := Build(sequence)
 	testSequence := Parse(gbkBytes)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
@@ -74,7 +74,7 @@ func TestGbkIO(t *testing.T) {
 
 	writeTestGbk := Read(tmpGbkFilePath)
 	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
+		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
 	// Test multiline Genbank features
@@ -109,7 +109,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testOutputGbk := Read(tmpGbkFilePath)
 
 	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Issue with partial location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
+		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
 
@@ -134,7 +134,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	testOutputGb := Read(tmpGbFilePath)
 
 	if diff := cmp.Diff(testInputGb, testOutputGb, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("Issue with either Join or complement location building. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
+		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
 
@@ -143,9 +143,9 @@ func TestPartialLocationParseRegression(t *testing.T) {
 
 	for _, feature := range gbk.Features {
 		if feature.GbkLocationString == "687..3158>" && (feature.SequenceLocation.Start != 686 || feature.SequenceLocation.End != 3158) {
-			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read()")
+			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read()")
 		} else if feature.GbkLocationString == "<1..206" && (feature.SequenceLocation.Start != 0 || feature.SequenceLocation.End != 206) {
-			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of BuildGbk() does not produce the same output as parsing the original file read with Read().")
+			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read().")
 		}
 	}
 }

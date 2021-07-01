@@ -173,7 +173,7 @@ That's it. The reason we don't have a `ParseJSON()` is that golang, like almost 
   // generating a gff string that then can be piped to stdout or written to a database.
   ecoliGffString := BuildGff(ecoliAnnotatedSequence)
 
-  ecoliGbkString := BuildGbk(ecoliAnnotatedSequence)
+  ecoliGbkString := Build(ecoliAnnotatedSequence)
 
 ```
 
