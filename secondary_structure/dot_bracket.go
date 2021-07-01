@@ -320,7 +320,7 @@ func evaluateLoop(pc *parseCompound, closingFivePrimeIdx int) interface{} {
 		// stem has stem structures
 		stem.EnclosedFivePrimeIdx = closingFivePrimeIdx
 		stem.EnclosedThreePrimeIdx = closingThreePrimeIdx
-		stem.structures = stemStructures
+		stem.Structures = stemStructures
 	}
 
 	if enclosedFivePrimeIdx > enclosedThreePrimeIdx {
@@ -515,7 +515,7 @@ func doDotBracketFromSecondaryStructure(secondaryStructure SecondaryStructure, o
 func dotBracketFromStem(dotBracket *[]byte, stem Stem, offset int) {
 	(*dotBracket)[stem.ClosingFivePrimeIdx-offset] = dotBracketStemFivePrimeNucleotide
 	(*dotBracket)[stem.ClosingThreePrimeIdx-offset] = dotBracketStemThreePrimeNucleotide
-	for _, stemStructure := range stem.structures {
+	for _, stemStructure := range stem.Structures {
 		dotBracketFromStemStructure(dotBracket, stemStructure, offset)
 	}
 }
