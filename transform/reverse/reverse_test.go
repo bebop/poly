@@ -3,10 +3,9 @@ package reverse
 import "fmt"
 
 func ExampleComplement() {
-	s := "ACGT"
-	c := Complement(s)
-	fmt.Println(c)
+	sequence := "GATTACA"
+	reverseComplement := Complement(sequence)
+	fmt.Println(reverseComplement)
 
-	// Output:
-	// TACG
+	// Output: TGTAATC
 }
