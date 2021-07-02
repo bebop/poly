@@ -1,4 +1,4 @@
-package reverse
+package transform
 
 import "strings"
 
@@ -39,13 +39,28 @@ var complementBaseRuneMap = map[rune]rune{
 }
 
 // Complement takes the reverse complement of a sequence
+func ReverseComplement(sequence string) string {
+	complementString := strings.Map(ComplementBase, sequence)
+	length := len(complementString)
+	newString := make([]rune, length)
+	for _, base := range complementString {
+		length--
+		newString[length] = base
+	}
+	return string(newString)
+}
+
 func Complement(sequence string) string {
 	complementString := strings.Map(ComplementBase, sequence)
-	n := len(complementString)
-	newString := make([]rune, n)
-	for _, base := range complementString {
-		n--
-		newString[n] = base
+	return complementString
+}
+
+func Reverse(sequence string) string {
+	length := len(sequence)
+	newString := make([]rune, length)
+	for _, base := range sequence {
+		length--
+		newString[length] = base
 	}
 	return string(newString)
 }
