@@ -23,8 +23,10 @@ the closing and enclosed base pairs.
 // we use `interface{}` as the type for the structures list, but the only types
 // that are allowed/used are `MultiLoop`, `Hairpin` and `SingleStrandedRegion`.
 type SecondaryStructure struct {
-	Structures []interface{}
-	Length     int
+	Structures          []interface{}
+	Length              int
+	ExteriorLoopsEnergy int // the free energy (in dcal / mol) of the exterior loops present in the secondary structure
+	Energy              int // the free energy (in dcal / mol) of the entire secondary structure
 }
 
 // MultiLoop contains all the information needed to denote a multi-loop in a
@@ -35,6 +37,7 @@ type MultiLoop struct {
 	Stem                                                  Stem
 	SubstructuresFivePrimeIdx, SubstructuresThreePrimeIdx int
 	Substructures                                         SecondaryStructure
+	Energy                                                int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
 }
 
 // Hairpin contains all the information needed to denote a hairpin loop in a
@@ -46,6 +49,7 @@ type MultiLoop struct {
 type Hairpin struct {
 	Stem                                                    Stem
 	SingleStrandedFivePrimeIdx, SingleStrandedThreePrimeIdx int
+	Energy                                                  int // free energy in dcal / mol only from the hairpin loop (doesn't include free energy from the stem)
 }
 
 // SingleStrandedRegion contains all the information needed to denote a
@@ -73,6 +77,7 @@ type Stem struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
 	Structures                                  []StemStructure
+	Energy                                      int // free energy (in dcal / mol) all the substructures present in the stem
 }
 
 // StemStructure contains all the information needed to denote the substructures
@@ -87,6 +92,7 @@ type StemStructure struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
 	Type                                        StemStructureType
+	Energy                                      int // free energy in dcal / mol
 }
 
 // StemStructureType denotes the type of a `StemStructure`.
@@ -176,10 +182,10 @@ func (structure *StemStructure) setStructureType() {
 	}
 }
 
-// newStemStructure is a wrapper to create a `StemStructure` and call the
+// NewStemStructure is a wrapper to create a `StemStructure` and call the
 // functions (`(*StemStructure).setStructureType`) required to initalise the
 // struct
-func newStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
+func NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {
 
 	stemStructure := StemStructure{
