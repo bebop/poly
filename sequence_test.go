@@ -139,3 +139,14 @@ func TestRandomProteinSequenceError(t *testing.T) {
 		t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
 	}
 }
+
+func TestIsPalindromic(t *testing.T) {
+	ecori := IsPalindromic("GAATTC")
+	if ecori != true {
+		t.Errorf("IsPalindromic failed to call EcoRI a palindrome")
+	}
+	bsai := IsPalindromic("GGTCTC")
+	if bsai != false {
+		t.Errorf("IsPalindromic failed call BsaI NOT a palindrome")
+	}
+}
