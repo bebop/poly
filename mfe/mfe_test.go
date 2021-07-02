@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	. "github.com/TimothyStiles/poly/secondary_structure"
 )
 
 func ExampleMinimumFreeEnergy() {
@@ -285,7 +287,7 @@ func TestAndronescu2007ParamsNoDanglingEnergies(t *testing.T) {
 		Interior loop (836,844) CG; (837,843) UA:  -199
 		Hairpin  loop (837,843) UA              :   450
 		Multi    loop ( 20,848) UA              :   616
-		-144`, t)
+		-144.00`, t)
 }
 
 func TestAndronescu2007Params(t *testing.T) {
@@ -328,7 +330,7 @@ func TestAndronescu2007Params(t *testing.T) {
 		Interior loop ( 48, 58) GC; ( 49, 57) GC:  -271
 		Hairpin  loop ( 49, 57) GC              :   274
 		Multi    loop (  7, 62) GC              :  -178
-		-32`, t)
+		-32.00`, t)
 
 	compareMFEOutputToViennaRNA(
 		"AUGAAACAAUACCAAGAUUUAAUUAAAGACAUUUUUGAAAAUGGUUAUGAAACCGAUGAUCGUACAGGCACAGGAACAAUUGCUCUGUUCGGAUCUAAAUUACGCUGGGAUUUAACUAAAGGUUUUCCUGCGGUAACAACUAAGAAGCUCGCCUGGAAAGCUUGCAUUGCUGAGCUAAUAUGGUUUUUAUCAGGAAGCACAAAUGUCAAUGAUUUACGAUUAAUUCAACACGAUUCGUUAAUCCAAGGCAAAACAGUCUGGGAUGAAAAUUACGAAAAUCAAGCAAAAGAUUUAGGAUACCAUAGCGGUGAACUUGGUCCAAUUUAUGGAAAACAGUGGCGUGAUUUUGGUGGUGUAGACCAAAUUAUAGAAGUUAUUGAUCGUAUUAAAAAACUGCCAAAUGAUAGGCGUCAAAUUGUUUCUGCAUGGAAUCCAGCUGAACUUAAAUAUAUGGCAUUACCGCCUUGUCAUAUGUUCUAUCAGUUUAAUGUGCGUAAUGGCUAUUUGGAUUUGCAGUGGUAUCAACGCUCAGUAGAUGUUUUCUUGGGUCUACCGUUUAAUAUUGCGUCAUAUGCUACGUUAGUUCAUAUUGUAGCUAAGAUGUGUAAUCUUAUUCCAGGGGAUUUGAUAUUUUCUGGUGGUAAUACUCAUAUCUAUAUGAAUCACGUAGAACAAUGUAAAGAAAUUUUGAGGCGUGAACCUAAAGAGCUUUGUGAGCUGGUAAUAAGUGGUCUACCUUAUAAAUUCCGAUAUCUUUCUACUAAAGAACAAUUAAAAUAUGUUCUUAAACUUAGGCCUAAAGAUUUCGUUCUUAACAACUAUGUAUCACACCCUCCUAUUAAAGGAAAGAUGGCGGUGUAA",
@@ -600,7 +602,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Hairpin  loop (  6, 10) CG              :   540
 		Interior loop ( 17, 28) GC; ( 18, 27) CG:  -340
 		Hairpin  loop ( 18, 27) CG              :   400
-		-2.9`, t)
+		-2.90`, t)
 
 	compareMFEOutputToViennaRNA("ACGAUCAGAGAUCAGAGCAUACGACAGCAG",
 		"..((((...))))...((........))..",
@@ -624,14 +626,14 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop (  9, 18) CG; ( 10, 17) CG:  -330
 		Interior loop ( 10, 17) CG; ( 11, 16) UA:  -210
 		Hairpin  loop ( 11, 16) UA              :   550
-		-9.3
+		-9.30
 		`, t)
 
 	compareMFEOutputToViennaRNA("AUUCUUGCUUCAACAGUGUUUGAACGGAAU",
 		"..............................",
 		DefaultTemperature, Turner2004, DoubleDanglingEnds,
 		`External loop                           :     0
-		0`, t)
+		0.00`, t)
 
 	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
 		"(((((((...................)))))))",
@@ -644,7 +646,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop (  5, 29) CG; (  6, 28) CG:  -330
 		Interior loop (  6, 28) CG; (  7, 27) AU:  -210
 		Hairpin  loop (  7, 27) AU              :   700
-		-6.7`, t)
+		-6.70`, t)
 
 	compareMFEOutputToViennaRNA("UCGGCCACAAACACACAAUCUACUGUUGGUCGA",
 		"(((((((...................)))))))",
@@ -674,7 +676,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop ( 14, 23) AU; ( 15, 22) CG:  -220
 		Interior loop ( 15, 22) CG; ( 16, 21) AU:  -210
 		Hairpin  loop ( 16, 21) AU              :   540
-		-12.8`, t)
+		-12.80`, t)
 
 	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
@@ -703,7 +705,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop ( 48, 58) GC; ( 49, 57) GC:  -330
 		Hairpin  loop ( 49, 57) GC              :   440
 		Multi    loop (  7, 62) GC              :   140
-		-31`, t)
+		-31.00`, t)
 
 	compareMFEOutputToViennaRNA("GGGCUCGUAGAUCAGCGGUAGAUCGCUUCCUUCGCAAGGAAGCCCUGGGUUCAAAUCCCAGCGAGUCCACCA",
 		"(((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....",
@@ -990,7 +992,7 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop (836,844) CG; (837,843) UA:  -210
 		Hairpin  loop (837,843) UA              :   520
 		Multi    loop ( 20,848) UA              :  -220
-		-197.7`, t)
+		-197.70`, t)
 
 	compareMFEOutputToViennaRNA(
 		"GAGAUACCUACAGCGUGAGCUAUGAGAAAGCGCCACGCUUCCCGAAGGGAGAAAGGCGGACAGGUAUCCGGUAAGCGGCAGGGUCGGAACAGGAGAGCGCACGAGGGAGCUUCCAGGGGGAAACGCCUGGUAUCUUUAUAGUCCUGUCGGGUUUCGCCACCUCUGACUUGAGCGUCGAUUUUUGUGAUGCUCGUCAGGGGGGCGGAGCCUAUGGAAAAACGCCAGCAACGCGGCCUUUUUACGGUUCCUGGCCUUUUGCUGGCCUUUUGCUCACAUGUUCUUUCCUGCGUUAUCCCCUGAUUCUGUGGAUAACCGUAUUACCGCCUUUGAGUGAGCUGAUACCGCUCGCCGCAGCCGAACGACCGAGCGCAGCGAGUCAGUGAGCGAGGAAGCGGAAGAGCGCCCAAUACGCAAACCGCCUCUCCCCGCGCGUUGGCCGAUUCAUUAAUGCAGCUGGCACGACAGGUUUCCCGACUGGAAAGCGGGCAGUGAGCGCAACGCAAUUAAUGUGAGUUAGCUCACUCAUUAGGCACCCCAGGCUUUACACUUUAUGCUUCCGGCUCGUAUGUUGUGUGGAAUUGUGAGCGGAUAACAAUUUCACACAGGAAACAGCUAUGACCAUGAUUACGCCAAGCUUGCAUGCCUGCAGGUCGACUCUAGAGGAUCCCCGGGUACCGAGCUCGAAUUCACUGGCCGUCGUUUUACAACGUCGUGACUGGGAAAACCCUGGCGUUACCCAACUUAAUCGCCUUGCAGCACAUCCCCCUUUCGCCAGCUGGCGUAAUAGCGAAGAGGCCCGCACCGAUCGCCCUUCCCAACAGUUGCGCAGCCUGAAUGGCGAAUGGCGCCUGAUGCGGUAUUUUCUCCUUACGCAUCUGUGCGGUAUUUCACACCGCAUAUGGUGCACUCUCAGUACAAUCUGCUCUGAUGCCGCAUAGUUAAGCCAGCCCCGACACCCGCCAACACCCGCUGACGCGCCCUGACGGGCUUGUCUGCUCCCGGCAUCCGCUUACAGACAAGCUGUGACCGUCUCCGGGAGCUGCAUGUGUCAGAGGUUUUCACCGUCAUCACCGAAACGCGCGAGACGAAAGGGCCUCGUGAUACGCCUAUUUUUAUAGGUUAAUGUCAUGAUAAUAAUGGUUUCUUAGACGUCAGGUGGCACUUUUCGGGGAAAUGUGCGCGGAACCCCUAUUUGUUUAUUUUUCUAAAUACAUUCAAAUAUGUAUCCGCUCAUGAGACAAUAACCCUGAUAAAUGCUUCAAUAAUAUUGAAAAAGGAAGAGUAUGAGUAUUCAACAUUUCCGUGUCGCCCUUAUUCCCUUUUUUGCGGCAUUUUGCCUUCCUGUUUUUGCUCACCCAGAAACGCUGGUGAAAGUAAAAGAUGCUGAAGAUCAGUUGGGUGCACGAGUGGGUUACAUCGAACUGGAUCUCAACAGCGGUAAGAUCCUUGAGAGUUUUCGCCCCGAAGAACGUUUUCCAAUGAUGAGCACUUUUAAAGUUCUGCUAUGUGGCGCGGUAUUAUCCCGUAUUGACGCCGGGCAAGAGCAACUCGGUCGCCGCAUACACUAUUCUCAGAAUGACUUGGUUGAGUACUCACCAGUCACAGAAAAGCAUCUUACGGAUGGCAUGACAGUAAGAGAAUUAUGCAGUGCUGCCAUAACCAUGAGUGAUAACACUGCGGCCAACUUACUUCUGACAACGAUCGGAGGACCGAAGGAGCUAACCGCUUUUUUGCACAACAUGGGGGAUCAUGUAACUCGCCUUGAUCGUUGGGAACCGGAGCUGAAUGAAGCCAUACCAAACGACGAGCGUGACACCACGAUGCCUGUAGCAAUGGCAACAACGUUGCGCAAACUAUUAACUGGCGAACUACUUACUCUAGCUUCCCGGCAACAAUUAAUAGACUGGAUGGAGGCGGAUAAAGUUGCAGGACCACUUCUGCGCUCGGCCCUUCCGGCUGGCUGGUUUAUUGCUGAUAAAUCUGGAGCCGGUGAGCGUGGGUCUCGCGGUAUCAUUGCAGCACUGGGGCCAGAUGGUAAGCCCUCCCGUAUCGUAGUUAUCUACACGACGGGGAGUCAGGCAACUAUGGAUGAACGAAAUAGACAGAUCGCUGAGAUAGGUGCCUCACUGAUUAAGCAUUGGUAACUGUCAGACCAAGUUUACUCAUAUAUACUUUAGAUUGAUUUAAAACUUCAUUUUUAAUUUAAAAGGAUCUAGGUGAAGAUCCUUUUUGAUAAUCUCAUGACCAAAAUCCCUUAACGUGAGUUUUCGUUCCACUGAGCGUCAGACCCCGUAGAAAAGAUCAAAGGAUCUUCUUGAGAUCCUUUUUUUCUGCGCGUAAUCUGCUGCUUGCAAACAAAAAAACCACCGCUACCAGCGGUGGUUUGUUUGCCGGAUCAAGAGCUACCAACUCUUUUUCCGAAGGUAACUGGCUUCAGCAGAGCGCAGAUACCAAAUACUGUUCUUCUAGUGUAGCCGUAGUUAGGCCACCACUUCAAGAACUCUGUAGCACCGCCUACAUACCUCGCUCUGCUAAUCCUGUUACCAGUGGCUGCUGCCAGUGGCGAUAAGUCGUGUCUUACCGGGUUGGACUCAAGACGAUAGUUACCGGAUAAGGCGCAGCGGUCGGGCUGAACGGGGGGUUCGUGCACACAGCCCAGCUUGGAGCGAACGACCUACACCGAACU",
@@ -1876,14 +1878,19 @@ func TestMinimumFreeEnergy(t *testing.T) {
 		Interior loop (2636,2644) GC; (2637,2643) GU:  -150
 		Hairpin  loop (2637,2643) GU              :   520
 		Multi    loop (2275,2662) AU              :  -430
-		-936.5`, t)
+		-936.50`, t)
 }
 
 func compareMFEOutputToViennaRNA(sequence, structure string, temperature float64, energyParamsSet EnergyParamsSet, dangleModel DanglingEndsModel, expected_output string, t *testing.T) {
 	output := captureOutput(func() {
-		mfe, energyContributions, _ := MinimumFreeEnergy(sequence, structure, temperature, energyParamsSet, dangleModel)
-		logEnergyContributions(energyContributions, sequence)
-		log.Printf("%v", mfe)
+		mfe, secondaryStructure, err := MinimumFreeEnergy(sequence, structure, temperature, energyParamsSet, dangleModel)
+		if err != nil {
+			panic(err)
+		}
+		log.Printf("External loop       : %v\n", int(secondaryStructure.ExteriorLoopsEnergy))
+		logEnergyContributions(*secondaryStructure, sequence)
+		// mfe = math.Floor(mfe*100) / 100
+		log.Printf("%.2f", mfe)
 	})
 
 	if stripWhiteSpace(output) != stripWhiteSpace(expected_output) {
@@ -1914,33 +1921,76 @@ func stripWhiteSpace(s string) string {
 * everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
 * is 0-indexed.
  */
-func logEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
-	for _, c := range energyContribution {
-		structure := c.structure
-		switch structure.loopType {
-		case ExteriorLoop:
-			log.Printf("External loop                           : %v\n", c.energy)
-		case InteriorLoop:
-			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
-			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
-				i+1, j+1,
-				string(sequence[i]), string(sequence[j]),
-				k+1, l+1,
-				string(sequence[k]), string(sequence[l]),
-				c.energy)
-		case HairpinLoop:
-			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
-				i+1, j+1,
-				string(sequence[i]), string(sequence[j]),
-				c.energy)
+// func logEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
+// 	for _, c := range energyContribution {
+// 		structure := c.structure
+// 		switch structure.loopType {
+// 		case ExteriorLoop:
+// 			log.Printf("External loop                           : %v\n", c.energy)
+// 		case InteriorLoop:
+// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+// 			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
+// 			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
+// 				i+1, j+1,
+// 				string(sequence[i]), string(sequence[j]),
+// 				k+1, l+1,
+// 				string(sequence[k]), string(sequence[l]),
+// 				c.energy)
+// 		case HairpinLoop:
+// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+// 			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
+// 				i+1, j+1,
+// 				string(sequence[i]), string(sequence[j]),
+// 				c.energy)
+// 		case MultiLoop:
+// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+// 			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
+// 				i+1, j+1,
+// 				string(sequence[i]), string(sequence[j]),
+// 				c.energy)
+// 		}
+// 	}
+// }
+func logEnergyContributions(secondaryStructure SecondaryStructure, sequence string) {
+	for _, structure := range secondaryStructure.Structures {
+		switch structure := structure.(type) {
 		case MultiLoop:
-			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
+			// process Stem
+			logStemEnergyContributions(structure.Stem, sequence)
+			// process multiloop substructures
+			logEnergyContributions(structure.Substructures, sequence)
+			// process multiloop energy
+			var i, j int = structure.Stem.EnclosedFivePrimeIdx, structure.Stem.EnclosedThreePrimeIdx
 			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
 				i+1, j+1,
 				string(sequence[i]), string(sequence[j]),
-				c.energy)
+				int(structure.Energy))
+		case Hairpin:
+			// process Stem
+			logStemEnergyContributions(structure.Stem, sequence)
+			// process hairpin energy
+			var i, j int = structure.Stem.EnclosedFivePrimeIdx, structure.Stem.EnclosedThreePrimeIdx
+			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
+				i+1, j+1,
+				string(sequence[i]), string(sequence[j]),
+				int(structure.Energy))
 		}
 	}
+}
+
+func logStemEnergyContributions(stem Stem, sequence string) {
+	for _, stemStructure := range stem.Structures {
+		logStemStructureEnergyContribution(stemStructure, sequence)
+	}
+}
+
+func logStemStructureEnergyContribution(stemStructure StemStructure, sequence string) {
+	var i, j int = stemStructure.ClosingFivePrimeIdx, stemStructure.ClosingThreePrimeIdx
+	var k, l int = stemStructure.EnclosedFivePrimeIdx, stemStructure.EnclosedThreePrimeIdx
+	log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
+		i+1, j+1,
+		string(sequence[i]), string(sequence[j]),
+		k+1, l+1,
+		string(sequence[k]), string(sequence[l]),
+		int(stemStructure.Energy))
 }
