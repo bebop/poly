@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/TimothyStiles/poly/transform/reverse"
+	"github.com/TimothyStiles/poly/transform"
 	"lukechampine.com/blake3"
 )
 
@@ -178,13 +178,13 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	var deterministicSequence string
 	switch {
 	case circular && doubleStranded:
-		potentialSequences := []string{RotateSequence(sequence), RotateSequence(reverse.Complement(sequence))}
+		potentialSequences := []string{RotateSequence(sequence), RotateSequence(transform.ReverseComplement(sequence))}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case circular && !doubleStranded:
 		deterministicSequence = RotateSequence(sequence)
 	case !circular && doubleStranded:
-		potentialSequences := []string{sequence, reverse.Complement(sequence)}
+		potentialSequences := []string{sequence, transform.ReverseComplement(sequence)}
 		sort.Strings(potentialSequences)
 		deterministicSequence = potentialSequences[0]
 	case !circular && !doubleStranded:

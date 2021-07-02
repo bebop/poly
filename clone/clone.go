@@ -9,7 +9,7 @@ import (
 
 	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/seqhash"
-	"github.com/TimothyStiles/poly/transform/reverse"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 /******************************************************************************
@@ -245,8 +245,8 @@ func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fra
 			}
 			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
 			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
-			if (seedFragment.ReverseOverhang == reverse.Complement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != reverse.Complement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
-				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + reverse.Complement(newFragment.Sequence), seedFragment.ForwardOverhang, reverse.Complement(newFragment.ForwardOverhang)}
+			if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
+				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
 				wg.Add(1)
 				go recurseLigate(wg, c, newSeed, fragmentList)
 			}

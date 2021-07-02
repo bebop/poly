@@ -3,7 +3,7 @@ package poly
 import (
 	"bytes"
 
-	"github.com/TimothyStiles/poly/transform/reverse"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 /******************************************************************************
@@ -139,7 +139,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 
 	// reverse complements resulting string if needed.
 	if location.Complement {
-		sequenceString = reverse.Complement(sequenceBuffer.String())
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
 	} else {
 		sequenceString = sequenceBuffer.String()
 	}
