@@ -9,7 +9,7 @@ import (
 
 	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/pson"
+	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -60,7 +60,7 @@ func TestConvertPipe(t *testing.T) {
 
 		// getting test sequence from non-pipe io to compare against io to stdout
 		baseTestSequence := parseExt(match)
-		pipeOutputTestSequence := pson.Parse(writeBuffer.Bytes())
+		pipeOutputTestSequence := polyjson.Parse(writeBuffer.Bytes())
 
 		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 			t.Errorf(" mismatch converting from %q to json (-want +got):\n%s", extension, diff)
@@ -172,7 +172,7 @@ func TestConvertFile(t *testing.T) {
 	}
 
 	puc19InputTestSequence := genbank.Read("../data/puc19.gbk")
-	puc19OutputTestSequence := pson.Read("../data/puc19.json")
+	puc19OutputTestSequence := polyjson.Read("../data/puc19.json")
 
 	//clearing test data.
 	os.Remove("../data/puc19.json")
@@ -183,7 +183,7 @@ func TestConvertFile(t *testing.T) {
 	}
 
 	t4InputTestSequence := genbank.Read("../data/t4_intron.gb")
-	t4OutputTestSequence := pson.Read("../data/t4_intron.json")
+	t4OutputTestSequence := polyjson.Read("../data/t4_intron.json")
 
 	// clearing test data.
 	os.Remove("../data/t4_intron.json")

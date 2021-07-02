@@ -1,4 +1,4 @@
-package pson
+package polyjson
 
 import (
 	"encoding/json"

@@ -14,7 +14,7 @@ import (
 	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/pson"
+	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/TimothyStiles/poly/seqhash"
 	"github.com/urfave/cli/v2"
 )
@@ -308,7 +308,7 @@ func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
 	if match == outputPath {
 		fmt.Fprintln(c.App.Writer, "WARNING: "+"input path and output path match. File: "+match+". Skipping to prevent possible data loss. Try providing a full path with a different name using the -o flag.")
 	} else if outputExtension == "json" {
-		pson.Write(sequence, outputPath)
+		polyjson.Write(sequence, outputPath)
 	} else if outputExtension == "gff" {
 		gff.Write(sequence, outputPath)
 	} else if outputExtension == "gbk" || c.String("o") == "gb" {
@@ -335,7 +335,7 @@ func parseExt(match string) poly.Sequence {
 	} else if extension == ".gbk" || extension == ".gb" {
 		sequence = genbank.Read(match)
 	} else if extension == ".json" {
-		sequence = pson.Read(match)
+		sequence = polyjson.Read(match)
 	}
 	return sequence
 }
