@@ -465,6 +465,7 @@ func evaluateFoldCompound(fc *foldCompound) SecondaryStructure {
 	lenExteriorLoop := 0
 	for i := 0; i < fc.length; i++ {
 		if pairTable[i] == -1 {
+			lenExteriorLoop++
 			continue
 		}
 
