@@ -348,7 +348,7 @@ func stemStructure(pc *parseCompound,
 		pc.annotatedStructure[i] = interiorLoopUnpairedNucleotide
 	}
 
-	stemStructure := newStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
+	stemStructure := NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 		enclosedFivePrimeIdx, enclosedThreePrimeIdx)
 
 	return stemStructure
@@ -449,8 +449,8 @@ func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
 	substructuresFivePrimeIdx, substructuresThreePrimeIdx := stem.EnclosedFivePrimeIdx+1, stem.EnclosedThreePrimeIdx-1
 	return MultiLoop{
 		Stem:                       stem,
-		SubstructuresFivePrimeIdx:  stem.EnclosedFivePrimeIdx + 1,
-		SubstructuresThreePrimeIdx: stem.EnclosedThreePrimeIdx - 1,
+		SubstructuresFivePrimeIdx:  substructuresFivePrimeIdx,
+		SubstructuresThreePrimeIdx: substructuresThreePrimeIdx,
 		Substructures: SecondaryStructure{
 			Structures: substructures,
 			Length:     substructuresThreePrimeIdx - substructuresFivePrimeIdx + 1,
