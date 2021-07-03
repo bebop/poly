@@ -462,9 +462,21 @@ func evaluateFoldCompound(fc *foldCompound) SecondaryStructure {
 
 	secondaryStructures := make([]interface{}, 0)
 	pairTable := fc.pairTable
+	lenExteriorLoop := 0
 	for i := 0; i < fc.length; i++ {
 		if pairTable[i] == -1 {
 			continue
+		}
+
+		if lenExteriorLoop != 0 {
+			// add single stranded region of exterior loop to structures and reset
+			// lenExteriorLoop for next iteration of for-loop
+			ssr := SingleStrandedRegion{
+				FivePrimeIdx:  i - lenExteriorLoop,
+				ThreePrimeIdx: i - 1,
+			}
+			secondaryStructures = append(secondaryStructures, ssr)
+			lenExteriorLoop = 0
 		}
 
 		en, structure := evaluateLoop(fc, i)
@@ -473,6 +485,15 @@ func evaluateFoldCompound(fc *foldCompound) SecondaryStructure {
 
 		// seek to end of current loop
 		i = pairTable[i]
+	}
+
+	// add the single stranded region at the three prime end (if it exists)
+	if lenExteriorLoop != 0 {
+		ssr := SingleStrandedRegion{
+			FivePrimeIdx:  fc.length - lenExteriorLoop,
+			ThreePrimeIdx: fc.length - 1,
+		}
+		secondaryStructures = append(secondaryStructures, ssr)
 	}
 
 	secondaryStructure.Energy = energy
