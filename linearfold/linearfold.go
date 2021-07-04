@@ -334,9 +334,16 @@ func (s *State) Set3(score float64, manner int, split int) {
 	s.trace.split = split
 }
 
+type FoldingModel int
+
+const (
+	CONTRAfoldv2  FoldingModel = iota // CONTRAfold v2.0 machine-learned model, Do et al 2006
+	ViennaRNAFold FoldingModel = iota // thermodynamic model, Lorenz et al 2011, with parameters from Mathews et al 2004
+)
+
 // Assumes valid sequence input
 // Output: Linearfold score, structure
-func LinearFold(sequence string) (string, float64) {
+func LinearFold(sequence string, foldingModel FoldingModel) (string, float64) {
 	initialize()
 	initialize_cachesingle()
 
@@ -348,7 +355,7 @@ func LinearFold(sequence string) (string, float64) {
 
 	// TODO: Add check for larger than 1
 
-	return Parse(sequence)
+	return Parse(sequence, foldingModel)
 }
 
 type Pair struct {
@@ -375,7 +382,7 @@ func (h *PairHeap) Pop() interface{} {
 	return x
 }
 
-func Parse(sequence string) (string, float64) {
+func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 	/*********************
 	Step 1: Variable setup
 	*********************/
