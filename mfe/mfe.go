@@ -919,110 +919,69 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 	// substructure that branch out from this multi-loop
 	var substructuresEnergy int = 0
 
-	switch fc.dangleModel {
-	case NoDanglingEnds:
+	for enclosedFivePrimeIdx < closingThreePrimeIdx {
 
-		for enclosedFivePrimeIdx < closingThreePrimeIdx {
+		// add up the contributions of the substructures of the multi loop
+		en, substructure := evaluateLoop(fc, enclosedFivePrimeIdx)
+		substructuresEnergy += en
+		substructures = append(substructures, substructure)
 
-			// add up the contributions of the substructures of the multi loop
-			en, substructure := evaluateLoop(fc, enclosedFivePrimeIdx)
-			substructuresEnergy += en
-			substructures = append(substructures, substructure)
+		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
+		enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
 
-			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
-			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
+		switch fc.dangleModel {
+		case NoDanglingEnds:
 			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, -1, -1, fc.energyParams)
 
-			// seek to the next stem
-			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
-			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-				enclosedFivePrimeIdx++
-				lenMultiLoopSingleStrandedRegion++
-			}
-
-			// add single stranded region of multi-loop to structures and reset
-			// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
-			if lenMultiLoopSingleStrandedRegion != 0 {
-				ssr := SingleStrandedRegion{
-					FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
-					ThreePrimeIdx: enclosedFivePrimeIdx - 1,
-				}
-				substructures = append(substructures, ssr)
-				lenMultiLoopSingleStrandedRegion = 0
-			}
-
-			// add unpaired nucleotides
-			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
-		}
-
-		if closingFivePrimeIdx > 0 {
-			// actual closing pair
-			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
-			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, -1, -1, fc.energyParams)
-		} else {
-			// virtual closing pair
-			multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
-		}
-
-	case DoubleDanglingEnds:
-
-		// iterate through structure and find all enclosed base pairs
-		for enclosedFivePrimeIdx < closingThreePrimeIdx {
-
-			// add up the contributions of the substructures of the multi loop
-			en, substructure := evaluateLoop(fc, enclosedFivePrimeIdx)
-			substructuresEnergy += en
-			substructures = append(substructures, substructure)
-
-			/* enclosedFivePrimeIdx must have a pairing partner */
-			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
-
-			/* get type of the enclosed base pair (enclosedFivePrimeIdx,enclosedThreePrimeIdx) */
-			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
-
+		case DoubleDanglingEnds:
 			enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
 			enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
 
 			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, enclosedFivePrimeMismatch,
 				enclosedThreePrimeMismatch, fc.energyParams)
+		}
+		// seek to the next stem
+		enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
 
-			// seek to the next stem
-			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
-			for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-				enclosedFivePrimeIdx++
-				lenMultiLoopSingleStrandedRegion++
-			}
-
-			// add single stranded region of multi-loop to structures and reset
-			// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
-			if lenMultiLoopSingleStrandedRegion != 0 {
-				ssr := SingleStrandedRegion{
-					FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
-					ThreePrimeIdx: enclosedFivePrimeIdx - 1,
-				}
-				substructures = append(substructures, ssr)
-				lenMultiLoopSingleStrandedRegion = 0
-			}
-
-			// add unpaired nucleotides
-			nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+		for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
+			enclosedFivePrimeIdx++
+			lenMultiLoopSingleStrandedRegion++
 		}
 
-		if closingFivePrimeIdx > 0 {
-			// actual closing pair
-			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+		// add single stranded region of multi-loop to structures and reset
+		// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
+		if lenMultiLoopSingleStrandedRegion != 0 {
+			ssr := SingleStrandedRegion{
+				FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
+				ThreePrimeIdx: enclosedFivePrimeIdx - 1,
+			}
+			substructures = append(substructures, ssr)
+			lenMultiLoopSingleStrandedRegion = 0
+		}
 
+		// add unpaired nucleotides
+		nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
+	}
+
+	if closingFivePrimeIdx > 0 {
+		// actual closing pair
+		closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
+
+		switch fc.dangleModel {
+		case NoDanglingEnds:
+			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, -1, -1, fc.energyParams)
+
+		case DoubleDanglingEnds:
 			closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
 			closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
 
 			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, closingFivePrimeMismatch,
 				closingThreePrimeMismatch, fc.energyParams)
-		} else {
-			// virtual closing pair
-			multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
 		}
+
+	} else {
+		// virtual closing pair
+		multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
 	}
 
 	// add bonus energies for unpaired nucleotides
