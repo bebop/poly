@@ -361,7 +361,7 @@ func exteriorLoopsEnergy(fc *foldCompound) int {
 
 		switch fc.dangleModel {
 		case NoDanglingEnds:
-			energy += exteriorStemEnergy(basePairType, -1, -1, fc.energyParams)
+			energy += EvaluateExteriorStem(basePairType, -1, -1, fc.energyParams)
 
 		case DoubleDanglingEnds:
 			var fivePrimeMismatch, threePrimeMismatch int
@@ -377,7 +377,7 @@ func exteriorLoopsEnergy(fc *foldCompound) int {
 				threePrimeMismatch = -1
 			}
 
-			energy += exteriorStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
+			energy += EvaluateExteriorStem(basePairType, fivePrimeMismatch, threePrimeMismatch, fc.energyParams)
 
 		}
 
@@ -406,7 +406,7 @@ func exteriorLoopsEnergy(fc *foldCompound) int {
 // @param  energyParams          The pre-computed energy parameters
 // @return                       The energy contribution of the introduced exterior-loop stem
 //
-func exteriorStemEnergy(basePairType int, fivePrimeMismatch int, threePrimeMismatch int, energyParams *energy_params.EnergyParams) int {
+func EvaluateExteriorStem(basePairType int, fivePrimeMismatch int, threePrimeMismatch int, energyParams *energy_params.EnergyParams) int {
 	var energy int = 0
 
 	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
@@ -588,7 +588,7 @@ func stemStructure(fc *foldCompound,
 	stemStructure := NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 		enclosedFivePrimeIdx, enclosedThreePrimeIdx)
 
-	stemStructure.Energy = evaluateStemStructure(stemStructure, fc)
+	stemStructure.Energy = stemStructureEnergy(stemStructure, fc)
 
 	return stemStructure
 }
@@ -639,7 +639,7 @@ func stemStructure(fc *foldCompound,
  *  @param  P       The datastructure containing scaled energy parameters
  *  @return The Free energy of the Interior-loop in dcal/mol
  */
-func evaluateStemStructure(stemStructure StemStructure, fc *foldCompound) int {
+func stemStructureEnergy(stemStructure StemStructure, fc *foldCompound) int {
 
 	closingBasePairType := encodedBasePairType(fc, stemStructure.ClosingFivePrimeIdx, stemStructure.ClosingThreePrimeIdx)
 	enclosedBasePairType := encodedBasePairType(fc, stemStructure.EnclosedThreePrimeIdx, stemStructure.EnclosedFivePrimeIdx)
@@ -649,6 +649,19 @@ func evaluateStemStructure(stemStructure StemStructure, fc *foldCompound) int {
 	enclosedThreePrimeMismatch := fc.encodedSequence[stemStructure.EnclosedFivePrimeIdx-1]
 	enclosedFivePrimeMismatch := fc.encodedSequence[stemStructure.EnclosedThreePrimeIdx+1]
 
+	return EvaluateStemStructure(stemStructure,
+		closingBasePairType, enclosedBasePairType,
+		closingFivePrimeMismatch, closingThreePrimeMismatch,
+		enclosedThreePrimeMismatch, enclosedFivePrimeMismatch,
+		fc.energyParams)
+
+}
+
+func EvaluateStemStructure(stemStructure StemStructure,
+	closingBasePairType, enclosedBasePairType,
+	closingFivePrimeMismatch, closingThreePrimeMismatch,
+	enclosedThreePrimeMismatch, enclosedFivePrimeMismatch int,
+	energyParams *energy_params.EnergyParams) int {
 	nbUnpairedFivePrime := stemStructure.EnclosedFivePrimeIdx - stemStructure.ClosingFivePrimeIdx - 1
 	nbUnpairedThreePrime := stemStructure.ClosingThreePrimeIdx - stemStructure.EnclosedThreePrimeIdx - 1
 	var nbUnpairedLarger, nbUnpairedSmaller int
@@ -660,8 +673,6 @@ func evaluateStemStructure(stemStructure StemStructure, fc *foldCompound) int {
 		nbUnpairedLarger = nbUnpairedThreePrime
 		nbUnpairedSmaller = nbUnpairedFivePrime
 	}
-
-	energyParams := fc.energyParams
 
 	var energy int
 	switch stemStructure.Type {
@@ -739,7 +750,7 @@ func hairpin(fc *foldCompound, closingFivePrimeIdx, closingThreePrimeIdx int, st
 	nbUnpairedNucleotides := closingThreePrimeIdx - closingFivePrimeIdx - 1 // also the size of the hairpin loop
 	basePairType := encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx)
 
-	energy := evaluateHairpinLoop(nbUnpairedNucleotides, basePairType,
+	energy := EvaluateHairpinLoop(nbUnpairedNucleotides, basePairType,
 		fc.encodedSequence[closingFivePrimeIdx+1],
 		fc.encodedSequence[closingThreePrimeIdx-1],
 		fc.sequence[closingFivePrimeIdx-1:], fc.energyParams)
@@ -790,7 +801,7 @@ func hairpin(fc *foldCompound, closingFivePrimeIdx, closingThreePrimeIdx int, st
  *  @param  energyParams     		 The datastructure containing scaled energy parameters
  *  @return The free energy of the hairpin loop in dcal/mol
  */
-func evaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismatch int, sequence string, energyParams *energy_params.EnergyParams) int {
+func EvaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismatch int, sequence string, energyParams *energy_params.EnergyParams) int {
 	var energy int
 
 	if size <= energy_params.MaxLenLoop {
@@ -920,7 +931,7 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 
 			enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
 			enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
-			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, -1, -1, fc.energyParams)
+			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, -1, -1, fc.energyParams)
 
 			// seek to the next stem
 			enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
@@ -948,10 +959,10 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 		if closingFivePrimeIdx > 0 {
 			// actual closing pair
 			closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
-			multiLoopEnergy += multiLoopStemEnergy(closingPairType, -1, -1, fc.energyParams)
+			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, -1, -1, fc.energyParams)
 		} else {
 			// virtual closing pair
-			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+			multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
 		}
 
 	case DoubleDanglingEnds:
@@ -973,7 +984,7 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 			enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
 			enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
 
-			multiLoopEnergy += multiLoopStemEnergy(enclosedPairType, enclosedFivePrimeMismatch,
+			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, enclosedFivePrimeMismatch,
 				enclosedThreePrimeMismatch, fc.energyParams)
 
 			// seek to the next stem
@@ -1006,11 +1017,11 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 			closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
 			closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
 
-			multiLoopEnergy += multiLoopStemEnergy(closingPairType, closingFivePrimeMismatch,
+			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, closingFivePrimeMismatch,
 				closingThreePrimeMismatch, fc.energyParams)
 		} else {
 			// virtual closing pair
-			multiLoopEnergy += multiLoopStemEnergy(0, -1, -1, fc.energyParams)
+			multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
 		}
 	}
 
@@ -1046,7 +1057,7 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
  *  @param  energyParams          The pre-computed energy parameters
  *  @return                       The energy contribution of the introduced multi-loop stem
  */
-func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energy_params.EnergyParams) int {
+func EvaluateMultiLoopStem(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energy_params.EnergyParams) int {
 	var energy int
 	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
 		energy += energyParams.MismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
