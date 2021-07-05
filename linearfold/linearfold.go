@@ -144,7 +144,9 @@ const SYMMETRIC_MAX_LEN int = 15
 const ASYMMETRY_MAX_LEN int = 28
 
 // recommended beam size based on paper
-var beam_size int = 100
+const DefaultBeamSize int = 100
+
+var beam_size int
 
 // (((((((..((((.......))))(((((((.....))))))).(((((.......))))))))))))....
 
@@ -164,6 +166,7 @@ var sorted_bestM [][]Pair
 var keys []Pair
 
 var energyParams *energy_params.EnergyParams
+var dangleModel mfe.DanglingEndsModel
 
 func GET_ACGU_NUM(x rune) int {
 	switch x {
@@ -353,9 +356,15 @@ const (
 	DefaultEnergyParamsSet = energy_params.Turner2004
 )
 
-func ViennaRNAFold(sequence string, temperature float64, energyParamsSet energy_params.EnergyParamsSet) (string, float64) {
+func ViennaRNAFold(sequence string, temperature float64, energyParamsSet energy_params.EnergyParamsSet, danglingEndsModel mfe.DanglingEndsModel, beamSize int) (string, float64) {
 	initialize()
 	initialize_cachesingle()
+
+	if beamSize < 1 {
+		panic("beamSize must be greater or equal to 1")
+	}
+
+	beam_size = beamSize
 
 	// convert to uppercase
 	sequence = strings.ToUpper(sequence)
@@ -364,13 +373,20 @@ func ViennaRNAFold(sequence string, temperature float64, energyParamsSet energy_
 	sequence = strings.Replace(sequence, "T", "U", -1)
 
 	energyParams = energy_params.NewEnergyParams(energyParamsSet, temperature)
+	dangleModel = danglingEndsModel
 
 	return Parse(sequence, ViennaRNA)
 }
 
-func CONTRAfoldV2(sequence string) (string, float64) {
+func CONTRAfoldV2(sequence string, beamSize int) (string, float64) {
 	initialize()
 	initialize_cachesingle()
+
+	if beamSize < 1 {
+		panic("beamSize must be greater or equal to 1")
+	}
+
+	beam_size = beamSize
 
 	// convert to uppercase
 	sequence = strings.ToUpper(sequence)
@@ -1665,18 +1681,34 @@ func v_score_multi(i, j, nuci, nuci1, nucj_1, nucj, len int) float64 {
 
 func v_score_M1(i, j, k, nuci_1, nuci, nuck, nuck1, len int) float64 {
 	tt := NUM_TO_PAIR(nuci, nuck)
-	sp1 := NUM_TO_NUC(nuci_1)
-	sq1 := NUM_TO_NUC(nuck1)
 
-	return float64(mfe.EvaluateMultiLoopStem(tt, sp1, sq1, energyParams))
+	switch dangleModel {
+	case mfe.NoDanglingEnds:
+		return float64(mfe.EvaluateMultiLoopStem(tt, -1, -1, energyParams))
+
+	case mfe.DoubleDanglingEnds:
+		sp1 := NUM_TO_NUC(nuci_1)
+		sq1 := NUM_TO_NUC(nuck1)
+		return float64(mfe.EvaluateMultiLoopStem(tt, sp1, sq1, energyParams))
+	default:
+		return 0.0
+	}
 }
 
 func v_score_external_paired(i, j, nuci_1, nuci, nucj, nucj1, len int) float64 {
 	pairType := NUM_TO_PAIR(nuci, nucj)
-	si1 := NUM_TO_NUC(nuci_1)
-	sj1 := NUM_TO_NUC(nucj1)
 
-	return float64(mfe.EvaluateExteriorStem(pairType, si1, sj1, energyParams))
+	switch dangleModel {
+	case mfe.NoDanglingEnds:
+		return float64(mfe.EvaluateExteriorStem(pairType, -1, -1, energyParams))
+
+	case mfe.DoubleDanglingEnds:
+		si1 := NUM_TO_NUC(nuci_1)
+		sj1 := NUM_TO_NUC(nucj1)
+		return float64(mfe.EvaluateExteriorStem(pairType, si1, sj1, energyParams))
+	default:
+		return 0.0
+	}
 }
 
 func v_score_single(i, j, p, q,
