@@ -2,9 +2,9 @@ package poly
 
 import (
 	"bytes"
+	"errors"
+	"math/rand"
 	"strings"
-        "math/rand"
-        "errors"
 )
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
@@ -70,6 +70,120 @@ func ComplementBase(basePair rune) rune {
 	return complementBaseRuneMap[basePair]
 }
 
+// IsPalindromic accepts a sequence of even length and returns if it is
+// palindromic. More here - https://en.wikipedia.org/wiki/Palindromic_sequence
+func IsPalindromic(sequence string) bool {
+	return sequence == ReverseComplement(sequence)
+}
+
+//RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
+func RandomProteinSequence(length int, seed int64) (string, error) {
+	//The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons
+	if length <= 2 {
+		err := errors.New("The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. Please select a higher length in RandomProteinSequence function")
+		return "", err
+	}
+
+	// https://en.wikipedia.org/wiki/Amino_acid#Table_of_standard_amino_acid_abbreviations_and_properties
+	var aminoAcidsAlphabet = []rune("ACDEFGHIJLMNPQRSTVWY")
+	rand.Seed(seed)
+
+	randomSequence := make([]rune, length)
+
+	for peptide := range randomSequence {
+		if peptide == 0 {
+			//M is the standard abbreviation for the Methionine aminoacid. A protein sequence start with M because the start codon is translated to Methionine
+			randomSequence[peptide] = 'M'
+		} else if peptide == length-1 {
+			//* is the standard abbreviation for the stop codon. That's a signal for the ribosome to stop the translation and because of that a protein sequence is finished with *
+			randomSequence[peptide] = '*'
+		} else {
+			randomIndex := rand.Intn(len(aminoAcidsAlphabet))
+			randomSequence[peptide] = aminoAcidsAlphabet[randomIndex]
+		}
+	}
+
+	return string(randomSequence), nil
+}
+
+// AllVariantsIUPAC takes a string as input
+// and returns all iupac variants as output
+func AllVariantsIUPAC(seq string) ([]string, error) {
+	seqVariantList := [][]rune{}
+	seqVariants := []string{}
+
+	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
+		'G': []rune{'G'},
+		'A': []rune{'A'},
+		'T': []rune{'T'},
+		'C': []rune{'C'},
+		'R': []rune{'G', 'A'},
+		'Y': []rune{'T', 'C'},
+		'M': []rune{'A', 'C'},
+		'K': []rune{'G', 'T'},
+		'S': []rune{'G', 'C'},
+		'W': []rune{'A', 'T'},
+		'H': []rune{'A', 'C', 'T'},
+		'B': []rune{'G', 'T', 'C'},
+		'V': []rune{'G', 'C', 'A'},
+		'D': []rune{'G', 'A', 'T'},
+		'N': []rune{'G', 'A', 'T', 'C'},
+	}
+
+	for _, s := range strings.ToUpper(seq) {
+		variantsIUPAC, ok := iupac[s]
+		if ok {
+			seqVariantList = append(seqVariantList, variantsIUPAC)
+		} else {
+			return seqVariants, errors.New("Error:" + string(s) + " is not a supported IUPAC character")
+		}
+
+	}
+
+	cartesianProducts := cartRune(seqVariantList...)
+	for _, product := range cartesianProducts {
+		seqVariants = append(seqVariants, string(product))
+	}
+	return seqVariants, nil
+}
+func cartRune(inList ...[]rune) [][]rune {
+	// An iteratitive approach to calculate Cartesian product of two or more lists
+	// Adapted from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
+	// supposedly "minimizes allocations and computes and fills the result sequentially"
+
+	var possibleVariants int = 1 // a counter used to determine the possible number of variants
+	for _, inList := range inList {
+		possibleVariants *= len(inList)
+	}
+	if possibleVariants == 0 {
+		return nil // in the future this could be part of an error return?
+	}
+	allVariants := make([][]rune, possibleVariants)              // this is the 2D slice where all variants will be stored
+	variantHolders := make([]rune, possibleVariants*len(inList)) // this is an empty slice with a length totaling the size of all input characters
+	variantChoices := make([]int, len(inList))                   // these will be all the possible variants
+	start := 0
+	for variant := range allVariants {
+		end := start + len(inList) // define end point
+		variantHolder := variantHolders[start:end]
+
+		allVariants[variant] = variantHolder
+
+		start = end // start at end point
+
+		for variantChoicesIndex, variantChoice := range variantChoices {
+			variantHolder[variantChoicesIndex] = inList[variantChoicesIndex][variantChoice]
+		}
+		for variantChoicesIndex := len(variantChoices) - 1; variantChoicesIndex >= 0; variantChoicesIndex-- {
+			variantChoices[variantChoicesIndex]++
+			if variantChoices[variantChoicesIndex] < len(inList[variantChoicesIndex]) {
+				break
+			}
+			variantChoices[variantChoicesIndex] = 0
+		}
+	}
+	return allVariants
+}
+
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
@@ -93,35 +207,4 @@ func getFeatureSequence(feature Feature, location Location) string {
 	}
 
 	return sequenceString
-}
-
-
-//RandomProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
-func RandomProteinSequence(length int, seed int64) (string, error) {
-    //The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons 
-        if length <= 2 {
-            err := errors.New("The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. Please select a higher length in RandomProteinSequence function")
-            return "", err
-        }
-
-        // https://en.wikipedia.org/wiki/Amino_acid#Table_of_standard_amino_acid_abbreviations_and_properties
-        var aminoAcidsAlphabet = []rune("ACDEFGHIJLMNPQRSTVWY")
-        rand.Seed(seed)
-
-        randomSequence := make([]rune, length)
-
-        for peptide := range randomSequence {
-            if (peptide == 0) {
-                //M is the standard abbreviation for the Methionine aminoacid. A protein sequence start with M because the start codon is translated to Methionine  
-                randomSequence[peptide] = 'M'
-            } else if (peptide == length-1) {
-                //* is the standard abbreviation for the stop codon. That's a signal for the ribosome to stop the translation and because of that a protein sequence is finished with * 
-                randomSequence[peptide] = '*'
-            } else {
-                randomIndex := rand.Intn(len(aminoAcidsAlphabet))
-                randomSequence[peptide] = aminoAcidsAlphabet[randomIndex]
-            }
-        }
-
-        return string(randomSequence), nil
 }

@@ -50,6 +50,15 @@ func run(args []string) {
 
 // application is a function that defines instances of our app. it's where we template commands and where initial arg parsing occurs.
 func application() *cli.App {
+	inputFlag := cli.StringFlag{
+		Name:  "i",
+		Usage: "Specify file input type. Options are gff, gbk/gb, and json. For use with pipes.",
+	}
+	outputFlag := cli.StringFlag{
+		Name:  "o",
+		Value: "json",
+		Usage: "Specify file output type or path. Defaults to json.",
+	}
 
 	app := &cli.App{
 		Name:  "poly",
@@ -57,21 +66,12 @@ func application() *cli.App {
 
 		// This is where you define global flags. Each sub command can also have its own flags that overide globals
 		Flags: []cli.Flag{
-
 			&cli.BoolFlag{
 				Name:  "y",
 				Usage: "Answers yes for all confirmations before doing something possibly destructive.",
 			},
-
-			&cli.StringFlag{
-				Name:  "i",
-				Usage: "Specify file input type or input path.",
-			},
-
-			&cli.StringFlag{
-				Name:  "o",
-				Usage: "Specify file output type or output path.",
-			},
+			&inputFlag,
+			&outputFlag,
 		},
 
 		// This is where you start defining subcommands there's a lot of spacing to enhance readability since these nested brackets can be a little much.
@@ -85,18 +85,8 @@ func application() *cli.App {
 
 				// defining flags for this specific sub command
 				Flags: []cli.Flag{
-
-					&cli.StringFlag{
-						Name:  "o",
-						Value: "json",
-						Usage: "Specify file output type or path. Defaults to json.",
-					},
-
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "",
-						Usage: "Specify file input type. Options are Gff, gbk/gb, and json. Defaults to none.",
-					},
+					&inputFlag,
+					&outputFlag,
 				},
 				// where we provide the actual function that is called by the subcommand.
 				Action: func(c *cli.Context) error {
@@ -111,12 +101,7 @@ func application() *cli.App {
 				Usage:   "Hash a sequence while accounting for circularity using SeqhashV1.",
 
 				Flags: []cli.Flag{
-
-					&cli.StringFlag{
-						Name:  "i",
-						Value: "json",
-						Usage: "Specify file input type. For use with pipes.",
-					},
+					&inputFlag,
 				},
 				Action: func(c *cli.Context) error {
 					err := hashCommand(c)

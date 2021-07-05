@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,6 +34,8 @@ TTFN,
 Tim
 
 ******************************************************************************/
+
+var errIllegalInputFlag error = errors.New("the '-i' flag can only be used with pipes")
 
 /******************************************************************************
 
@@ -71,11 +74,12 @@ func convertCommand(c *cli.Context) error {
 		fmt.Fprint(c.App.Writer, string(output))
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalInputFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
-
-		// TODO write basic check to see if input flag or all paths have accepted file extensions.
 
 		// TODO write basic check for reduduncy. I.E converting gff to gff, etc.
 
@@ -90,7 +94,7 @@ func convertCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := parseExt(match)
 				writeFile(c, sequence, match)
 				// decrementing wait group.
 				wg.Done()
@@ -143,6 +147,9 @@ func hashCommand(c *cli.Context) error {
 		printHash(c, hash, "-")
 
 	} else {
+		if c.String("i") != "" {
+			return errIllegalInputFlag
+		}
 
 		// gets glob pattern matches to determine which files to use.
 		matches := getMatches(c)
@@ -158,7 +165,7 @@ func hashCommand(c *cli.Context) error {
 
 			// executing Go routine.
 			go func(match string) {
-				sequence := fileParser(c, match)
+				sequence := parseExt(match)
 				hash, _ := sequence.Hash()
 				printHash(c, hash, match)
 
@@ -214,8 +221,6 @@ func parseStdin(c *cli.Context) poly.Sequence {
 		sequence = poly.ParseGbk(stdinToBytes(c.App.Reader))
 	} else if c.String("i") == "gff" {
 		sequence = poly.ParseGff(stdinToBytes(c.App.Reader))
-	} else if c.String("i") == "fasta" {
-		sequence = poly.ParseFASTA(stdinToBytes(c.App.Reader))
 	}
 	return sequence
 }
@@ -230,8 +235,6 @@ func parseFlag(file []byte, flag string) poly.Sequence {
 		sequence = poly.ParseGbk(file)
 	} else if flag == "gff" {
 		sequence = poly.ParseGff(file)
-	} else if flag == "fasta" {
-		sequence = poly.ParseFASTA(file)
 	}
 	return sequence
 }
@@ -272,25 +275,6 @@ func uniqueNonEmptyElementsOf(s []string) []string {
 
 }
 
-// function to parse whatever file is at a matched path.
-func fileParser(c *cli.Context, match string) poly.Sequence {
-	extension := filepath.Ext(match)
-	var sequence poly.Sequence
-
-	// determining which reader to use and parse into Sequence struct.
-	if extension == ".gff" || c.String("i") == "gff" {
-		sequence = poly.ReadGff(match)
-	} else if extension == ".gbk" || extension == ".gb" || c.String("i") == "gbk" || c.String("i") == "gb" {
-		sequence = poly.ReadGbk(match)
-	} else if extension == ".json" || c.String("i") == "json" {
-		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" || c.String("i") == "fasta" {
-		sequence = poly.ReadFASTA(match)
-	}
-	// TODO put default error handling here.
-	return sequence
-}
-
 func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 	var output []byte
 	if c.String("o") == "json" {
@@ -299,8 +283,6 @@ func buildStdOut(c *cli.Context, sequence poly.Sequence) []byte {
 		output = poly.BuildGff(sequence)
 	} else if c.String("o") == "gbk" || c.String("o") == "gb" {
 		output = poly.BuildGbk(sequence)
-	} else if c.String("o") == "fasta" {
-		output = poly.BuildFASTA(sequence)
 	}
 	return output
 }
@@ -327,10 +309,7 @@ func writeFile(c *cli.Context, sequence poly.Sequence, match string) {
 		poly.WriteGff(sequence, outputPath)
 	} else if outputExtension == "gbk" || c.String("o") == "gb" {
 		poly.WriteGbk(sequence, outputPath)
-	} else if outputExtension == "fasta" {
-		poly.WriteFASTA(sequence, outputPath)
 	}
-
 }
 
 func printHash(c *cli.Context, hash string, path string) {
@@ -353,8 +332,6 @@ func parseExt(match string) poly.Sequence {
 		sequence = poly.ReadGbk(match)
 	} else if extension == ".json" {
 		sequence = poly.ReadJSON(match)
-	} else if extension == ".fasta" {
-		sequence = poly.ReadFASTA(match)
 	}
 	return sequence
 }
