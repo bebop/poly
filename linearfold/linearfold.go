@@ -6,6 +6,8 @@ import (
 	"math"
 	"sort"
 	"strings"
+
+	"github.com/TimothyStiles/poly/energy_params"
 )
 
 /******************************************************************************
@@ -157,6 +159,9 @@ var bestM [](map[int]*State)
 var bestM2 [](map[int]*State)
 var bestMulti [](map[int]*State)
 var sorted_bestM [][]Pair
+var keys []Pair
+
+var energyParams energy_params.EnergyParams
 
 func GET_ACGU_NUM(x rune) int {
 	switch x {
@@ -353,6 +358,10 @@ func LinearFold(sequence string, foldingModel FoldingModel) (string, float64) {
 	// convert T to U
 	sequence = strings.Replace(sequence, "T", "U", -1)
 
+	if foldingModel == ViennaRNAFold {
+		energy_params = energy_params.NewEnergyParams(energy_params.Turner2004)
+	}
+
 	// TODO: Add check for larger than 1
 
 	return Parse(sequence, foldingModel)
@@ -413,6 +422,8 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 
 	sorted_bestM = make([][]Pair, seq_length)
 
+	keys = make([]Pair, seq_length)
+
 	// vector to store the scores at each beam temporarily for beam pruning
 	scores = make([]Pair, seq_length)
 
@@ -441,7 +452,7 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 	next_pair := make([][]int, NOTON)
 
 	// Iterate through ACGU
-	for nucleotideInteger := 0; nucleotideInteger < 5; nucleotideInteger++ {
+	for nucleotideInteger := 0; nucleotideInteger < NOTON; nucleotideInteger++ {
 		next_pair[nucleotideInteger] = make([]int, seq_length)
 
 		// Set default next_pair to -1
@@ -457,23 +468,36 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 				next = j
 			}
 		}
-
 	}
 
-	// TODO What DOES this do? You can't remove these 2 lines.
-	bestC[0].Set(ScoreExternalUnpaired(0, 0), MANNER_C_eq_C_plus_U)
-	bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
+	if foldingModel == ViennaRNAFold {
+		v_init_tetra_hex_tri(sequence, seq_length, &if_tetraloops, &if_hexaloops, &if_triloops)
 
+		if seq_length > 0 {
+			bestC[0].Set(0, MANNER_C_eq_C_plus_U)
+		}
+		if seq_length > 1 {
+			bestC[1].Set(0, MANNER_C_eq_C_plus_U)
+		}
+	} else {
+		if seq_length > 0 {
+			bestC[0].Set(ScoreExternalUnpaired(0, 0), MANNER_C_eq_C_plus_U)
+		}
+		if seq_length > 1 {
+			bestC[1].Set(ScoreExternalUnpaired(0, 1), MANNER_C_eq_C_plus_U)
+		}
+	}
 	/****************
 	Step 2: Iteration
 	****************/
 	var newscore float64
 	for j := range sequence {
 		// Set current nucleotide in sequence
-		currentNucleotide := nucs[j]
+		currentNucleotide := nucs[j] // nucj
 
 		// Set next nucleotide in sequence
-		var nextNucleotide int
+
+		var nextNucleotide int // nucj1
 		if (j + 1) < seq_length {
 			nextNucleotide = nucs[j+1]
 		} else {
@@ -481,102 +505,153 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 		}
 
 		// For this nucleotide, let's define some of the beams
+		var beamstepH *map[int]*State = &bestH[j]
 		var beamstepMulti *map[int]*State = &bestMulti[j]
 		var beamstepP *map[int]*State = &bestP[j]
 		var beamstepM2 *map[int]*State = &bestM2[j]
 		var beamstepM *map[int]*State = &bestM[j]
 		var beamstepC *State = bestC[j]
 
+		no_sharp_turn := true
 		// beam of H
-		if beam_size > 0 && len(bestH[j]) > beam_size {
-			BeamPrune(&bestH[j])
-		}
-
-		// Get distance to the next complementing base pair
-		nextComplement := next_pair[currentNucleotide][j]
-
-		// TODO: What does this do?
-		for nextComplement-j < 4 && nextComplement != -1 {
-			nextComplement = next_pair[currentNucleotide][nextComplement]
-		}
-
-		// If there is a nextComplement
-		if nextComplement != -1 {
-			nextComplementNucleotide := nucs[nextComplement]
-			var nextComplementNucleotide_1 int
-			if (nextComplement - 1) > -1 {
-				nextComplementNucleotide_1 = nucs[nextComplement-1]
-			} else {
-				nextComplementNucleotide_1 = -1
+		{
+			if beam_size > 0 && len(*beamstepH) > beam_size {
+				BeamPrune(beamstepH)
 			}
 
-			// Screen for hairpins
-			newscore = hairpin_length[Min(nextComplement-j-1, HAIRPIN_MAX_LEN)] +
-				helix_closing[currentNucleotide*NOTON+nextComplementNucleotide] +
-				terminal_mismatch[currentNucleotide*NOTONT+nextComplementNucleotide*NOTOND+nextNucleotide*NOTON+nextComplementNucleotide_1]
+			// Get distance to the next complementing base pair
+			nextComplement := next_pair[currentNucleotide][j] // jnext
 
-			// If there is a nil pointer at bestH[nextComplement][j] (nothing else has passed through it), initialize it
-			if bestH[nextComplement][j] == nil {
-				bestH[nextComplement][j] = NewState()
-			}
-			// If our computed hairpin score is higher than whatever is currently at that nextComplement base,
-			// we can affirm that it may be a hairpin
-			if bestH[nextComplement][j].score < newscore {
-				bestH[nextComplement][j].manner = MANNER_H // MANNER_H means there may be a hairpin there
-				bestH[nextComplement][j].score = newscore
+			// TODO: What does this do?
 
-			}
-		}
-
-		// for every state h in H[j]
-		//   1. extend h(i, j) to h(i, nextComplement)
-		//   2. generate p(i, j)
-		//fmt.Println(beamstepH)
-		//for i, state := range *beamstepH {
-		for i, state := range bestH[j] {
-			nuci := nucs[i]
-			nextComplement := next_pair[nuci][j]
-
-			// 2. generate p(i, j)
-			// lisiz, change the order because of the constriants
-			if (*beamstepP)[i] == nil {
-				(*beamstepP)[i] = NewState()
-			}
-			update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
-
-			if nextComplement != -1 {
-				var nuci1 int
-				if (i + 1) < seq_length {
-					nuci1 = nucs[i+1]
-				} else {
-					nuci1 = -1
+			if no_sharp_turn {
+				for nextComplement-j < 4 && nextComplement != -1 {
+					nextComplement = next_pair[currentNucleotide][nextComplement]
 				}
+			}
 
-				nextComplementNucleotide := nucs[nextComplement]
-
-				var nextComplementNucleotide_1 int
+			// If there is a nextComplement
+			if nextComplement != -1 {
+				nextComplementNucleotide := nucs[nextComplement] // nucjnext
+				var nextComplementNucleotide_1 int               // nucjnext_1
 				if (nextComplement - 1) > -1 {
 					nextComplementNucleotide_1 = nucs[nextComplement-1]
 				} else {
 					nextComplementNucleotide_1 = -1
 				}
 
-				// 1. extend h(i, j) to h(i, nextComplement)
-				newscore = hairpin_length[Min(nextComplement-i-1, HAIRPIN_MAX_LEN)] +
-					helix_closing[nuci*NOTON+nextComplementNucleotide] +
-					terminal_mismatch[nuci*NOTONT+nextComplementNucleotide*NOTOND+nuci1*NOTON+nextComplementNucleotide_1]
-				// this candidate must be the best one at [i, nextComplement]
-				// so no need to check the score
-
-				if bestH[nextComplement][i] == nil {
-					bestH[nextComplement][i] = NewState()
+				// Screen for hairpins
+				if foldingModel == ViennaRNAFold {
+					tetra_hex_tri_energy := -1
+					if nextComplement-j-1 == 4 { // 6:tetra
+						tetra_hex_tri_energy = if_tetraloops[j]
+					} else if nextComplement-j-1 == 6 { // 8:hexa
+						tetra_hex_tri_energy = if_hexaloops[j]
+					} else if nextComplement-j-1 == 3 { // 5:tri
+						tetra_hex_tri_energy = if_triloops[j]
+					}
+					newscore = -float64(v_score_hairpin(j, nextComplement, currentNucleotide, nextNucleotide, nextComplementNucleotide_1, nextComplementNucleotide, tetra_hex_tri_energy))
+				} else {
+					newscore = hairpin_length[Min(nextComplement-j-1, HAIRPIN_MAX_LEN)] +
+						helix_closing[currentNucleotide*NOTON+nextComplementNucleotide] +
+						terminal_mismatch[currentNucleotide*NOTONT+nextComplementNucleotide*NOTOND+nextNucleotide*NOTON+nextComplementNucleotide_1]
 				}
-				update_if_better(bestH[nextComplement][i], newscore, MANNER_H)
-			}
-		}
 
-		if j == 0 {
-			continue
+				// If there is a nil pointer at bestH[nextComplement][j] (nothing else has passed through it), initialize it
+				if bestH[nextComplement][j] == nil {
+					bestH[nextComplement][j] = NewState()
+				}
+				// If our computed hairpin score is higher than whatever is currently at that nextComplement base,
+				// we can affirm that it may be a hairpin
+				if bestH[nextComplement][j].score < newscore {
+					bestH[nextComplement][j].manner = MANNER_H // MANNER_H means there may be a hairpin there
+					bestH[nextComplement][j].score = newscore
+				}
+			}
+
+			// for every state h in H[j]
+			//   1. extend h(i, j) to h(i, nextComplement)
+			//   2. generate p(i, j)
+
+			if foldingModel == ViennaRNAFold {
+				sort_keys(beamstepH, &keys)
+			}
+
+			// keys is a list of pairs (with first being i and second being state)
+			// beamstepH is a map with keys and values
+
+			var idx int = 0
+			for i, statePointer := range *beamstepH {
+				state := *statePointer
+				if foldingModel == ViennaRNAFold {
+					// if folding model is ViennaRNAFold, we actually have to iterate
+					// through keys
+					pair := keys[idx]
+					i, state = pair.first.(int), pair.second.(State)
+					idx++
+				}
+
+				// for i, state := range bestH[j] {
+				nuci := nucs[i]
+				nextComplement := next_pair[nuci][j] // jnext
+
+				// 2. generate p(i, j)
+				// lisiz, change the order because of the constriants
+				if (*beamstepP)[i] == nil {
+					(*beamstepP)[i] = NewState()
+				}
+				update_if_better((*beamstepP)[i], state.score, MANNER_HAIRPIN)
+
+				if nextComplement != -1 {
+					var nuci1 int
+					if (i + 1) < seq_length {
+						nuci1 = nucs[i+1]
+					} else {
+						nuci1 = -1
+					}
+
+					nextComplementNucleotide := nucs[nextComplement] // nucjnext
+
+					var nextComplementNucleotide_1 int // nucjnext_1
+					if (nextComplement - 1) > -1 {
+						nextComplementNucleotide_1 = nucs[nextComplement-1]
+					} else {
+						nextComplementNucleotide_1 = -1
+					}
+
+					// 1. extend h(i, j) to h(i, nextComplement)
+					switch foldingModel {
+					case ViennaRNAFold:
+						tetra_hex_tri_energy := -1
+
+						if nextComplement-i-1 == 4 { // 6:tetra
+							tetra_hex_tri_energy = if_tetraloops[i]
+						} else if nextComplement-i-1 == 6 { // 8:hexa
+							tetra_hex_tri_energy = if_hexaloops[i]
+						} else if nextComplement-i-1 == 3 { // 5:tri
+							tetra_hex_tri_energy = if_triloops[i]
+						}
+
+						newscore = -float64(v_score_hairpin(i, nextComplement, nuci, nuci1, nextComplementNucleotide_1, nextComplementNucleotide, tetra_hex_tri_energy))
+					default:
+						newscore = hairpin_length[Min(nextComplement-i-1, HAIRPIN_MAX_LEN)] +
+							helix_closing[nuci*NOTON+nextComplementNucleotide] +
+							terminal_mismatch[nuci*NOTONT+nextComplementNucleotide*NOTOND+nuci1*NOTON+nextComplementNucleotide_1]
+					}
+
+					// this candidate must be the best one at [i, nextComplement]
+					// so no need to check the score
+
+					if bestH[nextComplement][i] == nil {
+						bestH[nextComplement][i] = NewState()
+					}
+					update_if_better(bestH[nextComplement][i], newscore, MANNER_H)
+				}
+			}
+
+			if j == 0 {
+				continue
+			}
 		}
 
 		// beam of Multi
@@ -588,7 +663,16 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 			// for every state in Multi[j]
 			//   1. extend (i, j) to (i, nextComplement)
 			//   2. generate P (i, j)
-			for i, state := range *beamstepMulti {
+			idx := 0
+			for i, statePointer := range *beamstepMulti {
+				state := *statePointer
+				if foldingModel == ViennaRNAFold {
+					// if folding model is ViennaRNAFold, we actually have to iterate
+					// through keys
+					pair := keys[idx]
+					i, state = pair.first.(int), pair.second.(State)
+					idx++
+				}
 
 				nuci := nucs[i]
 				nuci1 := nucs[i+1]
@@ -597,7 +681,12 @@ func Parse(sequence string, foldingModel FoldingModel) (string, float64) {
 				// 2. generate P (i, j)
 				// lisiz, change the order because of the constraits
 				{
-					newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
+					switch foldingModel {
+					case ViennaRNAFold:
+						newscore = state.score - v_score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
+					default:
+						newscore = state.score + score_multi(i, j, nuci, nuci1, nucs[j-1], currentNucleotide, seq_length)
+					}
 					if (*beamstepP)[i] == nil {
 						(*beamstepP)[i] = NewState()
 					}
@@ -1234,4 +1323,196 @@ func bulge_nuc_score(nuci int) float64 {
 // parameters: nucs[i], nucs[j]
 func internal_nuc_score(nuci, currentNucleotide int) float64 {
 	return internal_1x1_nucleotides[nuci*NOTON+currentNucleotide]
+}
+
+var (
+	if_tetraloops, if_hexaloops, if_triloops []int
+)
+
+func v_init_tetra_hex_tri(sequence string, seq_length int, if_tetraloops, if_hexaloops, if_triloops *([]int)) {
+
+	lastTetraLoopStartPos := seq_length - 5
+
+	// TetraLoops
+	if lastTetraLoopStartPos < 0 {
+		*if_tetraloops = make([]int, 0)
+	} else {
+		*if_tetraloops = make([]int, lastTetraLoopStartPos)
+	}
+
+	for idx := range *if_tetraloops {
+		(*if_tetraloops)[idx] = -1
+	}
+
+	for i := 0; i < lastTetraLoopStartPos; i++ {
+		// TODO not sure if byte cast is needed
+		if !(sequence[i] == byte('C') && sequence[i+5] == byte('G')) {
+			continue
+		}
+		potentialTetraLoop := sequence[i : i+6]
+
+		tetraLoopEnergy, present := Tetraloop37[potentialTetraLoop]
+		if present {
+			(*if_tetraloops)[i] = tetraLoopEnergy
+		}
+	}
+
+	// Triloops
+	lastTriLoopStartPos := seq_length - 4
+
+	if lastTriLoopStartPos < 0 {
+		*if_triloops = make([]int, 0)
+	} else {
+		*if_triloops = make([]int, lastTriLoopStartPos)
+	}
+
+	for idx := range *if_triloops {
+		(*if_triloops)[idx] = -1
+	}
+
+	for i := 0; i < lastTriLoopStartPos; i++ {
+		// TODO not sure if byte cast is needed
+		if !((sequence[i] == byte('C') && sequence[i+4] == byte('G')) || (sequence[i] == byte('G') && sequence[i+4] == byte('C'))) {
+			continue
+		}
+
+		potentialTriLoop := sequence[i : i+5]
+
+		triLoopEnergy, present := Triloop37[potentialTriLoop]
+		if present {
+			(*if_triloops)[i] = triLoopEnergy
+		}
+	}
+
+	// Hexaloops
+	lastHexaLoopStartPos := seq_length - 7
+
+	if lastHexaLoopStartPos < 0 {
+		*if_hexaloops = make([]int, 0)
+	} else {
+		*if_hexaloops = make([]int, lastHexaLoopStartPos)
+	}
+
+	for idx := range *if_hexaloops {
+		(*if_hexaloops)[idx] = -1
+	}
+
+	for i := 0; i < lastHexaLoopStartPos; i++ {
+		// TODO not sure if byte cast is needed
+		if !(sequence[i] == byte('A') && sequence[i+7] == byte('U')) {
+			continue
+		}
+
+		potentialHexaLoop := sequence[i : i+8]
+
+		hexaLoopEnergy, present := Hexaloop37[potentialHexaLoop]
+		if present {
+			(*if_hexaloops)[i] = hexaLoopEnergy
+		}
+	}
+}
+
+func v_score_hairpin(i, j, nuci, nuci1, nucj_1, nucj, tetra_hex_tri_energy int) int {
+
+	size := j - i - 1
+	pairType := NUM_TO_PAIR(nuci, nucj)
+	si1 := NUM_TO_NUC(nuci1)
+	sj1 := NUM_TO_NUC(nucj_1)
+
+	return mfe.EvaluateHairpinLoop(size, pairType, si1, sj1, sequence[i-1:], energyParams)
+}
+
+func NUM_TO_NUC(x int) int {
+	switch x {
+	case -1:
+		return -1
+	case 4:
+		return 0
+	default:
+		return x + 1
+	}
+}
+
+func NUM_TO_PAIR(x, y int) (ret int) {
+	switch x {
+	case 0:
+		switch y {
+		case 3:
+			ret = 5
+		default:
+			ret = 0
+		}
+	case 1:
+		switch y {
+		case 2:
+			ret = 1
+		default:
+			ret = 0
+		}
+	case 2:
+		switch y {
+		case 1:
+			ret = 2
+		case 3:
+			ret = 3
+		default:
+			ret = 0
+		}
+	case 3:
+		switch y {
+		case 2:
+			ret = 4
+		case 0:
+			ret = 6
+		default:
+			ret = 0
+		}
+	default:
+		ret = 0
+	}
+	return
+}
+
+// only used for ViennaRNA fold model
+func sort_keys(keyMap *map[int]*State, sorted_keys *([]Pair)) {
+	*sorted_keys = make([]Pair, 0)
+	for k, v := range *keyMap {
+		pair := Pair{k, *v}
+		*sorted_keys = append(*sorted_keys, pair)
+	}
+
+	sort.Slice(sorted_keys, func(i, j int) bool {
+		// if hairpinModules[i].standbyFreeEnergy == hairpinModules[j].standbyFreeEnergy {
+		// 	return hairpinModules[i].hairpin.SingleStrandedThreePrimeIdx > hairpinModules[j].hairpin.SingleStrandedThreePrimeIdx
+		// }
+		return (*sorted_keys)[i].first.(int) > (*sorted_keys)[j].first.(int)
+	})
+}
+
+func v_score_multi(i, j, nuci, nuci1, nucj_1, nucj, len int) {
+	int tt = NUM_TO_PAIR(nucj, nuci);
+	int si1 = NUM_TO_NUC(nuci1);
+	int sj1 = NUM_TO_NUC(nucj_1);
+
+	return E_MLstem(tt, sj1, si1) + ML_closing37;
+}
+
+func multiLoopStemEnergy(basePairType, fivePrimeMismatch, threePrimeMismatch int, energyParams *energyParams) int {
+	var energy int
+	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
+		energy += energyParams.mismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
+	} else if fivePrimeMismatch >= 0 {
+		energy += energyParams.dangle5[basePairType][fivePrimeMismatch]
+	} else if threePrimeMismatch >= 0 {
+		energy += energyParams.dangle3[basePairType][threePrimeMismatch]
+	}
+
+	energy += energyParams.multiLoopIntern[basePairType]
+
+	if basePairType > 2 {
+		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
+		energy += energyParams.terminalAUPenalty
+	}
+
+	return energy
 }
