@@ -106,9 +106,10 @@ type Sequence struct {
 }
 
 // AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
-func (sequence *Sequence) AddFeature(feature Feature) []Feature {
+func (sequence *Sequence) AddFeature(feature *Feature) []Feature {
 	feature.ParentSequence = sequence
-	sequence.Features = append(sequence.Features, feature)
+	var featureCopy Feature = *feature
+	sequence.Features = append(sequence.Features, featureCopy)
 	return sequence.Features
 }
 

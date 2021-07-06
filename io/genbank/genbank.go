@@ -86,7 +86,7 @@ func Parse(file []byte) poly.Sequence {
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
 	for _, feature := range features {
-		sequence.AddFeature(feature)
+		sequence.AddFeature(&feature)
 	}
 
 	return sequence

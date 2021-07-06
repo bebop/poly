@@ -70,7 +70,7 @@ func Parse(file []byte) poly.Sequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			sequence.AddFeature(record)
+			sequence.AddFeature(&record)
 		}
 	}
 	sequence.Sequence = sequenceBuffer.String()

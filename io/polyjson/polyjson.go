@@ -21,7 +21,7 @@ func Parse(file []byte) poly.Sequence {
 	sequence.Features = []poly.Feature{}
 
 	for _, feature := range legacyFeatures {
-		sequence.AddFeature(feature)
+		sequence.AddFeature(&feature)
 	}
 	return sequence
 }
