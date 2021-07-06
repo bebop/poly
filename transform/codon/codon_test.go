@@ -164,6 +164,20 @@ func TestGetCodonFrequency(t *testing.T) {
 
 }
 
+func ExampleGetCodingRegions() {
+	sequence := genbank.Read("../../data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+
+	// GetCodingRegions returns a single concatenated string of all coding regions.
+	codingRegions := GetCodingRegions(sequence)
+
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
+	fmt.Println(optimizationTable.AminoAcids[0].Codons[0].Triplet)
+
+	// output: TCT
+
+}
+
 /******************************************************************************
 
 JSON related tests begin here.
