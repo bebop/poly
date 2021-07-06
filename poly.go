@@ -113,11 +113,6 @@ func (sequence *Sequence) AddFeature(feature *Feature) []Feature {
 	return sequence.Features
 }
 
-// GetSequence is a method to get the full sequence of an annotated sequence
-func (sequence Sequence) GetSequence() string {
-	return sequence.Sequence
-}
-
 // GetSequence is a method wrapper to get a Feature's sequence. Mutates with Sequence.
 func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.SequenceLocation)
