@@ -165,6 +165,9 @@ func TestGetCodonFrequency(t *testing.T) {
 }
 
 func ExampleGetCodingRegions() {
+
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
 	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
 
@@ -172,9 +175,12 @@ func ExampleGetCodingRegions() {
 	codingRegions := GetCodingRegions(sequence)
 
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
-	fmt.Println(optimizationTable.AminoAcids[0].Codons[0].Triplet)
 
-	// output: TCT
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
+
+	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
+	// output: true
 
 }
 
