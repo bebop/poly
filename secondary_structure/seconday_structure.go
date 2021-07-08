@@ -6,15 +6,33 @@ July, 01, 2021
 This file defines the structs needed to contain information about a RNA's
 secondary structure.
 
-The main RNA secondary structures are `MultiLoop`s, `Hairpin`s, and
-`SingleStrandedRegion`s. Hairpins and Multi-loops both can optionally have a
-`Stem`.
+Overview of the structs:
+	The struct that contains information of a RNA's secondary structure is
+	`SecondaryStructure`. The field `Structures` contains a list of the main
+	RNA secondary structures (MultiLoop`, `Hairpin`, and `SingleStrandedRegion`).
+	`Hairpin`s and `Multiloop`s both can optionally have a `Stem`.
 
-A `Stem` consists of a list of `StemStructure`s. A `StemStructure` is delimited
-by a closing and enclosed base pair with the requirement that there are no base
-pairs between the closing and enclosed base pair. A `StemStrcture` is classified
-into a `StemStructureType` based on the number of unpaired nucleotides between
-the closing and enclosed base pairs.
+	A `Stem` consists of a list of `StemStructure`s. A `StemStructure` consists
+	of a closing and enclosed base pair with the requirement that there are
+	no base pairs between the closing and enclosed base pair.
+
+	See the definitions of the structs for more detailed information on their
+	definition.
+
+Explaination of the energy fields of the structs:
+	The energy fields of the structs are only used in the `SecondaryStructure`
+	returned from the func `MinimumFreeEnergy` in the subpackage `mfe` in
+	`poly`. The func `MinimumFreeEnergy` reads energy paramater values from files
+	specified in the `RNAfold parameter file v2.0` file format in the
+	`energy_params` subpackage in `poly`. This file format specifies energy
+	values in the unit deca-cal / mol (with the `int` type).
+
+	Due to Golang's inaccuracies with adding and subtracting `float64` values,
+	a design decision was made to specify the energy fields of the structs
+	defined in this file in the unit deca-cal / mol (with the `int` type).
+
+	Thus, to convert to the 'standard' energy unit of kcal/mol, the energy
+	values have to be converted to `float32` or `float64` and divided by `100`.
 
 ******************************************************************************/
 
@@ -46,6 +64,9 @@ type MultiLoop struct {
 // Sometimes a `Hairpin` may only consist of a Stem without a single stranded
 // region. In such cases, the `SingleStrandedFivePrimeIdx` and
 // `SingleStrandedThreePrimeIdx` of the hairpin are set to `-1`.
+// In dot-bracket notation, a hairpin is denoted by
+// 	structure:  . . ( ( . . ) ) . .
+// 	index: 			0 1 2 3 4 5 6 7 8 9
 type Hairpin struct {
 	Stem                                                    Stem
 	SingleStrandedFivePrimeIdx, SingleStrandedThreePrimeIdx int
@@ -88,6 +109,8 @@ type Stem struct {
 // A `StemStrcture` is classified into a `StemStructureType` based on the
 // number of unpaired nucleotides between the closing and enclosed base pairs.
 // (See (*StemStructure).setStructureType for more details)
+// A `StemStrcture` is classified into a `StemStructureType` based on the number of unpaired nucleotides between
+// 	the closing and enclosed base pairs.
 type StemStructure struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
