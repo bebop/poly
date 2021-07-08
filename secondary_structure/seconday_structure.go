@@ -40,6 +40,13 @@ Explaination of the energy fields of the structs:
 // and `SingleStrandedRegion`s. Note that since Go doesn't support inheritance,
 // we use `interface{}` as the type for the structures list, but the only types
 // that are allowed/used are `MultiLoop`, `Hairpin` and `SingleStrandedRegion`.
+//
+// The free energy of the entire secondary structure (including the energy
+// of the exterior loops of the secondary structure) is stored in the `Energy`
+// field of the struct. Since the energy of the exterior loops of the
+// secondary structure is not part of any of the `SecondaryStructure`'s
+// `Structures` (and belongs to the entire `SecondaryStructure`), it is stored
+// in the field `ExteriorLoopsEnergy`.
 type SecondaryStructure struct {
 	Structures          []interface{}
 	Length              int
@@ -64,9 +71,6 @@ type MultiLoop struct {
 // Sometimes a `Hairpin` may only consist of a Stem without a single stranded
 // region. In such cases, the `SingleStrandedFivePrimeIdx` and
 // `SingleStrandedThreePrimeIdx` of the hairpin are set to `-1`.
-// In dot-bracket notation, a hairpin is denoted by
-// 	structure:  . . ( ( . . ) ) . .
-// 	index: 			0 1 2 3 4 5 6 7 8 9
 type Hairpin struct {
 	Stem                                                    Stem
 	SingleStrandedFivePrimeIdx, SingleStrandedThreePrimeIdx int
@@ -75,6 +79,8 @@ type Hairpin struct {
 
 // SingleStrandedRegion contains all the information needed to denote a
 // single stranded region in a RNA's secondary structure.
+// At the minimum, a `SingleStrandedRegion` consists of of a single
+// unpaired nucleotide. In such a case, `FivePrimeIdx` == `ThreePrimeIdx`.
 type SingleStrandedRegion struct {
 	FivePrimeIdx, ThreePrimeIdx int
 }
@@ -87,9 +93,19 @@ type SingleStrandedRegion struct {
 //
 // Note that a `Stem` may not contain any stem structures. This occurs in cases
 // where there is only one base pair that delimits a `Hairpin` or `MultiLoop`.
-// (For example, "eee(hhh)eee" would be a Hairpin (Stem at indexs 3 and 7) and
-// "ee(mmm((hh))mm)ee" would be a Multiloop (Stem at indexs 2 and 14) whose
-// stems don't contain any structures)
+// For example,
+// dot-bracket sturcture: . . . ( . . . ) . .
+//   annotated structure: e e e ( h h h ) e e
+// 				         index: 0 1 2 3 4 5 6 7 8 9
+// would be a Hairpin (with a Stem with the closing base pair at indexs 3 and
+// 7) whose stem don't contain any structures.
+//
+// For example,
+// dot-bracket sturcture: . . ( . . . ( ( . . )  )  .  .  )  .  .
+//   annotated structure: . . ( m m m ( ( h h )  )  m  m  )  e  e
+// 				         index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+// would be a Multiloop (with a Stem with the closing base pair at indexs 2 and
+// 14) whose stem don't contain any structures.
 // In such cases, the stem will only have its `ClosingFivePrimeIdx` and
 // `ClosingThreePrimeIdx` set. The `EnclosedFivePrimeIdx` and
 // `EnclosedThreePrimeIdx` will be set to -1, and the list of `StemStructres`
@@ -102,20 +118,18 @@ type Stem struct {
 }
 
 // StemStructure contains all the information needed to denote the substructures
-// present in a `Stem`. A `StemStructure` is delimited by a closing and
+// present in a `Stem`. A `StemStructure` always consists of a closing and
 // enclosed base pair with the requirement that there are no base pairs between
 // the closing and enclosed base pair.
 //
 // A `StemStrcture` is classified into a `StemStructureType` based on the
 // number of unpaired nucleotides between the closing and enclosed base pairs.
 // (See (*StemStructure).setStructureType for more details)
-// A `StemStrcture` is classified into a `StemStructureType` based on the number of unpaired nucleotides between
-// 	the closing and enclosed base pairs.
 type StemStructure struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
 	Type                                        StemStructureType
-	Energy                                      int // free energy in dcal / mol
+	Energy                                      int // free energy of the `StemStructure` in dcal / mol
 }
 
 // StemStructureType denotes the type of a `StemStructure`.
@@ -159,7 +173,8 @@ const (
 	GenericInteriorLoop
 )
 
-// setStructureType sets the `Type` field of a `StemStructure`.
+// setStructureType sets the `Type` field of a `StemStructure` based on the
+// number of unpaired nucleotides between the closing and enclosed base pairs.
 func (structure *StemStructure) setStructureType() {
 	nbUnpairedFivePrime := structure.EnclosedFivePrimeIdx - structure.ClosingFivePrimeIdx - 1
 	nbUnpairedThreePrime := structure.ClosingThreePrimeIdx - structure.EnclosedThreePrimeIdx - 1
@@ -207,7 +222,7 @@ func (structure *StemStructure) setStructureType() {
 
 // NewStemStructure is a wrapper to create a `StemStructure` and call the
 // functions (`(*StemStructure).setStructureType`) required to initalise the
-// struct
+// struct.
 func NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {
 
