@@ -58,6 +58,9 @@ in multiple places (Type IIG enzymes) such as BcgI.
 ******************************************************************************/
 
 // Part is a simple struct that can carry a circular or linear DNA sequence.
+// In the field of synthetic biology, the term "DNA Part" was popularized by
+// the iGEM competition http://parts.igem.org/Main_Page , so we use that term
+// here.
 type Part struct {
 	Sequence string
 	Circular bool
