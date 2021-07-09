@@ -56,8 +56,14 @@ type SecondaryStructure struct {
 
 // MultiLoop contains all the information needed to denote a multi-loop in a
 // RNA's secondary structure. It consists of a `Stem` and a list of
-// substructures. Note that a `Multiloop` will always contain atleast one
-// substructure.
+// substructures. A `Multiloop` will always contain atleast one substructure.
+// The only substructures present in a Multiloop are `Hairpin`s and
+// `SingleStrandedRegion`s.
+//
+// The total free energy of a Multiloop can be calculated by summing the energy
+// of the Multiloop's stem (present in the `Energy` field of the `Stem`),
+// the energy of the substructures (the `Energy` field of `Substructures`),
+// and the energy of the Multiloop (the `Energy` field of this struct).
 type MultiLoop struct {
 	Stem                                                  Stem
 	SubstructuresFivePrimeIdx, SubstructuresThreePrimeIdx int
@@ -68,9 +74,15 @@ type MultiLoop struct {
 // Hairpin contains all the information needed to denote a hairpin loop in a
 // RNA's secondary structure. It consists of a `Stem` and a single stranded
 // region that forms the loop of the structure.
+//
 // Sometimes a `Hairpin` may only consist of a Stem without a single stranded
 // region. In such cases, the `SingleStrandedFivePrimeIdx` and
 // `SingleStrandedThreePrimeIdx` of the hairpin are set to `-1`.
+//
+// The total free energy of a Hairpin can be calculated by summing the energy
+// of the Hairpin's stem (present in the `Energy` field of the `Stem`),
+// and the energy of the single stranded region of a Hairpin's loop (the
+// `Energy` field of this struct).
 type Hairpin struct {
 	Stem                                                    Stem
 	SingleStrandedFivePrimeIdx, SingleStrandedThreePrimeIdx int
