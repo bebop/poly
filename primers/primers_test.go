@@ -1,10 +1,12 @@
-package poly
+package primers
 
 import (
 	"fmt"
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/TimothyStiles/poly/transform"
 )
 
 func ExampleMarmurDoty() {
@@ -50,7 +52,7 @@ func TestSantaLucia(t *testing.T) {
 func TestSantaLuciaReverseComplement(t *testing.T) {
 	testSeq := "ACGTAGATCTACGT" //"GTAAAACGACGGCCAGT" // M13 fwd
 
-	testReverseComplement := ReverseComplement(testSeq)
+	testReverseComplement := transform.ReverseComplement(testSeq)
 	if testSeq != testReverseComplement {
 		t.Errorf("Input is not a reverse complement of it's. Got %q instead of %q", testSeq, testReverseComplement)
 	}
@@ -119,7 +121,7 @@ func TestCreateBarcode(t *testing.T) {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
 
-	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{ReverseComplement("GGCCGCGCCCC")}, []func(string) bool{})
+	barcodes = CreateBarcodesWithBannedSequences(20, 4, []string{transform.ReverseComplement("GGCCGCGCCCC")}, []func(string) bool{})
 	output = barcodes[len(barcodes)-1]
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
