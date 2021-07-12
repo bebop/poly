@@ -24,7 +24,7 @@ via cli.app.reader and cli.app.writer. This is the only way to get true stack
 traceable coverage.
 ******************************************************************************/
 
-var testFilePaths = []string{"../data/puc19.gbk", "../data/ecoli-mg1655-short.gff", "../data/sample.json"}
+var testFilePaths = []string{"../../data/puc19.gbk", "../../data/ecoli-mg1655-short.gff", "../../data/sample.json"}
 
 func TestMain(t *testing.T) {
 	rescueStdout := os.Stdout
@@ -102,7 +102,7 @@ func TestConvertWriteFile(t *testing.T) {
 
 	for _, match := range testFilePaths {
 		extension := filepath.Ext(match)
-		testOutputPath := "../data/test" + extension
+		testOutputPath := "../../data/test" + extension
 
 		loopApp := application()
 
@@ -130,7 +130,7 @@ func TestConvertWriteFile(t *testing.T) {
 // The test below passes on macosx but not ubuntu. Could someone try debugging it on a device running ubuntu?
 func TestConvertWarning(t *testing.T) {
 
-	testFilePath := "../data/puc19.gbk"
+	testFilePath := "../../data/puc19.gbk"
 	var writeBuffer bytes.Buffer
 
 	app := application()
@@ -162,8 +162,8 @@ func TestConvertFile(t *testing.T) {
 
 	app := application()
 
-	args := os.Args[0:1]                                                                // Name of the program.
-	args = append(args, "c", "-o", "json", "../data/puc19.gbk", "../data/t4_intron.gb") // Append a flag
+	args := os.Args[0:1]                                                                      // Name of the program.
+	args = append(args, "c", "-o", "json", "../../data/puc19.gbk", "../../data/t4_intron.gb") // Append a flag
 
 	err := app.Run(args)
 
@@ -171,22 +171,22 @@ func TestConvertFile(t *testing.T) {
 		t.Fatalf("Run error: %s", err)
 	}
 
-	puc19InputTestSequence := genbank.Read("../data/puc19.gbk")
-	puc19OutputTestSequence := polyjson.Read("../data/puc19.json")
+	puc19InputTestSequence := genbank.Read("../../data/puc19.gbk")
+	puc19OutputTestSequence := polyjson.Read("../../data/puc19.json")
 
 	//clearing test data.
-	os.Remove("../data/puc19.json")
+	os.Remove("../../data/puc19.json")
 
 	// compared input gff from resulting output json. Fail test and print diff if error.
 	if diff := cmp.Diff(puc19InputTestSequence, puc19OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf(" mismatch from concurrent gbk input test (-want +got):\n%s", diff)
 	}
 
-	t4InputTestSequence := genbank.Read("../data/t4_intron.gb")
-	t4OutputTestSequence := polyjson.Read("../data/t4_intron.json")
+	t4InputTestSequence := genbank.Read("../../data/t4_intron.gb")
+	t4OutputTestSequence := polyjson.Read("../../data/t4_intron.json")
 
 	// clearing test data.
-	os.Remove("../data/t4_intron.json")
+	os.Remove("../../data/t4_intron.json")
 
 	// compared input gbk from resulting output json. Fail test and print diff if error.
 	if diff := cmp.Diff(t4InputTestSequence, t4OutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
@@ -196,7 +196,7 @@ func TestConvertFile(t *testing.T) {
 
 func TestHashFile(t *testing.T) {
 
-	testFilePath := "../data/puc19.gbk"
+	testFilePath := "../../data/puc19.gbk"
 	puc19GbkBlake3Hash := "v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
 	var writeBuffer bytes.Buffer
 
@@ -230,7 +230,7 @@ func TestHashFile(t *testing.T) {
 func TestHashPipe(t *testing.T) {
 
 	puc19GbkBlake3Hash := "v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9"
-	testFilePath := "../data/puc19.gbk"
+	testFilePath := "../../data/puc19.gbk"
 
 	var writeBuffer bytes.Buffer
 
@@ -260,7 +260,7 @@ func TestHashPipe(t *testing.T) {
 }
 func TestInputParameterForConvertErrorsIfNotPipe(t *testing.T) {
 	app := application()
-	args := append(os.Args[0:1], "convert", "-i", "json", "../data/puc19.gbk")
+	args := append(os.Args[0:1], "convert", "-i", "json", "../../data/puc19.gbk")
 	err := app.Run(args)
 
 	if err != errIllegalInputFlag {
@@ -270,7 +270,7 @@ func TestInputParameterForConvertErrorsIfNotPipe(t *testing.T) {
 
 func TestInputParameterForHashErrorsIfNotPipe(t *testing.T) {
 	app := application()
-	args := append(os.Args[0:1], "hash", "-i", "json", "../data/puc19.gbk")
+	args := append(os.Args[0:1], "hash", "-i", "json", "../../data/puc19.gbk")
 	err := app.Run(args)
 
 	if err != errIllegalInputFlag {
