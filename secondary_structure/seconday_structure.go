@@ -45,8 +45,8 @@ Explaination of the energy fields of the structs:
 // of the exterior loops of the secondary structure) is stored in the `Energy`
 // field of the struct. Since the energy of the exterior loops of the
 // secondary structure is not part of any of the `SecondaryStructure`'s
-// `Structures` (and belongs to the entire `SecondaryStructure`), it is stored
-// in the field `ExteriorLoopsEnergy`.
+// `Structures` (and belongs to the entire SecondaryStructure struct), it is
+// stored in the field `ExteriorLoopsEnergy`.
 type SecondaryStructure struct {
 	Structures          []interface{}
 	Length              int
@@ -67,8 +67,10 @@ type SecondaryStructure struct {
 type MultiLoop struct {
 	Stem                                                  Stem
 	SubstructuresFivePrimeIdx, SubstructuresThreePrimeIdx int
-	Substructures                                         SecondaryStructure
-	Energy                                                int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
+	// Substructures                                         SecondaryStructure
+	Substructures       []interface{}
+	Energy              int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
+	SubstructuresEnergy int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
 }
 
 // Hairpin contains all the information needed to denote a hairpin loop in a
