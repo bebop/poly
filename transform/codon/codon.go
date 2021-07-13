@@ -219,7 +219,8 @@ func (codonTable Table) chooser() map[string]weightedRand.Chooser {
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
-		codonChooser[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
+		chooser, _ := weightedRand.NewChooser(codonChoices...)
+		codonChooser[aminoAcid.Letter] = *chooser
 	}
 	return codonChooser
 }
