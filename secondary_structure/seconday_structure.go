@@ -65,9 +65,7 @@ type SecondaryStructure struct {
 // the energy of the substructures (the `Energy` field of `Substructures`),
 // and the energy of the Multiloop (the `Energy` field of this struct).
 type MultiLoop struct {
-	Stem                                                  Stem
-	SubstructuresFivePrimeIdx, SubstructuresThreePrimeIdx int
-	// Substructures                                         SecondaryStructure
+	Stem                Stem
 	Substructures       []interface{}
 	Energy              int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
 	SubstructuresEnergy int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
