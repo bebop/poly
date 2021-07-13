@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func ExampleFromDotBracket() {
+func ExampleSecondaryStructureFromDotBracket() {
 	dotBracket := "..((((...))))...((........)).."
 
 	// dotBracket with index
@@ -101,7 +101,7 @@ func ExampleFromDotBracket() {
 	// true
 }
 
-func ExampleFromDotBracket_multiLoop() {
+func ExampleSecondaryStructureFromDotBracket_multiLoop() {
 	dotBracket := "..(..((((...))))...((........))..)."
 
 	// dotBracket with index
@@ -219,7 +219,7 @@ func ExampleFromDotBracket_multiLoop() {
 	// true
 }
 
-func ExampleFromDotBracket_hairpinWithoutSingleStrandedRegion() {
+func ExampleSecondaryStructureFromDotBracket_hairpinWithoutSingleStrandedRegion() {
 	dotBracket := "..((())).."
 
 	// dotBracket with index
@@ -284,7 +284,7 @@ func ExampleFromDotBracket_hairpinWithoutSingleStrandedRegion() {
 	// true
 }
 
-func ExampleFromDotBracket_interiorBulge() {
+func ExampleSecondaryStructureFromDotBracket_interiorBulge() {
 	dotBracket := "(((.).....).)"
 
 	// dotBracket with index
@@ -343,7 +343,7 @@ func ExampleFromDotBracket_interiorBulge() {
 	// true
 }
 
-func ExampleFromDotBracket_interior1xnLoops() {
+func ExampleSecondaryStructureFromDotBracket_interior1xnLoops() {
 	dotBracket := "(.(.(...(..).)..).)"
 
 	// dotBracket with index
@@ -410,7 +410,7 @@ func ExampleFromDotBracket_interior1xnLoops() {
 	// true
 }
 
-func ExampleFromDotBracket_interior2xnLoops() {
+func ExampleSecondaryStructureFromDotBracket_interior2xnLoops() {
 	dotBracket := "(..(...(..(..)....)..)..)"
 
 	// dotBracket with index
@@ -477,7 +477,7 @@ func ExampleFromDotBracket_interior2xnLoops() {
 	// true
 }
 
-func ExampleFromDotBracket_genericInteriorLoops() {
+func ExampleSecondaryStructureFromDotBracket_genericInteriorLoops() {
 	dotBracket := "(..(...(....().....)...)....)"
 
 	// dotBracket with index
@@ -544,7 +544,7 @@ func ExampleFromDotBracket_genericInteriorLoops() {
 	// true
 }
 
-func ExampleFromDotBracket_stemWithoutEnclosedPair() {
+func ExampleSecondaryStructureFromDotBracket_stemWithoutEnclosedPair() {
 	dotBracket := ".(.)."
 
 	// dotBracket with index
