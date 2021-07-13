@@ -61,9 +61,9 @@ type parseCompound struct {
 	annotatedStructure []byte
 }
 
-// FromDotBracket returns the annotated structure and `SecondaryStructure` of
+// SecondaryStructureFromDotBracket returns the annotated structure and `SecondaryStructure` of
 // a RNA sequence from its 'dot-bracket' structure.
-func FromDotBracket(dotBracketStructure string) (annotatedStructure string, secondaryStructure *SecondaryStructure, err error) {
+func SecondaryStructureFromDotBracket(dotBracketStructure string) (annotatedStructure string, secondaryStructure *SecondaryStructure, err error) {
 	// sanitize input and check if valid
 	dotBracketStructure = strings.TrimSpace(dotBracketStructure)
 	isValid, err := checks.IsValidDotBracketStructure(dotBracketStructure)

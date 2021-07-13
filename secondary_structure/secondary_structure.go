@@ -1,40 +1,41 @@
+/*
+Package secondary_structure provides the structs needed to contain
+information about a RNA's secondary structure
+
+Overview of the structs
+
+The struct that contains information of a RNA's secondary structure is
+`SecondaryStructure`. The field `Structures` contains a list of the main
+RNA secondary structures (MultiLoop`, `Hairpin`, and `SingleStrandedRegion`).
+`Hairpin`s and `Multiloop`s both can optionally have a `Stem`.
+
+A `Stem` consists of a list of `StemStructure`s. A `StemStructure` consists
+of a closing and enclosed base pair with the requirement that there are
+no base pairs between the closing and enclosed base pair.
+
+See the declaration of the structs for detailed information on their
+definition.
+
+
+Explanation of the energy fields of the structs
+
+The energy fields of the structs are only used in the `SecondaryStructure`
+returned from the func `MinimumFreeEnergy` in the subpackage `mfe` in
+`poly`. The func `MinimumFreeEnergy` reads energy paramater values from files
+specified in the `RNAfold parameter file v2.0` file format in the
+`energy_params` subpackage in `poly`. This file format specifies energy
+values in the unit deca-cal / mol (with the `int` type).
+
+Due to Golang's inaccuracies with adding and subtracting `float64` values,
+a design decision was made to specify the energy fields of the structs
+defined in this file in the unit deca-cal / mol (with the `int` type).
+
+Thus, to convert to the 'standard' energy unit of kcal/mol, the energy
+values have to be converted to type `float32` or `float64` and divided by `100`.
+
+
+*/
 package secondary_structure
-
-/******************************************************************************
-July, 01, 2021
-
-This file defines the structs needed to contain information about a RNA's
-secondary structure.
-
-Overview of the structs:
-	The struct that contains information of a RNA's secondary structure is
-	`SecondaryStructure`. The field `Structures` contains a list of the main
-	RNA secondary structures (MultiLoop`, `Hairpin`, and `SingleStrandedRegion`).
-	`Hairpin`s and `Multiloop`s both can optionally have a `Stem`.
-
-	A `Stem` consists of a list of `StemStructure`s. A `StemStructure` consists
-	of a closing and enclosed base pair with the requirement that there are
-	no base pairs between the closing and enclosed base pair.
-
-	See the definitions of the structs for more detailed information on their
-	definition.
-
-Explaination of the energy fields of the structs:
-	The energy fields of the structs are only used in the `SecondaryStructure`
-	returned from the func `MinimumFreeEnergy` in the subpackage `mfe` in
-	`poly`. The func `MinimumFreeEnergy` reads energy paramater values from files
-	specified in the `RNAfold parameter file v2.0` file format in the
-	`energy_params` subpackage in `poly`. This file format specifies energy
-	values in the unit deca-cal / mol (with the `int` type).
-
-	Due to Golang's inaccuracies with adding and subtracting `float64` values,
-	a design decision was made to specify the energy fields of the structs
-	defined in this file in the unit deca-cal / mol (with the `int` type).
-
-	Thus, to convert to the 'standard' energy unit of kcal/mol, the energy
-	values have to be converted to `float32` or `float64` and divided by `100`.
-
-******************************************************************************/
 
 // SecondaryStructure is composed of a list of `MultiLoop`s, `Hairpin`s,
 // and `SingleStrandedRegion`s. Note that since Go doesn't support inheritance,
@@ -66,9 +67,9 @@ type SecondaryStructure struct {
 // and the energy of the Multiloop (the `Energy` field of this struct).
 type MultiLoop struct {
 	Stem                Stem
-	Substructures       []interface{}
-	Energy              int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
-	SubstructuresEnergy int // free energy (in dcal / mol) only from the substructures of the multi-loop (doesn't include free energy from the stem or multi-loop)
+	Substructures       []interface{} // will only contain `Hairpin`s or `SingleStrandedRegion`s
+	Energy              int           // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
+	SubstructuresEnergy int           // free energy (in dcal / mol) only from the substructures of the multi-loop (doesn't include free energy from the stem or multi-loop)
 }
 
 // Hairpin contains all the information needed to denote a hairpin loop in a
@@ -106,16 +107,22 @@ type SingleStrandedRegion struct {
 // Note that a `Stem` may not contain any stem structures. This occurs in cases
 // where there is only one base pair that delimits a `Hairpin` or `MultiLoop`.
 // For example,
-// dot-bracket sturcture: . . . ( . . . ) . .
-//   annotated structure: e e e ( h h h ) e e
-// 				         index: 0 1 2 3 4 5 6 7 8 9
+// dot-bracket sturcture:
+// . . . ( . . . ) . .
+// annotated structure:
+// e e e ( h h h ) e e
+// index:
+// 0 1 2 3 4 5 6 7 8 9
 // would be a Hairpin (with a Stem with the closing base pair at indexs 3 and
 // 7) whose stem don't contain any structures.
 //
 // For example,
-// dot-bracket sturcture: . . ( . . . ( ( . . )  )  .  .  )  .  .
-//   annotated structure: . . ( m m m ( ( h h )  )  m  m  )  e  e
-// 				         index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+// dot-bracket sturcture:
+// . . ( . . . ( ( . . )  )  .  .  )  .  .
+// annotated structure:
+// . . ( m m m ( ( h h )  )  m  m  )  e  e
+// index:
+// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 // would be a Multiloop (with a Stem with the closing base pair at indexs 2 and
 // 14) whose stem don't contain any structures.
 // In such cases, the stem will only have its `ClosingFivePrimeIdx` and
@@ -233,7 +240,7 @@ func (structure *StemStructure) setStructureType() {
 }
 
 // NewStemStructure is a wrapper to create a `StemStructure` and call the
-// functions (`(*StemStructure).setStructureType`) required to initalise the
+// functions (`(*StemStructure).setStructureType`) required to initalize the
 // struct.
 func NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {

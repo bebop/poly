@@ -4,10 +4,12 @@ import (
 	"fmt"
 )
 
-// dotBracket: . . ( ( ( ( . . . )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  .
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
 func ExampleFromDotBracket() {
 	dotBracket := "..((((...))))...((........)).."
+
+	// dotBracket with index
+	// . . ( ( ( ( . . . )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  .
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              30,
@@ -85,26 +87,26 @@ func ExampleFromDotBracket() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// ee((((hhh))))eee((hhhhhhhh))ee
 	// true
 }
 
-// dotBracket: . . ( . . ( ( ( ( .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  .  )  .
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
-func ExampleFromDotBracket_MultiLoop() {
+func ExampleFromDotBracket_multiLoop() {
 	dotBracket := "..(..((((...))))...((........))..)."
+
+	// dotBracket with index
+	// . . ( . . ( ( ( ( .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  .  )  .
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              35,
@@ -203,26 +205,26 @@ func ExampleFromDotBracket_MultiLoop() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// ee(mm((((hhh))))mmm((hhhhhhhh))mm)e
 	// true
 }
 
-// dotBracket: . . ( ( ( ) ) ) . .
-// 			index: 0 1 2 3 4 5 6 7 8 9
-func ExampleFromDotBracket_HairpinWithoutSingleStrandedRegion() {
+func ExampleFromDotBracket_hairpinWithoutSingleStrandedRegion() {
 	dotBracket := "..((())).."
+
+	// dotBracket with index
+	// . . ( ( ( ) ) ) . .
+	// 0 1 2 3 4 5 6 7 8 9
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              10,
@@ -268,26 +270,26 @@ func ExampleFromDotBracket_HairpinWithoutSingleStrandedRegion() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// ee((()))ee
 	// true
 }
 
-// dotBracket: ( ( ( . ) . . . . .  )  .  )
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12
-func ExampleFromDotBracket_InteriorBulge() {
+func ExampleFromDotBracket_interiorBulge() {
 	dotBracket := "(((.).....).)"
+
+	// dotBracket with index
+	// ( ( ( . ) . . . . .  )  .  )
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              13,
@@ -327,26 +329,26 @@ func ExampleFromDotBracket_InteriorBulge() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// (((h)iiiii)i)
 	// true
 }
 
-// dotBracket: ( . ( . ( . . . ( .  .  )  .  )  .  .  )  .  )
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
-func ExampleFromDotBracket_Interior1xnLoops() {
+func ExampleFromDotBracket_interior1xnLoops() {
 	dotBracket := "(.(.(...(..).)..).)"
+
+	// dotBracket with index
+	// ( . ( . ( . . . ( .  .  )  .  )  .  .  )  .  )
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              19,
@@ -394,26 +396,26 @@ func ExampleFromDotBracket_Interior1xnLoops() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// (i(i(iii(hh)i)ii)i)
 	// true
 }
 
-// dotBracket: ( . . ( . . . ( . .  (  .  .  )  .  .  .  .  )  .  .  )  .  .  )
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
-func ExampleFromDotBracket_Interior2xnLoops() {
+func ExampleFromDotBracket_interior2xnLoops() {
 	dotBracket := "(..(...(..(..)....)..)..)"
+
+	// dotBracket with index
+	// ( . . ( . . . ( . .  (  .  .  )  .  .  .  .  )  .  .  )  .  .  )
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              25,
@@ -461,26 +463,26 @@ func ExampleFromDotBracket_Interior2xnLoops() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// (ii(iii(ii(hh)iiii)ii)ii)
 	// true
 }
 
-// dotBracket: ( . . ( . . . ( . .  .  .  (  )  .  .  .  .  .  )  .  .  .  )  .  .  .  .  )
-// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
-func ExampleFromDotBracket_GenericInteriorLoops() {
+func ExampleFromDotBracket_genericInteriorLoops() {
 	dotBracket := "(..(...(....().....)...)....)"
+
+	// dotBracket with index
+	// ( . . ( . . . ( . .  .  .  (  )  .  .  .  .  .  )  .  .  .  )  .  .  .  .  )
+	// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
 
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              29,
@@ -528,26 +530,27 @@ func ExampleFromDotBracket_GenericInteriorLoops() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// (ii(iii(iiii()iiiii)iii)iiii)
 	// true
 }
 
-// dotBracket: . ( . ) .
-// 			index: 0 1 2 3 4
-func ExampleFromDotBracket_StemWithoutEnclosedPair() {
+func ExampleFromDotBracket_stemWithoutEnclosedPair() {
 	dotBracket := ".(.)."
+
+	// dotBracket with index
+	// . ( . ) .
+	// 0 1 2 3 4
+
 	actualSecondaryStructure := SecondaryStructure{
 		Length:              5,
 		ExteriorLoopsEnergy: 0,
@@ -577,18 +580,24 @@ func ExampleFromDotBracket_StemWithoutEnclosedPair() {
 		},
 	}
 
-	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	annotatedStructure, secondaryStructure, err := SecondaryStructureFromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
 
-	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
-	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
-
 	fmt.Println(annotatedStructure)
-	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+	// check if predicted and actual structures are same
+	fmt.Println(isSecondaryStructuresEqual(actualSecondaryStructure, *secondaryStructure))
 
 	// Output:
 	// e(h)e
 	// true
+}
+
+func isSecondaryStructuresEqual(structA, structB SecondaryStructure) bool {
+	// convert predicted and actual structures to their string representation
+	// so that they can be compared
+	structAStr := fmt.Sprintf("%+v", structA)
+	structBStr := fmt.Sprintf("%+v", structB)
+	return structAStr == structBStr
 }
