@@ -219,6 +219,71 @@ func ExampleFromDotBracket_MultiLoop() {
 	// true
 }
 
+// dotBracket: . . ( ( ( ) ) ) . .
+// 			index: 0 1 2 3 4 5 6 7 8 9
+func ExampleFromDotBracket_HairpinWithoutSingleStrandedRegion() {
+	dotBracket := "..((())).."
+
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              10,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			SingleStrandedRegion{
+				FivePrimeIdx:  0,
+				ThreePrimeIdx: 1,
+			},
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   2,
+					EnclosedFivePrimeIdx:  4,
+					EnclosedThreePrimeIdx: 5,
+					ClosingThreePrimeIdx:  7,
+					Structures: []StemStructure{
+						StemStructure{
+							ClosingFivePrimeIdx:   2,
+							EnclosedFivePrimeIdx:  3,
+							EnclosedThreePrimeIdx: 6,
+							ClosingThreePrimeIdx:  7,
+							Type:                  StackingPair, Energy: 0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   3,
+							EnclosedFivePrimeIdx:  4,
+							EnclosedThreePrimeIdx: 5,
+							ClosingThreePrimeIdx:  6,
+							Type:                  StackingPair, Energy: 0,
+						},
+					},
+					Energy: 0,
+				},
+				SingleStrandedFivePrimeIdx:  -1,
+				SingleStrandedThreePrimeIdx: -1,
+				Energy:                      0,
+			},
+			SingleStrandedRegion{
+				FivePrimeIdx:  8,
+				ThreePrimeIdx: 9,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	if err != nil {
+		panic(err)
+	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
+	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+
+	// Output:
+	// ee((()))ee
+	// true
+}
+
 func ExampleFromDotBracket_MultiLoop2() {
 	dotBracket := "(((((((((...((((((.........))))))........((((((.......))))))..)))))))))"
 	annotatedStructure, _, err := FromDotBracket(dotBracket)
@@ -229,11 +294,10 @@ func ExampleFromDotBracket_MultiLoop2() {
 
 	// Output:
 	// (((((((((mmm((((((hhhhhhhhh))))))mmmmmmmm((((((hhhhhhh))))))mm)))))))))
-
 }
 
 func ExampleFromDotBracket_InteriorUnpairedNucleotides() {
-	dotBracket := "((((.((((......))))((((...))....)).))))"
+	dotBracket := "((((.((.((......))))((((...))....)).))))"
 	annotatedStructure, _, err := FromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
@@ -241,5 +305,5 @@ func ExampleFromDotBracket_InteriorUnpairedNucleotides() {
 	fmt.Println(annotatedStructure)
 
 	// Output:
-	// ((((m((((hhhhhh))))((((hhh))iiii))m))))
+	// ((((m((i((hhhhhh))))((((hhh))iiii))m))))
 }

@@ -212,7 +212,7 @@ func (pc *parseCompound) evaluate() (annotatedStructure string, secondaryStructu
 // evaluateLoop proceeds in a stack-wise manner from the closing base pair of
 // a stem till the enclosing base pair of the stem. While iterating from the
 // closing base pair to the enclosed base pair, each substructure of the
-// stem is categoried and added to the list of substructures of the stem.
+// stem is categorized and added to the list of substructures of the stem.
 //
 // Once the enclosing base pair of the stem is encountered, `evaluateLoop`
 // evaluates whether the loop is a `Hairpin` or `Multiloop` and passes the
@@ -246,13 +246,13 @@ func (pc *parseCompound) evaluate() (annotatedStructure string, secondaryStructu
 // 			5' -- X · · U - A · ·
 // 			 			|    /    |	   ·
 // 			3' -- Y · V · · B · ·
-// then the last encounted base pair would be (A,B) so `enclosedFivePrimeIdx`
+// then the last encountered base pair would be (A,B) so `enclosedFivePrimeIdx`
 // is A and `enclosedThreePrimeIdx` is B. On the next iteration of the for-loop,
 // `enclosedThreePrimeIdx` will point to A and `enclosedThreePrimeIdx` will
 // point to B. Thus, the for-loop breaks and since
 // `enclosedFivePrimeIdx > enclosedThreePrimeIdx`, we know we have a hairpin.
 //
-// In the other scenario, suppose the contiuation of the sequence was
+// In the other scenario, suppose the continuation of the sequence was
 // 									 			·   ·
 // 									 			·   ·
 // 								 	 			E - F ...
