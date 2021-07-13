@@ -284,26 +284,311 @@ func ExampleFromDotBracket_HairpinWithoutSingleStrandedRegion() {
 	// true
 }
 
-func ExampleFromDotBracket_MultiLoop2() {
-	dotBracket := "(((((((((...((((((.........))))))........((((((.......))))))..)))))))))"
-	annotatedStructure, _, err := FromDotBracket(dotBracket)
+// dotBracket: ( ( ( . ) . . . . .  )  .  )
+// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12
+func ExampleFromDotBracket_InteriorBulge() {
+	dotBracket := "(((.).....).)"
+
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              13,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   0,
+					EnclosedFivePrimeIdx:  2,
+					EnclosedThreePrimeIdx: 4,
+					ClosingThreePrimeIdx:  12,
+					Structures: []StemStructure{
+						StemStructure{
+							ClosingFivePrimeIdx:   0,
+							EnclosedFivePrimeIdx:  1,
+							EnclosedThreePrimeIdx: 10,
+							ClosingThreePrimeIdx:  12,
+							Type:                  Bulge,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   1,
+							EnclosedFivePrimeIdx:  2,
+							EnclosedThreePrimeIdx: 4,
+							ClosingThreePrimeIdx:  10,
+							Type:                  Bulge,
+							Energy:                0,
+						},
+					},
+					Energy: 0,
+				},
+				SingleStrandedFivePrimeIdx:  3,
+				SingleStrandedThreePrimeIdx: 3,
+				Energy:                      0,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
 	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
 
 	// Output:
-	// (((((((((mmm((((((hhhhhhhhh))))))mmmmmmmm((((((hhhhhhh))))))mm)))))))))
+	// (((h)iiiii)i)
+	// true
 }
 
-func ExampleFromDotBracket_InteriorUnpairedNucleotides() {
-	dotBracket := "((((.((.((......))))((((...))....)).))))"
-	annotatedStructure, _, err := FromDotBracket(dotBracket)
+// dotBracket: ( . ( . ( . . . ( .  .  )  .  )  .  .  )  .  )
+// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
+func ExampleFromDotBracket_Interior1xnLoops() {
+	dotBracket := "(.(.(...(..).)..).)"
+
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              19,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   0,
+					EnclosedFivePrimeIdx:  8,
+					EnclosedThreePrimeIdx: 11,
+					ClosingThreePrimeIdx:  18,
+					Structures: []StemStructure{
+						StemStructure{
+							ClosingFivePrimeIdx:   0,
+							EnclosedFivePrimeIdx:  2,
+							EnclosedThreePrimeIdx: 16,
+							ClosingThreePrimeIdx:  18,
+							Type:                  Interior1x1Loop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   2,
+							EnclosedFivePrimeIdx:  4,
+							EnclosedThreePrimeIdx: 13,
+							ClosingThreePrimeIdx:  16,
+							Type:                  Interior2x1Loop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   4,
+							EnclosedFivePrimeIdx:  8,
+							EnclosedThreePrimeIdx: 11,
+							ClosingThreePrimeIdx:  13,
+							Type:                  Interior1xnLoop,
+							Energy:                0,
+						},
+					},
+					Energy: 0,
+				},
+				SingleStrandedFivePrimeIdx:  9,
+				SingleStrandedThreePrimeIdx: 10,
+				Energy:                      0,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
 	if err != nil {
 		panic(err)
 	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
 	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
 
 	// Output:
-	// ((((m((i((hhhhhh))))((((hhh))iiii))m))))
+	// (i(i(iii(hh)i)ii)i)
+	// true
+}
+
+// dotBracket: ( . . ( . . . ( . .  (  .  .  )  .  .  .  .  )  .  .  )  .  .  )
+// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+func ExampleFromDotBracket_Interior2xnLoops() {
+	dotBracket := "(..(...(..(..)....)..)..)"
+
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              25,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   0,
+					EnclosedFivePrimeIdx:  10,
+					EnclosedThreePrimeIdx: 13,
+					ClosingThreePrimeIdx:  24,
+					Structures: []StemStructure{
+						StemStructure{
+							ClosingFivePrimeIdx:   0,
+							EnclosedFivePrimeIdx:  3,
+							EnclosedThreePrimeIdx: 21,
+							ClosingThreePrimeIdx:  24,
+							Type:                  Interior2x2Loop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   3,
+							EnclosedFivePrimeIdx:  7,
+							EnclosedThreePrimeIdx: 18,
+							ClosingThreePrimeIdx:  21,
+							Type:                  Interior2x3Loop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   7,
+							EnclosedFivePrimeIdx:  10,
+							EnclosedThreePrimeIdx: 13,
+							ClosingThreePrimeIdx:  18,
+							Type:                  GenericInteriorLoop,
+							Energy:                0,
+						},
+					},
+					Energy: 0,
+				},
+				SingleStrandedFivePrimeIdx:  11,
+				SingleStrandedThreePrimeIdx: 12,
+				Energy:                      0,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	if err != nil {
+		panic(err)
+	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
+	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+
+	// Output:
+	// (ii(iii(ii(hh)iiii)ii)ii)
+	// true
+}
+
+// dotBracket: ( . . ( . . . ( . .  .  .  (  )  .  .  .  .  .  )  .  .  .  )  .  .  .  .  )
+// 			index: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+func ExampleFromDotBracket_GenericInteriorLoops() {
+	dotBracket := "(..(...(....().....)...)....)"
+
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              29,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   0,
+					EnclosedFivePrimeIdx:  12,
+					EnclosedThreePrimeIdx: 13,
+					ClosingThreePrimeIdx:  28,
+					Structures: []StemStructure{
+						StemStructure{
+							ClosingFivePrimeIdx:   0,
+							EnclosedFivePrimeIdx:  3,
+							EnclosedThreePrimeIdx: 23,
+							ClosingThreePrimeIdx:  28,
+							Type:                  GenericInteriorLoop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   3,
+							EnclosedFivePrimeIdx:  7,
+							EnclosedThreePrimeIdx: 19,
+							ClosingThreePrimeIdx:  23,
+							Type:                  GenericInteriorLoop,
+							Energy:                0,
+						},
+						StemStructure{
+							ClosingFivePrimeIdx:   7,
+							EnclosedFivePrimeIdx:  12,
+							EnclosedThreePrimeIdx: 13,
+							ClosingThreePrimeIdx:  19,
+							Type:                  GenericInteriorLoop,
+							Energy:                0,
+						},
+					},
+					Energy: 0,
+				},
+				SingleStrandedFivePrimeIdx:  -1,
+				SingleStrandedThreePrimeIdx: -1,
+				Energy:                      0,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	if err != nil {
+		panic(err)
+	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
+	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+
+	// Output:
+	// (ii(iii(iiii()iiiii)iii)iiii)
+	// true
+}
+
+// dotBracket: . ( . ) .
+// 			index: 0 1 2 3 4
+func ExampleFromDotBracket_StemWithoutEnclosedPair() {
+	dotBracket := ".(.)."
+	actualSecondaryStructure := SecondaryStructure{
+		Length:              5,
+		ExteriorLoopsEnergy: 0,
+		Energy:              0,
+		Structures: []interface{}{
+			SingleStrandedRegion{
+				FivePrimeIdx:  0,
+				ThreePrimeIdx: 0,
+			},
+			Hairpin{
+				Stem: Stem{
+					ClosingFivePrimeIdx:   1,
+					EnclosedFivePrimeIdx:  -1,
+					EnclosedThreePrimeIdx: -1,
+					ClosingThreePrimeIdx:  3,
+					Structures:            []StemStructure{},
+					Energy:                0,
+				},
+				SingleStrandedFivePrimeIdx:  2,
+				SingleStrandedThreePrimeIdx: 2,
+				Energy:                      0,
+			},
+			SingleStrandedRegion{
+				FivePrimeIdx:  4,
+				ThreePrimeIdx: 4,
+			},
+		},
+	}
+
+	annotatedStructure, secondaryStructure, err := FromDotBracket(dotBracket)
+	if err != nil {
+		panic(err)
+	}
+
+	predictedSecondaryStructureStr := fmt.Sprintf("%+v", *secondaryStructure)
+	actualSecondaryStructureStr := fmt.Sprintf("%+v", actualSecondaryStructure)
+
+	fmt.Println(annotatedStructure)
+	fmt.Println(predictedSecondaryStructureStr == actualSecondaryStructureStr)
+
+	// Output:
+	// e(h)e
+	// true
 }
