@@ -7,26 +7,26 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-- main: ./cmd/poly/
-  env:
-    - CGO_ENABLED=0
+  - main: ./cmd/poly/
+    env:
+      - CGO_ENABLED=0
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    386: i386
-    amd64: x86_64
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^blog:'
+      - "^docs:"
+      - "^blog:"
 
 release:
   # Repo in which the release will be created.
@@ -65,33 +65,33 @@ brews:
       owner: timothystiles
       name: homebrew-poly
     folder: Formula
-    homepage: https://github.com/TimothyStiles/poly
+    homepage: https://github.com/Open-Science-Global/poly
     description: A command line utility for engineering organisms.
     test: |
       system "#{bin}/poly -h"
     dependencies:
-    - name: go
+      - name: go
     commit_author:
       name: Tim
       email: TimothyStiles@users.noreply.github.com
 nfpms:
-  - file_name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    homepage:  https://github.com/TimothyStiles/poly
+  - file_name_template: "{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    homepage: https://github.com/Open-Science-Global/poly
     description: A command line utility for engineering organisms.
     maintainer: Timothy Stiles <TimothyStiles@users.noreply.github.com>
     license: MIT
     formats:
-    - deb
-    - rpm
+      - deb
+      - rpm
     dependencies:
-    - git
+      - git
     recommends:
-    - golang
+      - golang
 # snapcrafts:
 #   - name_template: '{{ .ProjectName }}-v{{.Version}}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
 #     summary: A command line utility for engineering organisms.
 #     description: |
-#       Poly is a Go library and command line utility for engineering 
+#       Poly is a Go library and command line utility for engineering
 #       organisms. For more information checkout:
 #       https://github.com/TimothyStiles/poly
 #     grade: devel
