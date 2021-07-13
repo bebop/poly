@@ -1,4 +1,4 @@
-package poly
+package synthesis
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Open-Science-Global/poly/transform"
+	"github.com/Open-Science-Global/poly/transform/codon"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -132,7 +133,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 }
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
-func FixCds(sqlitePath string, sequence string, codontable CodonTable, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
+func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
 	db := sqlx.MustConnect("sqlite3", sqlitePath)
 	createMemoryDbSql := `
 	CREATE TABLE codon (
@@ -279,7 +280,7 @@ func FixCds(sqlitePath string, sequence string, codontable CodonTable, problemat
 // finding homopolymers, finding repeats, and ensuring a normal range of GC
 // content. It also allows users to put in sequences that they do not wish to
 // occur within their CDS, like restriction enzyme cut sites.
-func FixCdsSimple(sequence string, codontable CodonTable, sequencesToRemove []string) (string, error) {
+func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, error) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	// Remove homopolymers
 	functions = append(functions, RemoveSequence([]string{"AAAAAAAA", "GGGGGGGG"}))
