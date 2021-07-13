@@ -14,4 +14,4 @@ require (
 	lukechampine.com/blake3 v1.1.5
 )
 
-replace github.com/TimothyStiles/poly v0.11.1 => github.com/Open-Science-Global/poly v0.11.1
+replace github.com/TimothyStiles/poly v0.11.1 => github.com/Open-Science-Global/poly v0.11.2
