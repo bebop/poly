@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/Open-Science-Global/poly/io/genbank"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 

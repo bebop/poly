@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/Open-Science-Global/poly"
 )
 
 /******************************************************************************

@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/Open-Science-Global/poly/seqhash"
 )
 
 // pOpen plasmid series (https://stanford.freegenes.org/collections/open-genes/products/open-plasmids#description). I use it for essentially all my cloning. -Keoni

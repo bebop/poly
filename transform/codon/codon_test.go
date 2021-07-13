@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/Open-Science-Global/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 )
 

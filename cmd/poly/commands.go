@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/TimothyStiles/poly"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/polyjson"
-	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/Open-Science-Global/poly"
+	"github.com/Open-Science-Global/poly/io/genbank"
+	"github.com/Open-Science-Global/poly/io/gff"
+	"github.com/Open-Science-Global/poly/io/polyjson"
+	"github.com/Open-Science-Global/poly/seqhash"
 	"github.com/urfave/cli/v2"
 )
 

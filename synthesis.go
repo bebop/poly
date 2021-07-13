@@ -2,11 +2,13 @@ package poly
 
 import (
 	"errors"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/Open-Science-Global/poly/transform"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 /******************************************************************************
@@ -66,7 +68,7 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		var enzymes []string
 		for _, enzyme := range sequencesToRemove {
-			enzymes = []string{enzyme, ReverseComplement(enzyme)}
+			enzymes = []string{enzyme, transform.ReverseComplement(enzyme)}
 			for _, site := range enzymes {
 				re := regexp.MustCompile(site)
 				locs := re.FindAllStringIndex(sequence, -1)

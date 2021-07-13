@@ -5,7 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/Open-Science-Global/poly/transform"
 )
 
 // For reference: https://www.sigmaaldrich.com/technical-documents/articles/biology/oligos-melting-temp.html

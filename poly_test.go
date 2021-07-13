@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/Open-Science-Global/poly/transform"
 )
 
 func ExampleSequence_AddFeature() {

@@ -1,10 +1,10 @@
 package io
 
 import (
-	"github.com/TimothyStiles/poly/io/fasta"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/Open-Science-Global/poly/io/fasta"
+	"github.com/Open-Science-Global/poly/io/genbank"
+	"github.com/Open-Science-Global/poly/io/gff"
+	"github.com/Open-Science-Global/poly/io/polyjson"
 )
 
 // This is where the integration tests that make effed up cyclic dependencies go.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/Open-Science-Global/poly"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )

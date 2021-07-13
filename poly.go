@@ -3,7 +3,7 @@ package poly
 import (
 	"bytes"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/Open-Science-Global/poly/transform"
 )
 
 /******************************************************************************

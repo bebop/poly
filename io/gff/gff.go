@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/Open-Science-Global/poly"
 )
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.

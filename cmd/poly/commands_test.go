@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TimothyStiles/poly"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/Open-Science-Global/poly"
+	"github.com/Open-Science-Global/poly/io/genbank"
+	"github.com/Open-Science-Global/poly/io/polyjson"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )

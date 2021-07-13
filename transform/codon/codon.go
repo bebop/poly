@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/Open-Science-Global/poly"
 	weightedRand "github.com/mroth/weightedrand"
 
 	"encoding/json"

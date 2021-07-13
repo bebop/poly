@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/Open-Science-Global/poly"
 	"github.com/mitchellh/go-wordwrap"
 )
 

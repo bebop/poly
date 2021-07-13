@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/seqhash"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/Open-Science-Global/poly/checks"
+	"github.com/Open-Science-Global/poly/seqhash"
+	"github.com/Open-Science-Global/poly/transform"
 )
 
 /******************************************************************************
