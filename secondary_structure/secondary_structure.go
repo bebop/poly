@@ -68,7 +68,7 @@ type MultiLoop struct {
 	Stem                Stem
 	Substructures       []interface{}
 	Energy              int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
-	SubstructuresEnergy int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
+	SubstructuresEnergy int // free energy (in dcal / mol) only from the substructures of the multi-loop (doesn't include free energy from the stem or multi-loop)
 }
 
 // Hairpin contains all the information needed to denote a hairpin loop in a
