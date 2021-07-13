@@ -1,4 +1,4 @@
-package poly
+package codon
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -30,7 +31,7 @@ func TestTranslation(t *testing.T) {
 
 }
 func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := CodonTable{}
+	emtpyCodonTable := Table{}
 	_, err := Translate("A", emtpyCodonTable)
 
 	if err != errEmtpyCodonTable {
@@ -69,10 +70,11 @@ func ExampleOptimize() {
 
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
+	codingRegions := GetCodingRegions(sequence)
 
-	optimizationTable := sequence.GetOptimizationTable(codonTable)
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
@@ -84,10 +86,11 @@ func ExampleOptimize() {
 func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
+	codingRegions := GetCodingRegions(sequence)
 
-	optimizationTable := sequence.GetOptimizationTable(codonTable)
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
@@ -98,7 +101,7 @@ func TestOptimize(t *testing.T) {
 }
 
 func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := CodonTable{}
+	emtpyCodonTable := Table{}
 	_, err := Optimize("A", emtpyCodonTable)
 
 	if err != errEmtpyCodonTable {
@@ -161,6 +164,26 @@ func TestGetCodonFrequency(t *testing.T) {
 
 }
 
+func ExampleGetCodingRegions() {
+
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	sequence := genbank.Read("../../data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+
+	// GetCodingRegions returns a single concatenated string of all coding regions.
+	codingRegions := GetCodingRegions(sequence)
+
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
+
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
+
+	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
+	// output: true
+
+}
+
 /******************************************************************************
 
 JSON related tests begin here.
@@ -168,14 +191,14 @@ JSON related tests begin here.
 ******************************************************************************/
 
 func ExampleReadCodonJSON() {
-	codontable := ReadCodonJSON("data/bsub_codon_test.json")
+	codontable := ReadCodonJSON("../../data/bsub_codon_test.json")
 
 	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
 	//output: 28327
 }
 
 func ExampleParseCodonJSON() {
-	file, _ := ioutil.ReadFile("data/bsub_codon_test.json")
+	file, _ := ioutil.ReadFile("../../data/bsub_codon_test.json")
 	codontable := ParseCodonJSON(file)
 
 	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
@@ -183,24 +206,24 @@ func ExampleParseCodonJSON() {
 }
 
 func ExampleWriteCodonJSON() {
-	codontable := ReadCodonJSON("data/bsub_codon_test.json")
-	WriteCodonJSON(codontable, "data/codon_test.json")
-	testCodonTable := ReadCodonJSON("data/codon_test.json")
+	codontable := ReadCodonJSON("../../data/bsub_codon_test.json")
+	WriteCodonJSON(codontable, "../../data/codon_test.json")
+	testCodonTable := ReadCodonJSON("../../data/codon_test.json")
 
 	// cleaning up test data
-	os.Remove("data/codon_test.json")
+	os.Remove("../../data/codon_test.json")
 
 	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
 	//output: 28327
 }
 
 func TestWriteCodonJSON(t *testing.T) {
-	testCodonTable := ReadCodonJSON("data/bsub_codon_test.json")
-	WriteCodonJSON(testCodonTable, "data/codon_test1.json")
-	readTestCodonTable := ReadCodonJSON("data/codon_test1.json")
+	testCodonTable := ReadCodonJSON("../../data/bsub_codon_test.json")
+	WriteCodonJSON(testCodonTable, "../../data/codon_test1.json")
+	readTestCodonTable := ReadCodonJSON("../../data/codon_test1.json")
 
 	// cleaning up test data
-	os.Remove("data/codon_test1.json")
+	os.Remove("../../data/codon_test1.json")
 
 	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
@@ -215,13 +238,15 @@ Codon Compromise + Add related tests begin here.
 ******************************************************************************/
 
 func ExampleCompromiseCodonTable() {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	optimizationTable := sequence.GetOptimizationTable(codonTable)
+	codingRegions := GetCodingRegions(sequence)
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := ReadGbk("data/phix174.gb")
+	sequence2 := genbank.Read("../../data/phix174.gb")
 	codonTable2 := GetCodonTable(11)
-	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+	codingRegions2 := GetCodingRegions(sequence2)
+	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable, _ := CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
 	for _, aa := range finalTable.AminoAcids {
@@ -235,13 +260,15 @@ func ExampleCompromiseCodonTable() {
 }
 
 func TestCompromiseCodonTable(t *testing.T) {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	optimizationTable := sequence.GetOptimizationTable(codonTable)
+	codingRegions := GetCodingRegions(sequence)
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := ReadGbk("data/phix174.gb")
+	sequence2 := genbank.Read("../../data/phix174.gb")
 	codonTable2 := GetCodonTable(11)
-	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+	codingRegions2 := GetCodingRegions(sequence2)
+	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
 	if err == nil {
@@ -254,13 +281,15 @@ func TestCompromiseCodonTable(t *testing.T) {
 }
 
 func ExampleAddCodonTable() {
-	sequence := ReadGbk("data/puc19.gbk")
+	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	optimizationTable := sequence.GetOptimizationTable(codonTable)
+	codingRegions := GetCodingRegions(sequence)
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := ReadGbk("data/phix174.gb")
+	sequence2 := genbank.Read("../../data/phix174.gb")
 	codonTable2 := GetCodonTable(11)
-	optimizationTable2 := sequence2.GetOptimizationTable(codonTable2)
+	codingRegions2 := GetCodingRegions(sequence2)
+	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable := AddCodonTable(optimizationTable, optimizationTable2)
 	for _, aa := range finalTable.AminoAcids {
