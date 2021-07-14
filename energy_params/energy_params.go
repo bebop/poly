@@ -9,35 +9,49 @@ import (
 	"strings"
 )
 
+/******************************************************************************
+
+This file defines functions and structs needed to parse RNA energy parameters
+as specified by the `RNAfold parameter file v2.0` file format from
+[ViennaRNA](https://github.com/ViennaRNA/ViennaRNA#energy-parameters).
+
+Exported structs:
+* EnergyParams - Contains all the energy parameters needed for free energy
+	calculations.
+
+
+
+******************************************************************************/
+
 /**
 * These energy parameters are nearest neighbor parameters for RNA folding
 * compiled by the Turner group. The names of variables from the original repo
 * (ViennaRNA) have been changed to be more descriptive and the original name
 * of the variable has been commented out in the line above the variable
 * declaration (to allow for easy comparison and updating of the variables).
-* `mfe.go` includes an explaination of these variables in the declaration of the
+* `mfe.go` includes an explanation of these variables in the declaration of the
 * `energyParams` struct.
  */
 
 const (
 	// The number of distinguishable base pairs:
 	// CG, GC, GU, UG, AU, UA, & non-standard (see `energy_params.md`)
-	NBPairs int = 7
+	NBDistinguishablePairs int = 7
 	// The number of distinguishable nucleotides: A, C, G, U
-	NBBases int = 4
+	NBDistinguishableNucleotides int = 4
 	// The maximum loop length
 	MaxLenLoop int = 30
 
 	// ZeroCKelvin is 0 deg Celsius in Kelvin
 	ZeroCKelvin float64 = 273.15
 	// lxc37
-	defaultLXC float64 = 107.856
+	logExtrapolationConstantAt37C float64 = 107.856
 
 	// The temperature at which the energy parameters have been measured at
-	measurementTemperature float64 = 37.0
+	measurementTemperatureInCelcius float64 = 37.0
 
-	// INF is infinity as used in minimization routines (INT_MAX/10)
-	INF int = 10000000
+	// inf is infinity as used in minimization routines (INT_MAX/10)
+	inf int = 10000000
 )
 
 type EnergyParamsSet int
@@ -182,24 +196,24 @@ type EnergyParams struct {
 	```
 	corresponds to the entry StackingPair[2][5] (GC=2, AU=5) which should be
 	identical to StackingPair[5][2] (AU=5, GC=2).
-	size: [NBPairs + 1][NBPairs + 1]int
+	size: [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1]int
 	*/
-	StackingPair [NBPairs + 1][NBPairs + 1]int
+	StackingPair [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1]int
 	/**
 	Free energies of hairpin loops as a function of size. The list should
 	contain 31 (MaxLenLoop + 1) entries. Since the minimum size of a hairpin loop
-	is 3 and we start counting with 0, the first three values should be INF to
+	is 3 and we start counting with 0, the first three values should be `inf` to
 	indicate a forbidden value.
 	*/
 	HairpinLoop [MaxLenLoop + 1]int
 	/**
 	Free energies of Bulge loops. Should contain 31 (MaxLenLoop + 1) entries, the
-	first one being INF.
+	first one being `inf`.
 	*/
 	Bulge [MaxLenLoop + 1]int
 	/**
 	Free energies of interior loops. Should contain 31 (MaxLenLoop + 1) entries,
-	the first 4 being INF (since smaller loops are tabulated).
+	the first 4 being `inf` (since smaller loops are tabulated).
 
 	This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops
@@ -220,12 +234,12 @@ type EnergyParams struct {
 
 		More information about mismatch energy: https://rna.urmc.rochester.edu/NNDB/turner04/tm.html
 	*/
-	MismatchInteriorLoop    [NBPairs + 1][NBBases + 1][NBBases + 1]int
-	Mismatch1xnInteriorLoop [NBPairs + 1][NBBases + 1][NBBases + 1]int
-	Mismatch2x3InteriorLoop [NBPairs + 1][NBBases + 1][NBBases + 1]int
-	MismatchExteriorLoop    [NBPairs + 1][NBBases + 1][NBBases + 1]int
-	MismatchHairpinLoop     [NBPairs + 1][NBBases + 1][NBBases + 1]int
-	MismatchMultiLoop       [NBPairs + 1][NBBases + 1][NBBases + 1]int
+	MismatchInteriorLoop    [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Mismatch1xnInteriorLoop [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Mismatch2x3InteriorLoop [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchExteriorLoop    [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchHairpinLoop     [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchMultiLoop       [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Energies for the interaction of an unpaired base on the 5' side and
 	adjacent to a helix in multiloops and free ends (the equivalent of mismatch
@@ -241,7 +255,7 @@ type EnergyParams struct {
 
 	More information about dangling ends: https://rna.urmc.rochester.edu/NNDB/turner04/de.html
 	*/
-	Dangle5 [NBPairs + 1][NBBases + 1]int
+	Dangle5 [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Same as above for bases on the 3' side of a helix.
 	```
@@ -250,7 +264,7 @@ type EnergyParams struct {
 	```
 	corresponds to entry Dangle3[5][1] (AU=5, A=1).
 	*/
-	Dangle3 [NBPairs + 1][NBBases + 1]int
+	Dangle3 [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Free energies for symmetric size 2 interior loops. `7*7*5*5` entries.
 	Example:
@@ -261,7 +275,7 @@ type EnergyParams struct {
 	corresponds to entry Interior1x1Loop[1][5][4][2] (CG=1, AU=5, U=4, C=2),
 	which should be identical to Interior1x1Loop[5][1][2][4] (AU=5, CG=1, C=2, U=4).
 	*/
-	Interior1x1Loop [NBPairs + 1][NBPairs + 1][NBBases + 1][NBBases + 1]int
+	Interior1x1Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Free energies for 2x1 interior loops, where 2 is the number of unpaired
 	nucelobases on the larger 'side' of the interior loop and 1 is the number of
@@ -276,7 +290,7 @@ type EnergyParams struct {
 	Note that this matrix is always accessed in the 5' to 3' direction with the
 	larger number of unpaired nucleobases first.
 	*/
-	Interior2x1Loop [NBPairs + 1][NBPairs + 1][NBBases + 1][NBBases + 1][NBBases + 1]int
+	Interior2x1Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Free energies for symmetric size 4 interior loops. `7*7*5*5*5*5` entries.
 	Example:
@@ -287,7 +301,7 @@ type EnergyParams struct {
 	corresponds to entry Interior2x2Loop[1][5][4][1][2][2] (CG=1, AU=5, U=4, A=1, C=2, C=2),
 	which should be identical to Interior2x2Loop[5][1][2][2][1][4] (AU=5, CG=1, C=2, C=2, A=1, U=4).
 	*/
-	Interior2x2Loop [NBPairs + 1][NBPairs + 1][NBBases + 1][NBBases + 1][NBBases + 1][NBBases + 1]int
+	Interior2x2Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	/**
 	Parameter for logarithmic loop energy extrapolation. Used to scale energy
 	parameters for hairpin, bulge and interior loops when the length of the loop
@@ -295,7 +309,7 @@ type EnergyParams struct {
 	*/
 	LXC                                                                                 float64
 	MultiLoopUnpairedNucelotideBonus, MultiLoopClosingPenalty, TerminalAUPenalty, Ninio int
-	MultiLoopIntern                                                                     [NBPairs + 1]int
+	MultiLoopIntern                                                                     [NBDistinguishablePairs + 1]int
 	/**
 	Some tetraloops particularly stable tetraloops are assigned an energy
 	bonus. For example:
@@ -327,8 +341,8 @@ func readLine(scanner *bufio.Scanner) (string, bool) {
 	}
 }
 
-func NewEnergyParams(energyParamsSet EnergyParamsSet, temperatureInCelcius float64) *EnergyParams {
-	return newRawEnergyParams(energyParamsSet).scaleByTemperature(temperatureInCelcius)
+func NewEnergyParams(energyParamsSet EnergyParamsSet, temperatureInCelsius float64) *EnergyParams {
+	return newRawEnergyParams(energyParamsSet).scaleByTemperature(temperatureInCelsius)
 }
 
 func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEnergyParams) {
@@ -356,12 +370,12 @@ func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEne
 			case "END":
 				break
 			case "stack":
-				rawEnergyParams.stackingPairEnergy37C = parseParamValues(scanner, NBPairs, NBPairs).([][]int)
-				rawEnergyParams.stackingPairEnergy37C = addPreOffset2Dim(rawEnergyParams.stackingPairEnergy37C, 1, 1)
+				rawEnergyParams.stackingPairEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs).([][]int)
+				rawEnergyParams.stackingPairEnergy37C = addOffset(rawEnergyParams.stackingPairEnergy37C, preOffset, 1, 1).([][]int)
 
 			case "stack_enthalpies":
-				rawEnergyParams.stackingPairEnthalpy = parseParamValues(scanner, NBPairs, NBPairs).([][]int)
-				rawEnergyParams.stackingPairEnthalpy = addPreOffset(rawEnergyParams.stackingPairEnthalpy, 1, 1).([][]int)
+				rawEnergyParams.stackingPairEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs).([][]int)
+				rawEnergyParams.stackingPairEnthalpy = addOffset(rawEnergyParams.stackingPairEnthalpy, preOffset, 1, 1).([][]int)
 
 			case "hairpin":
 				rawEnergyParams.hairpinLoopEnergy37C = parseParamValues(scanner, 31).([]int)
@@ -382,96 +396,96 @@ func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEne
 				rawEnergyParams.interiorLoopEnthalpy = parseParamValues(scanner, 31).([]int)
 
 			case "mismatch_exterior":
-				rawEnergyParams.mismatchExteriorLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchExteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnergy37C = addOffset(rawEnergyParams.mismatchExteriorLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_exterior_enthalpies":
-				rawEnergyParams.mismatchExteriorLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchExteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchExteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchExteriorLoopEnthalpy = addOffset(rawEnergyParams.mismatchExteriorLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_hairpin":
-				rawEnergyParams.mismatchHairpinLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchHairpinLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnergy37C = addOffset(rawEnergyParams.mismatchHairpinLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_hairpin_enthalpies":
-				rawEnergyParams.mismatchHairpinLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchHairpinLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchHairpinLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchHairpinLoopEnthalpy = addOffset(rawEnergyParams.mismatchHairpinLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior":
-				rawEnergyParams.mismatchInteriorLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnergy37C = addOffset(rawEnergyParams.mismatchInteriorLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior_enthalpies":
-				rawEnergyParams.mismatchInteriorLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchInteriorLoopEnthalpy = addOffset(rawEnergyParams.mismatchInteriorLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior_1n":
-				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnergy37C = addOffset(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior_1n_enthalpies":
-				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatch1xnInteriorLoopEnthalpy = addOffset(rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior_23":
-				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnergy37C = addOffset(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_interior_23_enthalpies":
-				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = addPreOffset(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatch2x3InteriorLoopEnthalpy = addOffset(rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_multi":
-				rawEnergyParams.mismatchMultiLoopEnergy37C = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchMultiLoopEnergy37C = addPreOffset(rawEnergyParams.mismatchMultiLoopEnergy37C, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnergy37C = addOffset(rawEnergyParams.mismatchMultiLoopEnergy37C, preOffset, 1, 0, 0).([][][]int)
 
 			case "mismatch_multi_enthalpies":
-				rawEnergyParams.mismatchMultiLoopEnthalpy = parseParamValues(scanner, NBPairs, NBBases+1, NBBases+1).([][][]int)
-				rawEnergyParams.mismatchMultiLoopEnthalpy = addPreOffset(rawEnergyParams.mismatchMultiLoopEnthalpy, 1, 0, 0).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][]int)
+				rawEnergyParams.mismatchMultiLoopEnthalpy = addOffset(rawEnergyParams.mismatchMultiLoopEnthalpy, preOffset, 1, 0, 0).([][][]int)
 
 			case "int11":
-				rawEnergyParams.interior1x1LoopEnergy37C = parseParamValues(scanner, NBPairs, NBPairs, NBBases+1, NBBases+1).([][][][]int)
-				rawEnergyParams.interior1x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior1x1LoopEnergy37C, 1, 1, 0, 0).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnergy37C = addOffset(rawEnergyParams.interior1x1LoopEnergy37C, preOffset, 1, 1, 0, 0).([][][][]int)
 
 			case "int11_enthalpies":
-				rawEnergyParams.interior1x1LoopEnthalpy = parseParamValues(scanner, NBPairs, NBPairs, NBBases+1, NBBases+1).([][][][]int)
-				rawEnergyParams.interior1x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior1x1LoopEnthalpy, 1, 1, 0, 0).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][][]int)
+				rawEnergyParams.interior1x1LoopEnthalpy = addOffset(rawEnergyParams.interior1x1LoopEnthalpy, preOffset, 1, 1, 0, 0).([][][][]int)
 
 			case "int21":
-				rawEnergyParams.interior2x1LoopEnergy37C = parseParamValues(scanner, NBPairs, NBPairs, NBBases+1, NBBases+1, NBBases+1).([][][][][]int)
-				rawEnergyParams.interior2x1LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x1LoopEnergy37C, 1, 1, 0, 0, 0).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnergy37C = addOffset(rawEnergyParams.interior2x1LoopEnergy37C, preOffset, 1, 1, 0, 0, 0).([][][][][]int)
 
 			case "int21_enthalpies":
-				rawEnergyParams.interior2x1LoopEnthalpy = parseParamValues(scanner, NBPairs, NBPairs, NBBases+1, NBBases+1, NBBases+1).([][][][][]int)
-				rawEnergyParams.interior2x1LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x1LoopEnthalpy, 1, 1, 0, 0, 0).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishablePairs, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1, NBDistinguishableNucleotides+1).([][][][][]int)
+				rawEnergyParams.interior2x1LoopEnthalpy = addOffset(rawEnergyParams.interior2x1LoopEnthalpy, preOffset, 1, 1, 0, 0, 0).([][][][][]int)
 
 			case "int22":
-				rawEnergyParams.interior2x2LoopEnergy37C = parseParamValues(scanner, NBPairs-1, NBPairs-1, NBBases, NBBases, NBBases, NBBases).([][][][][][]int)
-				rawEnergyParams.interior2x2LoopEnergy37C = addPreOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 1, 1, 1, 1).([][][][][][]int)
-				rawEnergyParams.interior2x2LoopEnergy37C = addPostOffset(rawEnergyParams.interior2x2LoopEnergy37C, 1, 1, 0, 0, 0, 0).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = parseParamValues(scanner, NBDistinguishablePairs-1, NBDistinguishablePairs-1, NBDistinguishableNucleotides, NBDistinguishableNucleotides, NBDistinguishableNucleotides, NBDistinguishableNucleotides).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = addOffset(rawEnergyParams.interior2x2LoopEnergy37C, preOffset, 1, 1, 1, 1, 1, 1).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnergy37C = addOffset(rawEnergyParams.interior2x2LoopEnergy37C, postOffset, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnergy37C = updateNST(rawEnergyParams.interior2x2LoopEnergy37C)
 
 			case "int22_enthalpies":
-				rawEnergyParams.interior2x2LoopEnthalpy = parseParamValues(scanner, NBPairs-1, NBPairs-1, NBBases, NBBases, NBBases, NBBases).([][][][][][]int)
-				rawEnergyParams.interior2x2LoopEnthalpy = addPreOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 1, 1, 1, 1).([][][][][][]int)
-				rawEnergyParams.interior2x2LoopEnthalpy = addPostOffset(rawEnergyParams.interior2x2LoopEnthalpy, 1, 1, 0, 0, 0, 0).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = parseParamValues(scanner, NBDistinguishablePairs-1, NBDistinguishablePairs-1, NBDistinguishableNucleotides, NBDistinguishableNucleotides, NBDistinguishableNucleotides, NBDistinguishableNucleotides).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = addOffset(rawEnergyParams.interior2x2LoopEnthalpy, preOffset, 1, 1, 1, 1, 1, 1).([][][][][][]int)
+				rawEnergyParams.interior2x2LoopEnthalpy = addOffset(rawEnergyParams.interior2x2LoopEnthalpy, postOffset, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 				rawEnergyParams.interior2x2LoopEnthalpy = updateNST(rawEnergyParams.interior2x2LoopEnthalpy)
 
 			case "dangle5":
-				rawEnergyParams.dangle5Energy37C = parseParamValues(scanner, NBPairs, NBBases+1).([][]int)
-				rawEnergyParams.dangle5Energy37C = addPreOffset(rawEnergyParams.dangle5Energy37C, 1, 0).([][]int)
+				rawEnergyParams.dangle5Energy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1).([][]int)
+				rawEnergyParams.dangle5Energy37C = addOffset(rawEnergyParams.dangle5Energy37C, preOffset, 1, 0).([][]int)
 
 			case "dangle5_enthalpies":
-				rawEnergyParams.dangle5Enthalpy = parseParamValues(scanner, NBPairs, NBBases+1).([][]int)
-				rawEnergyParams.dangle5Enthalpy = addPreOffset(rawEnergyParams.dangle5Enthalpy, 1, 0).([][]int)
+				rawEnergyParams.dangle5Enthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1).([][]int)
+				rawEnergyParams.dangle5Enthalpy = addOffset(rawEnergyParams.dangle5Enthalpy, preOffset, 1, 0).([][]int)
 
 			case "dangle3":
-				rawEnergyParams.dangle3Energy37C = parseParamValues(scanner, NBPairs, NBBases+1).([][]int)
-				rawEnergyParams.dangle3Energy37C = addPreOffset(rawEnergyParams.dangle3Energy37C, 1, 0).([][]int)
+				rawEnergyParams.dangle3Energy37C = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1).([][]int)
+				rawEnergyParams.dangle3Energy37C = addOffset(rawEnergyParams.dangle3Energy37C, preOffset, 1, 0).([][]int)
 
 			case "dangle3_enthalpies":
-				rawEnergyParams.dangle3Enthalpy = parseParamValues(scanner, NBPairs, NBBases+1).([][]int)
-				rawEnergyParams.dangle3Enthalpy = addPreOffset(rawEnergyParams.dangle3Enthalpy, 1, 0).([][]int)
+				rawEnergyParams.dangle3Enthalpy = parseParamValues(scanner, NBDistinguishablePairs, NBDistinguishableNucleotides+1).([][]int)
+				rawEnergyParams.dangle3Enthalpy = addOffset(rawEnergyParams.dangle3Enthalpy, preOffset, 1, 0).([][]int)
 
 			case "ML_params":
 				mlParams := parseParamValues(scanner, 6).([]int)
@@ -503,7 +517,7 @@ func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEne
 				if len(miscParams) > 4 {
 					rawEnergyParams.lxc = miscParams[5]
 				} else {
-					rawEnergyParams.lxc = defaultLXC
+					rawEnergyParams.lxc = logExtrapolationConstantAt37C
 				}
 			}
 		}
@@ -541,45 +555,55 @@ func parseTriTetraHexaLoopParams(scanner *bufio.Scanner) (loops map[string]bool,
 	return
 }
 
-// returns a slice of length numINF with all values set to INF
-func infSlice(numINF int) (ret []int) {
-	ret = make([]int, numINF)
-	for i := 0; i < numINF; i++ {
-		ret[i] = INF
+// returns a slice of length `length` with all values set to `inf`
+func infSlice(length int) (ret []int) {
+	ret = make([]int, length)
+	for i := 0; i < length; i++ {
+		ret[i] = inf
 	}
 	return
 }
 
-// adds numINF `INF`s to the front of a slice
-func prependInfsToSlice(slice []int, numINF int) []int {
-	return append(infSlice(numINF), slice...)
+// adds `length` `inf`s to the front of a slice
+func prependInfsToSlice(slice []int, length int) []int {
+	return append(infSlice(length), slice...)
 }
 
-func appendInfsToSlice(slice []int, numINF int) []int {
-	return append(slice, infSlice(numINF)...)
+func appendInfsToSlice(slice []int, length int) []int {
+	return append(slice, infSlice(length)...)
 }
 
-func addPreOffset(values interface{}, dims ...int) interface{} {
+func addOffset(values interface{}, offsetType offsetType, dims ...int) interface{} {
 	switch len(dims) {
 	case 0:
 		panic("invalid number of dims passed to parseParamValues")
 	case 1:
-		return prependInfsToSlice(values.([]int), dims[0])
+		return addOffset1Dim(values.([]int), dims[0], offsetType)
 	case 2:
-		return addPreOffset2Dim(values.([][]int), dims[0], dims[1])
+		return addOffset2Dim(values.([][]int), dims[0], dims[1], offsetType)
 	case 3:
-		return addPreOffset3Dim(values.([][][]int), dims[0], dims[1], dims[2])
+		return addOffset3Dim(values.([][][]int), dims[0], dims[1], dims[2], offsetType)
 	case 4:
-		return addPreOffset4Dim(values.([][][][]int), dims[0], dims[1], dims[2], dims[3])
+		return addOffset4Dim(values.([][][][]int), dims[0], dims[1], dims[2], dims[3], offsetType)
 	case 5:
-		return addPreOffset5Dim(values.([][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4])
+		return addOffset5Dim(values.([][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], offsetType)
 	case 6:
-		return addPreOffset6Dim(values.([][][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], dims[5])
+		return addOffset6Dim(values.([][][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], dims[5], offsetType)
 	}
 	return nil
 }
 
-func addPreOffset2Dim(values [][]int, dim1Offset, dim2Offset int) (ret [][]int) {
+func addOffset1Dim(values []int, dim1Offset int, offsetType offsetType) (ret []int) {
+	switch offsetType {
+	case preOffset:
+		ret = prependInfsToSlice(values, dim1Offset)
+	case postOffset:
+		ret = appendInfsToSlice(values, dim1Offset)
+	}
+	return
+}
+
+func addOffset2Dim(values [][]int, dim1Offset, dim2Offset int, offsetType offsetType) (ret [][]int) {
 	currLenDim1 := len(values)
 	newLenDim1 := currLenDim1 + dim1Offset
 	ret = make([][]int, 0, newLenDim1)
@@ -589,18 +613,31 @@ func addPreOffset2Dim(values [][]int, dim1Offset, dim2Offset int) (ret [][]int) 
 		// add check to ensure we don't index an empty slice
 		newLenDim2 += len(values[0])
 	}
-	for i := 0; i < dim1Offset; i++ {
-		infSlice := infSlice(newLenDim2)
-		ret = append(ret, infSlice)
-	}
 
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, prependInfsToSlice(values[i], dim2Offset))
+	switch offsetType {
+	case preOffset:
+		for i := 0; i < dim1Offset; i++ {
+			infSlice := infSlice(newLenDim2)
+			ret = append(ret, infSlice)
+		}
+
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, prependInfsToSlice(values[i], dim2Offset))
+		}
+	case postOffset:
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, appendInfsToSlice(values[i], dim2Offset))
+		}
+
+		for i := 0; i < dim1Offset; i++ {
+			infSlice := infSlice(newLenDim2)
+			ret = append(ret, infSlice)
+		}
 	}
 	return
 }
 
-func addPreOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int) (ret [][][]int) {
+func addOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int, offsetType offsetType) (ret [][][]int) {
 	currLenDim1 := len(values)
 	newLenDim1 := currLenDim1 + dim1Offset
 	ret = make([][][]int, 0, newLenDim1)
@@ -617,19 +654,40 @@ func addPreOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int) 
 		// add check to ensure we don't index an empty slice
 		newLenDim3 += len(values[0][0])
 	}
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][]int
-		infMatrix = addPreOffset2Dim(infMatrix, newLenDim2, newLenDim3)
-		ret = append(ret, infMatrix)
-	}
 
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, addPreOffset2Dim(values[i], dim2Offset, dim3Offset))
+	switch offsetType {
+	case preOffset:
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][]int
+			infMatrix = addOffset2Dim(infMatrix, newLenDim2, newLenDim3, offsetType)
+			ret = append(ret, infMatrix)
+		}
+
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset2Dim(values[i], dim2Offset, dim3Offset, offsetType))
+		}
+	case postOffset:
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset2Dim(values[i], dim2Offset, dim3Offset, offsetType))
+		}
+
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][]int
+			infMatrix = addOffset2Dim(infMatrix, newLenDim2, newLenDim3, offsetType)
+			ret = append(ret, infMatrix)
+		}
 	}
 	return
 }
 
-func addPreOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset int) (ret [][][][]int) {
+type offsetType int
+
+const (
+	preOffset offsetType = iota
+	postOffset
+)
+
+func addOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset int, offsetType offsetType) (ret [][][][]int) {
 	currLenDim1 := len(values)
 	newLenDim1 := currLenDim1 + dim1Offset
 	ret = make([][][][]int, 0, newLenDim1)
@@ -653,19 +711,34 @@ func addPreOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, di
 		// add check to ensure we don't index an empty slice
 		newLenDim4 += len(values[0][0][0])
 	}
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][]int
-		infMatrix = addPreOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4)
-		ret = append(ret, infMatrix)
+
+	switch offsetType {
+	case preOffset:
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][]int
+			infMatrix = addOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, offsetType)
+			ret = append(ret, infMatrix)
+		}
+
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset, offsetType))
+		}
+	case postOffset:
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset, offsetType))
+		}
+
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][]int
+			infMatrix = addOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, offsetType)
+			ret = append(ret, infMatrix)
+		}
 	}
 
-	for i := 0; i < len(values); i++ {
-		ret = append(ret, addPreOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset))
-	}
 	return
 }
 
-func addPreOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset int) (ret [][][][][]int) {
+func addOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset int, offsetType offsetType) (ret [][][][][]int) {
 	currLenDim1 := len(values)
 	newLenDim1 := currLenDim1 + dim1Offset
 	ret = make([][][][][]int, 0, newLenDim1)
@@ -696,19 +769,33 @@ func addPreOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, 
 		// add check to ensure we don't index an empty slice
 		newLenDim5 += len(values[0][0][0][0])
 	}
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][][]int
-		infMatrix = addPreOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5)
-		ret = append(ret, infMatrix)
-	}
 
-	for i := 0; i < len(values); i++ {
-		ret = append(ret, addPreOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset))
+	switch offsetType {
+	case preOffset:
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][][]int
+			infMatrix = addOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, offsetType)
+			ret = append(ret, infMatrix)
+		}
+
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, offsetType))
+		}
+	case postOffset:
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, offsetType))
+		}
+
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][][]int
+			infMatrix = addOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, offsetType)
+			ret = append(ret, infMatrix)
+		}
 	}
 	return
 }
 
-func addPreOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset int) (ret [][][][][][]int) {
+func addOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset int, offsetType offsetType) (ret [][][][][][]int) {
 	currLenDim1 := len(values)
 	newLenDim1 := currLenDim1 + dim1Offset
 	ret = make([][][][][][]int, 0, newLenDim1)
@@ -746,15 +833,30 @@ func addPreOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset
 		// add check to ensure we don't index an empty slice
 		newLenDim6 += len(values[0][0][0][0][0])
 	}
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][][][]int
-		infMatrix = addPreOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6)
-		ret = append(ret, infMatrix)
+
+	switch offsetType {
+	case preOffset:
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][][][]int
+			infMatrix = addOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6, offsetType)
+			ret = append(ret, infMatrix)
+		}
+
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset, offsetType))
+		}
+	case postOffset:
+		for i := 0; i < currLenDim1; i++ {
+			ret = append(ret, addOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset, offsetType))
+		}
+
+		for i := 0; i < dim1Offset; i++ {
+			var infMatrix [][][][][]int
+			infMatrix = addOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6, offsetType)
+			ret = append(ret, infMatrix)
+		}
 	}
 
-	for i := 0; i < len(values); i++ {
-		ret = append(ret, addPreOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset))
-	}
 	return
 }
 
@@ -790,7 +892,7 @@ func parseFloatParamLineIntoSlice(scanner *bufio.Scanner) (ret []float64) {
 
 	for _, value := range values {
 		if value == "INF" {
-			ret = append(ret, float64(INF))
+			ret = append(ret, float64(inf))
 		} else {
 			ret = append(ret, parseFloat64(value))
 		}
@@ -807,7 +909,7 @@ func parseLineIntoSlice(scanner *bufio.Scanner) (paramArray []int) {
 
 	for _, value := range values {
 		if value == "INF" {
-			paramArray = append(paramArray, INF)
+			paramArray = append(paramArray, inf)
 		} else {
 			paramArray = append(paramArray, parseInt(value))
 		}
@@ -827,214 +929,6 @@ func parseUntilEnoughValuesIntoSlice(scanner *bufio.Scanner, numValuesToParse in
 	if totalValuesParsed > numValuesToParse {
 		panic("parsed too many values")
 	}
-	return
-}
-
-func addPostOffset(values interface{}, dims ...int) interface{} {
-	switch len(dims) {
-	case 0:
-		panic("invalid number of dims passed to parseParamValues")
-	case 1:
-		return appendInfsToSlice(values.([]int), dims[0])
-	case 2:
-		return addPostOffset2Dim(values.([][]int), dims[0], dims[1])
-	case 3:
-		return addPostOffset3Dim(values.([][][]int), dims[0], dims[1], dims[2])
-	case 4:
-		return addPostOffset4Dim(values.([][][][]int), dims[0], dims[1], dims[2], dims[3])
-	case 5:
-		return addPostOffset5Dim(values.([][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4])
-	case 6:
-		return addPostOffset6Dim(values.([][][][][][]int), dims[0], dims[1], dims[2], dims[3], dims[4], dims[5])
-	}
-	return nil
-}
-
-func addPostOffset2Dim(values [][]int, dim1Offset, dim2Offset int) (ret [][]int) {
-	currLenDim1 := len(values)
-	newLenDim1 := currLenDim1 + dim1Offset
-	ret = make([][]int, 0, newLenDim1)
-
-	var newLenDim2 int = dim2Offset
-	if currLenDim1 > 0 {
-		// add check to ensure we don't index an empty slice
-		newLenDim2 += len(values[0])
-	}
-
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, appendInfsToSlice(values[i], dim2Offset))
-	}
-
-	for i := 0; i < dim1Offset; i++ {
-		infSlice := infSlice(newLenDim2)
-		ret = append(ret, infSlice)
-	}
-
-	return
-}
-
-func addPostOffset3Dim(values [][][]int, dim1Offset, dim2Offset, dim3Offset int) (ret [][][]int) {
-	currLenDim1 := len(values)
-	newLenDim1 := currLenDim1 + dim1Offset
-	ret = make([][][]int, 0, newLenDim1)
-
-	var newLenDim2 int = dim2Offset
-	var currLenDim2 int = 0
-	if currLenDim1 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim2 = len(values[0])
-		newLenDim2 += currLenDim2
-	}
-	var newLenDim3 int = dim3Offset
-	if currLenDim2 > 0 {
-		// add check to ensure we don't index an empty slice
-		newLenDim3 += len(values[0][0])
-	}
-
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, addPostOffset2Dim(values[i], dim2Offset, dim3Offset))
-	}
-
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][]int
-		infMatrix = addPostOffset2Dim(infMatrix, newLenDim2, newLenDim3)
-		ret = append(ret, infMatrix)
-	}
-	return
-}
-
-func addPostOffset4Dim(values [][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset int) (ret [][][][]int) {
-	currLenDim1 := len(values)
-	newLenDim1 := currLenDim1 + dim1Offset
-	ret = make([][][][]int, 0, newLenDim1)
-
-	var newLenDim2 int = dim2Offset
-	var currLenDim2 int = 0
-	if currLenDim1 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim2 = len(values[0])
-		newLenDim2 += currLenDim2
-	}
-	var newLenDim3 int = dim3Offset
-	var currLenDim3 int = 0
-	if currLenDim2 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim3 = len(values[0][0])
-		newLenDim3 += currLenDim3
-	}
-	var newLenDim4 int = dim4Offset
-	if currLenDim3 > 0 {
-		// add check to ensure we don't index an empty slice
-		newLenDim4 += len(values[0][0][0])
-	}
-
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, addPostOffset3Dim(values[i], dim2Offset, dim3Offset, dim4Offset))
-	}
-
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][]int
-		infMatrix = addPostOffset3Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4)
-		ret = append(ret, infMatrix)
-	}
-
-	return
-}
-
-func addPostOffset5Dim(values [][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset int) (ret [][][][][]int) {
-	currLenDim1 := len(values)
-	newLenDim1 := currLenDim1 + dim1Offset
-	ret = make([][][][][]int, 0, newLenDim1)
-
-	var newLenDim2 int = dim2Offset
-	var currLenDim2 int = 0
-	if currLenDim1 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim2 = len(values[0])
-		newLenDim2 += currLenDim2
-	}
-	var newLenDim3 int = dim3Offset
-	var currLenDim3 int = 0
-	if currLenDim2 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim3 = len(values[0][0])
-		newLenDim3 += currLenDim3
-	}
-	var newLenDim4 int = dim4Offset
-	var currLenDim4 int = 0
-	if currLenDim3 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim4 = len(values[0][0][0])
-		newLenDim4 += currLenDim4
-	}
-	var newLenDim5 int = dim5Offset
-	if currLenDim4 > 0 {
-		// add check to ensure we don't index an empty slice
-		newLenDim5 += len(values[0][0][0][0])
-	}
-
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, addPostOffset4Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset))
-	}
-
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][][]int
-		infMatrix = addPostOffset4Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5)
-		ret = append(ret, infMatrix)
-	}
-
-	return
-}
-
-func addPostOffset6Dim(values [][][][][][]int, dim1Offset, dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset int) (ret [][][][][][]int) {
-	currLenDim1 := len(values)
-	newLenDim1 := currLenDim1 + dim1Offset
-	ret = make([][][][][][]int, 0, newLenDim1)
-
-	var newLenDim2 int = dim2Offset
-	var currLenDim2 int = 0
-	if currLenDim1 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim2 = len(values[0])
-		newLenDim2 += currLenDim2
-	}
-	var newLenDim3 int = dim3Offset
-	var currLenDim3 int = 0
-	if currLenDim2 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim3 = len(values[0][0])
-		newLenDim3 += currLenDim3
-	}
-	var newLenDim4 int = dim4Offset
-	var currLenDim4 int = 0
-	if currLenDim3 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim4 = len(values[0][0][0])
-		newLenDim4 += currLenDim4
-	}
-	var newLenDim5 int = dim5Offset
-	var currLenDim5 int = 0
-	if currLenDim4 > 0 {
-		// add check to ensure we don't index an empty slice
-		currLenDim5 = len(values[0][0][0][0])
-		newLenDim5 += currLenDim5
-	}
-	var newLenDim6 int = dim6Offset
-	if currLenDim5 > 0 {
-		// add check to ensure we don't index an empty slice
-		newLenDim6 += len(values[0][0][0][0][0])
-	}
-
-	for i := 0; i < currLenDim1; i++ {
-		ret = append(ret, addPostOffset5Dim(values[i], dim2Offset, dim3Offset, dim4Offset, dim5Offset, dim6Offset))
-	}
-
-	for i := 0; i < dim1Offset; i++ {
-		var infMatrix [][][][][]int
-		infMatrix = addPostOffset5Dim(infMatrix, newLenDim2, newLenDim3, newLenDim4, newLenDim5, newLenDim6)
-		ret = append(ret, infMatrix)
-	}
-
 	return
 }
 
@@ -1099,12 +993,12 @@ func parseParamValuesInto6DimSlice(scanner *bufio.Scanner, lenDim1, lenDim2, len
 func updateNST(array [][][][][][]int) [][][][][][]int {
 	var max, max2, max3, max4, max5, max6 int
 	/* get maxima for one nonstandard nucleotide */
-	for i := 1; i < NBPairs; i++ {
-		for j := 1; j < NBPairs; j++ {
+	for i := 1; i < NBDistinguishablePairs; i++ {
+		for j := 1; j < NBDistinguishablePairs; j++ {
 			for k := 1; k < 5; k++ {
 				for l := 1; l < 5; l++ {
 					for m := 1; m < 5; m++ {
-						max, max2, max3, max4 = -INF, -INF, -INF, -INF /* max of {CGAU} */
+						max, max2, max3, max4 = -inf, -inf, -inf, -inf /* max of {CGAU} */
 						for n := 1; n < 5; n++ {
 							max = maxInt(max, array[i][j][k][l][m][n])
 							max2 = maxInt(max2, array[i][j][k][l][n][m])
@@ -1121,11 +1015,11 @@ func updateNST(array [][][][][][]int) [][][][][][]int {
 		}
 	}
 	/* get maxima for two nonstandard nucleotides */
-	for i := 1; i < NBPairs; i++ {
-		for j := 1; j < NBPairs; j++ {
+	for i := 1; i < NBDistinguishablePairs; i++ {
+		for j := 1; j < NBDistinguishablePairs; j++ {
 			for k := 1; k < 5; k++ {
 				for l := 1; l < 5; l++ {
-					max, max2, max3, max4, max5, max6 = -INF, -INF, -INF, -INF, -INF, -INF /* max of {CGAU} */
+					max, max2, max3, max4, max5, max6 = -inf, -inf, -inf, -inf, -inf, -inf /* max of {CGAU} */
 					for m := 1; m < 5; m++ {
 						max = maxInt(max, array[i][j][k][l][m][0])
 						max2 = maxInt(max2, array[i][j][k][m][0][l])
@@ -1145,10 +1039,10 @@ func updateNST(array [][][][][][]int) [][][][][][]int {
 		}
 	}
 	/* get maxima for three nonstandard nucleotides */
-	for i := 1; i < NBPairs; i++ {
-		for j := 1; j < NBPairs; j++ {
+	for i := 1; i < NBDistinguishablePairs; i++ {
+		for j := 1; j < NBDistinguishablePairs; j++ {
 			for k := 1; k < 5; k++ {
-				max, max2, max3, max4 = -INF, -INF, -INF, -INF /* max of {CGAU} */
+				max, max2, max3, max4 = -inf, -inf, -inf, -inf /* max of {CGAU} */
 				for l := 1; l < 5; l++ {
 					/* should be arbitrary where index l resides in last 3 possible locations */
 					max = maxInt(max, array[i][j][k][l][0][0])
@@ -1164,9 +1058,9 @@ func updateNST(array [][][][][][]int) [][][][][][]int {
 		}
 	}
 	/* get maxima for 4 nonstandard nucleotides */
-	for i := 1; i < NBPairs; i++ {
-		for j := 1; j < NBPairs; j++ {
-			max = -INF /* max of {CGAU} */
+	for i := 1; i < NBDistinguishablePairs; i++ {
+		for j := 1; j < NBDistinguishablePairs; j++ {
+			max = -inf /* max of {CGAU} */
 			for k := 1; k < 5; k++ {
 				max = maxInt(max, array[i][j][k][0][0][0])
 			}
@@ -1178,18 +1072,18 @@ func updateNST(array [][][][][][]int) [][][][][][]int {
 	 * now compute contributions for nonstandard base pairs ...
 	 * first, 1 nonstandard bp
 	 */
-	for i := 1; i < NBPairs; i++ {
+	for i := 1; i < NBDistinguishablePairs; i++ {
 		for k := 0; k < 5; k++ {
 			for l := 0; l < 5; l++ {
 				for m := 0; m < 5; m++ {
 					for n := 0; n < 5; n++ {
-						max, max2 = -INF, -INF
-						for j := 1; j < NBPairs; j++ {
+						max, max2 = -inf, -inf
+						for j := 1; j < NBDistinguishablePairs; j++ {
 							max = maxInt(max, array[i][j][k][l][m][n])
 							max2 = maxInt(max2, array[j][i][k][l][m][n])
 						}
-						array[i][NBPairs][k][l][m][n] = max
-						array[NBPairs][i][k][l][m][n] = max2
+						array[i][NBDistinguishablePairs][k][l][m][n] = max
+						array[NBDistinguishablePairs][i][k][l][m][n] = max2
 					}
 				}
 			}
@@ -1201,23 +1095,16 @@ func updateNST(array [][][][][][]int) [][][][][][]int {
 		for l := 0; l < 5; l++ {
 			for m := 0; m < 5; m++ {
 				for n := 0; n < 5; n++ {
-					max = -INF
-					for j := 1; j < NBPairs; j++ {
-						max = maxInt(max, array[NBPairs][j][k][l][m][n])
+					max = -inf
+					for j := 1; j < NBDistinguishablePairs; j++ {
+						max = maxInt(max, array[NBDistinguishablePairs][j][k][l][m][n])
 					}
-					array[NBPairs][NBPairs][k][l][m][n] = max
+					array[NBDistinguishablePairs][NBDistinguishablePairs][k][l][m][n] = max
 				}
 			}
 		}
 	}
 	return array
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 func readUncommentedLine(scanner *bufio.Scanner) (ret string) {
@@ -1300,13 +1187,13 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 		params.HexaLoop[k] = rescaleDg(rawEnergyParams.hexaLoopEnergy37C[k], rawEnergyParams.hexaLoopEnthalpy[k], temperature)
 	}
 
-	for i := 0; i <= NBPairs; i++ {
+	for i := 0; i <= NBDistinguishablePairs; i++ {
 		params.MultiLoopIntern[i] = rescaleDg(rawEnergyParams.multiLoopIntern37C, rawEnergyParams.multiLoopInternEnthalpy, temperature)
 	}
 
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
-	for i := 0; i <= NBPairs; i++ {
-		for j := 0; j <= NBPairs; j++ {
+	for i := 0; i <= NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishablePairs; j++ {
 			params.StackingPair[i][j] = rescaleDg(rawEnergyParams.stackingPairEnergy37C[i][j],
 				rawEnergyParams.stackingPairEnthalpy[i][j],
 				temperature)
@@ -1314,9 +1201,9 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 	}
 
 	/* mismatches */
-	for i := 0; i <= NBPairs; i++ {
-		for j := 0; j <= NBBases; j++ {
-			for k := 0; k <= NBBases; k++ {
+	for i := 0; i <= NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishableNucleotides; j++ {
+			for k := 0; k <= NBDistinguishableNucleotides; k++ {
 				var mismatch int
 				params.MismatchInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchInteriorLoopEnergy37C[i][j][k],
 					rawEnergyParams.mismatchInteriorLoopEnthalpy[i][j][k],
@@ -1334,37 +1221,37 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 				mismatch = rescaleDg(rawEnergyParams.mismatchMultiLoopEnergy37C[i][j][k],
 					rawEnergyParams.mismatchMultiLoopEnthalpy[i][j][k],
 					temperature)
-				params.MismatchMultiLoop[i][j][k] = min(0, mismatch)
+				params.MismatchMultiLoop[i][j][k] = minInt(0, mismatch)
 
 				mismatch = rescaleDg(rawEnergyParams.mismatchExteriorLoopEnergy37C[i][j][k],
 					rawEnergyParams.mismatchExteriorLoopEnthalpy[i][j][k],
 					temperature)
-				params.MismatchExteriorLoop[i][j][k] = min(0, mismatch)
+				params.MismatchExteriorLoop[i][j][k] = minInt(0, mismatch)
 			}
 		}
 	}
 
 	/* dangles */
-	for i := 0; i <= NBPairs; i++ {
-		for j := 0; j <= NBBases; j++ {
+	for i := 0; i <= NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishableNucleotides; j++ {
 			var dd int
 			dd = rescaleDg(rawEnergyParams.dangle5Energy37C[i][j],
 				rawEnergyParams.dangle5Enthalpy[i][j],
 				temperature)
-			params.Dangle5[i][j] = min(0, dd)
+			params.Dangle5[i][j] = minInt(0, dd)
 
 			dd = rescaleDg(rawEnergyParams.dangle3Energy37C[i][j],
 				rawEnergyParams.dangle3Enthalpy[i][j],
 				temperature)
-			params.Dangle3[i][j] = min(0, dd)
+			params.Dangle3[i][j] = minInt(0, dd)
 		}
 	}
 
 	/* interior 1x1 loops */
-	for i := 0; i <= NBPairs; i++ {
-		for j := 0; j <= NBPairs; j++ {
-			for k := 0; k <= NBBases; k++ {
-				for l := 0; l <= NBBases; l++ {
+	for i := 0; i <= NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishablePairs; j++ {
+			for k := 0; k <= NBDistinguishableNucleotides; k++ {
+				for l := 0; l <= NBDistinguishableNucleotides; l++ {
 					params.Interior1x1Loop[i][j][k][l] = rescaleDg(rawEnergyParams.interior1x1LoopEnergy37C[i][j][k][l],
 						rawEnergyParams.interior1x1LoopEnthalpy[i][j][k][l],
 						temperature)
@@ -1374,11 +1261,11 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 	}
 
 	/* interior 2x1 loops */
-	for i := 0; i < NBPairs; i++ {
-		for j := 0; j <= NBPairs; j++ {
-			for k := 0; k <= NBBases; k++ {
-				for l := 0; l <= NBBases; l++ {
-					for m := 0; m <= NBBases; m++ {
+	for i := 0; i < NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishablePairs; j++ {
+			for k := 0; k <= NBDistinguishableNucleotides; k++ {
+				for l := 0; l <= NBDistinguishableNucleotides; l++ {
+					for m := 0; m <= NBDistinguishableNucleotides; m++ {
 						params.Interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37C[i][j][k][l][m],
 							rawEnergyParams.interior2x1LoopEnthalpy[i][j][k][l][m],
 							temperature)
@@ -1389,12 +1276,12 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 	}
 
 	/* interior 2x2 loops */
-	for i := 0; i < NBPairs; i++ {
-		for j := 0; j <= NBPairs; j++ {
-			for k := 0; k <= NBBases; k++ {
-				for l := 0; l <= NBBases; l++ {
-					for m := 0; m <= NBBases; m++ {
-						for n := 0; n <= NBBases; n++ {
+	for i := 0; i < NBDistinguishablePairs; i++ {
+		for j := 0; j <= NBDistinguishablePairs; j++ {
+			for k := 0; k <= NBDistinguishableNucleotides; k++ {
+				for l := 0; l <= NBDistinguishableNucleotides; l++ {
+					for m := 0; m <= NBDistinguishableNucleotides; m++ {
+						for n := 0; n <= NBDistinguishableNucleotides; n++ {
 							params.Interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37C[i][j][k][l][m][n],
 								rawEnergyParams.interior2x2LoopEnthalpy[i][j][k][l][m][n],
 								temperature)
@@ -1418,11 +1305,11 @@ where dG is the change in Gibbs free energy
 func rescaleDg(dG, dH int, temperature float64) int {
 	// if temperate == energyParamsTemperature then below calculation will always
 	// return dG. So we save some computation with this check.
-	if temperature == measurementTemperature {
+	if temperature == measurementTemperatureInCelcius {
 		return dG
 	}
 
-	defaultEnergyParamsTemperatureKelvin := measurementTemperature + ZeroCKelvin
+	defaultEnergyParamsTemperatureKelvin := measurementTemperatureInCelcius + ZeroCKelvin
 	temperatureKelvin := temperature + ZeroCKelvin
 	var T float64 = float64(temperatureKelvin / defaultEnergyParamsTemperatureKelvin)
 
@@ -1438,11 +1325,11 @@ func rescaleDg(dG, dH int, temperature float64) int {
 func rescaleDgFloat64(dG, dH, temperature float64) float64 {
 	// if temperate == energyParamsTemperature then below calculation will always
 	// return dG. So we save some computation with this check.
-	if temperature == measurementTemperature {
+	if temperature == measurementTemperatureInCelcius {
 		return dG
 	}
 
-	defaultEnergyParamsTemperatureKelvin := measurementTemperature + ZeroCKelvin
+	defaultEnergyParamsTemperatureKelvin := measurementTemperatureInCelcius + ZeroCKelvin
 	temperatureKelvin := temperature + ZeroCKelvin
 	var T float64 = temperatureKelvin / defaultEnergyParamsTemperatureKelvin
 
@@ -1451,8 +1338,15 @@ func rescaleDgFloat64(dG, dH, temperature float64) float64 {
 }
 
 // Returns the minimum of two ints
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
 		return a
 	}
 	return b
