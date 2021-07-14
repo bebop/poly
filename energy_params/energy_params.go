@@ -92,6 +92,9 @@ var energyParamFileNames map[EnergyParamsSet]string = map[EnergyParamsSet]string
 	Turner1999:     "rna_turner1999.par",
 }
 
+// rawEnergyParams is an un-exported intermediate struct used to store parsed
+// energy param values. It is converted into usable energy params by the
+// function `scaleByTemperature()`.
 type rawEnergyParams struct {
 	interior2x2LoopEnergy37C [][][][][][]int
 	interior2x2LoopEnthalpy  [][][][][][]int
@@ -140,7 +143,7 @@ type rawEnergyParams struct {
 	ninioEnthalpy            int
 	terminalAU37C            int
 	terminalAUEnthalpy       int
-	lxc                      float64
+	logExtrapolationConstant float64
 
 	tetraLoops         map[string]bool
 	tetraLoopEnergy37C map[string]int
@@ -198,27 +201,30 @@ type EnergyParams struct {
 	identical to StackingPair[5][2] (AU=5, GC=2).
 	size: [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1]int
 	*/
-	StackingPair [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1]int
+	StackingPair [][]int
 	/**
 	Free energies of hairpin loops as a function of size. The list should
 	contain 31 (MaxLenLoop + 1) entries. Since the minimum size of a hairpin loop
 	is 3 and we start counting with 0, the first three values should be `inf` to
 	indicate a forbidden value.
+	size: [MaxLenLoop + 1]int
 	*/
-	HairpinLoop [MaxLenLoop + 1]int
+	HairpinLoop []int
 	/**
 	Free energies of Bulge loops. Should contain 31 (MaxLenLoop + 1) entries, the
 	first one being `inf`.
+	size: [MaxLenLoop + 1]int
 	*/
-	Bulge [MaxLenLoop + 1]int
+	Bulge []int
 	/**
 	Free energies of interior loops. Should contain 31 (MaxLenLoop + 1) entries,
 	the first 4 being `inf` (since smaller loops are tabulated).
 
 	This field was previous called internal_loop, but has been renamed to
 	interior loop to remain consistent with the names of other interior loops
+	size: [MaxLenLoop + 1]int
 	*/
-	InteriorLoop [MaxLenLoop + 1]int
+	InteriorLoop []int
 	/**
 		Free energies for the interaction between the closing pair of an interior
 	  loop and the two unpaired bases adjacent to the helix. This is a three
@@ -233,13 +239,19 @@ type EnergyParams struct {
 	  corresponds to entry MismatchInteriorLoop[1][4][2] (CG=1, U=4, C=2).
 
 		More information about mismatch energy: https://rna.urmc.rochester.edu/NNDB/turner04/tm.html
+		size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	MismatchInteriorLoop    [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
-	Mismatch1xnInteriorLoop [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
-	Mismatch2x3InteriorLoop [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
-	MismatchExteriorLoop    [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
-	MismatchHairpinLoop     [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
-	MismatchMultiLoop       [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchInteriorLoop [][][]int
+	// size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Mismatch1xnInteriorLoop [][][]int
+	// size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Mismatch2x3InteriorLoop [][][]int
+	// size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchExteriorLoop [][][]int
+	// size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchHairpinLoop [][][]int
+	// size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	MismatchMultiLoop [][][]int
 	/**
 	Energies for the interaction of an unpaired base on the 5' side and
 	adjacent to a helix in multiloops and free ends (the equivalent of mismatch
@@ -254,8 +266,9 @@ type EnergyParams struct {
 	corresponds to entry Dangle5[1][3] (CG=1, G=3).
 
 	More information about dangling ends: https://rna.urmc.rochester.edu/NNDB/turner04/de.html
+	size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	Dangle5 [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
+	Dangle5 [][]int
 	/**
 	Same as above for bases on the 3' side of a helix.
 	```
@@ -263,8 +276,9 @@ type EnergyParams struct {
 				       3'-AU-5'
 	```
 	corresponds to entry Dangle3[5][1] (AU=5, A=1).
+	size: [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	Dangle3 [NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1]int
+	Dangle3 [][]int
 	/**
 	Free energies for symmetric size 2 interior loops. `7*7*5*5` entries.
 	Example:
@@ -274,8 +288,9 @@ type EnergyParams struct {
 	```
 	corresponds to entry Interior1x1Loop[1][5][4][2] (CG=1, AU=5, U=4, C=2),
 	which should be identical to Interior1x1Loop[5][1][2][4] (AU=5, CG=1, C=2, U=4).
+	size: [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	Interior1x1Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Interior1x1Loop [][][][]int
 	/**
 	Free energies for 2x1 interior loops, where 2 is the number of unpaired
 	nucelobases on the larger 'side' of the interior loop and 1 is the number of
@@ -289,8 +304,9 @@ type EnergyParams struct {
 	corresponds to entry Interior2x1Loop[1][5][4][4][2] (CG=1, AU=5, U=4, U=4, C=2).
 	Note that this matrix is always accessed in the 5' to 3' direction with the
 	larger number of unpaired nucleobases first.
+	size: [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	Interior2x1Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Interior2x1Loop [][][][][]int
 	/**
 	Free energies for symmetric size 4 interior loops. `7*7*5*5*5*5` entries.
 	Example:
@@ -300,16 +316,18 @@ type EnergyParams struct {
 	```
 	corresponds to entry Interior2x2Loop[1][5][4][1][2][2] (CG=1, AU=5, U=4, A=1, C=2, C=2),
 	which should be identical to Interior2x2Loop[5][1][2][2][1][4] (AU=5, CG=1, C=2, C=2, A=1, U=4).
+	size: [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
 	*/
-	Interior2x2Loop [NBDistinguishablePairs + 1][NBDistinguishablePairs + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1][NBDistinguishableNucleotides + 1]int
+	Interior2x2Loop [][][][][][]int
 	/**
 	Parameter for logarithmic loop energy extrapolation. Used to scale energy
 	parameters for hairpin, bulge and interior loops when the length of the loop
 	is greather than `MaxLenLoop`.
 	*/
-	LXC                                                                                 float64
+	LogExtrapolationConstant                                                            float64
 	MultiLoopUnpairedNucelotideBonus, MultiLoopClosingPenalty, TerminalAUPenalty, Ninio int
-	MultiLoopIntern                                                                     [NBDistinguishablePairs + 1]int
+	// size: [NBDistinguishablePairs + 1]int
+	MultiLoopIntern []int
 	/**
 	Some tetraloops particularly stable tetraloops are assigned an energy
 	bonus. For example:
@@ -515,9 +533,9 @@ func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEne
 				rawEnergyParams.terminalAU37C = int(miscParams[2])
 				rawEnergyParams.terminalAUEnthalpy = int(miscParams[3])
 				if len(miscParams) > 4 {
-					rawEnergyParams.lxc = miscParams[5]
+					rawEnergyParams.logExtrapolationConstant = miscParams[5]
 				} else {
-					rawEnergyParams.lxc = logExtrapolationConstantAt37C
+					rawEnergyParams.logExtrapolationConstant = logExtrapolationConstantAt37C
 				}
 			}
 		}
@@ -1152,12 +1170,96 @@ func (rawEnergyParams *rawEnergyParams) setNinioParams(parsedNinioParams []int) 
 	rawEnergyParams.maxNinio = parsedNinioParams[2]
 }
 
+type intFunc func(int) int
+
+func rescaleDgSlice(energy interface{}, enthalpy interface{}, nbDims int, temperatureInCelsius float64, fn intFunc) (ret interface{}) {
+	switch nbDims {
+	case 1:
+		return rescaleDg1Dim(energy.([]int), enthalpy.([]int), temperatureInCelsius, fn)
+	case 2:
+		return rescaleDg2Dim(energy.([][]int), enthalpy.([][]int), temperatureInCelsius, fn)
+	case 3:
+		return rescaleDg3Dim(energy.([][][]int), enthalpy.([][][]int), temperatureInCelsius, fn)
+	case 4:
+		return rescaleDg4Dim(energy.([][][][]int), enthalpy.([][][][]int), temperatureInCelsius, fn)
+	case 5:
+		return rescaleDg5Dim(energy.([][][][][]int), enthalpy.([][][][][]int), temperatureInCelsius, fn)
+	case 6:
+		return rescaleDg6Dim(energy.([][][][][][]int), enthalpy.([][][][][][]int), temperatureInCelsius, fn)
+	}
+	return nil
+}
+
+func rescaleDg1Dim(energy []int, enthalpy []int, temperatureInCelsius float64, fn intFunc) (ret []int) {
+	lenEnergy := len(energy)
+	ret = make([]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		val := rescaleDg(energy[i], enthalpy[i], temperatureInCelsius)
+		ret[i] = fn(val)
+	}
+	return
+}
+
+func rescaleDg2Dim(energy [][]int, enthalpy [][]int, temperatureInCelsius float64, fn intFunc) (ret [][]int) {
+	lenEnergy := len(energy)
+	ret = make([][]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		ret[i] = rescaleDgSlice(energy[i], enthalpy[i], 1, temperatureInCelsius, fn).([]int)
+	}
+	return
+}
+
+func rescaleDg3Dim(energy [][][]int, enthalpy [][][]int, temperatureInCelsius float64, fn intFunc) (ret [][][]int) {
+	lenEnergy := len(energy)
+	ret = make([][][]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		ret[i] = rescaleDgSlice(energy[i], enthalpy[i], 2, temperatureInCelsius, fn).([][]int)
+	}
+	return
+}
+
+func rescaleDg4Dim(energy [][][][]int, enthalpy [][][][]int, temperatureInCelsius float64, fn intFunc) (ret [][][][]int) {
+	lenEnergy := len(energy)
+	ret = make([][][][]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		ret[i] = rescaleDgSlice(energy[i], enthalpy[i], 3, temperatureInCelsius, fn).([][][]int)
+	}
+	return
+}
+
+func rescaleDg5Dim(energy [][][][][]int, enthalpy [][][][][]int, temperatureInCelsius float64, fn intFunc) (ret [][][][][]int) {
+	lenEnergy := len(energy)
+	ret = make([][][][][]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		ret[i] = rescaleDgSlice(energy[i], enthalpy[i], 4, temperatureInCelsius, fn).([][][][]int)
+	}
+	return
+}
+
+func rescaleDg6Dim(energy [][][][][][]int, enthalpy [][][][][][]int, temperatureInCelsius float64, fn intFunc) (ret [][][][][][]int) {
+	lenEnergy := len(energy)
+	ret = make([][][][][][]int, lenEnergy)
+	for i := 0; i < lenEnergy; i++ {
+		ret[i] = rescaleDgSlice(energy[i], enthalpy[i], 5, temperatureInCelsius, fn).([][][][][]int)
+	}
+	return
+}
+
+// idInt is the identify func for int values
+func idInt(x int) int {
+	return x
+}
+
+func onlyNegative(x int) int {
+	return minInt(0, x)
+}
+
 // scales energy paramaters according to the specificed temperatue
 func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *EnergyParams {
 
 	// set the non-matix energy parameters
 	var params *EnergyParams = &EnergyParams{
-		LXC:                              rescaleDgFloat64(rawEnergyParams.lxc, 0, temperature),
+		LogExtrapolationConstant:         rescaleDgFloat64(rawEnergyParams.logExtrapolationConstant, 0, temperature),
 		TerminalAUPenalty:                rescaleDg(rawEnergyParams.terminalAU37C, rawEnergyParams.terminalAUEnthalpy, temperature),
 		MultiLoopUnpairedNucelotideBonus: rescaleDg(rawEnergyParams.multiLoopBase37C, rawEnergyParams.multiLoopBaseEnthalpy, temperature),
 		MultiLoopClosingPenalty:          rescaleDg(rawEnergyParams.multiLoopClosing37C, rawEnergyParams.multiLoopClosingEnthalpy, temperature),
@@ -1165,11 +1267,13 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 		MaxNinio:                         rawEnergyParams.maxNinio,
 	}
 
-	// scale and set hairpin, bulge and interior energy params
+	params.HairpinLoop = rescaleDgSlice(rawEnergyParams.hairpinLoopEnergy37C, rawEnergyParams.hairpinLoopEnthalpy, 1, temperature, idInt).([]int)
+	params.Bulge = rescaleDgSlice(rawEnergyParams.bulgeEnergy37C, rawEnergyParams.bulgeEnthalpy, 1, temperature, idInt).([]int)
+	params.InteriorLoop = rescaleDgSlice(rawEnergyParams.interiorLoopEnergy37C, rawEnergyParams.interiorLoopEnthalpy, 1, temperature, idInt).([]int)
+
+	params.MultiLoopIntern = make([]int, MaxLenLoop+1)
 	for i := 0; i <= MaxLenLoop; i++ {
-		params.HairpinLoop[i] = rescaleDg(rawEnergyParams.hairpinLoopEnergy37C[i], rawEnergyParams.hairpinLoopEnthalpy[i], temperature)
-		params.Bulge[i] = rescaleDg(rawEnergyParams.bulgeEnergy37C[i], rawEnergyParams.bulgeEnthalpy[i], temperature)
-		params.InteriorLoop[i] = rescaleDg(rawEnergyParams.interiorLoopEnergy37C[i], rawEnergyParams.interiorLoopEnthalpy[i], temperature)
+		params.MultiLoopIntern[i] = rescaleDg(rawEnergyParams.multiLoopIntern37C, rawEnergyParams.multiLoopInternEnthalpy, temperature)
 	}
 
 	params.TetraLoop = make(map[string]int)
@@ -1187,110 +1291,30 @@ func (rawEnergyParams rawEnergyParams) scaleByTemperature(temperature float64) *
 		params.HexaLoop[k] = rescaleDg(rawEnergyParams.hexaLoopEnergy37C[k], rawEnergyParams.hexaLoopEnthalpy[k], temperature)
 	}
 
-	for i := 0; i <= NBDistinguishablePairs; i++ {
-		params.MultiLoopIntern[i] = rescaleDg(rawEnergyParams.multiLoopIntern37C, rawEnergyParams.multiLoopInternEnthalpy, temperature)
-	}
-
 	/* stacks    G(T) = H - [H - G(T0)]*T/T0 */
-	for i := 0; i <= NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishablePairs; j++ {
-			params.StackingPair[i][j] = rescaleDg(rawEnergyParams.stackingPairEnergy37C[i][j],
-				rawEnergyParams.stackingPairEnthalpy[i][j],
-				temperature)
-		}
-	}
+	params.StackingPair = rescaleDgSlice(rawEnergyParams.stackingPairEnergy37C, rawEnergyParams.stackingPairEnthalpy, 2, temperature, idInt).([][]int)
 
 	/* mismatches */
-	for i := 0; i <= NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishableNucleotides; j++ {
-			for k := 0; k <= NBDistinguishableNucleotides; k++ {
-				var mismatch int
-				params.MismatchInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchInteriorLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatchInteriorLoopEnthalpy[i][j][k],
-					temperature)
-				params.MismatchHairpinLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatchHairpinLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatchHairpinLoopEnthalpy[i][j][k],
-					temperature)
-				params.Mismatch1xnInteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatch1xnInteriorLoopEnthalpy[i][j][k],
-					temperature)
-				params.Mismatch2x3InteriorLoop[i][j][k] = rescaleDg(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatch2x3InteriorLoopEnthalpy[i][j][k],
-					temperature)
+	params.MismatchInteriorLoop = rescaleDgSlice(rawEnergyParams.mismatchInteriorLoopEnergy37C, rawEnergyParams.mismatchInteriorLoopEnthalpy, 3, temperature, idInt).([][][]int)
+	params.MismatchHairpinLoop = rescaleDgSlice(rawEnergyParams.mismatchHairpinLoopEnergy37C, rawEnergyParams.mismatchHairpinLoopEnthalpy, 3, temperature, idInt).([][][]int)
+	params.Mismatch1xnInteriorLoop = rescaleDgSlice(rawEnergyParams.mismatch1xnInteriorLoopEnergy37C, rawEnergyParams.mismatch1xnInteriorLoopEnthalpy, 3, temperature, idInt).([][][]int)
+	params.Mismatch2x3InteriorLoop = rescaleDgSlice(rawEnergyParams.mismatch2x3InteriorLoopEnergy37C, rawEnergyParams.mismatch2x3InteriorLoopEnthalpy, 3, temperature, idInt).([][][]int)
 
-				mismatch = rescaleDg(rawEnergyParams.mismatchMultiLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatchMultiLoopEnthalpy[i][j][k],
-					temperature)
-				params.MismatchMultiLoop[i][j][k] = minInt(0, mismatch)
-
-				mismatch = rescaleDg(rawEnergyParams.mismatchExteriorLoopEnergy37C[i][j][k],
-					rawEnergyParams.mismatchExteriorLoopEnthalpy[i][j][k],
-					temperature)
-				params.MismatchExteriorLoop[i][j][k] = minInt(0, mismatch)
-			}
-		}
-	}
+	params.MismatchMultiLoop = rescaleDgSlice(rawEnergyParams.mismatchMultiLoopEnergy37C, rawEnergyParams.mismatchMultiLoopEnthalpy, 3, temperature, onlyNegative).([][][]int)
+	params.MismatchExteriorLoop = rescaleDgSlice(rawEnergyParams.mismatchExteriorLoopEnergy37C, rawEnergyParams.mismatchExteriorLoopEnthalpy, 3, temperature, onlyNegative).([][][]int)
 
 	/* dangles */
-	for i := 0; i <= NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishableNucleotides; j++ {
-			var dd int
-			dd = rescaleDg(rawEnergyParams.dangle5Energy37C[i][j],
-				rawEnergyParams.dangle5Enthalpy[i][j],
-				temperature)
-			params.Dangle5[i][j] = minInt(0, dd)
-
-			dd = rescaleDg(rawEnergyParams.dangle3Energy37C[i][j],
-				rawEnergyParams.dangle3Enthalpy[i][j],
-				temperature)
-			params.Dangle3[i][j] = minInt(0, dd)
-		}
-	}
+	params.Dangle5 = rescaleDgSlice(rawEnergyParams.dangle5Energy37C, rawEnergyParams.dangle5Enthalpy, 2, temperature, onlyNegative).([][]int)
+	params.Dangle3 = rescaleDgSlice(rawEnergyParams.dangle3Energy37C, rawEnergyParams.dangle3Enthalpy, 2, temperature, onlyNegative).([][]int)
 
 	/* interior 1x1 loops */
-	for i := 0; i <= NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishablePairs; j++ {
-			for k := 0; k <= NBDistinguishableNucleotides; k++ {
-				for l := 0; l <= NBDistinguishableNucleotides; l++ {
-					params.Interior1x1Loop[i][j][k][l] = rescaleDg(rawEnergyParams.interior1x1LoopEnergy37C[i][j][k][l],
-						rawEnergyParams.interior1x1LoopEnthalpy[i][j][k][l],
-						temperature)
-				}
-			}
-		}
-	}
+	params.Interior1x1Loop = rescaleDgSlice(rawEnergyParams.interior1x1LoopEnergy37C, rawEnergyParams.interior1x1LoopEnthalpy, 4, temperature, idInt).([][][][]int)
 
 	/* interior 2x1 loops */
-	for i := 0; i < NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishablePairs; j++ {
-			for k := 0; k <= NBDistinguishableNucleotides; k++ {
-				for l := 0; l <= NBDistinguishableNucleotides; l++ {
-					for m := 0; m <= NBDistinguishableNucleotides; m++ {
-						params.Interior2x1Loop[i][j][k][l][m] = rescaleDg(rawEnergyParams.interior2x1LoopEnergy37C[i][j][k][l][m],
-							rawEnergyParams.interior2x1LoopEnthalpy[i][j][k][l][m],
-							temperature)
-					}
-				}
-			}
-		}
-	}
+	params.Interior2x1Loop = rescaleDgSlice(rawEnergyParams.interior2x1LoopEnergy37C, rawEnergyParams.interior2x1LoopEnthalpy, 5, temperature, idInt).([][][][][]int)
 
 	/* interior 2x2 loops */
-	for i := 0; i < NBDistinguishablePairs; i++ {
-		for j := 0; j <= NBDistinguishablePairs; j++ {
-			for k := 0; k <= NBDistinguishableNucleotides; k++ {
-				for l := 0; l <= NBDistinguishableNucleotides; l++ {
-					for m := 0; m <= NBDistinguishableNucleotides; m++ {
-						for n := 0; n <= NBDistinguishableNucleotides; n++ {
-							params.Interior2x2Loop[i][j][k][l][m][n] = rescaleDg(rawEnergyParams.interior2x2LoopEnergy37C[i][j][k][l][m][n],
-								rawEnergyParams.interior2x2LoopEnthalpy[i][j][k][l][m][n],
-								temperature)
-						}
-					}
-				}
-			}
-		}
-	}
+	params.Interior2x2Loop = rescaleDgSlice(rawEnergyParams.interior2x2LoopEnergy37C, rawEnergyParams.interior2x2LoopEnthalpy, 6, temperature, idInt).([][][][][][]int)
 
 	return params
 }
