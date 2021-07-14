@@ -17,7 +17,8 @@ parameters as specified by the `RNAfold parameter file v2.0` file format from
 
 ******************************************************************************/
 
-// EnergyParamsSet is used to specify the set of RNA free energy paramaters.
+// EnergyParamsSet is used to specify the set of RNA free energy paramaters to
+// parse.
 type EnergyParamsSet int
 
 const (
@@ -27,17 +28,20 @@ const (
 	// Structure Prediction", EuroGP-2018, M. Castelli,
 	// L. Sekanina, M. Zhang Eds., Parma. 4-6 April 2018
 	Langdon2018 EnergyParamsSet = iota
+
 	// Andronescu2007 specifies the set of RNA energy parameters obtained from
 	// Andronescu M, Condon A, Hoos HH, Mathews DH, Murphy KP. Efficient
 	// parameter estimation for RNA secondary structure prediction.
 	// Bioinformatics. 2007 Jul 1;23(13):i19-28
 	Andronescu2007
+
 	// Turner2004 specifies the set of RNA energy parameters obtained from
 	// Mathews DH, Disney MD, Childs JL, Schroeder SJ, Zuker M, Turner DH.
 	// Incorporating chemical modification constraints into a dynamic
 	// programming algorithm for prediction of RNA secondary structure.
 	// Proc Natl Acad Sci U S A. 2004;101(19):7287-7292.
 	Turner2004
+
 	// Turner1999 specifies the set of RNA energy parameters obtained from
 	// Mathews DH, Sabina J, Zuker M, Turner DH. Expanded sequence dependence
 	// of thermodynamic parameters improves prediction of RNA secondary
@@ -131,20 +135,25 @@ var energyParamFileNames map[EnergyParamsSet]string = map[EnergyParamsSet]string
 
 // The main function where the parsing of energy param files starts from.
 //
-// The `RNAfold parameter file v2.0` file format has a flaw:
-// * since the nucleotide encoded int map (`NucleotideEncodedIntMap`) starts at
-// 	 1 (instead of 0), all parameters specified for nucleotides in the energy
-// 	 params file have an extra first dimension even though the values can never
-//   be accessed.
-// 	 For example, for `mismatch_exterior`, we parse parameters of the dimesions
-// 	 `NbDistinguishableBasePairs` x `NbDistinguishableNucleotides+1` x
-//   `NbDistinguishableNucleotides+1`.
-// 	 The extra `+ 1` comes from the fact that `NucleotideEncodedIntMap` starts
-// 	 at 1 instead of 0. The first dimension that we parse doesn't have any
-//   useful information since it can't be accessed, but we still have to parse
-//   it. Thus, in the future, if we'd like to make `NucleotideEncodedIntMap`
-//   start at 0, we have to include a function that removes the first dimension
-// 	 whenever a `NbDistinguishableNucleotides+1` dimension is parsed.
+// Note that the `RNAfold parameter file v2.0` file format has a flaw.
+// Since the nucleotide encoded int map (`NucleotideEncodedIntMap`) starts at
+// 1 (instead of 0), all parameters specified for nucleotides in the energy
+// params file have an extra first dimension even though the values can never
+// be accessed.
+// For example, for `mismatch_exterior`, we parse parameters of the dimesions
+// `NbDistinguishableBasePairs` x `NbDistinguishableNucleotides+1` x
+// `NbDistinguishableNucleotides+1`.
+// The extra `+ 1` comes from the fact that `NucleotideEncodedIntMap` starts
+// at 1 instead of 0. The first dimension that we parse doesn't have any
+// useful information since it can't be accessed, but we still have to parse
+// it since the parameter file includes the dimension. Thus, in the future,
+// if we'd like to make `NucleotideEncodedIntMap` start at 0, we have to
+// include a function that removes the first dimension whenever a
+// `NbDistinguishableNucleotides+1` dimension is parsed.
+//
+// Note that for some reason int22 and int22_enthalpies parameters have the
+// right dimension sizes for the nucleotide dimensions, so we have to add
+// a pre offset to those nucleotide dimensions.
 func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEnergyParams) {
 	fileName := energyParamFileNames[energyParamsSet]
 	file, err := embeddedEnergyParamsDirectory.Open(energyParamsDirectory + "/" + fileName)
@@ -250,17 +259,11 @@ func newRawEnergyParams(energyParamsSet EnergyParamsSet) (rawEnergyParams rawEne
 
 		case "int22":
 			rawEnergyParams.interior2x2LoopEnergy37C = parseItemsIntoIntMatrix(scanner, NbDistinguishableBasePairs-1, NbDistinguishableBasePairs-1, NbDistinguishableNucleotides, NbDistinguishableNucleotides, NbDistinguishableNucleotides, NbDistinguishableNucleotides).([][][][][][]int)
-			// int22 parameters are of the correct size in the params file so we
-			// parse the right amount of params, but have to include a preOffset
-			// since `NucleotideEncodedIntMap` starts at 1 and not 0
 			rawEnergyParams.interior2x2LoopEnergy37C = addOffset(rawEnergyParams.interior2x2LoopEnergy37C, preOffset, 0, 0, 1, 1, 1, 1).([][][][][][]int)
 			rawEnergyParams.interior2x2LoopEnergy37C = addOffset(rawEnergyParams.interior2x2LoopEnergy37C, postOffset, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 
 		case "int22_enthalpies":
 			rawEnergyParams.interior2x2LoopEnthalpy = parseItemsIntoIntMatrix(scanner, NbDistinguishableBasePairs-1, NbDistinguishableBasePairs-1, NbDistinguishableNucleotides, NbDistinguishableNucleotides, NbDistinguishableNucleotides, NbDistinguishableNucleotides).([][][][][][]int)
-			// int22_enthalpies parameters are of the correct size in the params file
-			// so we parse the right amount of params, but have to include a preOffset
-			// since `NucleotideEncodedIntMap` starts at 1 and not 0
 			rawEnergyParams.interior2x2LoopEnthalpy = addOffset(rawEnergyParams.interior2x2LoopEnthalpy, preOffset, 0, 0, 1, 1, 1, 1).([][][][][][]int)
 			rawEnergyParams.interior2x2LoopEnthalpy = addOffset(rawEnergyParams.interior2x2LoopEnthalpy, postOffset, 1, 1, 0, 0, 0, 0).([][][][][][]int)
 
@@ -615,6 +618,7 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 	switch values := values.(type) {
 	case []int:
 		return []int{len(values)}
+
 	case [][]int:
 		lenCurrDim := len(values)
 		ret = []int{lenCurrDim}
@@ -624,6 +628,7 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 			// The rest of the dimensions are of length 0
 			ret = append(ret, newIntSlice(0, 1)...)
 		}
+
 	case [][][]int:
 		lenCurrDim := len(values)
 		ret = []int{lenCurrDim}
@@ -632,6 +637,7 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 		} else {
 			ret = append(ret, newIntSlice(0, 2)...)
 		}
+
 	case [][][][]int:
 		lenCurrDim := len(values)
 		ret = []int{lenCurrDim}
@@ -640,6 +646,7 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 		} else {
 			ret = append(ret, newIntSlice(0, 3)...)
 		}
+
 	case [][][][][]int:
 		lenCurrDim := len(values)
 		ret = []int{lenCurrDim}
@@ -648,6 +655,7 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 		} else {
 			ret = append(ret, newIntSlice(0, 4)...)
 		}
+
 	case [][][][][][]int:
 		lenCurrDim := len(values)
 		ret = []int{lenCurrDim}
@@ -656,7 +664,9 @@ func getIntMatrixDims(values interface{}) (ret []int) {
 		} else {
 			ret = append(ret, newIntSlice(0, 5)...)
 		}
+
 	}
+
 	return
 }
 

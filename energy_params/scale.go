@@ -10,12 +10,13 @@ temperature. For more information of parsing the energy params, please see
 ******************************************************************************/
 
 const (
-	// The number of distinguishable base pairs:
+	// NbDistinguishableBasePairs is the number of distinguishable base pairs:
 	// CG, GC, GU, UG, AU, UA, & non-standard
 	NbDistinguishableBasePairs int = 7
-	// The number of distinguishable nucleotides: A, C, G, U
+	// NbDistinguishableNucleotides is the number of distinguishable nucleotides:
+	// A, C, G, U
 	NbDistinguishableNucleotides int = 4
-	// The maximum loop length
+	// MaxLenLoop is the maximum length of a loop (hairpin, or multi-loop)
 	MaxLenLoop int = 30
 	// ZeroCelsiusInKelvin is 0 deg Celsius in Kelvin
 	ZeroCelsiusInKelvin float64 = 273.15
@@ -211,7 +212,7 @@ var (
 	nucleotideGEncodedTypeMap = map[byte]int{'C': 1, 'U': 2}
 	nucleotideUEncodedTypeMap = map[byte]int{'A': 5, 'G': 3}
 
-	// basePairTypeEncodedIntMap is a map that encodes a base pair to its numerical
+	// BasePairTypeEncodedIntMap is a map that encodes a base pair to its numerical
 	// representation that is used to access the values of the energy parameters
 	// in the `EnergyParams` struct.
 	//
@@ -233,11 +234,12 @@ var (
 	// Thus, any change to this map must be reflected in the energy
 	// parameters matrices, and vice versa.
 	//
-	// Note that this map is un-exported on purpose. Since maps that return `int`
-	// in Go return `0` by default when a value isn't found, this map is wrapped
-	// by the exported func `BasePairTypeEncodedInt` which returns `-1` when
-	// a value in this map isn't found.
-	basePairTypeEncodedIntMap = map[byte]map[byte]int{
+	// Note that in Go maps that return `int` return 0 by default when a value
+	// isn't found. This would cause bases that don't pair to seem like a CG pair.
+	// To rectify this, the exported func `BasePairTypeEncodedInt` returns `-1`
+	// when a value in this map isn't found. Please consider using that function
+	// to access this map.
+	BasePairTypeEncodedIntMap = map[byte]map[byte]int{
 		'A': nucleotideAEncodedTypeMap,
 		'C': nucleotideCEncodedTypeMap,
 		'G': nucleotideGEncodedTypeMap,
@@ -277,7 +279,7 @@ func EncodeSequence(sequence string) (encodedSequence []int) {
 // which is used to access energy paramater values in the `EnergyParams` struct.
 // See `basePairTypeEncodedIntMap` for a detailed explanation of the encoding.
 func BasePairTypeEncodedInt(fivePrimeBase, threePrimeBase byte) int {
-	if val, ok := basePairTypeEncodedIntMap[fivePrimeBase][threePrimeBase]; ok {
+	if val, ok := BasePairTypeEncodedIntMap[fivePrimeBase][threePrimeBase]; ok {
 		return val
 	} else {
 		return -1
