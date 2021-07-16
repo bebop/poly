@@ -2,6 +2,7 @@ package codon
 
 import (
 	"errors"
+	"fmt"
 
 	"math/rand"
 	"strings"
@@ -224,7 +225,7 @@ func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
 		chooser, err := weightedRand.NewChooser(codonChoices...)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
 		}
 
 		codonChooser[aminoAcid.Letter] = *chooser
