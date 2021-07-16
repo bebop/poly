@@ -573,7 +573,7 @@ func evaluateLoop(fc *foldCompound, closingFivePrimeIdx int) (int, interface{}) 
 		// we have a multi-loop
 		multiLoop := multiLoop(fc, closingFivePrimeIdx, stem)
 		// multiloop's total energy consists of the energy of the substructures, the loop and the stem
-		return stemEnergy + multiLoop.Energy + multiLoop.Substructures.Energy, multiLoop
+		return stemEnergy + multiLoop.Energy + multiLoop.SubstructuresEnergy, multiLoop
 	}
 }
 
@@ -986,19 +986,12 @@ func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
 
 	// add bonus energies for unpaired nucleotides
 	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.MultiLoopUnpairedNucelotideBonus
-	// multiLoopEnergyFloat64 := float64(multiLoopEnergy) / 100
 
-	substructuresFivePrimeIdx, substructuresThreePrimeIdx := stem.EnclosedFivePrimeIdx+1, stem.EnclosedThreePrimeIdx-1
 	multiLoop := MultiLoop{
-		Stem:                       stem,
-		SubstructuresFivePrimeIdx:  substructuresFivePrimeIdx,
-		SubstructuresThreePrimeIdx: substructuresThreePrimeIdx,
-		Substructures: SecondaryStructure{
-			Structures: substructures,
-			Length:     substructuresThreePrimeIdx - substructuresFivePrimeIdx + 1,
-			Energy:     substructuresEnergy,
-		},
-		Energy: multiLoopEnergy,
+		Stem:                stem,
+		SubstructuresEnergy: substructuresEnergy,
+		Substructures:       substructures,
+		Energy:              multiLoopEnergy,
 	}
 
 	return multiLoop

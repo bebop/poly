@@ -1888,7 +1888,6 @@ func compareMFEOutputToViennaRNA(sequence, structure string, temperature float64
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("External loop       : %v\n", int(secondaryStructure.ExteriorLoopsEnergy))
 		logEnergyContributions(*secondaryStructure, sequence)
 		// mfe = math.Floor(mfe*100) / 100
 		log.Printf("%.2f", mfe)
@@ -1922,44 +1921,19 @@ func stripWhiteSpace(s string) string {
 * everyting in ViennaRNA is 1-indexed, but output from the `MinimumFreeEnergy` func
 * is 0-indexed.
  */
-// func logEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
-// 	for _, c := range energyContribution {
-// 		structure := c.structure
-// 		switch structure.loopType {
-// 		case ExteriorLoop:
-// 			log.Printf("External loop                           : %v\n", c.energy)
-// 		case InteriorLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
-// 			log.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
-// 				i+1, j+1,
-// 				string(sequence[i]), string(sequence[j]),
-// 				k+1, l+1,
-// 				string(sequence[k]), string(sequence[l]),
-// 				c.energy)
-// 		case HairpinLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			log.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
-// 				i+1, j+1,
-// 				string(sequence[i]), string(sequence[j]),
-// 				c.energy)
-// 		case MultiLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
-// 				i+1, j+1,
-// 				string(sequence[i]), string(sequence[j]),
-// 				c.energy)
-// 		}
-// 	}
-// }
 func logEnergyContributions(secondaryStructure SecondaryStructure, sequence string) {
-	for _, structure := range secondaryStructure.Structures {
+	log.Printf("External loop       : %v\n", int(secondaryStructure.ExteriorLoopsEnergy))
+	doLogEnergyContributions(secondaryStructure.Structures, sequence)
+}
+
+func doLogEnergyContributions(structures []interface{}, sequence string) {
+	for _, structure := range structures {
 		switch structure := structure.(type) {
 		case MultiLoop:
 			// process Stem
 			logStemEnergyContributions(structure.Stem, sequence)
 			// process multiloop substructures
-			logEnergyContributions(structure.Substructures, sequence)
+			doLogEnergyContributions(structure.Substructures, sequence)
 			// process multiloop energy
 			var i, j int = structure.Stem.EnclosedFivePrimeIdx, structure.Stem.EnclosedThreePrimeIdx
 			log.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
