@@ -89,6 +89,16 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 	}
 }
 
+// getKmerTable receive a sequence string and a k int and generates a set of unique k-mers
+func getKmerTable(k int, sequence string) map[string]bool {
+	kmers := make(map[string]bool)
+	for i := 0; i <= len(sequence)-k; i++ {
+			  kmers[strings.ToUpper(sequence[i:i+k])] = true
+	}
+  
+	return kmers
+  }
+
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
@@ -109,6 +119,26 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 			kmers[sequence[i:i+repeatLen]] = true
 		}
 		wg.Done()
+	}
+}
+ 
+// GlobalRemoveRepeat is a generator to make a problematicSequenceFunc for external repeats (e.g genome repeats).
+func GlobalRemoveRepeat(repeatLen int, globalKmers map[string]bool) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		for i := 0; i < len(sequence)-repeatLen; i++ {
+			_, globalRepeat := globalKmers[sequence[i:i+repeatLen]]
+      if globalRepeat {
+        position := i / 3
+				leftover := i % 3
+				switch {
+				case leftover == 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
+				case leftover != 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
+				}
+			}
+		}
+    wg.Done()
 	}
 }
 
