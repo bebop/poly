@@ -6,8 +6,8 @@ Overview of the structs
 
 The struct that contains information of a RNA's secondary structure is
 `SecondaryStructure`. The field `Structures` contains a list of the main
-RNA secondary structures (MultiLoop`, `Hairpin`, and `SingleStrandedRegion`).
-`Hairpin`s and `Multiloop`s both can optionally have a `Stem`.
+RNA secondary structures (`*MultiLoop`, `*Hairpin`, and `*SingleStrandedRegion`).
+`Hairpin`s and `MultiLoop`s both can optionally have a `Stem`.
 
 A `Stem` consists of a list of `StemStructure`s. A `StemStructure` consists
 of a closing and enclosed base pair with the requirement that there are
@@ -40,7 +40,7 @@ package secondary_structure
 // SecondaryStructure is composed of a list of `MultiLoop`s, `Hairpin`s,
 // and `SingleStrandedRegion`s. Note that since Go doesn't support inheritance,
 // we use `interface{}` as the type for the structures list, but the only types
-// that are allowed/used are `MultiLoop`, `Hairpin` and `SingleStrandedRegion`.
+// that are allowed/used are `*MultiLoop`, `*Hairpin` and `*SingleStrandedRegion`.
 //
 // The free energy of the entire secondary structure (including the energy
 // of the exterior loops of the secondary structure) is stored in the `Energy`
@@ -57,9 +57,9 @@ type SecondaryStructure struct {
 
 // MultiLoop contains all the information needed to denote a multi-loop in a
 // RNA's secondary structure. It consists of a `Stem` and a list of
-// substructures. A `Multiloop` will always contain atleast one substructure.
-// The only substructures present in a Multiloop are `Hairpin`s and
-// `SingleStrandedRegion`s.
+// substructures. A `Multiloop` will always contain at least one substructure.
+// The substructures that can be present in a Multiloop are `*Hairpin`s,
+// `*SingleStrandedRegion`s and `*MultiLoop`s.
 //
 // The total free energy of a Multiloop can be calculated by summing the energy
 // of the Multiloop's stem (present in the `Energy` field of the `Stem`),
@@ -67,9 +67,9 @@ type SecondaryStructure struct {
 // and the energy of the Multiloop (the `Energy` field of this struct).
 type MultiLoop struct {
 	Stem                Stem
-	Substructures       []interface{} // will only contain `Hairpin`s or `SingleStrandedRegion`s
-	Energy              int           // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
-	SubstructuresEnergy int           // free energy (in dcal / mol) only from the substructures of the multi-loop (doesn't include free energy from the stem or multi-loop)
+	Substructures       []interface{}
+	Energy              int // free energy (in dcal / mol) only from the multi-loop (doesn't include free energy from the substrctures or stem)
+	SubstructuresEnergy int // free energy (in dcal / mol) only from the substructures of the multi-loop (doesn't include free energy from the stem or multi-loop)
 }
 
 // Hairpin contains all the information needed to denote a hairpin loop in a
@@ -107,7 +107,7 @@ type SingleStrandedRegion struct {
 // Note that a `Stem` may not contain any stem structures. This occurs in cases
 // where there is only one base pair that delimits a `Hairpin` or `MultiLoop`.
 // For example,
-// dot-bracket sturcture:
+// dot-bracket structure:
 // . . . ( . . . ) . .
 // annotated structure:
 // e e e ( h h h ) e e
@@ -117,7 +117,7 @@ type SingleStrandedRegion struct {
 // 7) whose stem don't contain any structures.
 //
 // For example,
-// dot-bracket sturcture:
+// dot-bracket structure:
 // . . ( . . . ( ( . . )  )  .  .  )  .  .
 // annotated structure:
 // . . ( m m m ( ( h h )  )  m  m  )  e  e
@@ -127,7 +127,7 @@ type SingleStrandedRegion struct {
 // 14) whose stem don't contain any structures.
 // In such cases, the stem will only have its `ClosingFivePrimeIdx` and
 // `ClosingThreePrimeIdx` set. The `EnclosedFivePrimeIdx` and
-// `EnclosedThreePrimeIdx` will be set to -1, and the list of `StemStructres`
+// `EnclosedThreePrimeIdx` will be set to -1, and the list of `StemStructures`
 // will be empty.
 type Stem struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
@@ -141,7 +141,7 @@ type Stem struct {
 // enclosed base pair with the requirement that there are no base pairs between
 // the closing and enclosed base pair.
 //
-// A `StemStrcture` is classified into a `StemStructureType` based on the
+// A `StemStructure` is classified into a `StemStructureType` based on the
 // number of unpaired nucleotides between the closing and enclosed base pairs.
 // (See (*StemStructure).setStructureType for more details)
 type StemStructure struct {
@@ -240,7 +240,7 @@ func (structure *StemStructure) setStructureType() {
 }
 
 // NewStemStructure is a wrapper to create a `StemStructure` and call the
-// functions (`(*StemStructure).setStructureType`) required to initalize the
+// functions (`(*StemStructure).setStructureType`) required to initialize the
 // struct.
 func NewStemStructure(closingFivePrimeIdx, closingThreePrimeIdx,
 	enclosedFivePrimeIdx, enclosedThreePrimeIdx int) StemStructure {

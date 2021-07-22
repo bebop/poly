@@ -172,7 +172,7 @@ func (pc *parseCompound) evaluate() (annotatedStructure string, secondaryStructu
 		if lenExteriorLoop != 0 {
 			// add single stranded region of exterior loop to structures and reset
 			// lenExteriorLoop for next iteration of for-loop
-			ssr := SingleStrandedRegion{
+			ssr := &SingleStrandedRegion{
 				FivePrimeIdx:  i - lenExteriorLoop,
 				ThreePrimeIdx: i - 1,
 			}
@@ -190,7 +190,7 @@ func (pc *parseCompound) evaluate() (annotatedStructure string, secondaryStructu
 
 	// add the single stranded region at the three prime end (if it exists)
 	if lenExteriorLoop != 0 {
-		ssr := SingleStrandedRegion{
+		ssr := &SingleStrandedRegion{
 			FivePrimeIdx:  pc.length - lenExteriorLoop,
 			ThreePrimeIdx: pc.length - 1,
 		}
@@ -377,7 +377,7 @@ func stemStructure(pc *parseCompound,
 // `parseCompound`'s annotatedStructure and returns `Hairpin` closed
 // by (`closingFivePrimeIdx`, `closingThreePrimeIdx`)
 func hairpin(pc *parseCompound, closingFivePrimeIdx, closingThreePrimeIdx int,
-	stem Stem) Hairpin {
+	stem Stem) *Hairpin {
 
 	// keep track of whether the hairpin has single stranded nucleotides
 	hairpinHasSingleStrandedNucleotides := false
@@ -396,7 +396,7 @@ func hairpin(pc *parseCompound, closingFivePrimeIdx, closingThreePrimeIdx int,
 		singleStrandedThreePrimeIdx = -1
 	}
 
-	return Hairpin{
+	return &Hairpin{
 		Stem:                        stem,
 		SingleStrandedFivePrimeIdx:  singleStrandedFivePrimeIdx,
 		SingleStrandedThreePrimeIdx: singleStrandedThreePrimeIdx,
@@ -407,7 +407,7 @@ func hairpin(pc *parseCompound, closingFivePrimeIdx, closingThreePrimeIdx int,
 // region in a `parseCompound`'s annotatedStructure and returns the
 // `MultiLoop` closed by (`closingFivePrimeIdx`, `closingThreePrimeIdx`)
 func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
-	stem Stem) MultiLoop {
+	stem Stem) *MultiLoop {
 	pairTable := pc.pairTable
 
 	// the substructures present in the multi-loop
@@ -436,7 +436,7 @@ func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
 	// add single stranded region of multi-loop to structures and reset
 	// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
 	if lenMultiLoopSingleStrandedRegion != 0 {
-		ssr := SingleStrandedRegion{
+		ssr := &SingleStrandedRegion{
 			FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
 			ThreePrimeIdx: enclosedFivePrimeIdx - 1,
 		}
@@ -458,7 +458,7 @@ func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
 		}
 
 		if lenMultiLoopSingleStrandedRegion != 0 {
-			ssr := SingleStrandedRegion{
+			ssr := &SingleStrandedRegion{
 				FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
 				ThreePrimeIdx: enclosedFivePrimeIdx - 1,
 			}
@@ -467,7 +467,7 @@ func multiLoop(pc *parseCompound, closingFivePrimeIdx int,
 		}
 	}
 
-	return MultiLoop{
+	return &MultiLoop{
 		Stem:          stem,
 		Substructures: substructures,
 	}
