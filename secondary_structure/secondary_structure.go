@@ -147,6 +147,7 @@ type Stem struct {
 type StemStructure struct {
 	ClosingFivePrimeIdx, EnclosedFivePrimeIdx   int
 	EnclosedThreePrimeIdx, ClosingThreePrimeIdx int
+	NBUnpairedFivePrime, NBUnpairedThreePrime   int // the number of unpaired nucleotides on the five and three prime ends
 	Type                                        StemStructureType
 	Energy                                      int // free energy of the `StemStructure` in dcal / mol
 }
@@ -196,7 +197,9 @@ const (
 // number of unpaired nucleotides between the closing and enclosed base pairs.
 func (structure *StemStructure) setStructureType() {
 	nbUnpairedFivePrime := structure.EnclosedFivePrimeIdx - structure.ClosingFivePrimeIdx - 1
+	structure.NBUnpairedFivePrime = nbUnpairedFivePrime
 	nbUnpairedThreePrime := structure.ClosingThreePrimeIdx - structure.EnclosedThreePrimeIdx - 1
+	structure.NBUnpairedThreePrime = nbUnpairedThreePrime
 
 	var nbUnpairedLarger, nbUnpairedSmaller int
 
