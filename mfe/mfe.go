@@ -121,69 +121,14 @@ func MinimumFreeEnergy(sequence, dotBracketStructure string, temperature float64
 		length:              lenSequence,
 		energyParams:        energy_params.NewEnergyParams(energyParamsSet, temperature),
 		sequence:            sequence,
-		encodedSequence:     encodeSequence(sequence),
-		basePairEncodedType: basePairEncodedTypeMap(),
+		encodedSequence:     energy_params.EncodeSequence(sequence),
+		basePairEncodedType: energy_params.BasePairTypeEncodedIntMap,
 		dangleModel:         danglingEndsModel,
 	}
 
 	secondaryStructure.Energy = evaluteSecondaryStructure(secondaryStructure, fc)
 
 	return float64(secondaryStructure.Energy) / 100.0, secondaryStructure, nil
-}
-
-var nucleotideRuneEncodedIntMap map[byte]int = map[byte]int{
-	'A': 1,
-	'C': 2,
-	'G': 3,
-	'U': 4,
-}
-
-// Encodes a sequence into its numerical representaiton
-func encodeSequence(sequence string) []int {
-	lenSequence := len(sequence)
-	encodedSequence := make([]int, lenSequence)
-
-	// encode the sequence based on nucleotideRuneMap
-	for i := 0; i < lenSequence; i++ {
-		encodedSequence[i] = nucleotideRuneEncodedIntMap[sequence[i]]
-	}
-
-	return encodedSequence
-}
-
-/**
-Returns a map that encodes a base pair to its numerical representation.
-Various loop energy parameters depend in general on the pairs closing the loops.
-Internally, the library distinguishes 8 types of pairs (CG=1, GC=2, GU=3, UG=4,
-AU=5, UA=6, nonstandard=7, 0= no pair).
-The map is:
-   _  A  C  G  U
-_ {0, 0, 0, 0, 0}
-A {0, 0, 0, 0, 5}
-C {0, 0, 0, 1, 0}
-G {0, 0, 2, 0, 3}
-U {0, 6, 0, 4, 0}
-For example, map['A']['U'] is 5.
-The encoded numerical representation of a base pair carries no meaning in
-itself except for where to find the relevent energy contributions of the base
-pair in the matrices of the energy paramaters (found in `energy_params.go`).
-Thus, any change to this map must be reflected in the energy
-parameters matrices in `energy_params.go`, and vice versa.
-*/
-func basePairEncodedTypeMap() map[byte]map[byte]int {
-	nucelotideAEncodedTypeMap := map[byte]int{'U': 5}
-	nucelotideCEncodedTypeMap := map[byte]int{'G': 1}
-	nucelotideGEncodedTypeMap := map[byte]int{'C': 2, 'U': 3}
-	nucelotideUEncodedTypeMap := map[byte]int{'A': 6, 'G': 4}
-
-	basePairMap := map[byte]map[byte]int{
-		'A': nucelotideAEncodedTypeMap,
-		'C': nucelotideCEncodedTypeMap,
-		'G': nucelotideGEncodedTypeMap,
-		'U': nucelotideUEncodedTypeMap,
-	}
-
-	return basePairMap
 }
 
 func evaluteSecondaryStructure(secondaryStructure *SecondaryStructure, fc *foldCompound) (totalMFE int) {
@@ -231,7 +176,7 @@ func evaluteSecondaryStructure(secondaryStructure *SecondaryStructure, fc *foldC
 * (see `basePairEncodedTypeMap()`)
  */
 func encodedBasePairType(fc *foldCompound, basePairFivePrimeIdx, basePairThreePrimeIdx int) int {
-	return fc.basePairEncodedType[fc.sequence[basePairFivePrimeIdx]][fc.sequence[basePairThreePrimeIdx]]
+	return energy_params.BasePairTypeEncodedIntMap[fc.sequence[basePairFivePrimeIdx]][fc.sequence[basePairThreePrimeIdx]]
 }
 
 func exteriorStemEnergy(stem Stem, fc *foldCompound) int {
@@ -283,13 +228,13 @@ func EvaluateExteriorStem(basePairType int, fivePrimeMismatch int, threePrimeMis
 		energy += energyParams.MismatchExteriorLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
 	} else if fivePrimeMismatch >= 0 {
 		// `j` is the last nucleotide of the sequence
-		energy += energyParams.Dangle5[basePairType][fivePrimeMismatch]
+		energy += energyParams.DanglingEndsFivePrime[basePairType][fivePrimeMismatch]
 	} else if threePrimeMismatch >= 0 {
 		// `i` is the first nucleotide of the sequence
-		energy += energyParams.Dangle3[basePairType][threePrimeMismatch]
+		energy += energyParams.DanglingEndsThreePrime[basePairType][threePrimeMismatch]
 	}
 
-	if basePairType > 2 {
+	if basePairType > 1 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 		energy += energyParams.TerminalAUPenalty
 	}
@@ -411,18 +356,18 @@ func EvaluateStemStructure(stemStructure StemStructure,
 		if nbUnpairedLarger <= energy_params.MaxLenLoop {
 			energy = energyParams.Bulge[nbUnpairedLarger]
 		} else {
-			energy = energyParams.Bulge[energy_params.MaxLenLoop] + int(energyParams.LXC*math.Log(float64(nbUnpairedLarger)/float64(energy_params.MaxLenLoop)))
+			energy = energyParams.Bulge[energy_params.MaxLenLoop] + int(energyParams.LogExtrapolationConstant*math.Log(float64(nbUnpairedLarger)/float64(energy_params.MaxLenLoop)))
 		}
 
 		if nbUnpairedLarger == 1 {
 			energy += energyParams.StackingPair[closingBasePairType][enclosedBasePairType]
 		} else {
-			if closingBasePairType > 2 {
+			if closingBasePairType > 1 {
 				// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 				energy += energyParams.TerminalAUPenalty
 			}
 
-			if enclosedBasePairType > 2 {
+			if enclosedBasePairType > 1 {
 				// The encosed base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 				energy += energyParams.TerminalAUPenalty
 			}
@@ -439,14 +384,14 @@ func EvaluateStemStructure(stemStructure StemStructure,
 		if nbUnpairedLarger+1 <= energy_params.MaxLenLoop {
 			energy = energyParams.InteriorLoop[nbUnpairedLarger+1]
 		} else {
-			energy = energyParams.InteriorLoop[energy_params.MaxLenLoop] + int(energyParams.LXC*math.Log((float64(nbUnpairedLarger)+1.0)/float64(energy_params.MaxLenLoop)))
+			energy = energyParams.InteriorLoop[energy_params.MaxLenLoop] + int(energyParams.LogExtrapolationConstant*math.Log((float64(nbUnpairedLarger)+1.0)/float64(energy_params.MaxLenLoop)))
 		}
 		energy += min(energyParams.MaxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.Ninio)
 		energy += energyParams.Mismatch1xnInteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.Mismatch1xnInteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 	case Interior2x2Loop:
 		energy = energyParams.Interior2x2Loop[closingBasePairType][enclosedBasePairType][closingFivePrimeMismatch][enclosedThreePrimeMismatch][enclosedFivePrimeMismatch][closingThreePrimeMismatch]
 	case Interior2x3Loop:
-		energy = energyParams.InteriorLoop[energy_params.NBBases+1] + energyParams.Ninio
+		energy = energyParams.InteriorLoop[energy_params.NbDistinguishableNucleotides+1] + energyParams.Ninio
 		energy += energyParams.Mismatch2x3InteriorLoop[closingBasePairType][closingFivePrimeMismatch][closingThreePrimeMismatch] + energyParams.Mismatch2x3InteriorLoop[enclosedBasePairType][enclosedFivePrimeMismatch][enclosedThreePrimeMismatch]
 	case GenericInteriorLoop:
 		nbUnpairedNucleotides := nbUnpairedLarger + nbUnpairedSmaller
@@ -454,7 +399,7 @@ func EvaluateStemStructure(stemStructure StemStructure,
 		if nbUnpairedNucleotides <= energy_params.MaxLenLoop {
 			energy = energyParams.InteriorLoop[nbUnpairedNucleotides]
 		} else {
-			energy = energyParams.InteriorLoop[energy_params.MaxLenLoop] + int(energyParams.LXC*math.Log(float64(nbUnpairedNucleotides)/float64(energy_params.MaxLenLoop)))
+			energy = energyParams.InteriorLoop[energy_params.MaxLenLoop] + int(energyParams.LogExtrapolationConstant*math.Log(float64(nbUnpairedNucleotides)/float64(energy_params.MaxLenLoop)))
 		}
 
 		energy += min(energyParams.MaxNinio, (nbUnpairedLarger-nbUnpairedSmaller)*energyParams.Ninio)
@@ -520,7 +465,7 @@ func EvaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 	if size <= energy_params.MaxLenLoop {
 		energy = energyParams.HairpinLoop[size]
 	} else {
-		energy = energyParams.HairpinLoop[energy_params.MaxLenLoop] + int(energyParams.LXC*math.Log(float64(size)/float64(energy_params.MaxLenLoop)))
+		energy = energyParams.HairpinLoop[energy_params.MaxLenLoop] + int(energyParams.LogExtrapolationConstant*math.Log(float64(size)/float64(energy_params.MaxLenLoop)))
 	}
 
 	if size < 3 {
@@ -547,7 +492,7 @@ func EvaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
 			return triLoopEnergy
 		}
 
-		if basePairType > 2 {
+		if basePairType > 1 {
 			// (X,Y) is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 			return energy + energyParams.TerminalAUPenalty
 		}
@@ -682,7 +627,7 @@ func multiLoop(multiloop *MultiLoop, fc *foldCompound) (multiLoopEnergy, substru
 	}
 
 	// add bonus energies for unpaired nucleotides
-	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.MultiLoopUnpairedNucelotideBonus
+	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.MultiLoopUnpairedNucleotideBonus
 
 	// multiloop.Energy = multiLoopEnergy
 	// multiloop.SubstructuresEnergy = substructuresEnergy
@@ -706,14 +651,14 @@ func EvaluateMultiLoopStem(basePairType, fivePrimeMismatch, threePrimeMismatch i
 	if fivePrimeMismatch >= 0 && threePrimeMismatch >= 0 {
 		energy += energyParams.MismatchMultiLoop[basePairType][fivePrimeMismatch][threePrimeMismatch]
 	} else if fivePrimeMismatch >= 0 {
-		energy += energyParams.Dangle5[basePairType][fivePrimeMismatch]
+		energy += energyParams.DanglingEndsFivePrime[basePairType][fivePrimeMismatch]
 	} else if threePrimeMismatch >= 0 {
-		energy += energyParams.Dangle3[basePairType][threePrimeMismatch]
+		energy += energyParams.DanglingEndsThreePrime[basePairType][threePrimeMismatch]
 	}
 
 	energy += energyParams.MultiLoopIntern[basePairType]
 
-	if basePairType > 2 {
+	if basePairType > 1 {
 		// The closing base pair is not a GC or CG pair (could be GU, UG, AU, UA, or non-standard)
 		energy += energyParams.TerminalAUPenalty
 	}
