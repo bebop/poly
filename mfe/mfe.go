@@ -16,9 +16,6 @@ May, 26, 2021
 
 The MFE calculation functionality (including comments and description of
 	functions) has been taken directly from ViennaRNA with the follwing changes:
-- ViennaRNA includes the ability to specify a dangle model (more info available
-	at [src/bin/RNAeval.ggo#L153](https://github.com/ViennaRNA/ViennaRNA/blob/d6fbaf2b33d65944f9249a91ed5ab4b3277f7d06/src/bin/RNAeval.ggo#L153)).
-	This implementation keeps it simple and defaults to the value of -d2.
 - ViennaRNA includes the ability to specify hard and soft constraints (more info
 	available from [their ppt explaining hard and soft constrains](http://benasque.org/2015rna/talks_contr/2713_lorenz_benasque_2015.pdf),
 	[official docs](https://www.tbi.univie.ac.at/RNA/ViennaRNA/doc/html/group__constraints.html),
@@ -33,12 +30,9 @@ File is structured as so:
 
 	Structs:
 		foldCompound - holds all information needed to compute the free energy of a
-			RNA secondary structure (a RNA sequence along with its folded structure).
-		EnergyContribution - holds information about the energy contribution of a
-			single loop, and the indexes of the base pairs that delimit the loop in
-			the RNA secondary structure.
+			RNA secondary structure.
 
-	Big functions from this file:
+	Main function from this file:
 
 		MinimumFreeEnergy - given a RNA sequence, it's structure, and a temperature,
 			it returns the minimum free energy of the RNA secondary structure at the
@@ -55,17 +49,17 @@ TODO: Biological context
  ******************************************************************************/
 
 const (
-	// DefaultTemperature is the temperature in Celcius for free energy evaluation
+	// DefaultTemperature is the temperature in Celsius for free energy evaluation
 	DefaultTemperature float64 = 37.0
 )
 
 type DanglingEndsModel int
 
 const (
-	// NoDanglingEnds specifies no dangling end energies to be added to energy calcualtions
+	// NoDanglingEnds specifies no dangling end energies to be added to energy calculations
 	NoDanglingEnds DanglingEndsModel = 0
 	// DoubleDanglingEnds specifies energies due to dangling ends (on both five and three prime sides)
-	// should be added to energy calcualtions
+	// should be added to energy calculations
 	DoubleDanglingEnds DanglingEndsModel = 2
 	// DefaultDanglingEndsModel defaults to DoubleDangles
 	DefaultDanglingEndsModel = DoubleDanglingEnds
@@ -78,9 +72,7 @@ type foldCompound struct {
 	energyParams        *energy_params.EnergyParams // The precomputed free energy contributions for each type of loop
 	sequence            string                      // The input sequence string
 	encodedSequence     []int                       // Numerical encoding of the sequence (see `encodeSequence()` for more information)
-	pairTable           []int                       // (see `pairTable()`)
 	basePairEncodedType map[byte]map[byte]int       // (see `basePairEncodedTypeMap()`)
-	secondaryStructure  SecondaryStructure
 	dangleModel         DanglingEndsModel
 }
 
@@ -125,19 +117,15 @@ func MinimumFreeEnergy(sequence, dotBracketStructure string, temperature float64
 		return 0, nil, err
 	}
 
-	pairTable, _ := pairTable(dotBracketStructure)
-
 	fc := &foldCompound{
 		length:              lenSequence,
 		energyParams:        energy_params.NewEnergyParams(energyParamsSet, temperature),
 		sequence:            sequence,
-		pairTable:           pairTable,
 		encodedSequence:     encodeSequence(sequence),
 		basePairEncodedType: basePairEncodedTypeMap(),
 		dangleModel:         danglingEndsModel,
 	}
 
-	// evaluateFoldCompound(fc)
 	secondaryStructure.Energy = evaluteSecondaryStructure(secondaryStructure, fc)
 
 	return float64(secondaryStructure.Energy) / 100.0, secondaryStructure, nil
@@ -198,201 +186,43 @@ func basePairEncodedTypeMap() map[byte]map[byte]int {
 	return basePairMap
 }
 
-/**
-* Returns a slice `pairTable` where `pairTable[i]` returns the index of the
-* nucleotide that that the nucelotide at `i` is paired with, else -1.
-* Examples -
-* Index:   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-* Input: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
-* Output:[-1 -1 12 11 10  9 -1 -1 -1  5  4  3  2 -1 -1 -1 27 26 -1 -1 -1 -1 -1 -1 -1 -1 17 16 -1 -1]
-*
-* Index:   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-* Input: " (  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  )"
-* Output:[29 -1 12 11 10  9 -1 -1 -1  5  4  3  2 -1 -1 -1 27 26 -1 -1 -1 -1 -1 -1 -1 -1 17 16 -1  0]
- */
-func pairTable(structure string) ([]int, error) {
-	var pairTable []int
-	lenStructure := len(structure)
-
-	pairTable = make([]int, lenStructure)
-
-	// the characters of the opening and closing brackets in the structure string
-	var openBracket, closeBracket byte = '(', ')'
-
-	// keeps track of the indexes of open brackets. Indexes of open brackets are
-	// pushed onto stack and poped off when a closing bracket is encountered
-	var openBracketIdxStack []int = make([]int, lenStructure)
-	var stackIdx int = 0
-
-	// iterate through structure and create pair table
-	for i := 0; i < lenStructure; i++ {
-		if structure[i] == openBracket {
-			// push index of open bracket onto stack
-			openBracketIdxStack[stackIdx] = i
-			stackIdx++
-		} else if structure[i] == closeBracket {
-			stackIdx--
-
-			if stackIdx < 0 {
-				return nil,
-					fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs",
-						structure, openBracket, closeBracket)
-			}
-
-			openBracketIdx := openBracketIdxStack[stackIdx]
-			// current index of one-indexed sequence
-			pairTable[i] = openBracketIdx
-			pairTable[openBracketIdx] = i
-		} else {
-			pairTable[i] = -1
-		}
-	}
-
-	if stackIdx != 0 {
-		return nil, fmt.Errorf("%v\nunbalanced brackets '%v%v' found while extracting base pairs",
-			structure, openBracket, closeBracket)
-	}
-
-	return pairTable, nil
-}
-
-// func evaluateFoldCompound(fc *foldCompound) *SecondaryStructure {
-// 	// get the energy contributions due to exterior loops
-// 	var energy int = exteriorLoopsEnergy(fc)
-// 	secondaryStructure := SecondaryStructure{
-// 		ExteriorLoopsEnergy: energy,
-// 		Length:              fc.length,
-// 	}
-
-// 	secondaryStructures := make([]interface{}, 0)
-// 	pairTable := fc.pairTable
-// 	lenExteriorLoop := 0
-// 	for i := 0; i < fc.length; i++ {
-// 		if pairTable[i] == -1 {
-// 			lenExteriorLoop++
-// 			continue
-// 		}
-
-// 		if lenExteriorLoop != 0 {
-// 			// add single stranded region of exterior loop to structures and reset
-// 			// lenExteriorLoop for next iteration of for-loop
-// 			ssr := SingleStrandedRegion{
-// 				FivePrimeIdx:  i - lenExteriorLoop,
-// 				ThreePrimeIdx: i - 1,
-// 			}
-// 			secondaryStructures = append(secondaryStructures, ssr)
-// 			lenExteriorLoop = 0
-// 		}
-
-// 		en, structure := evaluateLoop(fc, i)
-// 		energy += en
-// 		secondaryStructures = append(secondaryStructures, structure)
-
-// 		// seek to end of current loop
-// 		i = pairTable[i]
-// 	}
-
-// 	// add the single stranded region at the three prime end (if it exists)
-// 	if lenExteriorLoop != 0 {
-// 		ssr := SingleStrandedRegion{
-// 			FivePrimeIdx:  fc.length - lenExteriorLoop,
-// 			ThreePrimeIdx: fc.length - 1,
-// 		}
-// 		secondaryStructures = append(secondaryStructures, ssr)
-// 	}
-
-// 	secondaryStructure.Energy = energy
-// 	secondaryStructure.Structures = secondaryStructures
-
-// 	return &secondaryStructure
-// }
-
-// func evaluateFoldCompound(fc *foldCompound) *SecondaryStructure {
-// 	// get the energy contributions due to exterior loops
-// 	var energy int = exteriorLoopsEnergy(fc)
-// 	secondaryStructure := fc.secondaryStructure
-// 	secondaryStructure.ExteriorLoopsEnergy = energy
-
-// 	for _, structure := range secondaryStructure.Structures {
-// 		switch structure := structure.(type) {
-// 		case SingleStrandedRegion:
-// 			continue
-// 		case MultiLoop:
-// 			energy += multiLoop(&structure, fc)
-// 		case Hairpin:
-// 			energy += hairpin(&structure, fc)
-// 		}
-// 	}
-
-// 	// secondaryStructures := make([]interface{}, 0)
-// 	// pairTable := fc.pairTable
-// 	// lenExteriorLoop := 0
-// 	// for i := 0; i < fc.length; i++ {
-// 	// 	if pairTable[i] == -1 {
-// 	// 		lenExteriorLoop++
-// 	// 		continue
-// 	// 	}
-
-// 	// 	if lenExteriorLoop != 0 {
-// 	// 		// add single stranded region of exterior loop to structures and reset
-// 	// 		// lenExteriorLoop for next iteration of for-loop
-// 	// 		ssr := SingleStrandedRegion{
-// 	// 			FivePrimeIdx:  i - lenExteriorLoop,
-// 	// 			ThreePrimeIdx: i - 1,
-// 	// 		}
-// 	// 		secondaryStructures = append(secondaryStructures, ssr)
-// 	// 		lenExteriorLoop = 0
-// 	// 	}
-
-// 	// 	en, structure := evaluateLoop(fc, i)
-// 	// 	energy += en
-// 	// 	secondaryStructures = append(secondaryStructures, structure)
-
-// 	// 	// seek to end of current loop
-// 	// 	i = pairTable[i]
-// 	// }
-
-// 	// // add the single stranded region at the three prime end (if it exists)
-// 	// if lenExteriorLoop != 0 {
-// 	// 	ssr := SingleStrandedRegion{
-// 	// 		FivePrimeIdx:  fc.length - lenExteriorLoop,
-// 	// 		ThreePrimeIdx: fc.length - 1,
-// 	// 	}
-// 	// 	secondaryStructures = append(secondaryStructures, ssr)
-// 	// }
-
-// 	// secondaryStructure.Energy = energy
-// 	// secondaryStructure.Structures = secondaryStructures
-
-// 	return &secondaryStructure
-// }
-
-func evaluteSecondaryStructure(secondaryStructure *SecondaryStructure, fc *foldCompound) (energy int) {
-	energy = exteriorLoopsEnergy(secondaryStructure, fc)
-	secondaryStructure.ExteriorLoopsEnergy = energy
+func evaluteSecondaryStructure(secondaryStructure *SecondaryStructure, fc *foldCompound) (totalMFE int) {
+	// `exteriorLoopsEnergy` keeps track of the energy contribution of
+	// stabilizing dangling-ends/mismatches for all stems branching off the
+	// exterior loop.
+	// More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
+	var exteriorLoopsEnergy int
 
 	for _, structure := range secondaryStructure.Structures {
-		// structure := &secondaryStructure.Structures[idx]
 		switch structure := structure.(type) {
 		case *SingleStrandedRegion:
 			continue
 		case *MultiLoop:
-			stemEnergy := stem(&(structure.Stem), fc)
+			// get the exterior loop energy for this stem
+			exteriorLoopsEnergy += exteriorStemEnergy(structure.Stem, fc)
+
+			stemEnergy := stemEnergy(&(structure.Stem), fc)
 			structure.Stem.Energy = stemEnergy
 
 			multiLoopEnergy, substructuresEnergy := multiLoop(structure, fc)
 			structure.Energy = multiLoopEnergy
 			structure.SubstructuresEnergy = substructuresEnergy
-			energy += multiLoopEnergy + substructuresEnergy + stemEnergy
+			totalMFE += multiLoopEnergy + substructuresEnergy + stemEnergy
 		case *Hairpin:
-			stemEnergy := stem(&(structure.Stem), fc)
+			// get the exterior loop energy for this stem
+			exteriorLoopsEnergy += exteriorStemEnergy(structure.Stem, fc)
+
+			stemEnergy := stemEnergy(&(structure.Stem), fc)
 			structure.Stem.Energy = stemEnergy
 
 			hairpinEnergy := hairpin(*structure, fc)
 			structure.Energy = hairpinEnergy
-			energy += hairpinEnergy + stemEnergy
+			totalMFE += hairpinEnergy + stemEnergy
 		}
 	}
+
+	secondaryStructure.ExteriorLoopsEnergy = exteriorLoopsEnergy
+	totalMFE += exteriorLoopsEnergy
 
 	return
 }
@@ -402,33 +232,6 @@ func evaluteSecondaryStructure(secondaryStructure *SecondaryStructure, fc *foldC
  */
 func encodedBasePairType(fc *foldCompound, basePairFivePrimeIdx, basePairThreePrimeIdx int) int {
 	return fc.basePairEncodedType[fc.sequence[basePairFivePrimeIdx]][fc.sequence[basePairThreePrimeIdx]]
-}
-
-/**
-* Calculate the energy contribution of stabilizing dangling-ends/mismatches
-* for all stems branching off the exterior loop.
-* For example, if the structure is
-* Structure: " .  .  (  (  (  (  .  .  .  )  )  )  )  .  .  .  (  (  .  .  .  .  .  .  .  .  )  )  .  ."
-* Index:       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-* then the exterior loops in the structure are as follows: (2, 12) and (16, 27).
-* See `exteriorStemEnergy()` for information of how exterior loops are evaluated.
-* More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/exterior.html
- */
-func exteriorLoopsEnergy(secondaryStructure *SecondaryStructure, fc *foldCompound) int {
-	// secondaryStructure := fc.secondaryStructure
-
-	var energy int
-	for _, structure := range secondaryStructure.Structures {
-		switch structure := structure.(type) {
-		case SingleStrandedRegion:
-			continue
-		case *MultiLoop:
-			energy += exteriorStemEnergy(structure.Stem, fc)
-		case *Hairpin:
-			energy += exteriorStemEnergy(structure.Stem, fc)
-		}
-	}
-	return energy
 }
 
 func exteriorStemEnergy(stem Stem, fc *foldCompound) int {
@@ -494,159 +297,8 @@ func EvaluateExteriorStem(basePairType int, fivePrimeMismatch int, threePrimeMis
 	return energy
 }
 
-/**
-    evaluateLoop recursively calculate energy of substructure enclosed by
-    (closingFivePrimeIdx, closingThreePrimeIdx).
-
-    vivek: I think this function should be better named.
-    Given a base pair (closingFivePrimeIdx, closingThreePrimeIdx), this function
-    finds all loops that the base pair encloses. For each enclosed base pair,
-    we find out if it belongs to one of the three groups:
-    - stacking pair, bulge, or interior loop
-    - hairpin loop
-    - multi-loop
-    and pass on the indexes of the closing pair and enclosed pair to the relevant
-    functions.
-    I think it's called evaluateLoop because it proceeds in a stack-wise manner
-    from the 5' and 3' ends until the iterators come across pairs that don't pair
-    with each other
-		For example,
-    5' -- X · · U - A ...
-					|    /    |
-		3' -- Y · V · · B ...
-		where (X,Y), (U,V), and (A,B) are base pairs and `·`s are arbitrary number
-		of unpaired nucleotides. (X,Y) is the base pair which closes this loop so
-		X would be the nucleotide at `closingFivePrimeIdx`.
-
-		In this sequence, `evaluateLoop`'s for-loop would proceed normally and pass on
-		(U,V) and (A,B) to `stackBulgeInteriorLoopEnergy`.
-
-		But if the continuation of the sequence was
-		5' -- X · · U - A · ·
-					|    /    |	   ·
-		3' -- Y · V · · B · ·
-		then the last encounted base pair would be (A,B) so `enclosedFivePrimeIdx`
-		is A and `enclosedThreePrimeIdx` is B. On the next iteration of the for-loop,
-		`enclosedThreePrimeIdx` will point to A and `enclosedThreePrimeIdx` will point
-		to B. Thus, the for-loop breaks and since `enclosedFivePrimeIdx > enclosedThreePrimeIdx`,
-		we know we have a hairpin loop.
-
-		In the other scenario, suppose the contiuation of the sequence was
-											·   ·
-											·   ·
-											E - F ...
-										 ·
-		5' -- X · · U - A
-					|    /    |
-		3' -- Y · V · · B · · C - D ...
-													·   ·
-													·   ·
-		then on the next iteration, `enclosedFivePrimeIdx` would point to E, and
-		`enclosedThreePrimeIdx` would point to C, but since
-		`pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx` (as C and E don't
-		pair), we know we're in some sort of multi-loop. Note that multi-loops
-		have atleast two enclosed pairs.
-*/
-// func evaluateLoop(fc *foldCompound, closingFivePrimeIdx int) (int, interface{}) {
-
-// 	pairTable := fc.pairTable
-// 	var stemEnergy int = 0
-// 	closingThreePrimeIdx := pairTable[closingFivePrimeIdx]
-
-// 	if encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx) == 0 {
-// 		panic(fmt.Sprintf("bases %v and %v (%v%v) can't pair!",
-// 			closingFivePrimeIdx, closingThreePrimeIdx,
-// 			string(fc.sequence[closingFivePrimeIdx]),
-// 			string(fc.sequence[closingThreePrimeIdx])))
-// 	}
-
-// 	// init the stem for this loop
-// 	stem := Stem{
-// 		ClosingFivePrimeIdx:  closingFivePrimeIdx,
-// 		ClosingThreePrimeIdx: closingThreePrimeIdx,
-// 	}
-// 	stemStructures := make([]StemStructure, 0)
-
-// 	// iterator from the 5' to 3' direction starting at `pairFivePrimeIdx`
-// 	enclosedFivePrimeIdx := closingFivePrimeIdx
-
-// 	// iterator from the 3' to 5' direction starting at `pairThreePrimeIdx`
-// 	enclosedThreePrimeIdx := closingThreePrimeIdx
-
-// 	for enclosedFivePrimeIdx < enclosedThreePrimeIdx {
-// 		// process all enclosed stacks and interior loops
-
-// 		// seek to a base pair from 5' end
-// 		enclosedFivePrimeIdx++
-// 		for pairTable[enclosedFivePrimeIdx] == -1 {
-// 			enclosedFivePrimeIdx++
-// 		}
-
-// 		// seek to a base pair from 3' end
-// 		enclosedThreePrimeIdx--
-// 		for pairTable[enclosedThreePrimeIdx] == -1 {
-// 			enclosedThreePrimeIdx--
-// 		}
-
-// 		if pairTable[enclosedThreePrimeIdx] != enclosedFivePrimeIdx || enclosedFivePrimeIdx > enclosedThreePrimeIdx {
-// 			// enclosedFivePrimeIdx & enclosedThreePrimeIdx don't pair. Must have found hairpin or multi-loop.
-// 			break
-// 		} else {
-// 			// We have found a `StemStructure` closed by (`closingFivePrimeIdx`,
-// 			// `closingThreePrimeIdx`) and enclosed by (`enclosedFivePrimeIdx`,
-// 			// `enclosedThreePrimeIdx`)
-
-// 			if encodedBasePairType(fc, enclosedThreePrimeIdx, enclosedFivePrimeIdx) == 0 {
-// 				panic(fmt.Sprintf("bases %d and %d (%c%c) can't pair!",
-// 					enclosedFivePrimeIdx, enclosedThreePrimeIdx,
-// 					fc.sequence[enclosedThreePrimeIdx],
-// 					fc.sequence[enclosedFivePrimeIdx]))
-// 			}
-
-// 			// pass the base pairs on to get the StemStructure along with its type.
-// 			stemStructure := stemStructure(fc,
-// 				closingFivePrimeIdx, closingThreePrimeIdx,
-// 				enclosedFivePrimeIdx, enclosedThreePrimeIdx,
-// 			)
-// 			stemStructures = append(stemStructures, stemStructure)
-// 			stemEnergy += stemStructure.Energy
-
-// 			closingFivePrimeIdx = enclosedFivePrimeIdx
-// 			closingThreePrimeIdx = enclosedThreePrimeIdx
-// 		}
-// 	} // end for
-
-// 	// Set remaining fields of the stem
-// 	if closingFivePrimeIdx == stem.ClosingFivePrimeIdx {
-// 		// stem doesn't have any StemStructures. Thus only consists of its closing
-// 		// base pairs
-// 		if len(stemStructures) > 0 {
-// 			// sanity check
-// 			panic("stem contains StemStructures")
-// 		}
-// 	} else {
-// 		// stem has stem structures
-// 		stem.EnclosedFivePrimeIdx = closingFivePrimeIdx
-// 		stem.EnclosedThreePrimeIdx = closingThreePrimeIdx
-// 		stem.Structures = stemStructures
-// 		stem.Energy = stemEnergy
-// 	}
-
-// 	if enclosedFivePrimeIdx > enclosedThreePrimeIdx {
-// 		// hairpin
-// 		hairpin := hairpin(fc, closingFivePrimeIdx, closingThreePrimeIdx, stem)
-// 		return stemEnergy + hairpin.Energy, hairpin
-// 	} else {
-// 		// we have a multi-loop
-// 		multiLoop := multiLoop(fc, closingFivePrimeIdx, stem)
-// 		// multiLoopEnergy := multiloop()
-// 		// return stemEnergy + multiloopEnergy
-// 		// multiloop's total energy consists of the energy of the substructures, the loop and the stem
-// 		return stemEnergy + multiLoop.Energy + multiLoop.SubstructuresEnergy, multiLoop
-// 	}
-// }
-
-func stem(stem *Stem, fc *foldCompound) (stemEnergy int) {
+// TODO
+func stemEnergy(stem *Stem, fc *foldCompound) (stemEnergy int) {
 	for i := 0; i < len(stem.Structures); i++ {
 		stemStructure := &stem.Structures[i]
 		stemStructureEnergy := stemStructureEnergy(*stemStructure, fc)
@@ -672,52 +324,8 @@ func stem(stem *Stem, fc *foldCompound) (stemEnergy int) {
 // 	return stemStructure
 // }
 
-/**
- *  Compute the energy of either a stacking pair, bulge, or interior loop.
- *  This function computes the free energy of a loop with the following
- *  structure:
- *        3'  5'
- *        |   |
- *        U - V
- *    a_n       b_1
- *     .        .
- *     .        .
- *     .        .
- *    a_1       b_m
- *        X - Y
- *        |   |
- *        5'  3'
- *  This general structure depicts an interior loop that is closed by the base pair (X,Y).
- *  The enclosed base pair is (V,U) which leaves the unpaired bases a_1-a_n and b_1-b_n
- *  that constitute the loop.
- *  The base pair (X,Y) will be refered to as `closingBasePair`, and the base pair
- *  (U,V) will be refered to as `enclosedBasePair`.
- *  In this example, the length of the interior loop is `n+m`
- *  where n or m may be 0 resulting in a bulge-loop or base pair stack.
- *  The mismatching nucleotides for the closing pair (X,Y) are:
- *  5'-mismatch: a_1
- *  3'-mismatch: b_m
- *  and for the enclosed base pair (V,U):
- *  5'-mismatch: b_1
- *  3'-mismatch: a_n
- *  @note Base pairs are always denoted in 5'->3' direction. Thus the `enclosedBasePair`
- *  must be 'turned around' when evaluating the free energy of the interior loop.
- *
- *  More information about
- * 		- Bulge Loops: https://rna.urmc.rochester.edu/NNDB/turner04/bulge.html
- *		- Interior Loops: https://rna.urmc.rochester.edu/NNDB/turner04/internal.html
- *
- *  @param  nbUnpairedLeftLoop      The size of the 'left'-loop (number of unpaired nucleotides)
- *  @param  nbUnpairedRightLoop     The size of the 'right'-loop (number of unpaired nucleotides)
- *  @param  closingBasePairType    	The encoded type of the closing base pair of the interior loop
- *  @param  enclosedBasePairType    The encoded type of the enclosed base pair
- *  @param  closingFivePrimeMismatch    The 5'-mismatching encoded nucleotide of the closing pair
- *  @param  closingThreePrimeMismatch   The 3'-mismatching encoded nucleotide of the closing pair
- *  @param  enclosedThreePrimeMismatch   The 3'-mismatching encoded nucleotide of the enclosed pair
- *  @param  enclosedFivePrimeMismatch    The 5'-mismatching encoded nucleotide of the enclosed pair
- *  @param  P       The datastructure containing scaled energy parameters
- *  @return The Free energy of the Interior-loop in dcal/mol
- */
+// Evaluate the free energy contribution of an interior loop with delimiting
+//  *  base pairs (i,j) and (k,l). See `evaluateStackBulgeInteriorLoop()` for more details.
 func stemStructureEnergy(stemStructure StemStructure, fc *foldCompound) int {
 
 	closingBasePairType := encodedBasePairType(fc, stemStructure.ClosingFivePrimeIdx, stemStructure.ClosingThreePrimeIdx)
@@ -736,6 +344,48 @@ func stemStructureEnergy(stemStructure StemStructure, fc *foldCompound) int {
 
 }
 
+// EvaluateStemStructure computes the energy of either a stacking pair, bulge,
+// or interior loop.
+// This function computes the free energy of a loop with the following
+// structure:
+//       3'  5'
+//       |   |
+//       U - V
+//   a_n       b_1
+//    .        .
+//    .        .
+//    .        .
+//   a_1       b_m
+//       X - Y
+//       |   |
+//       5'  3'
+// This general structure depicts an interior loop that is closed by the base pair (X,Y).
+// The enclosed base pair is (V,U) which leaves the unpaired bases a_1-a_n and b_1-b_n
+// that constitute the loop.
+// The base pair (X,Y) will be referred to as `closingBasePair`, and the base pair
+// (U,V) will be referred to as `enclosedBasePair`.
+// In this example, the length of the interior loop is `n+m`
+// where n or m may be 0 resulting in a bulge-loop or base pair stack.
+// The mismatching nucleotides for the closing pair (X,Y) are:
+// 5'-mismatch: a_1
+// 3'-mismatch: b_m
+// and for the enclosed base pair (V,U):
+// 5'-mismatch: b_1
+// 3'-mismatch: a_n
+// @note Base pairs are always denoted in 5'->3' direction. Thus the `enclosedBasePair`
+// must be 'turned around' when evaluating the free energy of the interior loop//
+// More information about
+// 	- Bulge Loops: https://rna.urmc.rochester.edu/NNDB/turner04/bulge.html// 	- Interior Loops: https://rna.urmc.rochester.edu/NNDB/turner04/internal.htm//
+// @param  nbUnpairedLeftLoop      The size of the 'left'-loop (number of unpaired nucleotides)
+// @param  nbUnpairedRightLoop     The size of the 'right'-loop (number of unpaired nucleotides)
+// @param  closingBasePairType    	The encoded type of the closing base pair of the interior loop
+// @param  enclosedBasePairType    The encoded type of the enclosed base pair
+// @param  closingFivePrimeMismatch    The 5'-mismatching encoded nucleotide of the closing pair
+// @param  closingThreePrimeMismatch   The 3'-mismatching encoded nucleotide of the closing pair
+// @param  enclosedThreePrimeMismatch   The 3'-mismatching encoded nucleotide of the enclosed pair
+// @param  enclosedFivePrimeMismatch    The 5'-mismatching encoded nucleotide of the enclosed pair
+// @param  P       The datastructure containing scaled energy parameters
+// @return The Free energy of the Interior-loop in dcal/mol
 func EvaluateStemStructure(stemStructure StemStructure,
 	closingBasePairType, enclosedBasePairType,
 	closingFivePrimeMismatch, closingThreePrimeMismatch,
@@ -815,42 +465,12 @@ func EvaluateStemStructure(stemStructure StemStructure,
 	return energy
 }
 
-/**
- *  Evaluate free energy of a hairpin loop encosed by the base pair
- *  (pairFivePrimeIdx, pairThreePrimeIdx).
- *  See `evaluateHairpinLoop()` for more information.
- *
- *  @param  fc                 The foldCompund for the particular energy evaluation
- *  @param  pairFivePrimeIdx   5'-position of the base pair enclosing the hairpin loop
- *  @param  pairThreePrimeIdx  3'-position of the base pair enclosing the hairpin loop
- *  @returns                   Free energy of the hairpin loop closed by (pairFivePrimeIdx,pairThreePrimeIdx) in dcal/mol
- */
-// func hairpin(fc *foldCompound, closingFivePrimeIdx, closingThreePrimeIdx int, stem Stem) Hairpin {
-// 	nbUnpairedNucleotides := closingThreePrimeIdx - closingFivePrimeIdx - 1 // also the size of the hairpin loop
-// 	basePairType := encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx)
-
-// 	energy := EvaluateHairpinLoop(nbUnpairedNucleotides, basePairType,
-// 		fc.encodedSequence[closingFivePrimeIdx+1],
-// 		fc.encodedSequence[closingThreePrimeIdx-1],
-// 		fc.sequence[closingFivePrimeIdx-1:], fc.energyParams)
-
-// 	var singleStrandedFivePrimeIdx, singleStrandedThreePrimeIdx int
-// 	if nbUnpairedNucleotides > 0 {
-// 		singleStrandedFivePrimeIdx = closingFivePrimeIdx + 1
-// 		singleStrandedThreePrimeIdx = closingThreePrimeIdx - 1
-// 	} else {
-// 		// There is no single stranded region on the hairpin
-// 		singleStrandedFivePrimeIdx = -1
-// 		singleStrandedThreePrimeIdx = -1
-// 	}
-
-// 	return Hairpin{
-// 		Stem:                        stem,
-// 		SingleStrandedFivePrimeIdx:  singleStrandedFivePrimeIdx,
-// 		SingleStrandedThreePrimeIdx: singleStrandedThreePrimeIdx,
-// 		Energy:                      energy,
-// 	}
-// }
+//  Evaluate free energy of a hairpin loop.
+//  See `evaluateHairpinLoop()` for more information.
+//  @param  fc                 The foldCompound for the particular energy evaluation
+//  @param  pairFivePrimeIdx   5'-position of the base pair enclosing the hairpin loop
+//  @param  pairThreePrimeIdx  3'-position of the base pair enclosing the hairpin loop
+//  @returns                   Free energy of the hairpin loop closed by (pairFivePrimeIdx,pairThreePrimeIdx) in dcal/mol
 func hairpin(hairpin Hairpin, fc *foldCompound) (energy int) {
 	nbUnpairedNucleotides := hairpin.SingleStrandedThreePrimeIdx - hairpin.SingleStrandedFivePrimeIdx + 1
 	if nbUnpairedNucleotides < 0 {
@@ -868,61 +488,32 @@ func hairpin(hairpin Hairpin, fc *foldCompound) (energy int) {
 	return
 }
 
-// func hairpin(fc *foldCompound, closingFivePrimeIdx, closingThreePrimeIdx int, stem Stem) Hairpin {
-// 	// nbUnpairedNucleotides := closingThreePrimeIdx - closingFivePrimeIdx - 1 // also the size of the hairpin loop
-// 	// basePairType := encodedBasePairType(fc, closingFivePrimeIdx, closingThreePrimeIdx)
-
-// 	energy := EvaluateHairpinLoop(nbUnpairedNucleotides, basePairType,
-// 		fc.encodedSequence[closingFivePrimeIdx+1],
-// 		fc.encodedSequence[closingThreePrimeIdx-1],
-// 		fc.sequence[closingFivePrimeIdx-1:], fc.energyParams)
-
-// 	// var singleStrandedFivePrimeIdx, singleStrandedThreePrimeIdx int
-// 	// if nbUnpairedNucleotides > 0 {
-// 	// 	singleStrandedFivePrimeIdx = closingFivePrimeIdx + 1
-// 	// 	singleStrandedThreePrimeIdx = closingThreePrimeIdx - 1
-// 	// } else {
-// 	// 	// There is no single stranded region on the hairpin
-// 	// 	singleStrandedFivePrimeIdx = -1
-// 	// 	singleStrandedThreePrimeIdx = -1
-// 	// }
-
-// 	return Hairpin{
-// 		Stem:                        stem,
-// 		SingleStrandedFivePrimeIdx:  singleStrandedFivePrimeIdx,
-// 		SingleStrandedThreePrimeIdx: singleStrandedThreePrimeIdx,
-// 		Energy:                      energy,
-// 	}
-// }
-
-/**
- *  Compute the energy of a hairpin loop.
- *
- *  To evaluate the free energy of a hairpin loop, several parameters have to be known.
- *  A general hairpin-loop has this structure:
- *        a3 a4
- *      a2     a5
- *      a1     a6
- *        X - Y
- *        |   |
- *        5'  3'
- *  where X-Y marks the closing pair [e.g. a (G,C) pair]. The length of this loop is 6 as there are
- *  six unpaired nucleotides (a1-a6) enclosed by (X,Y). The 5' mismatching nucleotide is
- *  a1 while the 3' mismatch is a6. The nucleotide sequence of this loop is [a1 a2 a3 a4 a5 a6]
- *  @note The parameter `sequence` should contain the sequence of the loop in capital letters of the nucleic acid
- *  alphabet if the loop size is below 7. This is useful for unusually stable tri-, tetra- and hexa-loops
- *  which are treated differently (based on experimental data) if they are tabulated.
- *
- *  More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/hairpin.html
- *
- *  @param  size                 The size of the hairpin loop (number of unpaired nucleotides)
- *  @param  basePairType         The pair type of the base pair closing the hairpin
- *  @param  fivePrimeMismatch    The 5'-mismatching encoded nucleotide
- *  @param  threePrimeMismatch   The 3'-mismatching encoded nucleotide
- *  @param  sequence						 The sequence of the loop
- *  @param  energyParams     		 The datastructure containing scaled energy parameters
- *  @return The free energy of the hairpin loop in dcal/mol
- */
+// Compute the energy of a hairpin loop.
+//
+// To evaluate the free energy of a hairpin loop, several parameters have to be known.
+// A general hairpin-loop has this structure:
+//       a3 a4
+//     a2     a5
+//     a1     a6
+//       X - Y
+//       |   |
+//       5'  3'
+// where X-Y marks the closing pair [e.g. a (G,C) pair]. The length of this loop is 6 as there are
+// six unpaired nucleotides (a1-a6) enclosed by (X,Y). The 5' mismatching nucleotide is
+// a1 while the 3' mismatch is a6. The nucleotide sequence of this loop is [a1 a2 a3 a4 a5 a6]
+// @note The parameter `sequence` should contain the sequence of the loop in capital letters of the nucleic acid
+// alphabet if the loop size is below 7. This is useful for unusually stable tri-, tetra- and hexa-loops
+// which are treated differently (based on experimental data) if they are tabulated.
+//
+// More information available at: https://rna.urmc.rochester.edu/NNDB/turner04/hairpin.html
+//
+// @param  size                 The size of the hairpin loop (number of unpaired nucleotides)
+// @param  basePairType         The pair type of the base pair closing the hairpin
+// @param  fivePrimeMismatch    The 5'-mismatching encoded nucleotide
+// @param  threePrimeMismatch   The 3'-mismatching encoded nucleotide
+// @param  sequence						 The sequence of the loop
+// @param  energyParams     		 The datastructure containing scaled energy parameters
+// @return The free energy of the hairpin loop in dcal/mol
 func EvaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismatch int, sequence string, energyParams *energy_params.EnergyParams) int {
 	var energy int
 
@@ -1001,126 +592,8 @@ func EvaluateHairpinLoop(size, basePairType, fivePrimeMismatch, threePrimeMismat
  *
  * More information about multi-loops: https://rna.urmc.rochester.edu/NNDB/turner04/mb.html
  */
-// func multiLoop(fc *foldCompound, closingFivePrimeIdx int, stem Stem) MultiLoop {
-// 	pairTable := fc.pairTable
-
-// 	// the substructures present in the multi-loop
-// 	var substructures []interface{}
-
-// 	// energetic penalty imposed when a base pair encloses a multi loop
-// 	multiLoopEnergy := fc.energyParams.MultiLoopClosingPenalty
-
-// 	if closingFivePrimeIdx >= pairTable[closingFivePrimeIdx] {
-// 		panic("multiLoopEnergy: pairFivePrimeIdx is not 5' base of a pair that closes a loop")
-// 	}
-
-// 	var closingThreePrimeIdx int
-// 	if closingFivePrimeIdx == 0 {
-// 		closingThreePrimeIdx = fc.length + 1
-// 	} else {
-// 		closingThreePrimeIdx = pairTable[closingFivePrimeIdx]
-// 	}
-
-// 	// The index of the enclosed base pair at the 5' end
-// 	enclosedFivePrimeIdx := closingFivePrimeIdx + 1
-
-// 	lenMultiLoopSingleStrandedRegion := 0
-
-// 	// seek to the first stem (i.e. the first enclosed base pair)
-// 	for enclosedFivePrimeIdx <= closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-// 		enclosedFivePrimeIdx++
-// 		lenMultiLoopSingleStrandedRegion++
-// 	}
-
-// 	// add inital unpaired nucleotides
-// 	nbUnpairedNucleotides := enclosedFivePrimeIdx - closingFivePrimeIdx - 1
-
-// 	// the energy due to the substructures enclosed in the multi-loop
-// 	// it is kept seperate so that we can distinguish between the energy
-// 	// contribution due to the multi-loop vs energy contribution due to
-// 	// substructure that branch out from this multi-loop
-// 	var substructuresEnergy int = 0
-
-// 	for enclosedFivePrimeIdx < closingThreePrimeIdx {
-
-// 		// add up the contributions of the substructures of the multi loop
-// 		en, substructure := evaluateLoop(fc, enclosedFivePrimeIdx)
-// 		substructuresEnergy += en
-// 		substructures = append(substructures, substructure)
-
-// 		enclosedThreePrimeIdx := pairTable[enclosedFivePrimeIdx]
-// 		enclosedPairType := encodedBasePairType(fc, enclosedFivePrimeIdx, enclosedThreePrimeIdx)
-
-// 		switch fc.dangleModel {
-// 		case NoDanglingEnds:
-// 			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, -1, -1, fc.energyParams)
-
-// 		case DoubleDanglingEnds:
-// 			enclosedFivePrimeMismatch := fc.encodedSequence[enclosedFivePrimeIdx-1]
-// 			enclosedThreePrimeMismatch := fc.encodedSequence[enclosedThreePrimeIdx+1]
-
-// 			multiLoopEnergy += EvaluateMultiLoopStem(enclosedPairType, enclosedFivePrimeMismatch,
-// 				enclosedThreePrimeMismatch, fc.energyParams)
-// 		}
-// 		// seek to the next stem
-// 		enclosedFivePrimeIdx = enclosedThreePrimeIdx + 1
-
-// 		for enclosedFivePrimeIdx < closingThreePrimeIdx && pairTable[enclosedFivePrimeIdx] == -1 {
-// 			enclosedFivePrimeIdx++
-// 			lenMultiLoopSingleStrandedRegion++
-// 		}
-
-// 		// add single stranded region of multi-loop to structures and reset
-// 		// lenMultiLoopSingleStrandedRegion for next iteration of for-loop
-// 		if lenMultiLoopSingleStrandedRegion != 0 {
-// 			ssr := SingleStrandedRegion{
-// 				FivePrimeIdx:  enclosedFivePrimeIdx - lenMultiLoopSingleStrandedRegion,
-// 				ThreePrimeIdx: enclosedFivePrimeIdx - 1,
-// 			}
-// 			substructures = append(substructures, ssr)
-// 			lenMultiLoopSingleStrandedRegion = 0
-// 		}
-
-// 		// add unpaired nucleotides
-// 		nbUnpairedNucleotides += enclosedFivePrimeIdx - enclosedThreePrimeIdx - 1
-// 	}
-
-// 	if closingFivePrimeIdx > 0 {
-// 		// actual closing pair
-// 		closingPairType := encodedBasePairType(fc, closingThreePrimeIdx, closingFivePrimeIdx)
-
-// 		switch fc.dangleModel {
-// 		case NoDanglingEnds:
-// 			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, -1, -1, fc.energyParams)
-
-// 		case DoubleDanglingEnds:
-// 			closingFivePrimeMismatch := fc.encodedSequence[closingThreePrimeIdx-1]
-// 			closingThreePrimeMismatch := fc.encodedSequence[closingFivePrimeIdx+1]
-
-// 			multiLoopEnergy += EvaluateMultiLoopStem(closingPairType, closingFivePrimeMismatch,
-// 				closingThreePrimeMismatch, fc.energyParams)
-// 		}
-
-// 	} else {
-// 		// virtual closing pair
-// 		multiLoopEnergy += EvaluateMultiLoopStem(0, -1, -1, fc.energyParams)
-// 	}
-
-// 	// add bonus energies for unpaired nucleotides
-// 	multiLoopEnergy += nbUnpairedNucleotides * fc.energyParams.MultiLoopUnpairedNucelotideBonus
-
-// 	multiLoop := MultiLoop{
-// 		Stem:                stem,
-// 		SubstructuresEnergy: substructuresEnergy,
-// 		Substructures:       substructures,
-// 		Energy:              multiLoopEnergy,
-// 	}
-
-// 	return multiLoop
-// }
-
 func multiLoop(multiloop *MultiLoop, fc *foldCompound) (multiLoopEnergy, substructuresEnergy int) {
-	// energetic penalty imposed when a base pair encloses a multi loop
+	// energetic penalty imposed when we have a multiloop
 	multiLoopEnergy = fc.energyParams.MultiLoopClosingPenalty
 
 	// the energy due to the substructures enclosed in the multi-loop
@@ -1135,7 +608,7 @@ func multiLoop(multiloop *MultiLoop, fc *foldCompound) (multiLoopEnergy, substru
 			nbUnpairedNucleotides += structure.ThreePrimeIdx - structure.FivePrimeIdx + 1
 
 		case *MultiLoop:
-			stemEnergy := stem(&(structure.Stem), fc)
+			stemEnergy := stemEnergy(&(structure.Stem), fc)
 			structure.Stem.Energy = stemEnergy
 
 			structureEnergy, multiLoopSubstructuresEnergy := multiLoop(structure, fc)
@@ -1159,7 +632,7 @@ func multiLoop(multiloop *MultiLoop, fc *foldCompound) (multiLoopEnergy, substru
 			multiLoopEnergy += EvaluateMultiLoopStem(stemPairType, fivePrimeMismatch,
 				threePrimeMismatch, fc.energyParams)
 		case *Hairpin:
-			stemEnergy := stem(&(structure.Stem), fc)
+			stemEnergy := stemEnergy(&(structure.Stem), fc)
 			structure.Stem.Energy = stemEnergy
 
 			hairpinEnergy := hairpin(*structure, fc)
@@ -1255,38 +728,3 @@ func min(a, b int) int {
 	}
 	return b
 }
-
-/**
-PrintEnergyContributions pretty prints a list of energy contributions returned
-from `MinimumFreeEnergy`.
-*/
-// func PrintEnergyContributions(energyContribution []StructuralMotifWithEnergy, sequence string) {
-// 	for _, c := range energyContribution {
-// 		structure := c.structure
-// 		switch structure.loopType {
-// 		case ExteriorLoop:
-// 			fmt.Printf("External loop                           : %v\n", c.energy)
-// 		case InteriorLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			var k, l int = structure.enclosedFivePrimeIdx, structure.enclosedThreePrimeIdx
-// 			fmt.Printf("Interior loop (%v,%v) %v%v; (%v,%v) %v%v: %v\n",
-// 				i, j,
-// 				string(sequence[i]), string(sequence[j]),
-// 				k, l,
-// 				string(sequence[k]), string(sequence[l]),
-// 				c.energy)
-// 		case HairpinLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			fmt.Printf("Hairpin loop  (%v,%v) %v%v              : %v\n",
-// 				i, j,
-// 				string(sequence[i]), string(sequence[j]),
-// 				c.energy)
-// 		case MultiLoop:
-// 			var i, j int = structure.closingFivePrimeIdx, structure.closingThreePrimeIdx
-// 			fmt.Printf("Multi   loop (%v,%v) %v%v              : %v\n",
-// 				i, j,
-// 				string(sequence[i]), string(sequence[j]),
-// 				c.energy)
-// 		}
-// 	}
-// }
