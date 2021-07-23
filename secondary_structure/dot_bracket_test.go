@@ -16,11 +16,11 @@ func ExampleSecondaryStructureFromDotBracket() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  0,
 				ThreePrimeIdx: 1,
 			},
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   2,
 					EnclosedFivePrimeIdx:  5,
@@ -55,11 +55,11 @@ func ExampleSecondaryStructureFromDotBracket() {
 				SingleStrandedThreePrimeIdx: 8,
 				Energy:                      0,
 			},
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  13,
 				ThreePrimeIdx: 15,
 			},
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   16,
 					EnclosedFivePrimeIdx:  17,
@@ -80,7 +80,7 @@ func ExampleSecondaryStructureFromDotBracket() {
 				SingleStrandedThreePrimeIdx: 25,
 				Energy:                      0,
 			},
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  28,
 				ThreePrimeIdx: 29,
 			},
@@ -113,11 +113,11 @@ func ExampleSecondaryStructureFromDotBracket_multiLoop() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  0,
 				ThreePrimeIdx: 1,
 			},
-			MultiLoop{
+			&MultiLoop{
 				Energy: 0,
 				Stem: Stem{
 					ClosingFivePrimeIdx:   2,
@@ -128,11 +128,11 @@ func ExampleSecondaryStructureFromDotBracket_multiLoop() {
 					Energy:                0,
 				},
 				Substructures: []interface{}{
-					SingleStrandedRegion{
+					&SingleStrandedRegion{
 						FivePrimeIdx:  3,
 						ThreePrimeIdx: 4,
 					},
-					Hairpin{
+					&Hairpin{
 						Stem: Stem{
 							ClosingFivePrimeIdx:   5,
 							EnclosedFivePrimeIdx:  8,
@@ -167,11 +167,11 @@ func ExampleSecondaryStructureFromDotBracket_multiLoop() {
 						SingleStrandedThreePrimeIdx: 11,
 						Energy:                      0,
 					},
-					SingleStrandedRegion{
+					&SingleStrandedRegion{
 						FivePrimeIdx:  16,
 						ThreePrimeIdx: 18,
 					},
-					Hairpin{
+					&Hairpin{
 						Stem: Stem{
 							ClosingFivePrimeIdx:   19,
 							EnclosedFivePrimeIdx:  20,
@@ -192,13 +192,13 @@ func ExampleSecondaryStructureFromDotBracket_multiLoop() {
 						SingleStrandedThreePrimeIdx: 28,
 						Energy:                      0,
 					},
-					SingleStrandedRegion{
+					&SingleStrandedRegion{
 						FivePrimeIdx:  31,
 						ThreePrimeIdx: 32,
 					},
 				},
 			},
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  34,
 				ThreePrimeIdx: 34,
 			},
@@ -231,11 +231,11 @@ func ExampleSecondaryStructureFromDotBracket_hairpinWithoutSingleStrandedRegion(
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  0,
 				ThreePrimeIdx: 1,
 			},
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   2,
 					EnclosedFivePrimeIdx:  4,
@@ -263,7 +263,7 @@ func ExampleSecondaryStructureFromDotBracket_hairpinWithoutSingleStrandedRegion(
 				SingleStrandedThreePrimeIdx: -1,
 				Energy:                      0,
 			},
-			SingleStrandedRegion{
+			&SingleStrandedRegion{
 				FivePrimeIdx:  8,
 				ThreePrimeIdx: 9,
 			},
@@ -296,7 +296,7 @@ func ExampleSecondaryStructureFromDotBracket_interiorBulge() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   0,
 					EnclosedFivePrimeIdx:  2,
@@ -355,7 +355,7 @@ func ExampleSecondaryStructureFromDotBracket_interior1xnLoops() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   0,
 					EnclosedFivePrimeIdx:  8,
@@ -422,7 +422,7 @@ func ExampleSecondaryStructureFromDotBracket_interior2xnLoops() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   0,
 					EnclosedFivePrimeIdx:  10,
@@ -489,7 +489,7 @@ func ExampleSecondaryStructureFromDotBracket_genericInteriorLoops() {
 		ExteriorLoopsEnergy: 0,
 		Energy:              0,
 		Structures: []interface{}{
-			Hairpin{
+			&Hairpin{
 				Stem: Stem{
 					ClosingFivePrimeIdx:   0,
 					EnclosedFivePrimeIdx:  12,
@@ -597,7 +597,43 @@ func ExampleSecondaryStructureFromDotBracket_stemWithoutEnclosedPair() {
 func isSecondaryStructuresEqual(structA, structB SecondaryStructure) bool {
 	// convert predicted and actual structures to their string representation
 	// so that they can be compared
-	structAStr := fmt.Sprintf("%+v", structA)
-	structBStr := fmt.Sprintf("%+v", structB)
-	return structAStr == structBStr
+	if structA.Length != structB.Length || structA.ExteriorLoopsEnergy != structB.ExteriorLoopsEnergy {
+		return false
+	}
+
+	return isStructuresEqual(structA.Structures, structB.Structures)
+}
+
+func isStructuresEqual(structAStructures, structBStructures []interface{}) bool {
+	if len(structAStructures) != len(structBStructures) {
+		return false
+	}
+	for i := 0; i < len(structAStructures); i++ {
+		structAStruct, structBStruct := structAStructures[i], structBStructures[i]
+
+		switch structAStruct := structAStruct.(type) {
+		case *SingleStrandedRegion:
+			structAStructStr := fmt.Sprintf("%+v", *structAStruct)
+			structBStructStr := fmt.Sprintf("%+v", *structBStruct.(*SingleStrandedRegion))
+			if structAStructStr != structBStructStr {
+				return false
+			}
+		case *Hairpin:
+			structAStructStr := fmt.Sprintf("%+v", *structAStruct)
+			structBStructStr := fmt.Sprintf("%+v", *structBStruct.(*Hairpin))
+			if structAStructStr != structBStructStr {
+				return false
+			}
+		case *MultiLoop:
+			structAStructStemStr := fmt.Sprintf("%+v", structAStruct.Stem)
+			structBStructStemStr := fmt.Sprintf("%+v", structBStruct.(*MultiLoop).Stem)
+			if structAStructStemStr != structBStructStemStr {
+				return false
+			}
+			if !isStructuresEqual(structAStruct.Substructures, structBStruct.(*MultiLoop).Substructures) {
+				return false
+			}
+		}
+	}
+	return true
 }

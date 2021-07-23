@@ -17,15 +17,23 @@ func IsPalindromic(sequence string) bool {
 // dot-bracket notation. See the `secondary_structure` package for more info
 // on dot-bracket notation.
 func IsValidDotBracketStructure(structure string) (bool, error) {
-	dotBracketStructureRegex, _ := regexp.Compile("^[().]+")
+	dotBracketRegex := "^[().]+"
+	return checkRegexpMatchesFullString(structure, dotBracketRegex, "found invalid characters in structure. Only dot-bracket notation allowed")
+}
 
-	if !checkRegexpMatchesFullString(structure, dotBracketStructureRegex) {
-		return false, fmt.Errorf("found invalid characters in structure. Only dot-bracket notation allowed")
+func checkRegexpMatchesFullString(str, regex, errMsg string) (bool, error) {
+	regexp, err := regexp.Compile(regex)
+	if err != nil {
+		return false, fmt.Errorf("regexp.Compile() error: %s", err)
+	}
+
+	if !doCheckRegexpMatchesFullString(str, regexp) {
+		return false, fmt.Errorf(errMsg)
 	}
 	return true, nil
 }
 
-func checkRegexpMatchesFullString(str string, regexp *regexp.Regexp) bool {
+func doCheckRegexpMatchesFullString(str string, regexp *regexp.Regexp) bool {
 	strIdxsThatMatchRegexp := regexp.FindStringIndex(str)
 
 	return len(strIdxsThatMatchRegexp) != 0 && strIdxsThatMatchRegexp[0] == 0 && strIdxsThatMatchRegexp[1] == len(str)
