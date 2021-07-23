@@ -208,17 +208,32 @@ type EnergyParams struct {
 	MaxNinio int
 }
 
-// BasePairType is a type to hold information of the type of a base pair
+// BasePairType is a type to hold information of the type of a base pair.
+// The chosen numbers denote where the energy paramater values can be found
+// for the base pair type in the `EnergyParams` energy parameter matrices.
 type BasePairType int
 
 const (
-	CG     BasePairType = 0
-	GC                  = 1
-	GU                  = 2
-	UG                  = 3
-	AU                  = 4
-	UA                  = 5
-	NoPair              = -1
+	// CG occurs when the base C (on the five prime end) binds to the base G
+	// (on the three prime end)
+	CG BasePairType = 0
+	// GC occurs when the base G (on the five prime end) binds to the base C
+	// (on the three prime end)
+	GC = 1
+	// GU occurs when the base G (on the five prime end) binds to the base U
+	// (on the three prime end)
+	GU = 2
+	// UG occurs when the base U (on the five prime end) binds to the base G
+	// (on the three prime end)
+	UG = 3
+	// Au occurs when the base A (on the five prime end) binds to the base U
+	// (on the three prime end)
+	AU = 4
+	// UA occurs when the base U (on the five prime end) binds to the base A
+	// (on the three prime end)
+	UA = 5
+	// NoPair denotes that two bases don't pair
+	NoPair = -1
 )
 
 var (
@@ -231,7 +246,7 @@ var (
 	// representation that is used to access the values of the energy parameters
 	// in the `EnergyParams` struct.
 	//
-	// Various loop energy parameters in the `EnergyParams` struct depend in on
+	// Various loop energy parameters in the `EnergyParams` struct depend on
 	// the base pair closing the loop.
 	// The numerical representation for the 7 distinguishable types of pairs
 	// (-1 = no pair, CG=0, GC=1, GU=2, UG=3, AU=4, UA=5, nonstandard=6)
