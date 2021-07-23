@@ -1929,7 +1929,7 @@ func logEnergyContributions(secondaryStructure SecondaryStructure, sequence stri
 func doLogEnergyContributions(structures []interface{}, sequence string) {
 	for _, structure := range structures {
 		switch structure := structure.(type) {
-		case MultiLoop:
+		case *MultiLoop:
 			// process Stem
 			logStemEnergyContributions(structure.Stem, sequence)
 			// process multiloop substructures
@@ -1940,7 +1940,7 @@ func doLogEnergyContributions(structures []interface{}, sequence string) {
 				i+1, j+1,
 				string(sequence[i]), string(sequence[j]),
 				int(structure.Energy))
-		case Hairpin:
+		case *Hairpin:
 			// process Stem
 			logStemEnergyContributions(structure.Stem, sequence)
 			// process hairpin energy
