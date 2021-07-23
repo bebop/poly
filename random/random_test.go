@@ -42,3 +42,10 @@ func TestRandomProteinSequenceError(t *testing.T) {
 		t.Errorf("Random sequence must have sequence size equals 0 'RandomSequence(2, 4)'. Got this: \n%s instead of \n%s", strconv.Itoa(len(sequence)), strconv.Itoa(length))
 	}
 }
+func ExampleDNASequence() {
+	// RandomDNASequence builds a DNA Sequence by only passing through arguments a length and a seed that will be use to generate a randomly the sequence. The length needs to be greater than two because every sequence already have a start and stop codon. Seed makes this test deterministic.
+	randomDNA, _ := DNASequence(15, 2)
+	fmt.Println(randomDNA)
+
+	// Output: TTAAATTAGATGCAA
+}

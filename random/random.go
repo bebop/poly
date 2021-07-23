@@ -5,7 +5,8 @@ import (
 	"math/rand"
 )
 
-// ProteinSequence returns a random protein sequence as a string that have size length, starts with aminoacid M (Methionine) and finishes with * (stop codon). The random generator uses the seed provided as parameter.
+// ProteinSequence returns a random protein sequence string of a given length and seed.
+// All returned sequences start M (Methionine) and end with * (stop codon).
 func ProteinSequence(length int, seed int64) (string, error) {
 	//The length needs to be greater than two because the random protein sequenced returned always contain a start and stop codon. You could see more about this stuff here: https://en.wikipedia.org/wiki/Genetic_code#Start_and_stop_codons
 	if length <= 2 {
@@ -30,6 +31,22 @@ func ProteinSequence(length int, seed int64) (string, error) {
 			randomIndex := rand.Intn(len(aminoAcidsAlphabet))
 			randomSequence[peptide] = aminoAcidsAlphabet[randomIndex]
 		}
+	}
+
+	return string(randomSequence), nil
+}
+
+// DNASequence returns a random DNA sequence string of a given length and seed.
+func DNASequence(length int, seed int64) (string, error) {
+
+	var nucleicAcidsAlphabet = []rune("ACTG")
+	alphabetLength := len(nucleicAcidsAlphabet)
+	rand.Seed(seed)
+
+	randomSequence := make([]rune, length)
+	for basepair := range randomSequence {
+		randomIndex := rand.Intn(alphabetLength)
+		randomSequence[basepair] = nucleicAcidsAlphabet[randomIndex]
 	}
 
 	return string(randomSequence), nil
