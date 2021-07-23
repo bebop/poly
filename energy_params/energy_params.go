@@ -27,49 +27,6 @@ const (
 	ZeroCelsiusInKelvin float64 = 273.15
 )
 
-// EnergyParamsSet is used to specify the set of RNA free energy paramaters to
-// parse.
-type EnergyParamsSet int
-
-const (
-	// Langdon2018 specifies the set of RNA energy parameters obtained from
-	// Grow and Graft Genetic Programming (GGGP) as published
-	// in Langdon et al. 2018, "Evolving Better RNAfold
-	// Structure Prediction", EuroGP-2018, M. Castelli,
-	// L. Sekanina, M. Zhang Eds., Parma. 4-6 April 2018
-	Langdon2018 EnergyParamsSet = iota
-
-	// Andronescu2007 specifies the set of RNA energy parameters obtained from
-	// Andronescu M, Condon A, Hoos HH, Mathews DH, Murphy KP. Efficient
-	// parameter estimation for RNA secondary structure prediction.
-	// Bioinformatics. 2007 Jul 1;23(13):i19-28
-	Andronescu2007
-
-	// Turner2004 specifies the set of RNA energy parameters obtained from
-	// Mathews DH, Disney MD, Childs JL, Schroeder SJ, Zuker M, Turner DH.
-	// Incorporating chemical modification constraints into a dynamic
-	// programming algorithm for prediction of RNA secondary structure.
-	// Proc Natl Acad Sci U S A. 2004;101(19):7287-7292.
-	Turner2004
-
-	// Turner1999 specifies the set of RNA energy parameters obtained from
-	// Mathews DH, Sabina J, Zuker M, Turner DH. Expanded sequence dependence
-	// of thermodynamic parameters improves prediction of RNA secondary
-	// structure. J Mol Biol. 1999 May 21;288(5):911-40.
-	Turner1999
-)
-
-//go:embed param_files/*
-var embeddedEnergyParamsDirectory embed.FS
-var energyParamsDirectory = "param_files"
-
-var energyParamFileNames map[EnergyParamsSet]string = map[EnergyParamsSet]string{
-	Langdon2018:    "rna_langdon2018.par",
-	Andronescu2007: "rna_andronescu2007.par",
-	Turner2004:     "rna_turner2004.par",
-	Turner1999:     "rna_turner1999.par",
-}
-
 // NewEnergyParams is a wrapper function that calls the required functions
 // which parse the specified energy parameter set and scales it by
 // `temperatureInCelsius`.
@@ -342,4 +299,47 @@ func EncodeBasePair(fivePrimeBase, threePrimeBase byte) BasePairType {
 	} else {
 		return NoPair
 	}
+}
+
+// EnergyParamsSet is used to specify the set of RNA free energy paramaters to
+// parse.
+type EnergyParamsSet int
+
+const (
+	// Langdon2018 specifies the set of RNA energy parameters obtained from
+	// Grow and Graft Genetic Programming (GGGP) as published
+	// in Langdon et al. 2018, "Evolving Better RNAfold
+	// Structure Prediction", EuroGP-2018, M. Castelli,
+	// L. Sekanina, M. Zhang Eds., Parma. 4-6 April 2018
+	Langdon2018 EnergyParamsSet = iota
+
+	// Andronescu2007 specifies the set of RNA energy parameters obtained from
+	// Andronescu M, Condon A, Hoos HH, Mathews DH, Murphy KP. Efficient
+	// parameter estimation for RNA secondary structure prediction.
+	// Bioinformatics. 2007 Jul 1;23(13):i19-28
+	Andronescu2007
+
+	// Turner2004 specifies the set of RNA energy parameters obtained from
+	// Mathews DH, Disney MD, Childs JL, Schroeder SJ, Zuker M, Turner DH.
+	// Incorporating chemical modification constraints into a dynamic
+	// programming algorithm for prediction of RNA secondary structure.
+	// Proc Natl Acad Sci U S A. 2004;101(19):7287-7292.
+	Turner2004
+
+	// Turner1999 specifies the set of RNA energy parameters obtained from
+	// Mathews DH, Sabina J, Zuker M, Turner DH. Expanded sequence dependence
+	// of thermodynamic parameters improves prediction of RNA secondary
+	// structure. J Mol Biol. 1999 May 21;288(5):911-40.
+	Turner1999
+)
+
+//go:embed param_files/*
+var embeddedEnergyParamsDirectory embed.FS
+var energyParamsDirectory = "param_files"
+
+var energyParamFileNames map[EnergyParamsSet]string = map[EnergyParamsSet]string{
+	Langdon2018:    "rna_langdon2018.par",
+	Andronescu2007: "rna_andronescu2007.par",
+	Turner2004:     "rna_turner2004.par",
+	Turner1999:     "rna_turner1999.par",
 }
