@@ -13,12 +13,18 @@ func IsPalindromic(sequence string) bool {
 	return sequence == transform.ReverseComplement(sequence)
 }
 
-// IsValidDotBracketStructure accepts a string and checks if uses valid
+// IsValidDotBracketStructure accepts a string and checks if it uses valid
 // dot-bracket notation. See the `secondary_structure` package for more info
 // on dot-bracket notation.
 func IsValidDotBracketStructure(structure string) (bool, error) {
 	dotBracketRegex := "^[().]+"
 	return checkRegexpMatchesFullString(structure, dotBracketRegex, "found invalid characters in structure. Only dot-bracket notation allowed")
+}
+
+// IsValidRNA accepts a string and checks if it is a valid RNA sequence.
+func IsValidRNA(sequence string) (bool, error) {
+	rnaRegex := "^[ACGU]+"
+	return checkRegexpMatchesFullString(sequence, rnaRegex, "expected valid RNA sequence (A, C, G, or U only).")
 }
 
 func checkRegexpMatchesFullString(str, regex, errMsg string) (bool, error) {
