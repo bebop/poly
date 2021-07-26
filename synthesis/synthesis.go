@@ -122,22 +122,26 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 	}
 }
  
-// GlobalRemoveRepeat is a generator to make a problematicSequenceFunc for external repeats (e.g genome repeats).
+// GlobalRemoveRepeat is a generator to make a function that searchs for external repeats (e.g genome repeats) and make a 
+// DnaSuggestion for codon changes.
 func GlobalRemoveRepeat(repeatLen int, globalKmers map[string]bool) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		for i := 0; i < len(sequence)-repeatLen; i++ {
-			_, globalRepeat := globalKmers[sequence[i:i+repeatLen]]
-      if globalRepeat {
-        position := i / 3
-				leftover := i % 3
-				switch {
-				case leftover == 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
-				case leftover != 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
+			subsequence := sequence[i:i+repeatLen]
+			reverseComplement := transform.ReverseComplement(subsequence)
+			_, forwardGlobalRepeat := globalKmers[subsequence]
+			_, reverseGlobalRepeat := globalKmers[reverseComplement]
+			if forwardGlobalRepeat || reverseGlobalRepeat{
+				position := i / 3
+						leftover := i % 3
+						switch {
+						case leftover == 0:
+							c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
+						case leftover != 0:
+							c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
+						}
+					}
 				}
-			}
-		}
     wg.Done()
 	}
 }
