@@ -1618,44 +1618,16 @@ func NUM_TO_NUC(x int) int {
 	}
 }
 
-func NUM_TO_PAIR(x, y int) (ret int) {
-	switch x {
-	case 0:
-		switch y {
-		case 3:
-			ret = 5
-		default:
-			ret = 0
-		}
-	case 1:
-		switch y {
-		case 2:
-			ret = 1
-		default:
-			ret = 0
-		}
-	case 2:
-		switch y {
-		case 1:
-			ret = 2
-		case 3:
-			ret = 3
-		default:
-			ret = 0
-		}
-	case 3:
-		switch y {
-		case 2:
-			ret = 4
-		case 0:
-			ret = 6
-		default:
-			ret = 0
-		}
-	default:
-		ret = 0
-	}
-	return
+var encodedIntNucleotideMap = map[int]byte{
+	0: 'A',
+	1: 'C',
+	2: 'G',
+	3: 'U',
+}
+
+func NUM_TO_PAIR(x, y int) (ret energy_params.BasePairType) {
+	var a, b byte = encodedIntNucleotideMap[x], encodedIntNucleotideMap[y]
+	return energy_params.EncodeBasePair(a, b)
 }
 
 // only used for ViennaRNA fold model
@@ -1673,10 +1645,18 @@ func sort_keys(keyMap *map[int]*State, sorted_keys *([]Pair)) {
 
 func v_score_multi(i, j, nuci, nuci1, nucj_1, nucj, len int) float64 {
 	tt := NUM_TO_PAIR(nucj, nuci)
-	si1 := NUM_TO_NUC(nuci1)
-	sj1 := NUM_TO_NUC(nucj_1)
 
-	return float64(mfe.EvaluateMultiLoopStem(tt, sj1, si1, energyParams) + energyParams.MultiLoopClosingPenalty)
+	switch dangleModel {
+	case mfe.NoDanglingEnds:
+		return float64(mfe.EvaluateMultiLoopStem(tt, -1, -1, energyParams) + energyParams.MultiLoopClosingPenalty)
+
+	case mfe.DoubleDanglingEnds:
+		si1 := NUM_TO_NUC(nuci1)
+		sj1 := NUM_TO_NUC(nucj_1)
+		return float64(mfe.EvaluateMultiLoopStem(tt, sj1, si1, energyParams) + energyParams.MultiLoopClosingPenalty)
+	default:
+		return 0.0
+	}
 }
 
 func v_score_M1(i, j, k, nuci_1, nuci, nuck, nuck1, len int) float64 {
@@ -1723,6 +1703,5 @@ func v_score_single(i, j, p, q,
 	closingPairType := NUM_TO_PAIR(nuci, nucj)
 	type_2 := NUM_TO_PAIR(nucq, nucp)
 
-	return float64(mfe.EvaluateStemStructure(stemStructure, closingPairType, type_2, si1, sj1, sq1, sp1, energyParams))
-
+	return float64(mfe.EvaluateStemStructure(stemStructure.Type, stemStructure.NBUnpairedFivePrime, stemStructure.NBUnpairedThreePrime, closingPairType, type_2, si1, sj1, sq1, sp1, energyParams))
 }

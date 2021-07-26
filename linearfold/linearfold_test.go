@@ -17,7 +17,8 @@ func ExampleCONTRAFoldV2() {
 }
 
 func ExampleViennaRNAFold() {
-	result, score := ViennaRNAFold("UCUAGACUUUUCGAUAUCGCGAAAAAAAAU", DefaultTemperature, DefaultEnergyParamsSet, mfe.DefaultDanglingEndsModel, DefaultBeamSize)
+	sequence := "UCUAGACUUUUCGAUAUCGCGAAAAAAAAU"
+	result, score := ViennaRNAFold(sequence, DefaultTemperature, DefaultEnergyParamsSet, mfe.DefaultDanglingEndsModel, DefaultBeamSize)
 	fmt.Println(fmt.Sprintf("result: %v , score: %.2f", result, score))
 	// Output: result: .......((((((......))))))..... , score: -3.90
 }
