@@ -8,7 +8,8 @@ func IsPalindromic(sequence string) bool {
 	return sequence == transform.ReverseComplement(sequence)
 }
 
-func gcContent(sequence string) float64 {
+// GC content calculates the percentage of G and C base pairs content in a given sequence
+func GcContent(sequence string) float64 {
 
 	if len(sequence) < 1 {
 	  return 0.0
