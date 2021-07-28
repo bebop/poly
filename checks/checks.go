@@ -41,6 +41,12 @@ func IsValidDotBracketStructure(structure string) (bool, error) {
 	return checkRegexpMatchesFullString(structure, dotBracketRegex, "found invalid characters in structure. Only dot-bracket notation allowed")
 }
 
+// IsValidRNA accepts a string and checks if it is a valid RNA sequence.
+func IsValidRNA(sequence string) (bool, error) {
+	rnaRegex := "^[ACGU]+"
+	return checkRegexpMatchesFullString(sequence, rnaRegex, "expected valid RNA sequence (A, C, G, or U only).")
+}
+
 func checkRegexpMatchesFullString(str, regex, errMsg string) (bool, error) {
 	regexp, err := regexp.Compile(regex)
 	if err != nil {
