@@ -6,55 +6,52 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
-var csvFilesInDirectory []string
+/*****************************************************************************
 
-// appends `dirName` to `csvFilesInDirectory` if `dir` is a file
+This file contains helper functions to work with CSV files.
+The functions defined here are used by the `model`, and
+`shine_dalgarno_binding_site` subpackages.
+
+*****************************************************************************/
+
+// CSVFilesFromEmbeddedFS returns all csv files in a directory from an embedded FS
+func CSVFilesFromEmbeddedFS(embeddedFS embed.FS, directory string) (csvFilesInDirectory []string) {
+	filesInDirectory = make([]string, 0)
+	fs.WalkDir(embeddedFS, directory, fileName)
+
+	csvFileRegex := regexp.MustCompile(`.*\.csv`)
+	csvFilesInDirectory = filter(filesInDirectory, csvFileRegex.MatchString)
+	return
+}
+
+// appends `dirName` to global variable `filesInDirectory` if `dir` is a file
 func fileName(dirName string, dir fs.DirEntry, e error) error {
 	if e != nil {
 		return e
 	}
+
 	if !dir.IsDir() {
-		csvFilesInDirectory = append(csvFilesInDirectory, dirName)
+		filesInDirectory = append(filesInDirectory, dirName)
 	}
 	return nil
 }
 
-// CSVFilesFromEmbededFS returns all csv files in a directory from an embeded FS
-func CSVFilesFromEmbededFS(embededFS embed.FS, directory string) []string {
-	csvFilesInDirectory = make([]string, 0)
-	fs.WalkDir(embededFS, directory, fileName)
+// When walking a directory with `fs.WalkDir` (in the func
+// `CSVFilesFromEmbeddedFS`), we use the func `fileName` as the function that
+// gets called for every directory. Unfortunately, the walking func cannot
+// return anything so we have to use this global un-exported variable to
+// keep track of the files in the directory
+var filesInDirectory []string
 
-	re := regexp.MustCompile(`.*\.csv`)
-	return filter(csvFilesInDirectory, re.MatchString)
-}
-
-// CSVFiles returns all csv files in a directory (and doesn't include csv files
-// with strings in `disclude` in its name)
-func CSVFiles(directory string, disclude []string) []string {
-	csvFilesInDirectory = make([]string, 0)
-	// Walks directory and adds name of files to global var csvFilesInDirectory
-	filepath.WalkDir(directory, fileName)
-
-	// Filter to remove non .csv files
-	re := regexp.MustCompile(`.*\.csv`)
-	csvFiles := filter(csvFilesInDirectory, re.MatchString)
-
-	// remove all csv files with strings in `disclude` in its name
-	for name := range disclude {
-		re = regexp.MustCompile(fmt.Sprintf(".*%v.*", name))
-		csvFiles = filter(csvFiles, func(file string) bool { return !re.MatchString(file) })
-	}
-	return csvFiles
-}
-
+// returns all strings that return true for the `filter` func
 func filter(ss []string, filter func(string) bool) (ret []string) {
 	for _, s := range ss {
 		if filter(s) {
@@ -90,62 +87,102 @@ func fileNameWithUNIXTimestamp(file string) string {
 	return strings.Join(colonSeperatedFileName, ".")
 }
 
-// Re-export os's constants so that packages that depend on csv_helper's
-// OpenFile doesn't need to depend on package os as well
+// Re-export the package `os`'s constants so that packages that depend on
+// csv_helper's `OpenFile` func don't need to depend on package `os` as well
 const (
 	APPEND int = os.O_APPEND
 	CREATE int = os.O_CREATE
 )
 
-// OpenFile creates the file `file` and all the directories sepcified in
-// `file`'s path if they don't exist
+// OpenFile creates the file `file` and all the directories specified in
+// `file`'s path if they don't exist.
+// The available options for `osFlag` are `APPEND` (which will open the
+// specified file without overwriting it) and `CREATE` (which will overwrite
+// the specified file if it exists)
 func OpenFile(file string, osFlag int) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(file), 0770); err != nil {
 		return nil, err
 	}
-	// osFile, err := os.Stat(file)
-	// if os.IsNotExist(err) {
-	// return os.Create(file)
-	// }
-	// return osFile, nil
+
 	flags := os.O_RDWR | osFlag
 	return os.OpenFile(file, flags, 0770)
 }
 
-// keepColumns saves the csv file `inputFile` as `outputFile` with only the
-// specified columns
-func KeepColumns(inputFile, outputFile string, cols []int) error {
-	f, err := os.Open(inputFile)
+// WriteToCSV writes to the specified output file with the contents from
+// the channel `csvOutputChannel`. Writing is stopped when `csvOutputChannel`
+// is closed. Please read the doc of `OpenFile` to understand the available
+// options for the `osFlags` argument.
+func WriteToCSV(outputFile string, osFlags int, csvOutputChannel chan []string, wg *sync.WaitGroup) {
+	wFile, err := OpenFile(outputFile, osFlags)
 	if err != nil {
-		return err
-	}
-	defer f.Close()
-	csvr := csv.NewReader(f)
-
-	wFile, err := OpenFile(outputFile, os.O_CREATE)
-	if err != nil {
-		return err
+		panic(err)
 	}
 	defer wFile.Close()
 	csvWriter := csv.NewWriter(wFile)
 	defer csvWriter.Flush()
+	defer wg.Done()
 
 	for {
-		row, err := csvr.Read()
-		if err != nil {
-			if err == io.EOF {
-				err = nil
+		select {
+		case csvLine, ok := <-csvOutputChannel:
+			if !ok {
+				return
 			}
-			return err
-		}
 
-		sublist := make([]string, 0)
-		for _, col := range cols {
-			sublist = append(sublist, row[col])
-		}
-		// row = append(row, fmt.Sprint(bindingSite.MRNAStructure))
-		if err := csvWriter.Write(sublist); err != nil {
-			log.Fatalln("error writing record to file", err)
+			if err := csvWriter.Write(csvLine); err != nil {
+				panic(err)
+			}
 		}
 	}
+}
+
+// ReadCSV reads a csv file into the channel `csvRowsChannel`.
+func ReadCSV(fs embed.FS, csvFile string, csvRowsChannel chan []string,
+	wg *sync.WaitGroup, nbSkipHeader int) {
+	defer close(csvRowsChannel)
+	defer wg.Done()
+
+	f, err := fs.Open(csvFile)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	csvReader := csv.NewReader(f)
+
+	for i := 0; i < nbSkipHeader; i++ {
+		csvReader.Read()
+	}
+
+	csvRow, err := csvReader.Read()
+	for err == nil {
+		csvRowsChannel <- csvRow
+		csvRow, err = csvReader.Read()
+	}
+
+	if err != io.EOF {
+		panic(err)
+	}
+}
+
+// ReadHeader returns the specified number of rows from the start of a csv file
+func ReadHeader(fs embed.FS, csvFile string, nbHeaderRows int) (header [][]string) {
+	f, err := fs.Open(csvFile)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	csvReader := csv.NewReader(f)
+
+	for i := 0; i < nbHeaderRows; i++ {
+		csvRow, err := csvReader.Read()
+		if err != nil {
+			if err != io.EOF {
+				panic(err)
+			} else {
+				panic("reached EOF before parsing all header rows")
+			}
+		}
+		header = append(header, csvRow)
+	}
+	return
 }
