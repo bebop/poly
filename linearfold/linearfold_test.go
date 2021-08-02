@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/TimothyStiles/poly/energy_params"
-	"github.com/TimothyStiles/poly/mfe"
+	"github.com/Open-Science-Global/poly/energy_params"
+	"github.com/Open-Science-Global/poly/mfe"
 )
 
 func ExampleCONTRAFoldV2() {

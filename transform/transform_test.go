@@ -25,3 +25,12 @@ func ExampleReverse() {
 
 	// Output: ACATTAG
 }
+
+
+func ExampleTranscription() {
+	sequence := "GATTACA"
+	transcription := Transcription(sequence)
+	fmt.Println(transcription)
+
+	// Output: CUAAUGU
+}

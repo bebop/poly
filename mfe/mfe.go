@@ -6,9 +6,9 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/energy_params"
-	. "github.com/TimothyStiles/poly/secondary_structure"
+	"github.com/Open-Science-Global/poly/checks"
+	"github.com/Open-Science-Global/poly/energy_params"
+	. "github.com/Open-Science-Global/poly/secondary_structure"
 )
 
 /******************************************************************************

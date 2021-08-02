@@ -1,6 +1,9 @@
 package transform
 
-import "strings"
+import (
+	"strings"
+	"fmt"
+)
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
 var complementBaseRuneMap = map[rune]rune{
@@ -48,6 +51,27 @@ func ReverseComplement(sequence string) string {
 		newString[length] = base
 	}
 	return string(newString)
+}
+
+func Transcription(sequence string) string {	
+	transcripted := ""
+
+	for _, basepair := range sequence {
+		switch basepair {
+			case 'A':
+				transcripted = transcripted + "U"
+			case 'T':
+				transcripted = transcripted + "A"
+			case 'C':
+				transcripted = transcripted + "G"
+			case 'G':
+				transcripted = transcripted + "C"
+			default:
+				fmt.Println("Transcription with not a DNA dictionary {A, T, C, G}")
+				return ""
+		}
+	}
+	return transcripted
 }
 
 // Complement takes the complement of a sequence.
