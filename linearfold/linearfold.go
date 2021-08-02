@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/TimothyStiles/poly/energy_params"
-	"github.com/TimothyStiles/poly/mfe"
-	"github.com/TimothyStiles/poly/secondary_structure"
+	"github.com/Open-Science-Global/poly/energy_params"
+	"github.com/Open-Science-Global/poly/mfe"
+	"github.com/Open-Science-Global/poly/secondary_structure"
 )
 
 /******************************************************************************

@@ -6,6 +6,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Open-Science-Global/poly/linearfold"
+	"github.com/Open-Science-Global/poly/mfe"
+	"github.com/Open-Science-Global/poly/secondary_structure"
 	"github.com/Open-Science-Global/poly/transform"
 	"github.com/Open-Science-Global/poly/transform/codon"
 	"github.com/jmoiron/sqlx"
@@ -93,11 +96,11 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 func getKmerTable(k int, sequence string) map[string]bool {
 	kmers := make(map[string]bool)
 	for i := 0; i <= len(sequence)-k; i++ {
-			  kmers[strings.ToUpper(sequence[i:i+k])] = true
+		kmers[strings.ToUpper(sequence[i:i+k])] = true
 	}
-  
+
 	return kmers
-  }
+}
 
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
@@ -121,28 +124,74 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 		wg.Done()
 	}
 }
- 
-// GlobalRemoveRepeat is a generator to make a function that searchs for external repeats (e.g genome repeats) and make a 
+
+// RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
+func RemoveSecondaryStructure(closeIndex int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		// Get a kmer list
+		sequence = sequence[:closeIndex]
+
+		transcripted := transform.Transcription(sequence)
+		dot_bracket, _ := linearfold.CONTRAfoldV2(transcripted, linearfold.DefaultBeamSize)
+		_, secondaryStructure, err := mfe.MinimumFreeEnergy(transcripted, dot_bracket, mfe.DefaultTemperature, linearfold.DefaultEnergyParamsSet, mfe.DefaultDanglingEndsModel)
+		if err == nil {
+			for _, structure := range secondaryStructure.Structures {
+				switch structure := structure.(type) {
+				case *secondary_structure.SingleStrandedRegion:
+					// `SingleStrandedRegion`s don't contribute any energy
+					continue
+				case *secondary_structure.MultiLoop:
+					i := structure.Stem.ClosingFivePrimeIdx
+					endPosition := structure.Stem.ClosingThreePrimeIdx / 3
+					position := i / 3
+					leftover := i % 3
+					switch {
+					case leftover == 0:
+						c <- DnaSuggestion{position, endPosition, "NA", 1, "Remove secondary structure", 0, 0}
+					case leftover != 0:
+						c <- DnaSuggestion{position, endPosition - 1, "NA", 1, "Remove secondary structure", 0, 0}
+					}
+				case *secondary_structure.Hairpin:
+					i := structure.Stem.EnclosedFivePrimeIdx
+					endPosition := structure.Stem.EnclosedThreePrimeIdx / 3
+					position := i / 3
+					leftover := i % 3
+					switch {
+					case leftover == 0:
+						c <- DnaSuggestion{position, endPosition, "NA", 1, "Remove secondary structure", 0, 0}
+					case leftover != 0:
+						c <- DnaSuggestion{position, endPosition - 1, "NA", 1, "Remove secondary structure", 0, 0}
+					}
+
+				}
+			}
+		}
+
+		wg.Done()
+	}
+}
+
+// GlobalRemoveRepeat is a generator to make a function that searchs for external repeats (e.g genome repeats) and make a
 // DnaSuggestion for codon changes.
 func GlobalRemoveRepeat(repeatLen int, globalKmers map[string]bool) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		for i := 0; i < len(sequence)-repeatLen; i++ {
-			subsequence := sequence[i:i+repeatLen]
+			subsequence := sequence[i : i+repeatLen]
 			reverseComplement := transform.ReverseComplement(subsequence)
 			_, forwardGlobalRepeat := globalKmers[subsequence]
 			_, reverseGlobalRepeat := globalKmers[reverseComplement]
-			if forwardGlobalRepeat || reverseGlobalRepeat{
+			if forwardGlobalRepeat || reverseGlobalRepeat {
 				position := i / 3
-						leftover := i % 3
-						switch {
-						case leftover == 0:
-							c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
-						case leftover != 0:
-							c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
-						}
-					}
+				leftover := i % 3
+				switch {
+				case leftover == 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
+				case leftover != 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
 				}
-    wg.Done()
+			}
+		}
+		wg.Done()
 	}
 }
 

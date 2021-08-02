@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/Open-Science-Global/poly/transform"
 )
 
 // IsPalindromic accepts a sequence of even length and returns if it is
@@ -24,7 +24,7 @@ func GcContent(sequence string) float64 {
 	const g = 71
 	count := 0.0
   
-	for i, character := range(sequence) {
+	for _, character := range(sequence) {
 	  if character == g || character == c {
 		count += 1.0 
 	  }
