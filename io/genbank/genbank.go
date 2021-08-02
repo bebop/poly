@@ -1,8 +1,11 @@
 package genbank
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/md5"
+	"io"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -34,6 +37,9 @@ func Parse(file []byte) poly.Sequence {
 
 	// Create sequence struct
 	sequence := poly.Sequence{}
+
+	// Add the SHA256 hash to sequence.SHA256
+	sequence.MD5 = md5.Sum(file)
 
 	for numLine := 0; numLine < len(lines); numLine++ {
 		line := lines[numLine]
@@ -760,23 +766,15 @@ Genbank Flat specific IO related things begin here.
 
 // ParseMulti parses multiple Genbank files in a byte array to multiple sequences
 func ParseMulti(file []byte) []poly.Sequence {
+	r := bytes.NewReader(file)
+	sequences := make(chan poly.Sequence, 1000) // A buffer is used so that the functions run as it is appending
+	go ParseConcurrent(r, sequences)
 
-	gbk := string(file)
-	genbankFiles := strings.SplitAfter(gbk, "//\n")
-
-	//Remove last genbankFile in list. The real file terminates with //, which
-	//will be interpreted as an empty genbankFile.
-	genbankFiles = genbankFiles[:len(genbankFiles)-1]
-
-	//Iterate through each genbankFile in genbankFiles list and Parse it
-	//using the Parse function. Return output.
-	var sequences []poly.Sequence
-	for _, f := range genbankFiles {
-		sequences = append(sequences, Parse([]byte(f)))
+	var outputGenbanks []poly.Sequence
+	for sequence := range sequences {
+		outputGenbanks = append(outputGenbanks, sequence)
 	}
-
-	return sequences
-
+	return outputGenbanks
 }
 
 // ParseFlat specifically takes the output of a Genbank Flat file that from
@@ -824,5 +822,41 @@ func ReadFlatGz(path string) []poly.Sequence {
 /******************************************************************************
 
 Genbank Flat specific IO related things end here.
+
+******************************************************************************/
+
+/******************************************************************************
+
+Genbank Concurrent specific IO related things begin here.
+
+******************************************************************************/
+
+// ParseConcurrentString concurrently parses a given Genbank file in an io.Reader into a channel of poly.Sequence.
+func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+	var gbkStr string
+	var gbk poly.Sequence
+
+	// Start a new scanner
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "//" {
+			gbkStr = gbkStr + "//"
+			// Parse the genbank string and send it to the channel
+			gbk = Parse([]byte(gbkStr))
+			sequences <- gbk
+			// Reset the genbank string
+			gbkStr = ""
+		} else {
+			// Append new lines of the Genbank file to a growing string
+			gbkStr = gbkStr + line + "\n"
+		}
+	}
+	close(sequences)
+}
+
+/******************************************************************************
+
+Genbank Concurrent specific IO related things end here.
 
 ******************************************************************************/
