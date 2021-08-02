@@ -781,18 +781,14 @@ func ParseMulti(file []byte) []poly.Sequence {
 // the genbank ftp dumps. These files have 10 line headers, which are entirely
 // removed
 func ParseFlat(file []byte) []poly.Sequence {
-
-	gbk := string(file)
-
-	// This code removes the header, which is 10 lines long. This is inefficient
-	// and gets rid of the data in the header, which may be useful for some
-	// application. Header data is not needed to parse the Genbank files, though
-	gbkWithoutHeader := []byte(strings.Join(strings.Split(gbk, "\n")[10:], "\n"))
-
-	// Pass gbkWithoutHeader to ParseMulti, which should handle
-	// the rest of the parsing just fine
-	sequences := ParseMulti(gbkWithoutHeader)
-	return sequences
+	r := bytes.NewReader(file)
+	sequences := make(chan poly.Sequence, 1000) // A buffer is used so that the functions run as it is appending
+	go ParseFlatConcurrent(r, sequences)
+	var outputGenbanks []poly.Sequence
+	for sequence := range sequences {
+		outputGenbanks = append(outputGenbanks, sequence)
+	}
+	return outputGenbanks
 }
 
 // ReadMulti reads multiple genbank files from a single file
@@ -831,7 +827,7 @@ Genbank Concurrent specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseConcurrentString concurrently parses a given Genbank file in an io.Reader into a channel of poly.Sequence.
+// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of poly.Sequence.
 func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
 	var gbkStr string
 	var gbk poly.Sequence
@@ -853,6 +849,18 @@ func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
 		}
 	}
 	close(sequences)
+}
+
+// ParseFlatConcurrent concurrently parses a given flat-Genbank file in an io.Reader into a channel of poly.Sequnce.
+func ParseFlatConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+	// Start a new reader
+	reader := bufio.NewReader(r)
+	// Read 10 lines, or the header of a flat file
+	// Header data is not needed to parse the Genbank files, though it may contain useful information.
+	for i := 0; i < 10; i++ {
+		_, _, _ = reader.ReadLine()
+	}
+	go ParseConcurrent(reader, sequences)
 }
 
 /******************************************************************************
