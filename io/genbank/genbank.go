@@ -38,7 +38,7 @@ func Parse(file []byte) poly.Sequence {
 	// Create sequence struct
 	sequence := poly.Sequence{}
 
-	// Add the SHA256 hash to sequence.SHA256
+	// Add the MD5 hash to sequence.MD5
 	sequence.MD5 = md5.Sum(file)
 
 	for numLine := 0; numLine < len(lines); numLine++ {
@@ -767,7 +767,7 @@ Genbank Flat specific IO related things begin here.
 // ParseMulti parses multiple Genbank files in a byte array to multiple sequences
 func ParseMulti(file []byte) []poly.Sequence {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence, 1000) // A buffer is used so that the functions run as it is appending
+	sequences := make(chan poly.Sequence)
 	go ParseConcurrent(r, sequences)
 
 	var outputGenbanks []poly.Sequence
@@ -782,7 +782,7 @@ func ParseMulti(file []byte) []poly.Sequence {
 // removed
 func ParseFlat(file []byte) []poly.Sequence {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence, 1000) // A buffer is used so that the functions run as it is appending
+	sequences := make(chan poly.Sequence)
 	go ParseFlatConcurrent(r, sequences)
 	var outputGenbanks []poly.Sequence
 	for sequence := range sequences {

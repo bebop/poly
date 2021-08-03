@@ -103,7 +103,7 @@ type Sequence struct {
 	SequenceHashFunction string    `json:"hash_function"`
 	Sequence             string    `json:"sequence"`
 	Features             []Feature `json:"features"`
-	MD5                  [16]byte  `json:"hash"` //SHA256 checksum
+	MD5                  [16]byte  `json:"hash"` //MD5 checksum
 }
 
 // AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
