@@ -1,1 +1,4 @@
 *.par binary
+"rbs_calculator/model/salis_lab_v2_1/shine_dalgarno_binding_site/data/ACCUCCUUA/37_0&30_0C.csv" filter=lfs diff=lfs merge=lfs -text
+"rbs_calculator/model/salis_lab_v2_1/shine_dalgarno_binding_site/data/ACCUCCUUU/37_0&30_0C.csv" filter=lfs diff=lfs merge=lfs -text
+rbs_calculator/model/datasets/salis_v2_1.xlsx filter=lfs diff=lfs merge=lfs -text
