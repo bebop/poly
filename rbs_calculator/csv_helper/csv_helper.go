@@ -69,7 +69,7 @@ func filter(ss []string, filter func(string) bool) (ret []string) {
 func CSVOutputFileName(directory, inputFile string) string {
 	directorySeperatedFileName := strings.Split(inputFile, "/")
 	fileName := directorySeperatedFileName[len(directorySeperatedFileName)-1]
-	fileName = fileNameWithUNIXTimestamp(fileName)
+	fileName = FileNameWithUNIXTimestamp(fileName)
 	directorySeperatedFileName[len(directorySeperatedFileName)-1] = directory
 	directorySeperatedFileName = append(directorySeperatedFileName, fileName)
 	return strings.Join(directorySeperatedFileName, "/")
@@ -80,7 +80,7 @@ func CSVOutputFileName(directory, inputFile string) string {
 // Example:
 // file: "something.csv"
 // output: "something_`current unix timestamp`.csv"
-func fileNameWithUNIXTimestamp(file string) string {
+func FileNameWithUNIXTimestamp(file string) string {
 	colonSeperatedFileName := strings.Split(file, ".")
 	fileName := colonSeperatedFileName[len(colonSeperatedFileName)-2]
 	colonSeperatedFileName[len(colonSeperatedFileName)-2] = fileName + fmt.Sprintf("_%v", time.Now().Unix())

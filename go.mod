@@ -9,6 +9,7 @@ require (
 	github.com/iancoleman/strcase v0.1.3 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/mroth/weightedrand v0.2.1
+	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/sergi/go-diff v1.1.0
 	github.com/srom/xmlstream v0.0.0-20150105231402-e4c2683fc976 // indirect
