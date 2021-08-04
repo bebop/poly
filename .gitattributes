@@ -1,1 +1,2 @@
-*.par binary
+*.par binary -text diff
+*.csv binary -text diff
