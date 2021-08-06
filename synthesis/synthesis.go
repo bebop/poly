@@ -9,15 +9,12 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/TimothyStiles/poly/transform/codon"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 /******************************************************************************
 Apr 25, 2021
-
-DNA synthesis fixing stuff starts here.
-
-[Check commit history for previous comments]
 
 The primary goal of the synthesis fixer is to fix protein coding sequences (CDS) in preparation
 for DNA synthesis. Because CDSs are flexible in their coding, we can change codons to remove
@@ -112,8 +109,6 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 	}
 }
 
-// Ensure GC range is a generator to make a problematicSequenceFunc for gc content.
-
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
 	suggestions := make(chan DnaSuggestion, 100)
@@ -134,7 +129,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
-	db := sqlx.MustConnect("sqlite3", sqlitePath)
+	db := sqlx.MustConnect("sqlite", sqlitePath)
 	createMemoryDbSql := `
 	CREATE TABLE codon (
 		codon TEXT PRIMARY KEY,

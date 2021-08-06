@@ -15,35 +15,6 @@ import (
 
 Synthesis Fixer tests begin here
 
-Generally, we are taking tests previously used in DnaChisel along with a few of
-our own tests.
-
-https://github.com/Edinburgh-Genome-Foundry/DnaChisel/tree/master/tests/builtin_specifications
-
-The following tests are built into DnaChisel:
-
-- test_AllowPrimer
-- test_AvoidBlastMatches
-- test_AvoidChanges
-- test_AvoidHairpins
-- test_AvoidMatches
-- test_AvoidRareCodons
-- test_AvoidStopCodons
-- test_CodonOptimize
-- test_EnforceChanges
-- test_EnforceChoice
-- test_EnforceGCContent
-- test_EnforcePatternOccurence
-- test_EnforceRegionsCompatibility
-- test_EnforceSequence
-- test_EnforceTerminalGCContent
-- test_EnforceTranslation
-- test_SequenceLengthBounds
-- test_UniquifyAllKmers
-
-
-
-
 ******************************************************************************/
 
 var dataDir string = "../data/"
