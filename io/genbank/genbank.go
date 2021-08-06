@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"crypto/md5"
 	"io"
 	"io/ioutil"
 	"log"
+	"lukechampine.com/blake3"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,8 +38,8 @@ func Parse(file []byte) poly.Sequence {
 	// Create sequence struct
 	sequence := poly.Sequence{}
 
-	// Add the MD5 hash to sequence.MD5
-	sequence.MD5 = md5.Sum(file)
+	// Add the CheckSum to sequence (blake3)
+	sequence.CheckSum = blake3.Sum256(file)
 
 	for numLine := 0; numLine < len(lines); numLine++ {
 		line := lines[numLine]

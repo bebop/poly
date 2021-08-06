@@ -103,7 +103,7 @@ type Sequence struct {
 	SequenceHashFunction string    `json:"hash_function"`
 	Sequence             string    `json:"sequence"`
 	Features             []Feature `json:"features"`
-	MD5                  [16]byte  `json:"hash"` //MD5 checksum
+	CheckSum             [32]byte  `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
 // AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.
