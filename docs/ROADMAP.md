@@ -1,62 +1,37 @@
 # Poly Roadmap
 
-## Must have features before V1 release in order of priority
+This is the roadmap for specific Poly features. Roadmaps for devops and community related projects forthcoming.
 
-* [`insert`, `delete`, `replace` sequence methods](https://github.com/TimothyStiles/poly/issues/56) -> Tim
-* [synthesis optimization](https://github.com/TimothyStiles/poly/issues/50) -> Keoni, Nick, Milo, John
-* [cloning - goldengate, gibson, restriction, etc](https://github.com/TimothyStiles/poly/issues/49)
-* [Primer Design CLI](https://github.com/TimothyStiles/poly/issues/43)-> Milo, Nick, John
+## The easiest ways to help
 
-## Will likely need before V1 release
+* Star the repo to help with SEO.
 
-* [SBOL3 IO](https://github.com/TimothyStiles/poly/issues/52) -> James
-* wetlab test case -> Keoni
+* Join our [Discord](https://discord.com/invite/Hc8Ncwt), introduce yourself, sign up for notifications that interest you, and get involved.
 
-## Planned features that may be released before or after V1
+* Check out our [PRs](https://github.com/TimothyStiles/poly/pulls) and please help with code review. We need way more people looking at PRs.
 
-* Ribosome binding site calculator
-* Non-repetitive parts calculator
-* RNA folding
-* `store`, `search`, `track`, and `diff` functions and CLI. -> Tim, Keoni
+* If you're a dev in the field use Poly for work.
 
-## Future features that may or may not be implemented (pie in the sky)
+* If you're a c-suite / marketing and sales type just hype Poly as much as you can to your clients, customers, friends, and business partners.
 
-* API server for enterprise interop
-* Integration of published machine learning models for things like [RNA folding](https://github.com/ml4bio/e2efold)
+## Features for Summer 2021 - The Summer of Metabalomics and optimized expression
 
+* Ribosome site calculation, RNA folding, and minimum free energy calculations will be merged from Vivek's ongoing PRs.
+
+* An MVP for allbase will be deployed that will handle large scale querying of genomic, metabolic, and protein data. Final product will be able to map metabolic pathways.
+
+* Non-repetitive parts calculation will be added to optimize stability and expression of cell strains.
+
+* DNA synthesis optimization will be finished and merged from Keoni's PR.
+
+* A cell strain build system that will design necessary constructs to engineer stable cell strains using what we develop this Summer.
 
 ## Stability milestones
 
-* ~100% code coverage (currently at 94%)
-* Auto-documenation of command line tools.
-* Adding windows support
-* Integration testing of cross format IO.
-* Internationalize documentation
-* Improved error handling
+* Refactor Poly to use proper error handling everywhere. Especially file IO and the genbank parser.
+* Write tutorials for each new subpackage and an overview tutorial for the root package.
+* Refactor and finalize the Sequence struct.
 
-## Feature upgrades
+## Things to look forward to for this Fall's roadmap
 
-* Creating default codon tables for optimization based on RNA expression rather than codon frequency in CDS regions.
-* Refactor and streamline `Sequence` struct
-
-## Community milestones
-
-* Get 700 github stars
-* Get 50 feature requests
-* Merge pull requests from 20 unique contributors
-* Be used by ~100 individuals or academic labs
-* Be used in production in 5 small companies
-* Be used in production at 1 large company
-* Get 100 paying sponsors
-* Get 1 large leading sponsor
-* Get 5 medium corporate sponsors
-* Get 10 small corporate sponsors
-* Grow our discord to ~50 active users
-* Our community demographics at a bare minimum should match that of the US general population.
-
-## Marketing milestones
-
-* Recognizable and distict logo and mascot -> Bryan, Joseph, and maybe Jeremy
-* Demo videos and tutorials
-* Published user stories
-* Interview ~25 users
+* ML ops and the deploying of machine learning models for protein engineering, DNA stuff, and everything related to engineering organisms.
