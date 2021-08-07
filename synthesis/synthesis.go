@@ -11,6 +11,9 @@ This synthesis fixer is meant to cover the majority of use cases for DNA
 fixing. It is not intended to cover all possible use cases, since the majority
 of DNA design does not actually have these edge cases.
 
+FixCds does not guarantee that all requested features will be removed. If you
+have use case that FixCds cannot properly fix, please put an issue in the poly
+github.
 */
 package synthesis
 
@@ -250,9 +253,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 }
 
 // FixCdsSimple is FixCds with some defaults for normal usage, including
-// finding homopolymers, finding repeats, and ensuring a normal range of GC
-// content. It also allows users to put in sequences that they do not wish to
-// occur within their CDS, like restriction enzyme cut sites.
+// removing of homopolymers and removing any repeat larger than 18 base pairs.
 func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, error) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	// Remove homopolymers
