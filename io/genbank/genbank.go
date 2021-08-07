@@ -1,5 +1,5 @@
 /*
-Package genbank contains genbank parsers and writers.
+Package genbank provides genbank parsers and writers.
 
 GenBank is a flat text file format developed in the 1980s to annotate genetic
 sequences, and has since become the standard for sharing annotated genetic
