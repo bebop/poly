@@ -1,3 +1,11 @@
+/*
+Package gff contains gff parsers and writers.
+
+GFF stands for "general feature format". It is an alternative to GenBank for
+storing data about genomic sequences. While not often used in synthetic biology
+research, it is more commonly used in bioinformatics for digesting features of
+genomic sequences.
+*/
 package gff
 
 import (
