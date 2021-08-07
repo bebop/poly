@@ -9,14 +9,6 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-func ExampleHash() {
-	sequence := genbank.Read("../data/puc19.gbk")
-
-	seqhash, _ := Hash(sequence.Sequence, "DNA", true, true)
-	fmt.Println(seqhash)
-	// output: v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
-}
-
 func TestHash(t *testing.T) {
 	// Test TNA as sequenceType
 	_, err := Hash("ATGGGCTAA", "TNA", true, true)
