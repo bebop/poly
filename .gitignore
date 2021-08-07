@@ -2,5 +2,3 @@ data/genbank
 public
 node_modules
 *.DS_Store
-*.scratch
-*.vscode

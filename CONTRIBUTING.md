@@ -85,14 +85,6 @@ For something that is bigger than a one or two line fix:
 3. Do the changes in your fork's branch.
 4. Send a pull request.
 
-## Virtual Environments and Development Containers 
-
-In order to simplify the development experience, and environment setup, the poly Github repository comes packaged to support *Github CodeSpaces* and [*VSCode Development Containers*](https://code.visualstudio.com/docs/remote/containers#_getting-started). *Github CodeSpaces* will give you ability to spin up a Github hosted instance of Ubuntu that would allow you run, test, develop poly from the browser. *VSCode Development Containers* in turn will allow your installation of VSCode to spin up a docker instance of Ubuntu on your computer and automatically mount your code onto it so that you continue developing on this docker instance that has all the required development environment setup. 
-
-## Recommended Plugins
-
-Whether you're a beginner with Go or you're an experienced developer, You should see the suggestions popup automatically when you goto the *Plugins* tab in VSCode. Using these plugins can help accelerate the development experience and also allow you to work more collaboratively with other poly developers.
-
 # How to report a bug
 
 ### Security disclosures
@@ -113,10 +105,6 @@ For non-security bug reports please [submit it using this template!](https://git
 # How to suggest a feature or enhancement
 
 If you want to suggest a feature it's as easy as filling out this [issue template](https://github.com/TimothyStiles/poly/issues/new?assignees=&labels=&template=feature_request.md&title=), but before you do please [check to see if it's already been suggested!](https://github.com/TimothyStiles/poly/labels/enhancement)
-
-# How add a recommended VSCode Plugin
-
-Poly comes with a set of recommended plugins for VSCode. If you have suggestions that will simplify life for the poly dev community, consider doing a pull-request after modifying `.vscode/extensions.json`. 
 
 # In closing
 
