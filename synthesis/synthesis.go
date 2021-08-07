@@ -1,3 +1,17 @@
+/*
+Package synthesis fixes synthetic DNA molecules in preparation for synthesis.
+
+Many synthesis companies have restrictions on the DNA they can synthesize. This
+synthesis fixer takes advantage of synonymous codons in protein coding
+sequences (CDS) to remove problematic sequences that either users don't want
+(like restriction enzymes sites) or that would cause DNA synthesis companies to
+reject a synthesis project.
+
+This synthesis fixer is meant to cover the majority of use cases for DNA
+fixing. It is not intended to cover all possible use cases, since the majority
+of DNA design does not actually have these edge cases.
+
+*/
 package synthesis
 
 import (
@@ -9,44 +23,8 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/TimothyStiles/poly/transform/codon"
 	"github.com/jmoiron/sqlx"
-	// _ "github.com/mattn/go-sqlite3"
 	_ "modernc.org/sqlite"
 )
-
-/******************************************************************************
-Apr 25, 2021
-
-The primary goal of the synthesis fixer is to fix protein coding sequences (CDS) in preparation
-for DNA synthesis. Because CDSs are flexible in their coding, we can change codons to remove
-problematic parts of sequences. The synthesis fixer is built to be very fast while covering the
-majority of use-cases for synthesis fixing.
-
-Our synthesis fixer function (FixCds) takes in 3 parameters: a coding sequence, a codon table,
-and a list of functions that identify problematic sequences. These functions output not only
-the region where a problem occurs, but also some heuristics to help the function quickly find a
-solution to the given constraints. For example, function outputs can include a gc bias.
-
-The synthesis fixer works in a declarative rather than imperative approach. We spend a lot of time
-setting up our problem space so that we can quickly and easily move to a solution. First, we build
-an in-memory SQLite database with everything about our sequence - including its codon table,
-possible codon-to-codont transformations, and the sequence itself.
-
-We then run all the user-provided problematicSequenceFuncs in-parallel to generate DnaSuggestions
-of places that we should fix in our sequence. Then, we check if there are any DnaSuggestions that
-overlap - for example, perhaps a repeat region needs to be fixed in a location with a high GC content,
-so we bias fixing that repeat region to fixes that have a high AT content. If there are any overlapping
-suggestions, those suggestions are fixed first.
-
-Once we have a list of those suggestions, we fix the sequence using some simple SQL. Once our first round
-of fixes is applied, we test the sequence again to see if we missed any problematic sequence locations. We
-do that for 100 rounds, at which point we just give up and return the sequence to the user as is.
-
-Hopefully, this will enable more high throughput synthesis of genes!
-
-Keoni
-
-[started Dec 9, 2020]
-******************************************************************************/
 
 var FixIterations = 100
 
