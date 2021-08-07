@@ -41,7 +41,7 @@ type DnaSuggestion struct {
 	QuantityFixes  int    `db:"quantityfixes"`
 	SuggestionType string `db:"suggestiontype"`
 	Step           int    `db:"step"`
-	Id             int    `db:"id"`
+	ID             int    `db:"id"`
 }
 
 // RemoveSequence is a generator for a problematicSequenceFuncs for specific sequences.
@@ -113,7 +113,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
 	db := sqlx.MustConnect("sqlite", sqlitePath)
-	createMemoryDbSql := `
+	createMemoryDbSQL := `
 	CREATE TABLE codon (
 		codon TEXT PRIMARY KEY,
 		aa TEXT
@@ -152,7 +152,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		suggestiontype TEXT
 	);
 `
-	db.MustExec(createMemoryDbSql)
+	db.MustExec(createMemoryDbSQL)
 	// Insert codons
 	weightTable := make(map[string]int)
 	codonInsert := `INSERT INTO codon(codon, aa) VALUES (?, ?)`
