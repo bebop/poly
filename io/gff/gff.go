@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"lukechampine.com/blake3"
 	"regexp"
 	"sort"
 	"strconv"
@@ -17,6 +18,9 @@ func Parse(file []byte) poly.Sequence {
 
 	gff := string(file)
 	sequence := poly.Sequence{}
+
+	// Add the CheckSum to sequence (blake3)
+	sequence.CheckSum = blake3.Sum256(file)
 
 	lines := strings.Split(gff, "\n")
 	metaString := lines[0:2]
