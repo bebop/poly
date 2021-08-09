@@ -2,11 +2,12 @@ package genbank_test
 
 import (
 	"fmt"
+
 	"github.com/TimothyStiles/poly/io/genbank"
 )
 
 // This example shows how to open a genbank file and search for a gene given
-// its name. After finding it, notes about the particular gene is read.
+// its name. After finding it, notes about the particular gene are read.
 func Example_basic() {
 	sequence := genbank.Read("../../data/puc19.gbk")
 	for _, feature := range sequence.Features {
