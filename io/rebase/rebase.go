@@ -1,15 +1,9 @@
-package rebase
+/*
+Package rebase contains a rebase parser for rebase data dump #31.
 
-import (
-	"encoding/json"
-	"io/ioutil"
-	"strings"
-)
-
-/******************************************************************************
-Apr 25, 2021
-
-REBASE Parser #31 here.
+In order to effectively simulate cloning reactions, we need to know how each
+restriction enzyme in the reaction functions. This data can be derived, in
+bulk, from the REBASE database.
 
 REBASE is an amazing resource run by New England Biolabs listing essentially
 every known restriction enzyme. In particular, this parser parses the REBASE
@@ -21,16 +15,8 @@ http://rebase.neb.com/rebase/rebase.f31.html
 The actual data dump itself is linked here and updated once a month:
 http://rebase.neb.com/rebase/link_withrefm
 
-In ./data/rebase_test.txt we have the first 1002 lines of link_withrefm from
-Apr 25, 2021. From this file, we will extract lists of restriction enzymes,
-which can be used for simulation of restriction enzyme cutting and for cloning.
-
 The header of this file gives a wonderful explanation of its structure. Here is the
 header with the commercial suppliers format and an example enzyme.
-
-Cheers,
-Keoni Gandall
-
 
 ```
 REBASE version 104                                              withrefm.104
@@ -152,7 +138,14 @@ REBASE codes for commercial sources of enzymes
 <8>Tagami, H., Tayama, K., Tohyama, T., Fukaya, M., Okumura, H., Kawamura, Y., Horinouchi, S., Beppu, T., (1988) FEMS Microbiol. Lett., vol. 56, pp. 161-166.
 
 ```
-******************************************************************************/
+*/
+package rebase
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"strings"
+)
 
 // Enzyme represents a single enzyme within the Rebase database
 type Enzyme struct {

@@ -1,3 +1,13 @@
+/*
+Package genbank provides genbank parsers and writers.
+
+GenBank is a flat text file format developed in the 1980s to annotate genetic
+sequences, and has since become the standard for sharing annotated genetic
+sequences.
+
+This package provides a parser and writer to convert between the GenBank file
+format and the more general poly.Sequence struct.
+*/
 package genbank
 
 import (
