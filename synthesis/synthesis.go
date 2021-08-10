@@ -180,7 +180,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 
 	// Insert seq and history
 	pos := 0
-	for i := 0; i < len(sequence)-3; i = i + 3 {
+	for i := 0; i < len(sequence); i = i + 3 {
 		codon := sequence[i : i+3]
 		db.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
