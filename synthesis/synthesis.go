@@ -40,12 +40,29 @@ type DnaSuggestion struct {
 	Bias           string `db:"gcbias"`
 	QuantityFixes  int    `db:"quantityfixes"`
 	SuggestionType string `db:"suggestiontype"`
+}
+
+// A change is an change to given DNA sequence
+type Change struct {
+	Position int    `db:"position"`
+	Step     int    `db:"step"`
+	From     string `db:"codonfrom"`
+	To       string `db:"codonto"`
+	Reason   string `db:"reason"`
+}
+
+type dbDnaSuggestion struct {
+	Start          int    `db:"start"`
+	End            int    `db:"end"`
+	Bias           string `db:"gcbias"`
+	QuantityFixes  int    `db:"quantityfixes"`
+	SuggestionType string `db:"suggestiontype"`
 	Step           int    `db:"step"`
 	ID             int    `db:"id"`
 }
 
 // RemoveSequence is a generator for a problematicSequenceFuncs for specific sequences.
-func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		var enzymes []string
 		for _, enzyme := range sequencesToRemove {
@@ -58,9 +75,9 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 					leftover := loc[0] % 3
 					switch {
 					case leftover == 0:
-						c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, "Remove sequence", 0, 0}
+						c <- DnaSuggestion{position, (loc[1] / 3), "NA", 1, reason}
 					case leftover != 0:
-						c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, "Remove sequence", 0, 0}
+						c <- DnaSuggestion{position, (loc[1] / 3) - 1, "NA", 1, reason}
 					}
 				}
 			}
@@ -81,9 +98,9 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 				leftover := i % 3
 				switch {
 				case leftover == 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove repeat", 0, 0}
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Repeat sequence"}
 				case leftover != 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove repeat", 0, 0}
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Repeat sequence"}
 				}
 			}
 			kmers[sequence[i:i+repeatLen]] = true
@@ -111,7 +128,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 }
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
-func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, error) {
+func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
 	db := sqlx.MustConnect("sqlite", sqlitePath)
 	createMemoryDbSQL := `
 	CREATE TABLE codon (
@@ -126,7 +143,8 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	CREATE TABLE history (
 		pos INTEGER REFERENCES seq(pos),
 		codon TEXT NOT NULL REFERENCES codon(codon),
-		step INT
+		step INT,
+		suggestedfix INT REFERENCES suggestedfix(id)
 	);
 
 	-- Weights are set on a per position basis for codon harmonization at a later point
@@ -196,13 +214,16 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
 		// If there are no suggestions, break the iteration!
 		if len(suggestions) == 0 {
-			return sequence, nil
+			// Add a historical log of changes
+			var changes []Change
+			_ = db.Select(&changes, `SELECT h.pos AS position, h.step AS step, (SELECT codon FROM history WHERE pos = h.pos AND step = h.step-1 LIMIT 1) AS codonfrom, h.codon AS codonto, sf.suggestiontype AS reason FROM history AS h JOIN suggestedfix AS sf ON sf.id = h.suggestedfix WHERE h.suggestedfix IS NOT NULL ORDER BY sf.id`)
+			return sequence, changes, nil
 		}
 		for _, suggestion := range suggestions { // if you want to add overlaps, add suggestionIndex
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
 			_, err = db.Exec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
 			if err != nil {
-				return sequence, err
+				return sequence, []Change{}, err
 			}
 		}
 
@@ -211,10 +232,12 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		sqlFix1 := `INSERT INTO history
 		            (codon,
 		             pos,
-		             step)
+		             step,
+			     suggestedfix)
 		SELECT t.codon,
 		       t.pos,
-		       ? AS step
+		       ? AS step,
+		       ? AS suggestedfix
 		FROM   (SELECT cb.tocodon AS codon,
 		               s.pos      AS pos
 		        FROM   seq AS s
@@ -234,35 +257,35 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		GROUP  BY t.pos
 		LIMIT  ?; `
 
-		independentSuggestions := []DnaSuggestion{}
+		independentSuggestions := []dbDnaSuggestion{}
 		_ = db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
 
 		for _, independentSuggestion := range independentSuggestions {
 			switch independentSuggestion.Bias {
 			case "NA":
-				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "GC":
-				db.MustExec(sqlFix1+`cb.bias = 'GC' AND `+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+`cb.gcbias = 'GC' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "AT":
-				db.MustExec(sqlFix1+`cb.bias = 'AT' AND `+sqlFix2, i, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+`cb.gcbias = 'AT' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			}
 		}
 		var codons []string
 		_ = db.Select(&codons, `SELECT codon FROM (SELECT codon, pos FROM history ORDER BY step DESC) GROUP BY pos`)
 		sequence = strings.Join(codons, "")
 	}
-	return sequence, errors.New("Could not find a solution to sequence space")
+	return sequence, []Change{}, errors.New("Could not find a solution to sequence space")
 }
 
 // FixCdsSimple is FixCds with some defaults for normal usage, including
 // removing of homopolymers and removing any repeat larger than 18 base pairs.
-func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, error) {
+func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, []Change, error) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	// Remove homopolymers
-	functions = append(functions, RemoveSequence([]string{"AAAAAAAA", "GGGGGGGG"}))
+	functions = append(functions, RemoveSequence([]string{"AAAAAAAA", "GGGGGGGG"}, "Homopolymers"))
 
 	// Remove user defined sequences
-	functions = append(functions, RemoveSequence(sequencesToRemove))
+	functions = append(functions, RemoveSequence(sequencesToRemove, "Removal requested by user"))
 
 	// Remove repeats
 	functions = append(functions, RemoveRepeat(18))
