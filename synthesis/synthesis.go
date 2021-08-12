@@ -216,7 +216,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		if len(suggestions) == 0 {
 			// Add a historical log of changes
 			var changes []Change
-			_ = db.Select(&changes, `SELECT h.pos AS position, h.step AS step, (SELECT codon FROM history WHERE pos = h.pos AND step = h.step-1 LIMIT 1) AS codonfrom, h.codon AS codonto, sf.suggestiontype AS reason FROM history AS h JOIN suggestedfix AS sf ON sf.id = h.suggestedfix WHERE h.suggestedfix IS NOT NULL ORDER BY sf.id`)
+			_ = db.Select(&changes, `SELECT h.pos AS position, h.step AS step, (SELECT codon FROM history WHERE pos = h.pos AND step = h.step-1 LIMIT 1) AS codonfrom, h.codon AS codonto, sf.suggestiontype AS reason FROM history AS h JOIN suggestedfix AS sf ON sf.id = h.suggestedfix WHERE h.suggestedfix IS NOT NULL ORDER BY h.step, h.pos`)
 			return sequence, changes, nil
 		}
 		for _, suggestion := range suggestions { // if you want to add overlaps, add suggestionIndex
