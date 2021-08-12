@@ -42,7 +42,8 @@ type DnaSuggestion struct {
 	SuggestionType string `db:"suggestiontype"`
 }
 
-// A change is an change to given DNA sequence
+// Change is a change to a given DNA sequence. A list of changes is given as
+// the output of FixCds.
 type Change struct {
 	Position int    `db:"position"`
 	Step     int    `db:"step"`
