@@ -81,4 +81,15 @@ func TestFixCds(t *testing.T) {
 	if blaWithoutRepeat != targetBlaWithoutRepeat {
 		t.Errorf("Expected blaWithoutRepeat sequence %s, got: %s", targetBlaWithoutRepeat, blaWithoutRepeat)
 	}
+
+	// Test low and high GC content
+	fixedSeq, _, _ = FixCdsSimple("GGGCCC", ct, []string{})
+	if fixedSeq != "GGTCCC" {
+		t.Errorf("Failed to fix GGGCCC -> GGTCCC")
+	}
+
+	fixedSeq, _, _ = FixCdsSimple("AAATTT", ct, []string{})
+	if fixedSeq != "AAGTTT" {
+		t.Errorf("Failed to fix AAATTT -> AAGTTT")
+	}
 }
