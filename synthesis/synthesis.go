@@ -207,6 +207,11 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
+
+	if len(sequence)%3 != 0 {
+		return "", []Change{}, errors.New("This sequence isn't a complete CDS, please try to use a CDS without interrupted codons.")
+	}
+
 	db := sqlx.MustConnect("sqlite", sqlitePath)
 	createMemoryDbSQL := `
 	CREATE TABLE codon (
