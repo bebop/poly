@@ -71,3 +71,14 @@ func Reverse(sequence string) string {
 func ComplementBase(basePair rune) rune {
 	return complementBaseRuneMap[basePair]
 }
+
+// GetKmerTable receive a sequence string and a k int and generates a set of unique k-mers in the form of a map struct
+func GetKmerTable(k int, sequence string) map[string]bool {
+	//Map is good type to create a set data structure in Go
+	kmers := make(map[string]bool)
+	for i := 0; i <= len(sequence)-k; i++ {
+		kmers[strings.ToUpper(sequence[i:i+k])] = true
+	}
+
+	return kmers
+}

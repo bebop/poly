@@ -90,6 +90,33 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 	}
 }
 
+// GlobalRemoveRepeat is a generator to make a function that searchs for external repeats (e.g genome repeats) and make a
+// DnaSuggestion for codon changes.
+func GlobalRemoveRepeat(repeatLen int, sequence string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	//Generate the kmer table that should be used inside function
+	globalKmerTable := transform.GetKmerTable(repeatLen, strings.ToUpper(sequence))
+
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		for i := 0; i < len(sequence)-repeatLen; i++ {
+			subsequence := sequence[i : i+repeatLen]
+			reverseComplement := transform.ReverseComplement(subsequence)
+			_, forwardGlobalRepeat := globalKmerTable[subsequence]
+			_, reverseGlobalRepeat := globalKmerTable[reverseComplement]
+			if forwardGlobalRepeat || reverseGlobalRepeat {
+				position := i / 3
+				leftover := i % 3
+				switch {
+				case leftover == 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove global repeat"}
+				case leftover != 0:
+					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove global repeat"}
+				}
+			}
+		}
+		wg.Done()
+	}
+}
+
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
@@ -296,6 +323,13 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		var codons []string
 		_ = db.Select(&codons, `SELECT codon FROM (SELECT codon, pos FROM history ORDER BY step DESC) GROUP BY pos`)
 		sequence = strings.Join(codons, "")
+	}
+
+	var changes []Change
+	_ = db.Select(&changes, `SELECT h.pos AS position, h.step AS step, (SELECT codon FROM history WHERE pos = h.pos AND step = h.step-1 LIMIT 1) AS codonfrom, h.codon AS codonto, sf.suggestiontype AS reason FROM history AS h JOIN suggestedfix AS sf ON sf.id = h.suggestedfix WHERE h.suggestedfix IS NOT NULL ORDER BY h.step, h.pos`)
+
+	if len(changes) > 0 {
+		return sequence, changes, nil
 	}
 	return sequence, []Change{}, errors.New("Could not find a solution to sequence space")
 }
