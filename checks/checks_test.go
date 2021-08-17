@@ -13,3 +13,10 @@ func TestIsPalindromic(t *testing.T) {
 		t.Errorf("IsPalindromic failed call BsaI NOT a palindrome")
 	}
 }
+
+func TestGcContent(t *testing.T) {
+	content := GcContent("GGTATC")
+	if content != 0.5 {
+		t.Errorf("GcContent did not properly calculate GC content")
+	}
+}
