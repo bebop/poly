@@ -13,7 +13,6 @@ import (
 
 // https://doi.org/10.1089/dna.1994.13.75
 var minimalPrimerLength int = 15
-var maximalPrimerLength int = 30
 
 type PairPrimers struct {
 	Foward  string
@@ -151,16 +150,22 @@ func Simulate(sequence string, targetTm float64, circular bool, primerList []str
 // So we will try make this by receive a given sequence and following some of the main guidelines for
 // design of primers.
 
-// The basic guidelines for this are:
-// - A good length for PCR primers is generally around 18-30 bases
-// - Try to make the melting temperature (Tm) of the primers between 65°C and 75°C, and within 5°C of each other.
-// - Aim for the GC content to be between 40 and 60%
-// You could take a look in these and more guidelines in here: https://www.thermofisher.com/blog/behindthebench/pcr-primer-design-tips/
+// One of the problems of Primer Design Guidelines is they're slightly different from each other.
+// One example of these is Addgene Primer Design guidelines says the melting temperature should be between 50-60°C
+// Thermo Fisher presents another information, they say the desired melting temperature is actually between 65°C and 75°C
+// This another guideline from Premier Biosoft only says 'Primers with melting temperatures in the range of 52-58°C generally produce the best results'
+// Sources: https://www.addgene.org/protocols/primer-design/, https://www.thermofisher.com/blog/behindthebench/pcr-primer-design-tips/
+// http://www.premierbiosoft.com/tech_notes/PCR_Primer_Design.html
 
+// So to allow users to follow your own guidelines we will make a software that founds every pair of primers
+// using some ranges for melting temperature of each primer, GC content and delta melting temperature of a pair
+// of primers
+//
 // So to make this happen I will use the following approach:
-// 1. I will take a sequence and generate two list of possibles primers between 18-30bp
-// using GC content and Tm as filter
-// 2. I will use both lists to try to find pairs of primers that have Tm within 5°C of each other
+//
+// 1. I will take a sequence and generate two list of possibles primers using ranges passed by user as arguments
+// 2. I will use both lists to try to find pairs of primers that have the correct delta melting temperature between
+// a pair of primers
 // 3. Return all possible pair of primers
 
 func DesignAllPossiblePrimers(sequence string, minGcContent float64, maxGcContent float64, minMeltingTemp float64, maxMeltingTemp float64, minLength int, maxLength int, maxMeltingTempBetweenPrimers float64) []PairPrimers {
@@ -169,16 +174,16 @@ func DesignAllPossiblePrimers(sequence string, minGcContent float64, maxGcConten
 	checkPrimer := createCheckPrimerFunction(minGcContent, maxGcContent, minMeltingTemp, maxMeltingTemp, minLength, maxLength)
 
 	var fowardPrimers []string
-	for i := minimalPrimerLength; i <= maximalPrimerLength; i++ {
-		forwardPrimer := sequence[0 : minimalPrimerLength+i]
+	for i := 0; i <= maxLength; i++ {
+		forwardPrimer := sequence[0 : minLength+i]
 		if checkPrimer(forwardPrimer) {
 			fowardPrimers = append(fowardPrimers, forwardPrimer)
 		}
 	}
 
 	var reversePrimers []string
-	for i := minimalPrimerLength; i < maximalPrimerLength; i++ {
-		reversePrimer := transform.ReverseComplement(sequence[len(sequence)-(minimalPrimerLength+i):])
+	for i := 0; i < maxLength; i++ {
+		reversePrimer := transform.ReverseComplement(sequence[len(sequence)-(minLength+i):])
 		if checkPrimer(reversePrimer) {
 			reversePrimers = append(reversePrimers, reversePrimer)
 		}
@@ -188,16 +193,17 @@ func DesignAllPossiblePrimers(sequence string, minGcContent float64, maxGcConten
 	return pairOfPrimers
 }
 
-// Check if a prime is following the guideline rules described later
+// Create a function that checks if a prime is following the guideline rules
 func createCheckPrimerFunction(minGcContent float64, maxGcContent float64, minMeltingTemp float64, maxMeltingTemp float64, minLength int, maxLength int) func(string) bool {
 	return func(primer string) bool {
-		meltingTemp := primers.MeltingTemp(primer)
+		meltingTemp := primers.MeltingTemp(primer) / 100
 		gcContent := checks.GcContent(primer)
 		if len(primer) >= minLength && len(primer) <= maxLength &&
-			meltingTemp >= minMeltingTemp && meltingTemp <= minMeltingTemp &&
+			meltingTemp >= minMeltingTemp && meltingTemp <= maxMeltingTemp &&
 			gcContent >= minGcContent && gcContent <= maxGcContent {
 			return true
 		}
+		//fmt.Println(len(primer) >= minLength, len(primer) <= maxLength, meltingTemp >= minMeltingTemp, meltingTemp <= minMeltingTemp, gcContent >= minGcContent, gcContent <= maxGcContent)
 		return false
 	}
 
