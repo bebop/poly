@@ -314,10 +314,10 @@ GbkMulti/GbkFlat related tests end here.
 
 ******************************************************************************/
 
-func ExampleGenbankExportedByBenchling() {
+func TestBenchlingGenbank(t *testing.T) {
 	sequence := Read("../../data/benchling.gb")
 
-	fmt.Println(len(sequence.Features))
-	// Output: 17
-
+	if len(sequence.Features) != 17 {
+		t.Errorf("Parsing benchling genbank file not returned the correct quantity of features")
+	}
 }
