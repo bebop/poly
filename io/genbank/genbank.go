@@ -292,6 +292,9 @@ const metaIndex = 0
 const subMetaIndex = 5
 const qualifierIndex = 21
 
+// benchling actually uses this space between start of the line and /
+const optinalQualifierIndex = 29
+
 func quickMetaCheck(line string) bool {
 	flag := false
 	// Without line length check, this function
@@ -330,7 +333,7 @@ func quickFeatureCheck(line string) bool {
 func quickQualifierCheck(line string) bool {
 	flag := false
 
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && string(line[qualifierIndex]) == "/" {
+	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && (string(line[qualifierIndex]) == "/" || string(line[optinalQualifierIndex]) == "/") {
 		flag = true
 	}
 	return flag

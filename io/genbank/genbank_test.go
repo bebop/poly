@@ -313,3 +313,11 @@ func ExampleParseFlat() {
 GbkMulti/GbkFlat related tests end here.
 
 ******************************************************************************/
+
+func ExampleGenbankExportedByBenchling() {
+	sequence := Read("../../data/benchling.gb")
+
+	fmt.Println(len(sequence.Features))
+	// Output: 17
+
+}
