@@ -159,6 +159,34 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 
 }
 
+// A hairpin is defined by a sequence segment which has a reverse complement "nearby" in a given window.
+// Generally a stem size of 20bp and a search for hairpin window of 200bp is ok to minimize secondary structure impact
+
+func RemoveHairpin(stemSize int, hairpinWindow int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+		reverse := transform.ReverseComplement(sequence)
+
+		for i := 0; i < len(sequence)-stemSize && len(sequence)-(i+hairpinWindow) >= 0; i++ {
+			word := sequence[i : i+stemSize]
+			rest := reverse[len(sequence)-(i+hairpinWindow) : len(sequence)-(i+stemSize)]
+			if strings.Contains(rest, word) {
+				location := strings.Index(rest, word)
+				position := i / 3
+				leftover := i % 3
+				switch {
+				case leftover == 0:
+					c <- DnaSuggestion{position, ((i + hairpinWindow - location - 1) / 3), "NA", 1, "Remove nearby reverse complement, possible hairpin"}
+				case leftover != 0:
+					c <- DnaSuggestion{position, ((i + hairpinWindow - location - 1) / 3) - 1, "NA", 1, "Remove nearby reverse complement, possible hairpin"}
+				}
+			}
+
+		}
+
+		wg.Done()
+	}
+}
+
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
 	suggestions := make(chan DnaSuggestion, 100)
@@ -179,6 +207,11 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, and a list of functions to solve for.
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
+
+	if len(sequence)%3 != 0 {
+		return "", []Change{}, errors.New("This sequence isn't a complete CDS, please try to use a CDS without interrupted codons.")
+	}
+
 	db := sqlx.MustConnect("sqlite", sqlitePath)
 	createMemoryDbSQL := `
 	CREATE TABLE codon (
