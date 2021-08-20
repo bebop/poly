@@ -17,10 +17,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"lukechampine.com/blake3"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"lukechampine.com/blake3"
 
 	"github.com/TimothyStiles/poly"
 	"github.com/mitchellh/go-wordwrap"
@@ -292,6 +293,9 @@ const metaIndex = 0
 const subMetaIndex = 5
 const qualifierIndex = 21
 
+// benchling actually uses this space between start of the line and /
+const optionalQualifierIndex = 29
+
 func quickMetaCheck(line string) bool {
 	flag := false
 	// Without line length check, this function
@@ -330,11 +334,11 @@ func quickFeatureCheck(line string) bool {
 func quickQualifierCheck(line string) bool {
 	flag := false
 
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && string(line[qualifierIndex]) == "/" {
+	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && (string(line[qualifierIndex]) == "/" || string(line[optionalQualifierIndex]) == "/") {
 		flag = true
 	}
-	return flag
 
+	return flag
 }
 
 func quickQualifierSubLineCheck(line string) bool {
