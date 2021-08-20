@@ -1,8 +1,8 @@
 package transform
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
@@ -53,22 +53,22 @@ func ReverseComplement(sequence string) string {
 	return string(newString)
 }
 
-func Transcription(sequence string) string {	
+func Transcription(sequence string) string {
 	transcripted := ""
 
 	for _, basepair := range sequence {
 		switch basepair {
-			case 'A':
-				transcripted = transcripted + "U"
-			case 'T':
-				transcripted = transcripted + "A"
-			case 'C':
-				transcripted = transcripted + "G"
-			case 'G':
-				transcripted = transcripted + "C"
-			default:
-				fmt.Println("Transcription with not a DNA dictionary {A, T, C, G}")
-				return ""
+		case 'A':
+			transcripted = transcripted + "U"
+		case 'T':
+			transcripted = transcripted + "A"
+		case 'C':
+			transcripted = transcripted + "G"
+		case 'G':
+			transcripted = transcripted + "C"
+		default:
+			fmt.Println("Transcription with not a DNA dictionary {A, T, C, G}")
+			return ""
 		}
 	}
 	return transcripted
@@ -94,4 +94,14 @@ func Reverse(sequence string) string {
 // ComplementBase accepts a base pair and returns its complement base pair
 func ComplementBase(basePair rune) rune {
 	return complementBaseRuneMap[basePair]
+}
+
+// getKmerTable receive a sequence string and a k int and generates a set of unique k-mers
+func GetKmerTable(k int, sequence string) map[string]bool {
+	kmers := make(map[string]bool)
+	for i := 0; i <= len(sequence)-k; i++ {
+		kmers[strings.ToUpper(sequence[i:i+k])] = true
+	}
+
+	return kmers
 }

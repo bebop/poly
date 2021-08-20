@@ -109,16 +109,6 @@ func RemoveSequence(sequencesToRemove []string) func(string, chan DnaSuggestion,
 	}
 }
 
-// getKmerTable receive a sequence string and a k int and generates a set of unique k-mers
-func getKmerTable(k int, sequence string) map[string]bool {
-	kmers := make(map[string]bool)
-	for i := 0; i <= len(sequence)-k; i++ {
-		kmers[strings.ToUpper(sequence[i:i+k])] = true
-	}
-
-	return kmers
-}
-
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
