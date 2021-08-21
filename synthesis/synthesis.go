@@ -232,7 +232,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 
 	-- Weights are set on a per position basis for codon harmonization at a later point
 	CREATE TABLE weights (
-		pos INTEGER REFERENCES seq(pos),
+		-- pos INTEGER REFERENCES seq(pos),
 		codon TEXT NOT NULL REFERENCES codon(codon),
 		weight INTEGER
 	);
@@ -285,8 +285,12 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		codon := sequence[i : i+3]
 		db.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
-		db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
+		//db.MustExec(`INSERT INTO weights(pos, codon, weight) VALUES (?,?,?)`, pos, codon, weightTable[codon])
 		pos++
+	}
+
+	for key, value := range weightTable {
+		db.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, key, value)
 	}
 
 	var err error
@@ -326,17 +330,17 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		        FROM   seq AS s
 		               JOIN history AS h
 		                 ON h.pos = s.pos
-		               JOIN weights AS w
-		                 ON w.pos = s.pos
 		               JOIN codon AS c
 		                 ON h.codon = c.codon
 		               JOIN codonbias AS cb
 		                 ON cb.fromcodon = c.codon
+					   JOIN 'weights' AS w
+					     ON w.codon = cb.tocodon
 		        WHERE `
 		sqlFix2 := ` s.pos >= ?
 		               AND s.pos <= ?
 		               AND h.codon != cb.tocodon
-		        ORDER  BY w.weight) AS t
+		        ORDER  BY w.weight DESC) AS t
 		GROUP  BY t.pos
 		LIMIT  ?; `
 
