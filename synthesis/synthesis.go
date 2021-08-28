@@ -4,7 +4,7 @@ Package synthesis fixes synthetic DNA molecules in preparation for synthesis.
 Many synthesis companies have restrictions on the DNA they can synthesize. This
 synthesis fixer takes advantage of synonymous codons in protein coding
 sequences (CDS) to remove problematic sequences that either users don't want
-(like restriction enzymes sites) or that would cause DNA synthesis companies to
+(like restriction sequencesToRemove sites) or that would cause DNA synthesis companies to
 reject a synthesis project.
 
 This synthesis fixer is meant to cover the majority of use cases for DNA
@@ -68,10 +68,10 @@ type dbDnaSuggestion struct {
 // sequences.
 func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-		var enzymes []string
+		var sequencesToRemove []string
 		for _, enzyme := range sequencesToRemove {
-			enzymes = []string{enzyme, transform.ReverseComplement(enzyme)}
-			for _, site := range enzymes {
+			sequencesToRemove = []string{enzyme, transform.ReverseComplement(enzyme)}
+			for _, site := range sequencesToRemove {
 				re := regexp.MustCompile(site)
 				locs := re.FindAllStringIndex(sequence, -1)
 				for _, loc := range locs {
