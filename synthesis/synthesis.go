@@ -19,7 +19,6 @@ package synthesis
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -298,9 +297,6 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		for _, independentSuggestion := range independentSuggestions {
 			switch independentSuggestion.Bias {
 			case "NA":
-				if independentSuggestion.End == 2 {
-					fmt.Println(independentSuggestion)
-				}
 				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "GC":
 				db.MustExec(sqlFix1+`cb.gcbias = 'GC' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
