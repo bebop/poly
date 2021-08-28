@@ -156,7 +156,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
 
 	if len(sequence)%3 != 0 {
-		return "", []Change{}, errors.New("This sequence isn't a complete CDS, please try to use a CDS without interrupted codons.")
+		return "", []Change{}, errors.New("this sequence isn't a complete CDS, please try to use a CDS without interrupted codons")
 	}
 
 	db := sqlx.MustConnect("sqlite", sqlitePath)
