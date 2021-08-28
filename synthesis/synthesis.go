@@ -19,6 +19,7 @@ package synthesis
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -90,41 +91,16 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 	}
 }
 
-// GlobalRemoveRepeat is a generator to make a function that searchs for external repeats (e.g genome repeats) and make a
-// DnaSuggestion for codon changes.
-func GlobalRemoveRepeat(repeatLen int, sequence string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
-	//Generate the kmer table that should be used inside function
-	globalKmerTable := transform.GetKmerTable(repeatLen, strings.ToUpper(sequence))
-
-	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-		for i := 0; i < len(sequence)-repeatLen; i++ {
-			subsequence := sequence[i : i+repeatLen]
-			reverseComplement := transform.ReverseComplement(subsequence)
-			_, forwardGlobalRepeat := globalKmerTable[subsequence]
-			_, reverseGlobalRepeat := globalKmerTable[reverseComplement]
-			if forwardGlobalRepeat || reverseGlobalRepeat {
-				position := i / 3
-				leftover := i % 3
-				switch {
-				case leftover == 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3), "NA", 1, "Remove global repeat"}
-				case leftover != 0:
-					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Remove global repeat"}
-				}
-			}
-		}
-		wg.Done()
-	}
-}
-
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
 	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
 		// Get a kmer list
 		kmers := make(map[string]bool)
 		for i := 0; i < len(sequence)-repeatLen; i++ {
-			_, alreadyFound := kmers[sequence[i:i+repeatLen]]
-			if alreadyFound {
+			_, alreadyFoundFor := kmers[sequence[i:i+repeatLen]]
+			_, alreadyFoundRev := kmers[transform.ReverseComplement(sequence[i:i+repeatLen])]
+			kmers[sequence[i:i+repeatLen]] = true
+			if alreadyFoundFor || alreadyFoundRev {
 				position := i / 3
 				leftover := i % 3
 				switch {
@@ -133,8 +109,8 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 				case leftover != 0:
 					c <- DnaSuggestion{position, ((i + repeatLen) / 3) - 1, "NA", 1, "Repeat sequence"}
 				}
+				i = i + leftover
 			}
-			kmers[sequence[i:i+repeatLen]] = true
 		}
 		wg.Done()
 	}
@@ -147,44 +123,16 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 		gcContent := checks.GcContent(sequence)
 		var numberOfChanges int
 		if gcContent > upperBound {
-			numberOfChanges = int((gcContent - upperBound) * float64(len(sequence)))
+			numberOfChanges = int((gcContent-upperBound)*float64(len(sequence))) + 1
 			c <- DnaSuggestion{0, len(sequence), "AT", numberOfChanges, "GcContent too high"}
 		}
 		if gcContent < lowerBound {
-			numberOfChanges = int((lowerBound - gcContent) * float64(len(sequence)))
+			numberOfChanges = int((lowerBound-gcContent)*float64(len(sequence))) + 1
 			c <- DnaSuggestion{0, len(sequence), "GC", numberOfChanges, "GcContent too low"}
 		}
 		wg.Done()
 	}
 
-}
-
-// A hairpin is defined by a sequence segment which has a reverse complement "nearby" in a given window.
-// Generally a stem size of 20bp and a search for hairpin window of 200bp is ok to minimize secondary structure impact
-
-func RemoveHairpin(stemSize int, hairpinWindow int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
-	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
-		reverse := transform.ReverseComplement(sequence)
-
-		for i := 0; i < len(sequence)-stemSize && len(sequence)-(i+hairpinWindow) >= 0; i++ {
-			word := sequence[i : i+stemSize]
-			rest := reverse[len(sequence)-(i+hairpinWindow) : len(sequence)-(i+stemSize)]
-			if strings.Contains(rest, word) {
-				location := strings.Index(rest, word)
-				position := i / 3
-				leftover := i % 3
-				switch {
-				case leftover == 0:
-					c <- DnaSuggestion{position, ((i + hairpinWindow - location - 1) / 3), "NA", 1, "Remove nearby reverse complement, possible hairpin"}
-				case leftover != 0:
-					c <- DnaSuggestion{position, ((i + hairpinWindow - location - 1) / 3) - 1, "NA", 1, "Remove nearby reverse complement, possible hairpin"}
-				}
-			}
-
-		}
-
-		wg.Done()
-	}
 }
 
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
@@ -334,22 +282,25 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		                 ON h.codon = c.codon
 		               JOIN codonbias AS cb
 		                 ON cb.fromcodon = c.codon
-					   JOIN 'weights' AS w
-					     ON w.codon = cb.tocodon
+			       JOIN 'weights' AS w
+				 ON w.codon = cb.tocodon
 		        WHERE `
 		sqlFix2 := ` s.pos >= ?
 		               AND s.pos <= ?
 		               AND h.codon != cb.tocodon
-		        ORDER  BY w.weight DESC) AS t
+		        ORDER  BY h.step DESC, w.weight DESC) AS t
 		GROUP  BY t.pos
 		LIMIT  ?; `
 
-		independentSuggestions := []dbDnaSuggestion{}
+		var independentSuggestions []dbDnaSuggestion
 		_ = db.Select(&independentSuggestions, `SELECT * FROM suggestedfix WHERE step = ?`, i)
 
 		for _, independentSuggestion := range independentSuggestions {
 			switch independentSuggestion.Bias {
 			case "NA":
+				if independentSuggestion.End == 2 {
+					fmt.Println(independentSuggestion)
+				}
 				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "GC":
 				db.MustExec(sqlFix1+`cb.gcbias = 'GC' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
@@ -365,10 +316,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	var changes []Change
 	_ = db.Select(&changes, `SELECT h.pos AS position, h.step AS step, (SELECT codon FROM history WHERE pos = h.pos AND step = h.step-1 LIMIT 1) AS codonfrom, h.codon AS codonto, sf.suggestiontype AS reason FROM history AS h JOIN suggestedfix AS sf ON sf.id = h.suggestedfix WHERE h.suggestedfix IS NOT NULL ORDER BY h.step, h.pos`)
 
-	if len(changes) > 0 {
-		return sequence, changes, nil
-	}
-	return sequence, []Change{}, errors.New("Could not find a solution to sequence space")
+	return sequence, changes, errors.New("Could not find a solution to sequence space")
 }
 
 // FixCdsSimple is FixCds with some defaults for normal usage, including
