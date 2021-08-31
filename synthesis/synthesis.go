@@ -168,6 +168,22 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	}
 
 	db := sqlx.MustConnect("sqlite", sqlitePath)
+
+	// The following SQL sets up the schema for the SQLite database we will be
+	// using to solve synthesis fixing problems. The PRAGMA foreign_keys forces
+	// any reference to actually reference another object in the database, which
+	// reduces the quantity of potential errors.
+	// The other tables have basic create functions.
+	//
+	// Overall, the database is structured with 4 important tables:
+	// - SuggestedFix, which has suggested fixes for a sequence
+	// - Weights, which gives the weight of potential changes at any position
+	// - CodonBias, which caches the the bias of any codon to any other codon
+	// - History, which has the history of changes of a sequence
+	//
+	// Queries will generally take a suggestedFix, check the codon bias and weight
+	// of all potential changes within a range, and then pick appropriate changes,
+	// which are then added into the history.
 	createMemoryDbSQL := `
 	PRAGMA foreign_keys = ON;
 	CREATE TABLE codon (
