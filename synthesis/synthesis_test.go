@@ -29,7 +29,7 @@ func ExampleFixCds() {
 	// Remove repeats
 	functions = append(functions, RemoveRepeat(20))
 
-	fixedSeq, changes, _ := FixCds(":memory:", bla, ct, functions)
+	fixedSeq, changes, _ := FixCds(":memory:", bla, ct, functions, 10)
 	fmt.Printf("Changed position %d from %s to %s for reason: %s. Complete sequence: %s", changes[1].Position, changes[1].From, changes[1].To, changes[1].Reason, fixedSeq)
 
 	// Output: Changed position 245 from GGG to GGA for reason: TypeIIS restriction enzyme site. Complete sequence: ATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATATGGAAATGTTGAATACTCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGATCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAA
@@ -54,7 +54,7 @@ func TestFixCdsWithAlteredCodonTable(t *testing.T) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	functions = append(functions, RemoveSequence([]string{"CGTGT"}, "Should change to CGA with the Altered Picha Table, because I choose this to be highest"))
 
-	fixedSeq, changes, _ := FixCds(":memory:", bla, ct, functions)
+	fixedSeq, changes, _ := FixCds(":memory:", bla, ct, functions, 10)
 	textChange := fmt.Sprintf("Changed position %d from %s to %s for reason: %s. Complete sequence: %s", changes[0].Position, changes[0].From, changes[0].To, changes[0].Reason, fixedSeq)
 	shouldChangeTo := "Changed position 9 from CGT to CGA for reason: Should change to CGA with the Altered Picha Table, because I choose this to be highest. Complete sequence: ATGAAAAAAAAAAGTATTCAACATTTCCGAGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTATACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAA"
 	if textChange != shouldChangeTo {
@@ -69,7 +69,7 @@ func BenchmarkFixCds(b *testing.B) {
 	functions = append(functions, RemoveSequence([]string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"}, "TypeIIS restriction enzyme site."))
 	for i := 0; i < b.N; i++ {
 		seq, _ := codon.Optimize(phusion, ct)
-		optimizedSeq, changes, err := FixCds(":memory:", seq, ct, functions)
+		optimizedSeq, changes, err := FixCds(":memory:", seq, ct, functions, 10)
 		if err != nil {
 			b.Errorf("Failed to fix phusion with error: %s", err)
 		}
@@ -93,7 +93,7 @@ func TestReversion(t *testing.T) {
 	seq := "GGACGAGACGGC"
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	functions = append(functions, RemoveSequence([]string{"GGTCTC", "CGTCTC"}, "TypeIIS restriction enzyme site."))
-	_, _, err := FixCds(":memory:", seq, ct, functions)
+	_, _, err := FixCds(":memory:", seq, ct, functions, 10)
 	if err != nil {
 		t.Errorf("Failed with error: %s", err)
 	}
@@ -105,7 +105,7 @@ func TestFixCds(t *testing.T) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	functions = append(functions, RemoveSequence([]string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"}, "TypeIIS restriction enzyme site."))
 	seq, _ := codon.Optimize(phusion, ct)
-	optimizedSeq, _, err := FixCds(":memory:", seq, ct, functions)
+	optimizedSeq, _, err := FixCds(":memory:", seq, ct, functions, 10)
 	if err != nil {
 		t.Errorf("Failed with error: %s", err)
 	}
@@ -128,7 +128,7 @@ func TestFixCds(t *testing.T) {
 	// Repeat checking
 	blaWithRepeat := "ATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGGTCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGGGTGCCTCACTGATTAAGCATTGGTAA"
 	functions = append(functions, RemoveRepeat(20))
-	blaWithoutRepeat, _, err := FixCds(":memory:", blaWithRepeat, ct, functions)
+	blaWithoutRepeat, _, err := FixCds(":memory:", blaWithRepeat, ct, functions, 10)
 	if err != nil {
 		t.Errorf("Failed to remove repeat with error: %s", err)
 	}
@@ -141,11 +141,11 @@ func TestFixCds(t *testing.T) {
 	// Test low and high GC content
 	var gcFunctions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	gcFunctions = append(gcFunctions, GcContentFixer(0.90, 0.10))
-	fixedSeq, _, _ = FixCds(":memory:", "GGGCCC", ct, gcFunctions)
+	fixedSeq, _, _ = FixCds(":memory:", "GGGCCC", ct, gcFunctions, 10)
 	if fixedSeq != "GGACCC" {
 		t.Errorf("Failed to fix GGGCCC -> GGACC. Got %s", fixedSeq)
 	}
-	fixedSeq, _, _ = FixCds(":memory:", "AAATTT", ct, gcFunctions)
+	fixedSeq, _, _ = FixCds(":memory:", "AAATTT", ct, gcFunctions, 10)
 	if fixedSeq != "AAGTTT" {
 		t.Errorf("Failed to fix AAATTT -> AAGTTT. Got %s", fixedSeq)
 	}
