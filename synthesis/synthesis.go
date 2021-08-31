@@ -277,7 +277,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 			// codons at each position that has been changed and returns what it
 			// has been changed to and what it has been changed from (this requires
 			// a subquery)
-			getChangesSql := `SELECT h.pos             AS position,
+			getChangesSQL := `SELECT h.pos             AS position,
 					       h.step            AS step,
 					       (SELECT codon
 					        FROM   history
@@ -293,7 +293,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 					ORDER  BY h.step,
 					          h.pos 
 					`
-			_ = db.Select(&changes, getChangesSql)
+			_ = db.Select(&changes, getChangesSQL)
 			return sequence, changes, nil
 		}
 		for _, suggestion := range suggestions { // if you want to add overlaps, add suggestionIndex
@@ -315,16 +315,34 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 
 		// The following statements are the magic sauce that makes this all worthwhile.
 		// Parameters: step, gcbias, start, end, quantityfix
-		sqlFix1 := `INSERT INTO history
+		// This query searches for all codons within a certain range (start->end),
+		// organizing all possible changes (from one codon to another) in that range.
+		// If the codon has been used previously, it is removed from the results.
+		// Then, the potential changes are sorted by their potential weight. Weight
+		// is calculated by the frequency of codon use in that organism. Finally, the
+		// top X number of from->to codon pairings are selected and inserted into the
+		// history of the sequence. From now on, the new pairing is used when
+		// selecting the sequence.
+
+		// Potential improvements:
+		// - Circular fixes may fail to solve. This can be fixed with an additional
+		//   subquery.
+		// - Weights are relative to only codons in the same class, instead of being
+		//   relative to the other potential changes. For example, lets say we have
+		//   `GGGTTT`. If we have 50 GGG codons in the total organism and 100 GGT
+		//   codons, and if we have 5 TTT codons and 50 TTC codons in our organism,
+		//   the function will change GGG->GGT instead of TTT->TTC because the total
+		//   weight is greater.
+		sqlFix1 := `INSERT INTO history -- Top level query inserts fixes into the history
 		            (codon,
 		             pos,
 		             step,
 			     suggestedfix)
-		SELECT t.codon,
+		SELECT t.codon, -- Secondary level query groups by position and limits the number of changes we do
 		       t.pos,
 		       ? AS step,
 		       ? AS suggestedfix
-		FROM   (SELECT cb.tocodon AS codon,
+		FROM   (SELECT cb.tocodon AS codon, -- Bottom level query gets all positions that would be interesting given our constraints of position and bias, then organizes them by weight.
 		               s.pos      AS pos
 		        FROM   seq AS s
 		               JOIN history AS h
