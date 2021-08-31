@@ -125,13 +125,14 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		gcContent := checks.GcContent(sequence)
 		var numberOfChanges int
+		codonLength := 3
 		if gcContent > upperBound {
 			numberOfChanges = int((gcContent-upperBound)*float64(len(sequence))) + 1
-			c <- DnaSuggestion{0, (len(sequence) / 3) - 1, "AT", numberOfChanges, "GcContent too high"}
+			c <- DnaSuggestion{0, (len(sequence) / codonLength) - 1, "AT", numberOfChanges, "GcContent too high"}
 		}
 		if gcContent < lowerBound {
 			numberOfChanges = int((lowerBound-gcContent)*float64(len(sequence))) + 1
-			c <- DnaSuggestion{0, (len(sequence) / 3) - 1, "GC", numberOfChanges, "GcContent too low"}
+			c <- DnaSuggestion{0, (len(sequence) / codonLength) - 1, "GC", numberOfChanges, "GcContent too low"}
 		}
 		waitgroup.Done()
 	}
@@ -163,7 +164,8 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 // 10 iterations is a reasonable default for fixIterations.
 func FixCds(sqlitePath string, sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup), fixIterations int) (string, []Change, error) {
 
-	if len(sequence)%3 != 0 {
+	codonLength := 3
+	if len(sequence)%codonLength != 0 {
 		return "", []Change{}, errors.New("this sequence isn't a complete CDS, please try to use a CDS without interrupted codons")
 	}
 
@@ -267,8 +269,8 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 
 	// Insert seq and history
 	pos := 0
-	for codonPosition := 0; codonPosition < len(sequence); codonPosition = codonPosition + 3 {
-		codon := sequence[codonPosition : codonPosition+3]
+	for codonPosition := 0; codonPosition < len(sequence); codonPosition = codonPosition + codonLength {
+		codon := sequence[codonPosition : codonPosition+codonLength]
 		db.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
 		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
 		pos++
