@@ -309,7 +309,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
 			_, err := db.Exec(`INSERT INTO suggestedfix(step, start, end, gcbias, quantityfixes, suggestiontype) VALUES (?, ?, ?, ?, ?, ?)`, i, suggestion.Start, suggestion.End, suggestion.Bias, suggestion.QuantityFixes, suggestion.SuggestionType)
 			if err != nil {
-				return sequence, []Change{}, err
+				return sequence, []Change{}, fmt.Errorf("Failed to insert suggestedfix (does start+end point to valid parts of the amino acid sequence?). Got SQL error: %s", err)
 			}
 		}
 
