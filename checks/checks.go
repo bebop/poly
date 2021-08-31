@@ -14,5 +14,8 @@ func IsPalindromic(sequence string) bool {
 // GcContent checks the GcContent of a given sequence.
 func GcContent(sequence string) float64 {
 	sequence = strings.ToUpper(sequence)
-	return float64(strings.Count(sequence, "G")+strings.Count(sequence, "C")) / float64(len(sequence))
+	GuanineCount := strings.Count(sequence, "G")
+	CytosineCount := strings.Count(sequence, "C")
+	GuanineAndCytosinePercentage := float64(GuanineCount+CytosineCount) / float64(len(sequence))
+	return GuanineAndCytosinePercentage
 }
