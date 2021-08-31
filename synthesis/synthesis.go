@@ -65,7 +65,7 @@ type dbDnaSuggestion struct {
 // RemoveSequence is a generator for a problematicSequenceFuncs for specific
 // sequences.
 func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
-	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		var sequencesToRemoveForReverse []string
 		for _, seq := range sequencesToRemove {
 			sequencesToRemoveForReverse = []string{seq, transform.ReverseComplement(seq)}
@@ -85,13 +85,13 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 				}
 			}
 		}
-		wg.Done()
+		waitgroup.Done()
 	}
 }
 
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
 func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
-	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		// Get a kmer list
 		kmers := make(map[string]bool)
 		for sequencePosition := 0; sequencePosition < len(sequence)-repeatLen; sequencePosition++ {
@@ -112,7 +112,7 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 				sequencePosition = sequencePosition + leftover
 			}
 		}
-		wg.Done()
+		waitgroup.Done()
 	}
 }
 
@@ -122,7 +122,7 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 // want the range to be somewhere around 50%, with a decent upperBound being
 // 80% GC and a decent lowerBound being 20%.
 func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggestion, *sync.WaitGroup) {
-	return func(sequence string, c chan DnaSuggestion, wg *sync.WaitGroup) {
+	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		gcContent := checks.GcContent(sequence)
 		var numberOfChanges int
 		if gcContent > upperBound {
@@ -133,7 +133,7 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 			numberOfChanges = int((lowerBound-gcContent)*float64(len(sequence))) + 1
 			c <- DnaSuggestion{0, (len(sequence) / 3) - 1, "GC", numberOfChanges, "GcContent too low"}
 		}
-		wg.Done()
+		waitgroup.Done()
 	}
 
 }
@@ -143,12 +143,12 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
 	suggestions := make(chan DnaSuggestion, 100)
-	var wg sync.WaitGroup
+	var waitgroup sync.WaitGroup
 	for _, function := range problematicSequenceFuncs {
-		wg.Add(1)
-		go function(sequence, suggestions, &wg)
+		waitgroup.Add(1)
+		go function(sequence, suggestions, &waitgroup)
 	}
-	wg.Wait()
+	waitgroup.Wait()
 	close(suggestions)
 
 	var suggestionsList []DnaSuggestion
