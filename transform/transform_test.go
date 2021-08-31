@@ -1,6 +1,8 @@
 package transform
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func ExampleReverseComplement() {
 	sequence := "GATTACA"
@@ -24,4 +26,11 @@ func ExampleReverse() {
 	fmt.Println(reverse)
 
 	// Output: ACATTAG
+}
+
+func ExampleGetKmerTable() {
+	kmerTable := GetKmerTable(2, "ATCG")
+
+	fmt.Println(kmerTable)
+	//Output: map[AT:true CG:true TC:true]
 }
