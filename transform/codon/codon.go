@@ -2,6 +2,8 @@ package codon
 
 import (
 	"errors"
+	"fmt"
+
 	"math/rand"
 	"strings"
 	"time"
@@ -120,7 +122,10 @@ func Optimize(aminoAcids string, codonTable Table) (string, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	var codons strings.Builder
-	codonChooser := codonTable.chooser()
+	codonChooser, err := codonTable.chooser()
+	if err != nil {
+		return "", err
+	}
 
 	for _, aminoAcid := range aminoAcids {
 		aminoAcidString := string(aminoAcid)
@@ -190,7 +195,7 @@ func getCodonFrequency(sequence string) map[string]int {
 }
 
 // chooser is a Table method to convert a codon table to a chooser
-func (codonTable Table) chooser() map[string]weightedRand.Chooser {
+func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
 
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
@@ -218,9 +223,14 @@ func (codonTable Table) chooser() map[string]weightedRand.Chooser {
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
-		codonChooser[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
+		chooser, err := weightedRand.NewChooser(codonChoices...)
+		if err != nil {
+			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
+		}
+
+		codonChooser[aminoAcid.Letter] = *chooser
 	}
-	return codonChooser
+	return codonChooser, nil
 }
 
 // Generate map of codons -> amino acid

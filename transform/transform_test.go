@@ -1,6 +1,8 @@
 package transform
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func ExampleReverseComplement() {
 	sequence := "GATTACA"
