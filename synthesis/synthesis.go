@@ -303,7 +303,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 			case "NA", "GC", "AT":
 				validBias = true
 			}
-			if validBias == false {
+			if !validBias {
 				return sequence, []Change{}, fmt.Errorf("Invalid bias. Expected NA, GC, or AT, got %s", suggestion.Bias)
 			}
 			// First, let's insert the suggestions that we found using our problematicSequenceFuncs
