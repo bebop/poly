@@ -1,5 +1,5 @@
 /*
-Package synthesis fixes synthetic DNA molecules in preparation for synthesis.
+Package fix fixes synthetic DNA molecules in preparation for synthesis.
 
 Many synthesis companies have restrictions on the DNA they can synthesize. This
 synthesis fixer takes advantage of synonymous codons in protein coding
@@ -15,7 +15,7 @@ FixCds does not guarantee that all requested features will be removed. If you
 have use case that FixCds cannot properly fix, please put an issue in the poly
 github.
 */
-package synthesis
+package fix
 
 import (
 	"errors"
