@@ -284,7 +284,9 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 
 	for _, aminoAcid := range codontable.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
-			tx.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, codon.Triplet, (100 * (float64(codon.Weight) / float64(weightTable[aminoAcid.Letter]))))
+			codonWeightRatio := float64(codon.Weight) / float64(weightTable[aminoAcid.Letter])
+			normalizedCodonWeight := 100 * codonWeightRatio
+			tx.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, codon.Triplet, normalizedCodonWeight)
 		}
 	}
 
