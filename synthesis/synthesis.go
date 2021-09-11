@@ -170,6 +170,7 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	}
 
 	db := sqlx.MustConnect("sqlite", sqlitePath)
+	tx := db.MustBegin()
 
 	// The following SQL sets up the schema for the SQLite database we will be
 	// using to solve synthesis fixing problems. The PRAGMA foreign_keys forces
@@ -235,14 +236,14 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		FOREIGN KEY(pos) REFERENCES seq(pos)
         );
 `
-	db.MustExec(createMemoryDbSQL)
+	tx.MustExec(createMemoryDbSQL)
 	// Insert codons
 	weightTable := make(map[string]int)
 	codonInsert := `INSERT INTO codon(codon, aa) VALUES (?, ?)`
 	// First just insert the codons
 	for _, aminoAcid := range codontable.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
-			db.MustExec(codonInsert, codon.Triplet, aminoAcid.Letter)
+			tx.MustExec(codonInsert, codon.Triplet, aminoAcid.Letter)
 		}
 	}
 	// Then, add in GC biases
@@ -256,11 +257,11 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 					toCodonBias := strings.Count(toCodon.Triplet, "G") + strings.Count(toCodon.Triplet, "C")
 					switch {
 					case codonBias == toCodonBias:
-						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "NA")
+						tx.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "NA")
 					case codonBias > toCodonBias:
-						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "AT")
+						tx.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "AT")
 					case codonBias < toCodonBias:
-						db.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "GC")
+						tx.MustExec(`INSERT INTO codonbias(fromcodon, tocodon, gcbias) VALUES (?, ?, ?)`, codon.Triplet, toCodon.Triplet, "GC")
 					}
 				}
 			}
@@ -271,13 +272,18 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	pos := 0
 	for codonPosition := 0; codonPosition < len(sequence); codonPosition = codonPosition + codonLength {
 		codon := sequence[codonPosition : codonPosition+codonLength]
-		db.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
-		db.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
+		tx.MustExec(`INSERT INTO seq(pos) VALUES (?)`, pos)
+		tx.MustExec(`INSERT INTO history(pos, codon, step) VALUES (?, ?, 0)`, pos, codon)
 		pos++
 	}
 
 	for key, value := range weightTable {
-		db.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, key, value)
+		tx.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, key, value)
+	}
+
+	err := tx.Commit()
+	if err != nil {
+		return sequence, []Change{}, err
 	}
 
 	// For a maximum of 100 iterations, see if we can do better. Usually sequences will be solved within 1-3 rounds,
