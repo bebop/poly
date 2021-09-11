@@ -138,7 +138,7 @@ func TestFixCds(t *testing.T) {
 	fixedSeq, _, err = FixCds(":memory:", "GGGCCC", codonTable, gcFunctions, 10)
 	if fixedSeq != "GGACCC" {
 		fmt.Println(err)
-		t.Errorf("Failed to fix GGGCCC -> GGACC. Got %s", fixedSeq)
+		t.Errorf("Failed to fix GGGCCC -> GGACCC. Got %s", fixedSeq)
 	}
 	fixedSeq, _, _ = FixCds(":memory:", "AAATTT", codonTable, gcFunctions, 10)
 	if fixedSeq != "AAGTTT" {
@@ -181,5 +181,17 @@ func TestFixCdsBadInput(t *testing.T) {
 	_, _, err = FixCds(":memory:", "ATG", codonTable, []func(string, chan DnaSuggestion, *sync.WaitGroup){outOfRangePosition}, 10)
 	if err == nil {
 		t.Errorf("outOfRangePosition should fail because it is out of range of the start and end positions of the sequence.")
+	}
+}
+
+func TestBtgZIComplexFix(t *testing.T) {
+	complexGene := "ATGAAGCTGATTATTGGCGCAATGCATGAAGAATTGCAGGATTCCATCGCGTTCTATAAGCTGAATAAGGTGGAAAACGAGAAGTTCACCATTTATAAGAATGAAGAGATCATGTTTTGCATTACCGGTATCGGTCTGGTGAACGCGGCGGCGCAGCTGAGCTACATTCTGTCTAAATATGATATTGACTCCATTATTAACATCGGTACCAGCGGCGGTTGCGACAAAGAGCTGAAACAAGGCGACATCCTGATCATCGACAAGATCTATAACAGCGTGGCGGACGCCACCGCATTCGGCTACGCGTACGGCCAAGTTCCGCGTATGCCGAAGTACTATGAAACCAGCAACAAAGATATTATTAAAACCATCAGCAAGGCGAAAATTAAGAATATCGCGAGCTCCGACATCTTCATCCATTCTACGGAGCAAGTGAAGAACTTCATCAATAAAATTGAGGACAAGATTAGCGTCCTGGATATGGAGTGTTTTGCGTATGCTCAGACGGCTTATTTGTTCGAAAAGGAGTTTTCTGTGATTAAAATCATTAGCGACGTCATCGGCGAAAAGAATACCAACAACGTGCAGTTCAACGACTTTATCAAGATTGCCGGTAAGGAGATTTTGGAGATTCTGAAGAAAATTCTG"
+	codonTable := codon.ReadCodonJSON(dataDir + "freqB.json")
+	restrictionEnzymes := []string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"}
+	sequence, changes, err := FixCdsSimple(complexGene, codonTable, restrictionEnzymes)
+	if err != nil {
+		t.Errorf("Failed to fix complex gene with error: %s", err)
+		fmt.Println(sequence)
+		fmt.Println(changes)
 	}
 }
