@@ -248,8 +248,9 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	}
 	// Then, add in GC biases
 	for _, aminoAcid := range codontable.AminoAcids {
+		var aminoAcidTotal int
 		for _, codon := range aminoAcid.Codons {
-			weightTable[codon.Triplet] = codon.Weight
+			aminoAcidTotal = aminoAcidTotal + codon.Weight
 
 			codonBias := strings.Count(codon.Triplet, "G") + strings.Count(codon.Triplet, "C")
 			for _, toCodon := range aminoAcid.Codons {
@@ -266,6 +267,10 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 				}
 			}
 		}
+		if aminoAcidTotal == 0 {
+			aminoAcidTotal = 1
+		}
+		weightTable[aminoAcid.Letter] = aminoAcidTotal
 	}
 
 	// Insert seq and history
@@ -277,8 +282,10 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		pos++
 	}
 
-	for key, value := range weightTable {
-		tx.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, key, value)
+	for _, aminoAcid := range codontable.AminoAcids {
+		for _, codon := range aminoAcid.Codons {
+			tx.MustExec(`INSERT INTO weights(codon, weight) VALUES (?,?)`, codon.Triplet, (100 * (float64(codon.Weight) / float64(weightTable[aminoAcid.Letter]))))
+		}
 	}
 
 	err := tx.Commit()
@@ -348,26 +355,20 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		// history of the sequence. From now on, the new pairing is used when
 		// selecting the sequence.
 
-		// Potential improvements:
-		// - Circular fixes may fail to solve. This can be fixed with an additional
-		//   subquery.
-		// - Weights are relative to only codons in the same class, instead of being
-		//   relative to the other potential changes. For example, lets say we have
-		//   `GGGTTT`. If we have 50 GGG codons in the total organism and 100 GGT
-		//   codons, and if we have 5 TTT codons and 50 TTC codons in our organism,
-		//   the function will change GGG->GGT instead of TTT->TTC because the total
-		//   weight is greater.
 		sqlFix1 := `INSERT INTO history -- Top level query inserts fixes into the history
 		            (codon,
 		             pos,
 		             step,
 			     suggestedfix)
-		SELECT t.codon, -- Secondary level query groups by position and limits the number of changes we do
+		SELECT codon, pos, step, suggestedfix FROM (SELECT t.codon, -- Secondary level query groups by position and limits the number of changes we do
 		       t.pos,
 		       ? AS step,
-		       ? AS suggestedfix
+		       ? AS suggestedfix,
+		       t.weight AS weight
 		FROM   (SELECT cb.tocodon AS codon, -- Bottom level query gets all positions that would be interesting given our constraints of position and bias, then organizes them by weight.
-		               s.pos      AS pos
+		               s.pos      AS pos,
+			       w.weight AS weight,
+			       h.step AS step
 		        FROM   seq AS s
 		               JOIN history AS h
 		                 ON h.pos = s.pos
@@ -380,8 +381,10 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		        WHERE `
 		sqlFix2 := ` s.pos >= ?
 		               AND s.pos <= ?
-		               AND h.codon != cb.tocodon
-		        ORDER  BY h.step DESC, w.weight DESC) AS t
+		               AND h.codon != cb.tocodon) AS t
+			LEFT JOIN (SELECT codon, pos FROM history WHERE pos >= ? AND pos <= ?) AS his ON t.codon = his.codon AND t.pos = his.pos
+					WHERE his.codon IS NULL
+					ORDER  BY t.step DESC, t.weight DESC) as t
 		GROUP  BY t.pos
 		LIMIT  ?; `
 
@@ -391,11 +394,11 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 		for _, independentSuggestion := range independentSuggestions {
 			switch independentSuggestion.Bias {
 			case "NA":
-				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "GC":
-				db.MustExec(sqlFix1+`cb.gcbias = 'GC' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+`cb.gcbias = 'GC' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			case "AT":
-				db.MustExec(sqlFix1+`cb.gcbias = 'AT' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
+				db.MustExec(sqlFix1+`cb.gcbias = 'AT' AND `+sqlFix2, i, independentSuggestion.ID, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.Start, independentSuggestion.End, independentSuggestion.QuantityFixes)
 			}
 		}
 		var codons []string

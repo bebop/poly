@@ -138,7 +138,7 @@ func TestFixCds(t *testing.T) {
 	fixedSeq, _, err = FixCds(":memory:", "GGGCCC", codonTable, gcFunctions, 10)
 	if fixedSeq != "GGACCC" {
 		fmt.Println(err)
-		t.Errorf("Failed to fix GGGCCC -> GGACC. Got %s", fixedSeq)
+		t.Errorf("Failed to fix GGGCCC -> GGACCC. Got %s", fixedSeq)
 	}
 	fixedSeq, _, _ = FixCds(":memory:", "AAATTT", codonTable, gcFunctions, 10)
 	if fixedSeq != "AAGTTT" {
@@ -187,7 +187,7 @@ func TestFixCdsBadInput(t *testing.T) {
 func TestBtgZIComplexFix(t *testing.T) {
 	complexGene := "ATGAAGCTGATTATTGGCGCAATGCATGAAGAATTGCAGGATTCCATCGCGTTCTATAAGCTGAATAAGGTGGAAAACGAGAAGTTCACCATTTATAAGAATGAAGAGATCATGTTTTGCATTACCGGTATCGGTCTGGTGAACGCGGCGGCGCAGCTGAGCTACATTCTGTCTAAATATGATATTGACTCCATTATTAACATCGGTACCAGCGGCGGTTGCGACAAAGAGCTGAAACAAGGCGACATCCTGATCATCGACAAGATCTATAACAGCGTGGCGGACGCCACCGCATTCGGCTACGCGTACGGCCAAGTTCCGCGTATGCCGAAGTACTATGAAACCAGCAACAAAGATATTATTAAAACCATCAGCAAGGCGAAAATTAAGAATATCGCGAGCTCCGACATCTTCATCCATTCTACGGAGCAAGTGAAGAACTTCATCAATAAAATTGAGGACAAGATTAGCGTCCTGGATATGGAGTGTTTTGCGTATGCTCAGACGGCTTATTTGTTCGAAAAGGAGTTTTCTGTGATTAAAATCATTAGCGACGTCATCGGCGAAAAGAATACCAACAACGTGCAGTTCAACGACTTTATCAAGATTGCCGGTAAGGAGATTTTGGAGATTCTGAAGAAAATTCTG"
 	codonTable := codon.ReadCodonJSON(dataDir + "freqB.json")
-	sequence, changes, err := FixCdsSimple(complexGene, codonTable, []string{"GCGATG"})
+	sequence, changes, err := FixCds(":memory:", complexGene, codonTable, []func(string, chan DnaSuggestion, *sync.WaitGroup){RemoveRepeat(20), RemoveSequence([]string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"}, "TypeIIS restriction enzyme site")}, 10)
 	if err != nil {
 		t.Errorf("Failed to fix complex gene with error: %s", err)
 		fmt.Println(sequence)
