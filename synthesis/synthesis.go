@@ -170,6 +170,9 @@ func FixCds(sqlitePath string, sequence string, codontable codon.Table, problema
 	}
 
 	db := sqlx.MustConnect("sqlite", sqlitePath)
+	// Sets up a transaction during setup phase. This increases the speed of the
+	// SQL insertion by 35x. More on transactions:
+	// https://www.tutorialspoint.com/sql/sql-transactions.htm
 	tx := db.MustBegin()
 
 	// The following SQL sets up the schema for the SQLite database we will be
