@@ -191,8 +191,6 @@ func TestBtgZIComplexFix(t *testing.T) {
 	sequence, changes, err := FixCdsSimple(complexGene, codonTable, restrictionEnzymes)
 	if err != nil {
 		t.Errorf("Failed to fix complex gene with error: %s", err)
-		fmt.Println(sequence)
-		fmt.Println(changes)
 	}
 }
 
@@ -203,7 +201,5 @@ func TestRepeatFailure(t *testing.T) {
 	sequence, changes, err := FixCdsSimple(complexGene, codonTable, restrictionEnzymes)
 	if err != nil {
 		t.Errorf("Failed to fix complex gene with error: %s", err)
-		fmt.Println(sequence)
-		fmt.Println(changes)
 	}
 }
