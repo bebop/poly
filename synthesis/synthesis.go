@@ -143,7 +143,7 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 // sequence check and returns a list of all the suggested changes.
 func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
 	// Run functions to get suggestions
-	suggestions := make(chan DnaSuggestion, 100)
+	suggestions := make(chan DnaSuggestion, 1000000)
 	var waitgroup sync.WaitGroup
 	for _, function := range problematicSequenceFuncs {
 		waitgroup.Add(1)
