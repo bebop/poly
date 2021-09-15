@@ -51,16 +51,6 @@ type Change struct {
 	Reason   string `db:"reason"`
 }
 
-type dbDnaSuggestion struct {
-	Start          int    `db:"start"`
-	End            int    `db:"end"`
-	Bias           string `db:"gcbias"`
-	QuantityFixes  int    `db:"quantityfixes"`
-	SuggestionType string `db:"suggestiontype"`
-	Step           int    `db:"step"`
-	ID             int    `db:"id"`
-}
-
 // RemoveSequence is a generator for a problematicSequenceFuncs for specific
 // sequences.
 func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
