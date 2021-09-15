@@ -229,9 +229,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 			sort.Slice(changes, func(i, j int) bool {
 				if changes[i].Step == changes[j].Step {
 					return changes[i].Position < changes[j].Position
-				} else {
-					return changes[i].Step < changes[j].Step
 				}
+				return changes[i].Step < changes[j].Step
 			})
 			return sequence, changes, nil
 		}
