@@ -11,6 +11,9 @@ This synthesis fixer is meant to cover the majority of use cases for DNA
 fixing. It is not intended to cover all possible use cases, since the majority
 of DNA design does not actually have these edge cases.
 
+For most users, using `FixCdsSimple` will be sufficient to prepare a sequence
+for synthesis (you may want to add in restriction enzyme sites to remove).
+
 FixCds does not guarantee that all requested features will be removed. If you
 have use case that FixCds cannot properly fix, please put an issue in the poly
 github.
@@ -187,6 +190,7 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 				}
 			}
 		}
+		// aminoAcidTotal can't equal zero or else division later will panic
 		if aminoAcidTotal == 0 {
 			aminoAcidTotal = 1
 		}
