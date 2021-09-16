@@ -163,6 +163,12 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 
 	// Setup maps
 	// We have a historical map, a relative weight map, and a potential changes map.
+	// The historical map gives a history of modifications for a sequence. For
+	// each amino acid position of a protein, we have a list of updated codons,
+	// starting with the initial codons of the protein. Changes are appended to
+	// this history, and at the end the sequence is created by taking each
+	// position in the history map and appending the last element in the list
+	// to a single sequence string.
 	historicalMap := make(map[int][]string)
 	weightMap := make(map[string]float64)
 	naBiasMap := make(map[string][]string)
@@ -174,8 +180,13 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 	for _, aminoAcid := range codontable.AminoAcids {
 		var aminoAcidTotal int
 		for _, codon := range aminoAcid.Codons {
+			// Get the total weights of all the codons for a given amino acid.
+			// This will be used later to get a relative weight % for each codon.
 			aminoAcidTotal = aminoAcidTotal + codon.Weight
 
+			// This third loop adds in the potential codons that a given codon can
+			// switch to. If a bias is required, there are fewer potential changes.
+			// Ie, the bias maps.
 			codonBias := strings.Count(codon.Triplet, "G") + strings.Count(codon.Triplet, "C")
 			for _, toCodon := range aminoAcid.Codons {
 				if codon.Triplet != toCodon.Triplet {
@@ -197,7 +208,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 		aminoAcidWeightTable[aminoAcid.Letter] = aminoAcidTotal
 	}
 
-	// Build weight map
+	// Build weight map. The weight map gives the relative normalized weight of
+	// any given codon triplet.
 	for _, aminoAcid := range codontable.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
 			codonWeightRatio := float64(codon.Weight) / float64(aminoAcidWeightTable[aminoAcid.Letter])
@@ -258,24 +270,18 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 					unavailableCodons[codonSite] = true
 				}
 				// We will take new potential changes from the respective bias map, given the suggestion bias.
+				var biasMap map[string][]string
 				switch suggestion.Bias {
 				case "NA":
-					for _, potentialCodon := range naBiasMap[lastCodon] {
-						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
-						}
-					}
+					biasMap = naBiasMap
 				case "GC":
-					for _, potentialCodon := range gcBiasMap[lastCodon] {
-						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
-						}
-					}
+					biasMap = gcBiasMap
 				case "AT":
-					for _, potentialCodon := range atBiasMap[lastCodon] {
-						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
-						}
+					biasMap = atBiasMap
+				}
+				for _, potentialCodon := range biasMap[lastCodon] {
+					if _, ok := unavailableCodons[potentialCodon]; !ok {
+						potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
 					}
 				}
 			}
