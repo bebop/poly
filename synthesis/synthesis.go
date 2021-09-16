@@ -233,7 +233,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 	getSequence := func(history map[int][]string) string {
 		var sequence string
 		for codonPosition := 0; codonPosition < len(history); codonPosition++ {
-			sequence = sequence + history[codonPosition][len(history[codonPosition])-1]
+			codonHistory := history[codonPosition]
+			sequence = sequence + codonHistory[len(codonHistory)-1]
 		}
 		return sequence
 	}
@@ -265,7 +266,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 			// For each suggestion, get a list of potential changes that could fix the problem.
 			var potentialChanges []Change
 			for positionSelector := suggestion.Start; positionSelector <= suggestion.End; positionSelector++ {
-				lastCodon := historicalMap[positionSelector][len(historicalMap[positionSelector])-1]
+				codonList := historicalMap[positionSelector]
+				lastCodon := codonList[len(codonList)-1]
 				unavailableCodons := make(map[string]bool)
 				for _, codonSite := range historicalMap[positionSelector] {
 					unavailableCodons[codonSite] = true
