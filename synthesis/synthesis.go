@@ -154,6 +154,7 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 // FixCds fixes a CDS given the CDS sequence, a codon table, a list of
 // functions to solve for, and a number of iterations to attempt fixing.
 // 10 iterations is a reasonable default for fixIterations.
+// Unless you are an advanced user, you should use FixCdsSimple.
 func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup), fixIterations int) (string, []Change, error) {
 
 	codonLength := 3
