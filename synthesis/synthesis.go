@@ -203,11 +203,11 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 	}
 
 	// Build historical map
-	pos := 0
+	position := 0
 	for codonPosition := 0; codonPosition < len(sequence); codonPosition = codonPosition + codonLength {
 		codon := sequence[codonPosition : codonPosition+codonLength]
-		historicalMap[pos] = append(historicalMap[pos], codon)
-		pos++
+		historicalMap[position] = append(historicalMap[position], codon)
+		position++
 	}
 
 	// For a maximum of 100 iterations, see if we can do better. Usually sequences will be solved within 1-3 rounds,
@@ -221,11 +221,11 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 		return sequence
 	}
 	var changes []Change
-	for step := 1; step < fixIterations; step++ {
+	for fixIteration := 1; fixIteration < fixIterations; fixIteration++ {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
 		// If there are no suggestions, break the iteration!
 		if len(suggestions) == 0 {
-			// Sort changes by step and position
+			// Sort changes by fixIteration and position
 			sort.Slice(changes, func(i, j int) bool {
 				if changes[i].Step == changes[j].Step {
 					return changes[i].Position < changes[j].Position
@@ -245,42 +245,43 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 				return sequence, []Change{}, fmt.Errorf("Invalid bias. Expected NA, GC, or AT, got %s", suggestion.Bias)
 			}
 
-			// For each suggestion, range between the values
+			// For each suggestion, get a list of potential changes that could fix the problem.
 			var potentialChanges []Change
 			for positionSelector := suggestion.Start; positionSelector <= suggestion.End; positionSelector++ {
-				// Get all potential changes
 				lastCodon := historicalMap[positionSelector][len(historicalMap[positionSelector])-1]
 				unavailableCodons := make(map[string]bool)
 				for _, codonSite := range historicalMap[positionSelector] {
 					unavailableCodons[codonSite] = true
 				}
+				// We will take new potential changes from the respective bias map, given the suggestion bias.
 				switch suggestion.Bias {
 				case "NA":
 					for _, potentialCodon := range naBiasMap[lastCodon] {
 						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, step, lastCodon, potentialCodon, suggestion.SuggestionType})
+							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
 						}
 					}
 				case "GC":
 					for _, potentialCodon := range gcBiasMap[lastCodon] {
 						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, step, lastCodon, potentialCodon, suggestion.SuggestionType})
+							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
 						}
 					}
 				case "AT":
 					for _, potentialCodon := range atBiasMap[lastCodon] {
 						if _, ok := unavailableCodons[potentialCodon]; !ok {
-							potentialChanges = append(potentialChanges, Change{positionSelector, step, lastCodon, potentialCodon, suggestion.SuggestionType})
+							potentialChanges = append(potentialChanges, Change{positionSelector, fixIteration, lastCodon, potentialCodon, suggestion.SuggestionType})
 						}
 					}
 				}
 			}
-			// Sort changes
+
+			// Sort potential changes by weight
 			sort.Slice(potentialChanges, func(i, j int) bool {
 				return weightMap[potentialChanges[i].To] > weightMap[potentialChanges[j].To]
 			})
 
-			// Remove changes that target the same position.
+			// Remove sorted changes that target the same position.
 			var sortedChanges []Change
 			usedPositions := make(map[int]bool)
 			for _, potentialChange := range potentialChanges {
@@ -290,7 +291,7 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 				}
 			}
 
-			// Make sure we have enough potential fixes
+			// Make sure we have enough sorted changes after sorting/removal
 			if len(sortedChanges) < suggestion.QuantityFixes {
 				return sequence, []Change{}, fmt.Errorf("Too many fixes required. Number of potential fixes: %d , number of required fixes: %d", len(potentialChanges), suggestion.QuantityFixes)
 			}
