@@ -248,32 +248,29 @@ func recurseLigate(wg *sync.WaitGroup, constructs chan string, infiniteLoopingCo
 		for _, newFragment := range fragmentList {
 			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
 			var newSeed Fragment
+			var fragmentAttached bool
 			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
+				fragmentAttached = true
 				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
-				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
-				for _, usedFragment := range usedFragments {
-					if usedFragment.Sequence == newFragment.Sequence {
-						infiniteLoopingConstructs <- usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
-						return
-					}
-				}
-				wg.Add(1)
-				usedFragments = append(usedFragments, newFragment)
-				go recurseLigate(wg, constructs, infiniteLoopingConstructs, newSeed, fragmentList, usedFragments)
 			}
 			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
 			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
 			if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
+				fragmentAttached = true
 				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
+			}
+
+			// If fragment is actually attached, move to some checks
+			if fragmentAttached {
 				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
 				for _, usedFragment := range usedFragments {
 					if usedFragment.Sequence == newFragment.Sequence {
 						infiniteLoopingConstructs <- usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
-						//infiniteLoopingConstructs <- seedFragment.ForwardOverhang + seedFragment.Sequence
 						return
 					}
 				}
 				wg.Add(1)
+				// If everything is clear, append fragment to usedFragments and recurse.
 				usedFragments = append(usedFragments, newFragment)
 				go recurseLigate(wg, constructs, infiniteLoopingConstructs, newSeed, fragmentList, usedFragments)
 			}
