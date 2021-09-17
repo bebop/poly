@@ -151,6 +151,53 @@ func findProblems(sequence string, problematicSequenceFuncs []func(string, chan 
 	return suggestionsList
 }
 
+/*
+# For developers
+
+FixCDS is the core function of the synthesis fixing package. It takes a CDS
+and uses degenerate codons to fix up places with undesirable sequence.
+
+The most important part of synthesis fixing is the functions that go into it
+(problematicSequenceFuncs). These provide the range to be fixed as well as the
+number of fixes that should be required in that range to fix whatever is
+checked for within the function.
+
+FixCDS first builds the following maps:
+
+1. Builds a map of codons at each position, with the last codon in the list
+   being taken to rebuild the sequence.
+2. Builds a map of potential codons that an input codon can be changed to. For
+   example, CAC -> CAT or ATT -> ATA,ATC . There are also codon maps for GC or
+   AT nucleotide bias.
+3. Builds a map of codon weights. Perhaps the organism really likes CAT codons
+   but doesn't code ATA or ATC very often. Given the sequence CACATT, the "CAT"
+   change will have a greater relative weight than the ATA or ATC change.
+
+From this map, FixCDS does the following operations:
+
+1. Concurrently runs problematicSequenceFuncs on the sequence to get change
+   suggestions.
+2. For each output suggestion, get a list of all potential changes to the
+   sequence that fix it.
+3. Sort each potential change by its codon weight.
+4. Append the best change to the positionMap
+5. GOTO 1
+6. complete
+
+OR, in pseudocode:
+
+1. [x...] = problematicSequenceFuncs()
+2. IF len([x...]) == 0; DONE
+3. y = positionMap[x][-1]
+4. [a,b,c] = potentialChanges[y]
+5. [c,a,b] = sort(weights[a], weights[b], weights[c])
+6. positionMap[x] = append(positionMap[x], c)
+7. GOTO 1
+
+At the end, the user should get a fixed CDS as an output, as well as a list of
+changes that were done to the sequence.
+*/
+
 // FixCds fixes a CDS given the CDS sequence, a codon table, a list of
 // functions to solve for, and a number of iterations to attempt fixing.
 // 10 iterations is a reasonable default for fixIterations.
