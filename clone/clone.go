@@ -226,6 +226,7 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 		// Convert fragment sequences into fragments
 		for _, fragment := range fragmentSeqs {
 			// Minimum lengths (given oligos) for assembly is 8 base pairs
+			// https://doi.org/10.1186/1756-0500-3-291
 			if len(fragment) > 8 {
 				fragmentSequence := fragment[enzyme.OverhangLen : len(fragment)-enzyme.OverhangLen]
 				forwardOverhang := fragment[:enzyme.OverhangLen]
