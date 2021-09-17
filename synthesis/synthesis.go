@@ -67,13 +67,7 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 				for _, location := range locations {
 					codonLength := 3
 					position := location[0] / codonLength
-					leftover := location[0] % codonLength
-					switch {
-					case leftover == 0:
-						c <- DnaSuggestion{position, (location[1] / codonLength), "NA", 1, reason}
-					case leftover != 0:
-						c <- DnaSuggestion{position, (location[1] / codonLength) - 1, "NA", 1, reason}
-					}
+					c <- DnaSuggestion{position, (location[1] / codonLength) - 1, "NA", 1, reason}
 				}
 			}
 		}
