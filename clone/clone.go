@@ -225,47 +225,69 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 		}
 		// Convert fragment sequences into fragments
 		for _, fragment := range fragmentSeqs {
-			fragments = append(fragments, Fragment{Sequence: fragment[enzyme.OverhangLen : len(fragment)-enzyme.OverhangLen], ForwardOverhang: fragment[:enzyme.OverhangLen], ReverseOverhang: fragment[len(fragment)-enzyme.OverhangLen:]})
+			// Minimum lengths (given oligos) for assembly is 8 base pairs
+			// https://doi.org/10.1186/1756-0500-3-291
+			if len(fragment) > 8 {
+				fragmentSequence := fragment[enzyme.OverhangLen : len(fragment)-enzyme.OverhangLen]
+				forwardOverhang := fragment[:enzyme.OverhangLen]
+				reverseOverhang := fragment[len(fragment)-enzyme.OverhangLen:]
+				fragments = append(fragments, Fragment{Sequence: fragmentSequence, ForwardOverhang: forwardOverhang, ReverseOverhang: reverseOverhang})
+			}
 		}
 	}
 
 	return fragments
 }
 
-func recurseLigate(wg *sync.WaitGroup, c chan string, seedFragment Fragment, fragmentList []Fragment) {
+func recurseLigate(wg *sync.WaitGroup, constructs chan string, infiniteLoopingConstructs chan string, seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment) {
 	// Recurse ligate simulates all possible ligations of a series of fragments. Each possible combination begins with a "seed" that fragments from the pool can be added to.
 	defer wg.Done()
 	// If the seed ligates to itself, we can call it done with a successful circularization!
 	if seedFragment.ForwardOverhang == seedFragment.ReverseOverhang {
-		c <- seedFragment.ForwardOverhang + seedFragment.Sequence
+		constructs <- seedFragment.ForwardOverhang + seedFragment.Sequence
 	} else {
 		for _, newFragment := range fragmentList {
 			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
+			var newSeed Fragment
+			var fragmentAttached bool
 			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
-				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
-				wg.Add(1)
-				go recurseLigate(wg, c, newSeed, fragmentList)
+				fragmentAttached = true
+				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
 			}
 			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
 			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
 			if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
-				newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
+				fragmentAttached = true
+				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
+			}
+
+			// If fragment is actually attached, move to some checks
+			if fragmentAttached {
+				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
+				for _, usedFragment := range usedFragments {
+					if usedFragment.Sequence == newFragment.Sequence {
+						infiniteLoopingConstructs <- usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
+						return
+					}
+				}
 				wg.Add(1)
-				go recurseLigate(wg, c, newSeed, fragmentList)
+				// If everything is clear, append fragment to usedFragments and recurse.
+				usedFragments = append(usedFragments, newFragment)
+				go recurseLigate(wg, constructs, infiniteLoopingConstructs, newSeed, fragmentList, usedFragments)
 			}
 		}
 	}
 }
 
-func getConstructs(c chan string, constructSequences chan []Part) {
-	var constructs []Part
+func getConstructs(c chan string, constructSequences chan []string, circular bool) {
+	var constructs []string
 	var exists bool
 	var existingSeqhashes []string
 	for {
 		construct, more := <-c
 		if more {
 			exists = false
-			seqhashConstruct, _ := seqhash.Hash(construct, "DNA", true, true)
+			seqhashConstruct, _ := seqhash.Hash(construct, "DNA", circular, true)
 			// Check if this construct is unique
 			for _, existingSeqhash := range existingSeqhashes {
 				if existingSeqhash == seqhashConstruct {
@@ -273,7 +295,7 @@ func getConstructs(c chan string, constructSequences chan []Part) {
 				}
 			}
 			if !exists {
-				constructs = append(constructs, Part{construct, true})
+				constructs = append(constructs, construct)
 				existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
 			}
 		} else {
@@ -285,20 +307,26 @@ func getConstructs(c chan string, constructSequences chan []Part) {
 }
 
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
-func CircularLigate(fragments []Fragment) []Part {
+func CircularLigate(fragments []Fragment) ([]string, []string, error) {
 	var wg sync.WaitGroup
-	var constructs []Part
-	c := make(chan string) //, maxClones) // A buffered channel is needed to prevent blocking.
-	constructSequences := make(chan []Part)
+	var outputConstructs []string
+	var outputInfiniteLoopingConstructs []string
+	constructs := make(chan string)
+	infiniteLoopingConstructs := make(chan string) // sometimes we will get stuck in infinite loops. These are sequences with a recursion break
+	constructSequences := make(chan []string)
+	infiniteLoopingConstructSequences := make(chan []string)
 	for _, fragment := range fragments {
 		wg.Add(1)
-		go recurseLigate(&wg, c, fragment, fragments)
+		go recurseLigate(&wg, constructs, infiniteLoopingConstructs, fragment, fragments, []Fragment{})
 	}
-	go getConstructs(c, constructSequences)
+	go getConstructs(constructs, constructSequences, true)
+	go getConstructs(infiniteLoopingConstructs, infiniteLoopingConstructSequences, false)
 	wg.Wait()
-	close(c)
-	constructs = <-constructSequences
-	return constructs
+	close(constructs)
+	close(infiniteLoopingConstructs)
+	outputConstructs = <-constructSequences
+	outputInfiniteLoopingConstructs = <-infiniteLoopingConstructSequences
+	return outputConstructs, outputInfiniteLoopingConstructs, nil
 }
 
 /******************************************************************************
@@ -309,14 +337,14 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func GoldenGate(sequences []Part, enzymeStr string) ([]Part, error) {
+func GoldenGate(sequences []Part, enzymeStr string) ([]string, []string, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
 		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr)
 		if err != nil {
-			return []Part{}, err
+			return []string{}, []string{}, err
 		}
 		fragments = append(fragments, newFragments...)
 	}
-	return CircularLigate(fragments), nil
+	return CircularLigate(fragments)
 }
