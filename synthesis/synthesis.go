@@ -215,9 +215,8 @@ changes that were done to the sequence.
 
 // FixCds fixes a CDS given the CDS sequence, a codon table, a list of
 // functions to solve for, and a number of iterations to attempt fixing.
-// 10 iterations is a reasonable default for fixIterations.
 // Unless you are an advanced user, you should use FixCdsSimple.
-func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup), fixIterations int) (string, []Change, error) {
+func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
 
 	codonLength := 3
 	if len(sequence)%codonLength != 0 {
@@ -264,9 +263,9 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 				}
 			}
 		}
-		// aminoAcidTotal can't equal zero or else division later will panic
+		// If there is an amino acid with no encoding, error with incomplete codon table
 		if aminoAcidTotal == 0 {
-			aminoAcidTotal = 1
+			return "", []Change{}, errors.New("incomplete codon table")
 		}
 		aminoAcidWeightTable[aminoAcid.Letter] = aminoAcidTotal
 	}
@@ -301,7 +300,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 		return sequence
 	}
 	var changes []Change
-	for fixIteration := 1; fixIteration < fixIterations; fixIteration++ {
+	var fixIteration int
+	for {
 		suggestions := findProblems(sequence, problematicSequenceFuncs)
 		// If there are no suggestions, break the iteration!
 		if len(suggestions) == 0 {
@@ -379,8 +379,8 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 				sequence = getSequence(historicalMap)
 			}
 		}
+		fixIteration++
 	}
-	return sequence, changes, errors.New("Could not find a solution to sequence space")
 }
 
 // FixCdsSimple is FixCds with some defaults for normal usage, including
@@ -400,5 +400,5 @@ func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []s
 	// Ensure normal GC range
 	functions = append(functions, GcContentFixer(0.80, 0.20))
 
-	return FixCds(sequence, codontable, functions, 100)
+	return FixCds(sequence, codontable, functions)
 }
