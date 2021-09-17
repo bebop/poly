@@ -327,7 +327,7 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 
 			// For each suggestion, get a list of potential changes that could fix the problem.
 			var potentialChanges []Change
-			for positionSelector := suggestion.Start; positionSelector <= suggestion.End; positionSelector++ {
+			for positionSelector := suggestion.Start; positionSelector <= suggestion.End && positionSelector < len(historicalMap); positionSelector++ {
 				codonList := historicalMap[positionSelector]
 				lastCodon := codonList[len(codonList)-1]
 				unavailableCodons := make(map[string]bool)
