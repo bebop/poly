@@ -67,13 +67,7 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 				for _, location := range locations {
 					codonLength := 3
 					position := location[0] / codonLength
-					leftover := location[0] % codonLength
-					switch {
-					case leftover == 0:
-						c <- DnaSuggestion{position, (location[1] / codonLength), "NA", 1, reason}
-					case leftover != 0:
-						c <- DnaSuggestion{position, (location[1] / codonLength) - 1, "NA", 1, reason}
-					}
+					c <- DnaSuggestion{position, (location[1] / codonLength) - 1, "NA", 1, reason}
 				}
 			}
 		}
@@ -327,7 +321,7 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 
 			// For each suggestion, get a list of potential changes that could fix the problem.
 			var potentialChanges []Change
-			for positionSelector := suggestion.Start; positionSelector <= suggestion.End; positionSelector++ {
+			for positionSelector := suggestion.Start; positionSelector <= suggestion.End && positionSelector < len(historicalMap); positionSelector++ {
 				codonList := historicalMap[positionSelector]
 				lastCodon := codonList[len(codonList)-1]
 				unavailableCodons := make(map[string]bool)
