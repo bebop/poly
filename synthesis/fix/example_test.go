@@ -2,9 +2,8 @@ package fix_test
 
 import (
 	"fmt"
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/synthesis/codon"
 	"github.com/TimothyStiles/poly/synthesis/fix"
-	"github.com/TimothyStiles/poly/transform/codon"
 )
 
 // This example shows basic usage of the synthesis package. In this example,
@@ -15,14 +14,11 @@ func Example_basic() {
 
 	// Here, we initialize a codon table. This table is used to pick the
 	// appropriate new synonymous codons.
-	sequence := genbank.Read("../../data/ecoli-mg1655.gff")
-	codonTable := codon.GetCodonTable(11)
-	codingRegions := codon.GetCodingRegions(sequence)
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
+	codonTable := codon.ReadCodonJSON("../../data/pichiaTable.json")
 
 	// Finally, we fix the sequence with the optimization table, getting
 	// rid of the BsaI cut site, GGTCTC
-	fixedSeq, _, _ := fix.FixCdsSimple(bla, optimizationTable, []string{"GGTCTC"})
+	fixedSeq, _, _ := fix.FixCdsSimple(bla, codonTable, []string{"GGTCTC"})
 
 	fmt.Println(fixedSeq)
 	// Output: ATGAGTATTCAACATTTCCGTGTCGCCCTTATTCCCTTTTTTGCGGCATTTTGCCTTCCTGTTTTTGCTCACCCAGAAACGCTGGTGAAAGTAAAAGATGCTGAAGATCAGTTGGGTGCACGAGTGGGTTACATCGAACTGGATCTCAACAGCGGTAAGATCCTTGAGAGTTTTCGCCCCGAAGAACGTTTTCCAATGATGAGCACTTTTAAAGTTCTGCTATGTGGCGCGGTATTATCCCGTATTGACGCCGGGCAAGAGCAACTCGGTCGCCGCATACACTATTCTCAGAATGACTTGGTTGAGTACTCACCAGTCACAGAAAAGCATCTTACGGATGGCATGACAGTAAGAGAATTATGCAGTGCTGCCATAACCATGAGTGATAACACTGCGGCCAACTTACTTCTGACAACGATCGGAGGACCGAAGGAGCTAACCGCTTTTTTGCACAACATGGGGGATCATGTAACTCGCCTTGATCGTTGGGAACCGGAGCTGAATGAAGCCATACCAAACGACGAGCGTGACACCACGATGCCTGTAGCAATGGCAACAACGTTGCGCAAACTATTAACTGGCGAACTACTTACTCTAGCTTCCCGGCAACAATTAATAGACTGGATGGAGGCGGATAAAGTTGCAGGACCACTTCTGCGCTCGGCCCTTCCGGCTGGCTGGTTTATTGCTGATAAATCTGGAGCCGGTGAGCGTGGATCTCGCGGTATCATTGCAGCACTGGGGCCAGATGGTAAGCCCTCCCGTATCGTAGTTATCTACACGACGGGGAGTCAGGCAACTATGGATGAACGAAATAGACAGATCGCTGAGATAGGTGCCTCACTGATTAAGCATTGGTAA
