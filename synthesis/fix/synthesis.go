@@ -11,11 +11,11 @@ This synthesis fixer is meant to cover the majority of use cases for DNA
 fixing. It is not intended to cover all possible use cases, since the majority
 of DNA design does not actually have these edge cases.
 
-For most users, using `FixCdsSimple` will be sufficient to prepare a sequence
+For most users, using `CdsSimple` will be sufficient to prepare a sequence
 for synthesis (you may want to add in restriction enzyme sites to remove).
 
-FixCds does not guarantee that all requested features will be removed. If you
-have use case that FixCds cannot properly fix, please put an issue in the poly
+Cds does not guarantee that all requested features will be removed. If you
+have use case that Cds cannot properly fix, please put an issue in the poly
 github.
 */
 package fix
@@ -45,7 +45,7 @@ type DnaSuggestion struct {
 }
 
 // Change is a change to a given DNA sequence. A list of changes is given as
-// the output of FixCds.
+// the output of Cds.
 type Change struct {
 	Position int    `db:"position"`
 	Step     int    `db:"step"`
@@ -207,10 +207,10 @@ At the end, the user should get a fixed CDS as an output, as well as a list of
 changes that were done to the sequence.
 */
 
-// FixCds fixes a CDS given the CDS sequence, a codon table, a list of
+// Cds fixes a CDS given the CDS sequence, a codon table, a list of
 // functions to solve for, and a number of iterations to attempt fixing.
-// Unless you are an advanced user, you should use FixCdsSimple.
-func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
+// Unless you are an advanced user, you should use CdsSimple.
+func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
 
 	codonLength := 3
 	if len(sequence)%codonLength != 0 {
@@ -377,10 +377,10 @@ func FixCds(sequence string, codontable codon.Table, problematicSequenceFuncs []
 	}
 }
 
-// FixCdsSimple is FixCds with some defaults for normal usage, including
+// CdsSimple is FixCds with some defaults for normal usage, including
 // removing of homopolymers, removing any repeat larger than 18 base pairs, and
 // fixing if a CDS's gc content is above 80% or below 20%
-func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, []Change, error) {
+func CdsSimple(sequence string, codontable codon.Table, sequencesToRemove []string) (string, []Change, error) {
 	var functions []func(string, chan DnaSuggestion, *sync.WaitGroup)
 	// Remove homopolymers
 	functions = append(functions, RemoveSequence([]string{"AAAAAAAA", "GGGGGGGG"}, "Homopolymers"))
@@ -394,5 +394,5 @@ func FixCdsSimple(sequence string, codontable codon.Table, sequencesToRemove []s
 	// Ensure normal GC range
 	functions = append(functions, GcContentFixer(0.80, 0.20))
 
-	return FixCds(sequence, codontable, functions)
+	return Cds(sequence, codontable, functions)
 }
