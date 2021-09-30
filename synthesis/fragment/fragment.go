@@ -70,7 +70,8 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 
 // NextOverhang gets next most efficient overhang to use for a given set of
 // overhangs. This is useful for when developing a new set of standard
-// overhangs.
+// overhangs. Note: NextOverhang is biased towards high AT overhangs, but this
+// will not affect fidelity at all.
 func NextOverhang(currentOverhangs []string) string {
 	overhangsToTest, efficiencies := NextOverhangs(currentOverhangs)
 	var efficiency float64
