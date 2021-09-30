@@ -13,6 +13,7 @@ package fragment
 
 import (
 	"fmt"
+	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
 	"strings"
 )
@@ -32,6 +33,57 @@ func SetEfficiency(overhangs []string) float64 {
 		}
 	}
 	return efficiency
+}
+
+// NextOverhangs gets a list of possible next overhangs to use for an overhang
+// list, along with their efficiencies. This can be used for more optimal
+// fragmentation of sequences with potential degeneracy.
+func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
+	currentOverhangMap := make(map[string]bool)
+	for _, overhang := range currentOverhangs {
+		currentOverhangMap[overhang] = true
+	}
+	bases := []rune{'A', 'T', 'G', 'C'}
+	var overhangsToTest []string
+	for _, base1 := range bases {
+		for _, base2 := range bases {
+			for _, base3 := range bases {
+				for _, base4 := range bases {
+					newOverhang := string([]rune{base1, base2, base3, base4})
+					_, ok := currentOverhangMap[newOverhang]
+					if !ok {
+						if !checks.IsPalindromic(newOverhang) {
+							overhangsToTest = append(overhangsToTest, newOverhang)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	var efficiencies []float64
+	for _, overhang := range overhangsToTest {
+		efficiencies = append(efficiencies, SetEfficiency(append(currentOverhangs, overhang)))
+	}
+	return overhangsToTest, efficiencies
+}
+
+// NextOverhang gets next most efficient overhang to use for a given set of
+// overhangs. This is useful for when developing a new set of standard
+// overhangs.
+func NextOverhang(currentOverhangs []string) string {
+	overhangsToTest, efficiencies := NextOverhangs(currentOverhangs)
+	var efficiency float64
+	var newOverhang string
+	maxEfficiency := float64(0)
+	for i, overhang := range overhangsToTest {
+		efficiency = efficiencies[i]
+		if efficiency > maxEfficiency {
+			maxEfficiency = efficiency
+			newOverhang = overhang
+		}
+	}
+	return newOverhang
 }
 
 // optimizeOverhangIteration takes in a sequence and optimally fragments it.
@@ -66,10 +118,6 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 			maxFragmentSizeBuffer = maxFragmentSize
 		}
 		minFragmentSize = maxFragmentSizeBuffer - maxAndMinDifference
-		// Basic check for minimal size
-		if minFragmentSize < 12 {
-			minFragmentSize = 12
-		}
 		maxFragmentSize = maxFragmentSizeBuffer // buffer is needed equations above pass.
 	}
 
@@ -90,13 +138,16 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 			}
 		}
 		if !alreadyExists {
-			// Get this overhang set's efficiency
-			setEfficiency := SetEfficiency(append(existingOverhangs, overhangToTest))
+			// See if this overhang is a palindrome
+			if !checks.IsPalindromic(overhangToTest) {
+				// Get this overhang set's efficiency
+				setEfficiency := SetEfficiency(append(existingOverhangs, overhangToTest))
 
-			// If this overhang is more efficient than any other found so far, set it as the best!
-			if setEfficiency > bestOverhangEfficiency {
-				bestOverhangEfficiency = setEfficiency
-				bestOverhangPosition = overhangPosition
+				// If this overhang is more efficient than any other found so far, set it as the best!
+				if setEfficiency > bestOverhangEfficiency {
+					bestOverhangEfficiency = setEfficiency
+					bestOverhangPosition = overhangPosition
+				}
 			}
 		}
 	}

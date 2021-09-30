@@ -14,3 +14,14 @@ func Example_basic() {
 	fmt.Println(fragments)
 	// Output: [ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGG CTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACA AACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCG TGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG]
 }
+
+// This example shows how to generate a new overhang onto a list of overhangs.
+func ExampleNextOverhang() {
+	primerOverhangs := []string{"ATAA"}
+	primerOverhangs = append(primerOverhangs, fragment.NextOverhang(primerOverhangs))
+	primerOverhangs = append(primerOverhangs, fragment.NextOverhang(primerOverhangs))
+	primerOverhangs = append(primerOverhangs, fragment.NextOverhang(primerOverhangs))
+
+	fmt.Println(primerOverhangs)
+	// Output: [ATAA AAAT AATA AAGA]
+}
