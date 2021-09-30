@@ -289,8 +289,8 @@ func CreateBarcodes(length int, maxSubSequence int) []string {
 
 // CreateBarcodesGcRange creates a list of barcodes within a given GC range.
 func CreateBarcodesGcRange(length int, maxSubSequence int, minGcContent float64, maxGcContent float64) []string {
-	gcBarcodeFunc := func(s string) bool {
-		gcContent := checks.GcContent(s)
+	gcBarcodeFunc := func(barcodeToCheck string) bool {
+		gcContent := checks.GcContent(barcodeToCheck)
 		if gcContent < minGcContent || gcContent > maxGcContent {
 			return false
 		}
