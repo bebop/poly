@@ -1,30 +1,42 @@
-/*Package poly is a go package for engineering organisms.
+/*
+Package poly is a Go package for engineering organisms.
+
+Synthetic biology has a software problem. I.E almost all
+of our field's software is slow, hard to maintain,
+and even harder to deploy.
+
+Poly solves that problem by providing a highly tested
+suite of common functions for engineering organisms
+through a simple interface in Go.
+
+The reason why Go was choosen is that it's a highly popular
+language with a simple sytax and a large ecosystem of packages
+that make it *extremely* easy to learn, use, and deploy.
+It's also on average 25X faster and more energy efficient that
+Python.
+
+Eventually we intend for poly to provide all the functionality
+needed such that users can use it to engineer proteins which
+they can then optimize and insert into their organisms of choice.
+
+We've made great progress and are always looking for more support!
+
+If you can help us out, please consider opening a pull request,
+starring a repo, or best of all, throwing some money at our lead
+maintainer so he can keep the project going:
+
+https://github.com/sponsors/TimothyStiles
 
 
+tl:dr
 
-Poly can be used in two ways.
+Poly is awesome
 
-	 1. As a Go library where you have finer control and can make magical things happen.
-	 2. As a command line utility where you can bash script your way to greatness and make DNA go brrrrrrrr.
+Throw money at Tim's github sponsors page: https://github.com/sponsors/TimothyStiles
 
+Browse our subpackages to find the functionality and documentation you need:
+https://pkg.go.dev/github.com/TimothyStiles/poly#section-directories
 
-Installation
-
-
-These instructions assume that you already have a working go environment. If not see:
-	https://golang.org/doc/install
-
-
-Building Poly CLI and package from scratch:
-
-	git clone https://github.com/TimothyStiles/poly.git && cd poly && go build ./... && go install ./...
-
-
-
-Installing latest release of poly as a go package:
-	go get github.com/TimothyStiles/poly
-
-
-For CLI only instructions please checkout: https://pkg.go.dev/github.com/TimothyStiles/poly/poly
 */
+
 package poly
