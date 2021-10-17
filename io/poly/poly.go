@@ -1,5 +1,5 @@
 /*
-Package poly provides the core Sequence struct and methods for working with DNA, RNA, and Amino Acid sequences in Poly
+Package poly provides the core Sequence struct and methods for working with DNA, RNA, and Amino Acid sequences in Poly.
 
 Each Sequence struct can be broken down into the following:
 

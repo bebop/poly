@@ -1,6 +1,6 @@
 /*
 
-Poly command line utility installation instructions:
+Poly command line utility installation instructions.
 
 Mac OSX
 
@@ -13,6 +13,6 @@ Windows
 	Coming soon...
 
 
-Usage: please make good use of our `-h` help flag. Everything is up to date there and well tested. 
+Usage: please make good use of our `-h` help flag. Everything is up to date there and well tested.
 */
 package main

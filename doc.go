@@ -21,21 +21,14 @@ they can then optimize and insert into their organisms of choice.
 
 We've made great progress and are always looking for more support!
 
-If you can help us out, please consider opening a pull request,
-starring a repo, or best of all, throwing some money at our lead
-maintainer so he can keep the project going:
+tl;dr
 
+Poly is awesome.
+
+Throw money at Tim's github sponsors page:
 https://github.com/sponsors/TimothyStiles
-
-
-tl:dr
-
-Poly is awesome
-
-Throw money at Tim's github sponsors page: https://github.com/sponsors/TimothyStiles
 
 Browse our subpackages to find the functionality and documentation you need:
 https://pkg.go.dev/github.com/TimothyStiles/poly#section-directories
-
 */
 package poly
