@@ -38,5 +38,4 @@ Browse our subpackages to find the functionality and documentation you need:
 https://pkg.go.dev/github.com/TimothyStiles/poly#section-directories
 
 */
-
 package poly
