@@ -1,3 +1,15 @@
+/*
+Package transform provides functions for transforming sequences.
+
+Complement takes the complement of a sequence.
+(returns a sequence string where each nucleotide has been swapped with its complement A<->T, C<->G)
+
+Reverse takes the reverse of a sequence.
+(literally just reverses a string. Exists in stdlib but hey why not have it here too?)
+
+ReverseComplement takes the reverse complement of a sequence.
+(Reverses the sequence string and returns the complement of the reversed sequence.)
+*/
 package transform
 
 import "strings"
