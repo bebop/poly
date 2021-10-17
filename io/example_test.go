@@ -1,4 +1,4 @@
-package io
+package io_test
 
 import (
 	"github.com/TimothyStiles/poly/io/fasta"
@@ -19,7 +19,8 @@ func Example() {
 	fastaInput := fasta.Read("fasta/data/base.fasta")
 	jsonInput := polyjson.Read("../data/puc19static.json")
 
-	// Poly can also output these file formats though I wouldn't try doing gbk<->gff or anything like that unless it's JSON.
+	// Poly can also output these file formats though I wouldn't try doing gbk<->gff
+	// or anything like that but JSON <-> anything and back should work.that unless it's JSON.
 
 	gff.Write(gffInput, "test.gff")
 	genbank.Write(gbkInput, "test.gbk")

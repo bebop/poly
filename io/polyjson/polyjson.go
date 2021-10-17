@@ -1,10 +1,17 @@
+/*
+Package polyjson provides utilities to read and write poly.Sequence structs as JSON.
+
+Poly's JSON schema is still in flux so be on the lookout for breaking changes as we
+approach the 1.0 release.
+*/
+
 package polyjson
 
 import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/TimothyStiles/poly/io/poly"
 )
 
 /******************************************************************************

@@ -1,8 +1,13 @@
+/*
+Package checks provides utilities to check for certain properties of a sequence.
+*/
+
 package checks
 
 import (
-	"github.com/TimothyStiles/poly/transform"
 	"strings"
+
+	"github.com/TimothyStiles/poly/transform"
 )
 
 // IsPalindromic accepts a sequence of even length and returns if it is

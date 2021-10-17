@@ -15,13 +15,14 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
-	"lukechampine.com/blake3"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/TimothyStiles/poly"
+	"lukechampine.com/blake3"
+
+	"github.com/TimothyStiles/poly/io/poly"
 )
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.

@@ -66,15 +66,6 @@ func TestHash(t *testing.T) {
 
 }
 
-func ExampleRotateSequence() {
-	sequence := genbank.Read("../data/puc19.gbk")
-	sequenceLength := len(sequence.Sequence)
-	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
-
-	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
-	// output: true
-}
-
 func TestLeastRotation(t *testing.T) {
 	sequence := genbank.Read("../data/puc19.gbk")
 	var sequenceBuffer bytes.Buffer

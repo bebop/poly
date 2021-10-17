@@ -1,21 +1,5 @@
-package clone
-
-import (
-	"errors"
-	"regexp"
-	"sort"
-	"strings"
-	"sync"
-
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/seqhash"
-	"github.com/TimothyStiles/poly/transform"
-)
-
-/******************************************************************************
-Apr 22, 2021
-
-Cloning stuff starts here.
+/*
+Package clone provides functions for cloning DNA sequences.
 
 Since 1973, the most common way to make recombinant DNA has been restriction
 enzyme cloning (though lately, homologous recombination based methods like
@@ -54,8 +38,21 @@ Keoni
 
 PS: We do NOT (yet) handle restriction enzymes which recognize one site but cut
 in multiple places (Type IIG enzymes) such as BcgI.
+*/
 
-******************************************************************************/
+package clone
+
+import (
+	"errors"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+
+	"github.com/TimothyStiles/poly/checks"
+	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/TimothyStiles/poly/transform"
+)
 
 // Part is a simple struct that can carry a circular or linear DNA sequence.
 // In the field of synthetic biology, the term "DNA Part" was popularized by
