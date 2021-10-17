@@ -1,7 +1,6 @@
 /*
 Package checks provides utilities to check for certain properties of a sequence.
 */
-
 package checks
 
 import (

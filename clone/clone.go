@@ -39,7 +39,6 @@ Keoni
 PS: We do NOT (yet) handle restriction enzymes which recognize one site but cut
 in multiple places (Type IIG enzymes) such as BcgI.
 */
-
 package clone
 
 import (

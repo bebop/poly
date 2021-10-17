@@ -15,7 +15,6 @@ https://en.wikipedia.org/wiki/Nucleomorph <- Thanks Keoni for mentioning this ex
 TTFN,
 Tim
 */
-
 package codon
 
 import (

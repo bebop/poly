@@ -6,7 +6,6 @@ a given position is. This package provides a function for generating all
 possible deterministic variants of a sequence given a sequence
 with ambiguous bases.
 */
-
 package variants
 
 import (

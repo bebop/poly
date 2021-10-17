@@ -12,7 +12,6 @@ As well as other info like source file checksums, etc.
 This package will likely be overhauled before 1.0 release to be more flexible and robust.
 So be on the lookup for breaking changes in future releases.
 */
-
 package poly
 
 import (

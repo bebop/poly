@@ -10,7 +10,6 @@ Reverse takes the reverse of a sequence.
 ReverseComplement takes the reverse complement of a sequence.
 (Reverses the sequence string and returns the complement of the reversed sequence.)
 */
-
 package transform
 
 import "strings"

@@ -17,7 +17,6 @@ You can read more about that at the link above but just know that an absolute hu
 number of protocols from diagnostics to plasmid cloning use these primers so they're
 super important.
 */
-
 package primers
 
 import (
