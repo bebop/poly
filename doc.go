@@ -11,7 +11,7 @@ through a simple interface in Go.
 
 The reason why Go was choosen is that it's a highly popular
 language with a simple sytax and a large ecosystem of packages
-that make it *extremely* easy to learn, use, and deploy.
+that makes it *extremely* easy to learn, use, and deploy.
 It's also on average 25X faster and more energy efficient that
 Python.
 
