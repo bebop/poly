@@ -1,6 +1,7 @@
 package slow5
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -20,6 +21,21 @@ func testParseReadsHelper(t *testing.T, fileTarget string, errorMessage string) 
 	if len(targetErr) == 0 {
 		t.Errorf(errorMessage)
 	}
+}
+
+func ExampleParseReads() {
+	file, _ := os.Open("data/example.slow5")
+	reads := make(chan Read, 1000) // buffered channels are used since we are just converting to a list. In real applications, you may want to use either buffered or unbuffered channels.
+	errs := make(chan error, 1000)
+
+	go ParseReads(file, reads, errs)
+	var outputReads []Read
+	for read := range reads {
+		outputReads = append(outputReads, read)
+	}
+
+	fmt.Println(outputReads[0].RawSignal[0:10])
+	// Output: [430 472 463 467 454 465 463 450 450 449]
 }
 
 func TestParseReads(t *testing.T) {
@@ -64,6 +80,14 @@ func TestParseReads(t *testing.T) {
 	testParseReadsHelper(t, "data/read_tests/end_reason.slow5", "Test should have failed with if end reason can't be converted to int")
 	testParseReadsHelper(t, "data/read_tests/end_reason_unknown.slow5", "Test should have failed with end reason out of range")
 	testParseReadsHelper(t, "data/read_tests/unknown.slow5", "Test should have failed with unknown header")
+}
+
+func ExampleParseHeader() {
+	file, _ := os.Open("data/example.slow5")
+	headers, _ := ParseHeader(file)
+
+	fmt.Println(headers[0].Attributes["@asic_id"])
+	// Output: 4175987214
 }
 
 func TestParseHeader(t *testing.T) {
