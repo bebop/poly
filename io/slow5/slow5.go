@@ -39,7 +39,7 @@ header with metadata and a list of reads. However, unlike many other file
 formats, a slow5 file should almost never be read into a common struct, since
 most runs are large, and will take a ton of memory. Instead, the default way
 to parse slow5 files is to produce a list of headers and a channel of raw
-reads.
+reads. In order to connect the two (if needed), use ReadGroupId.
 
 The channel of raw reads can take advantage of Go's concurrency to do
 multi-core processing of the raw reads.
@@ -65,6 +65,7 @@ type Header struct {
 	Attributes   map[string]string
 }
 
+// Read contains metadata and raw signal strengths for a single nanopore read.
 type Read struct {
 	ReadId       string
 	ReadGroupId  uint32
@@ -84,6 +85,7 @@ type Read struct {
 	EndReason     string // enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}
 }
 
+// ParseHeader parses the header of a slow5 file.
 func ParseHeader(r io.Reader) ([]Header, error) {
 	var headers []Header
 	scanner := bufio.NewScanner(r)
@@ -141,6 +143,7 @@ var knownEndReasons = map[string]bool{"unknown": true,
 	"signal_negative":                 true,
 }
 
+// ParseReads parses all reads in a slow5 file.
 func ParseReads(r io.Reader, reads chan<- Read, errorsChan chan<- error) {
 	headerMap := make(map[int]string)
 	endReasonMap := make(map[int]string)
@@ -185,6 +188,9 @@ func ParseReads(r io.Reader, reads chan<- Read, errorsChan chan<- error) {
 			var newRead Read
 			for valueIndex := 0; valueIndex < len(values); valueIndex++ {
 				fieldValue := headerMap[valueIndex]
+				if values[valueIndex] == "." {
+					continue
+				}
 				switch fieldValue {
 				case "read_id":
 					newRead.ReadId = values[valueIndex]
@@ -262,6 +268,9 @@ func ParseReads(r io.Reader, reads chan<- Read, errorsChan chan<- error) {
 					endReasonIndex, err := strconv.ParseInt(values[valueIndex], 10, 64)
 					if err != nil {
 						errorsChan <- fmt.Errorf("Failed to convert end_reason '%s' to int on line %d. Got error: %s", values[valueIndex], lineNum, err)
+					}
+					if _, ok := endReasonMap[int(endReasonIndex)]; !ok {
+						errorsChan <- fmt.Errorf("End reason out of range. Got '%d' on line %d. Cannot find valid enum reason", int(endReasonIndex), lineNum)
 					}
 					newRead.EndReason = endReasonMap[int(endReasonIndex)]
 				case "channel_number":
