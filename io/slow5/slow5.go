@@ -1,3 +1,18 @@
+/*
+Package slow5 contains slow5 parsers and writers.
+
+slow5 is a file format alternative to fast5, which is the file format outputted
+by Oxford Nanopore sequencing devices. fast5 uses hdf5, which is a complex file
+format that can only be read and written with a single software library built
+in 1998. On the other hand, slow5 uses a .tsv file format, which is easy to
+both parse and write.
+
+slow5 files contain both general metadata about the sequencing run and raw
+signal reads from the sequencing run. This raw signal can be used directly or
+basecalled and used for alignment.
+
+More information on slow5 can be found here: https://github.com/hasindu2008/slow5tools
+*/
 package slow5
 
 import (
@@ -10,7 +25,7 @@ import (
 	"time"
 )
 
-type ReadGroup struct {
+type Header struct {
 	ReadGroupId uint32
 
 	Slow5Version               string
@@ -80,8 +95,8 @@ type Read struct {
 	EndReason     string // enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}
 }
 
-func ParseReadGroups(r io.Reader) ([]ReadGroup, error) {
-	var readGroups []ReadGroup
+func ParseHeader(r io.Reader) ([]Header, error) {
+	var headers []Header
 	scanner := bufio.NewScanner(r)
 	var slow5Version string
 	var numReadGroups uint32
@@ -90,7 +105,7 @@ func ParseReadGroups(r io.Reader) ([]ReadGroup, error) {
 		line := scanner.Text()
 		values := strings.Split(line, "\t")
 		if len(values) < 2 {
-			return []ReadGroup{}, fmt.Errorf("Got following line without tabs: %s", line)
+			return []Header{}, fmt.Errorf("Got following line without tabs: %s", line)
 		}
 
 		// First, we need to identify the number of read groups. This number will be the length of our
@@ -102,36 +117,36 @@ func ParseReadGroups(r io.Reader) ([]ReadGroup, error) {
 			case "#num_read_groups":
 				numReadGroupsUint, err := strconv.ParseUint(values[1], 10, 32)
 				if err != nil {
-					return []ReadGroup{}, err
+					return []Header{}, err
 				}
 				numReadGroups = uint32(numReadGroupsUint)
 				for id := uint32(0); id < numReadGroups; id++ {
-					readGroups = append(readGroups, ReadGroup{Slow5Version: slow5Version, ReadGroupId: id})
+					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupId: id})
 				}
 			}
 		} else {
 			// Terminate if we hit the beginning of the raw read headers
 			if values[0] == "#char*" || values[0] == "#read_id" {
-				return readGroups, nil
+				return headers, nil
 			}
 			// Check to make sure we have the right amount of information for the num_read_groups
 			if len(values) != int(numReadGroups+1) {
-				return []ReadGroup{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
+				return []Header{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
 			}
 			switch values[0] {
 			case "@asic_id":
 				for id := 0; id < int(numReadGroups); id++ {
 					asic_id, err := strconv.ParseInt(values[id+1], 10, 64)
 					if err != nil {
-						return []ReadGroup{}, fmt.Errorf("Failed to convert asic_id '%s' to int on line %d. Got error: %s", values[id+1], lineNum, err)
+						return []Header{}, fmt.Errorf("Failed to convert asic_id '%s' to int on line %d. Got error: %s", values[id+1], lineNum, err)
 					}
-					readGroups[id].AsicId = int(asic_id)
+					headers[id].AsicId = int(asic_id)
 				}
 			}
 		}
 		lineNum++
 	}
-	return readGroups, errors.New("ReadGroup header never terminated. Improper file?")
+	return headers, errors.New("ReadGroup header never terminated. Improper file?")
 }
 
 var knownEndReasons = map[string]bool{"unknown": true,
