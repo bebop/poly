@@ -31,12 +31,12 @@ func TestParseReads(t *testing.T) {
 	}
 }
 
-func TestParseReadGroups(t *testing.T) {
+func TestParseHeader(t *testing.T) {
 	file, err := os.Open("data/example.slow5")
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	readGroups, err := ParseReadGroups(file)
+	readGroups, err := ParseHeader(file)
 	if err != nil {
 		t.Errorf("Failed ParseReadGroups with error: %s", err)
 	}
@@ -45,7 +45,7 @@ func TestParseReadGroups(t *testing.T) {
 		t.Errorf("There should only be 1 read group. Got: %d", len(readGroups))
 	}
 
-	if readGroups[0].AsicId != 4175987214 {
-		t.Errorf("Expected AsicId 4175987214. Got: %d", 4175987214)
+	if readGroups[0].Attributes["@asic_id"] != "4175987214" {
+		t.Errorf("Expected AsicId 4175987214. Got: %s", readGroups[0].Attributes["asic_id"])
 	}
 }

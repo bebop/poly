@@ -1,6 +1,9 @@
 /*
 Package slow5 contains slow5 parsers and writers.
 
+Right now, only parsing slow5 files is supported. Support for writing and blow5
+coming soon.
+
 slow5 is a file format alternative to fast5, which is the file format outputted
 by Oxford Nanopore sequencing devices. fast5 uses hdf5, which is a complex file
 format that can only be read and written with a single software library built
@@ -22,58 +25,44 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 )
 
-type Header struct {
-	ReadGroupId uint32
+/******************************************************************************
+Oct 10, 2021
 
-	Slow5Version               string
-	AsicId                     int `json:"asic_id"`
-	asic_id_eeprom             int
-	asic_temp                  float64
-	asic_version               string
-	auto_update                bool
-	auto_update_source         string
-	barcoding_enabled          bool
-	bream_is_standard          bool
-	configuration_version      string
-	device_id                  string
-	device_type                string
-	distribution_status        string
-	distribution_version       string
-	exp_script_name            string
-	exp_script_purpose         string
-	exp_start_time             time.Time
-	experiment_duration_set    int
-	experiment_type            string
-	file_type                  string
-	file_version               string
-	flongle_adapter_id         string
-	flow_cell_id               string
-	flow_cell_product_code     string
-	guppy_version              string
-	heatsink_temp              float64
-	host_product_code          string
-	host_product_serial_number string
-	hostname                   string
-	installation_type          string
-	local_basecalling          bool
-	local_firmware_file        int // no information on what this exactly is
-	operating_system           string
-	Package                    string
-	package_version            string
-	pore_type                  string
-	protocol_group_id          string
-	protocol_run_id            string
-	protocol_start_time        time.Time
-	protocols_version          string
-	run_id                     string
-	sample_frequency           int
-	sample_id                  string
-	sequencing_kit             string
-	usb_config                 string
-	version                    string
+slow5 parser begins here. Specification below:
+https://hasindu2008.github.io/slow5specs/slow5-v0.1.0.pdf
+
+slow5 is able to combine multiple sequencing runs into a single file format,
+but we read each sequencing run separately. Each sequencing run contains a
+header with metadata and a list of reads. However, unlike many other file
+formats, a slow5 file should almost never be read into a common struct, since
+most runs are large, and will take a ton of memory. Instead, the default way
+to parse slow5 files is to produce a list of headers and a channel of raw
+reads.
+
+The channel of raw reads can take advantage of Go's concurrency to do
+multi-core processing of the raw reads.
+
+Nanopore changes the attributes found in the header quite often, so we store
+most of these attributes in a map for future proofing. Even the binary file
+format, blow5, does not have types for these attributes, and just stores them
+as a long string.
+
+Reads have 8 required columns, and a few auxillary. These are typed, since they
+are what will probably be used in real software.
+
+Cheers mate,
+
+Keoni
+
+******************************************************************************/
+
+// Header contains metadata about the sequencing run in general.
+type Header struct {
+	ReadGroupId  uint32
+	Slow5Version string
+	Attributes   map[string]string
 }
 
 type Read struct {
@@ -121,7 +110,8 @@ func ParseHeader(r io.Reader) ([]Header, error) {
 				}
 				numReadGroups = uint32(numReadGroupsUint)
 				for id := uint32(0); id < numReadGroups; id++ {
-					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupId: id})
+					emptyMap := make(map[string]string)
+					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupId: id, Attributes: emptyMap})
 				}
 			}
 		} else {
@@ -133,15 +123,8 @@ func ParseHeader(r io.Reader) ([]Header, error) {
 			if len(values) != int(numReadGroups+1) {
 				return []Header{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
 			}
-			switch values[0] {
-			case "@asic_id":
-				for id := 0; id < int(numReadGroups); id++ {
-					asic_id, err := strconv.ParseInt(values[id+1], 10, 64)
-					if err != nil {
-						return []Header{}, fmt.Errorf("Failed to convert asic_id '%s' to int on line %d. Got error: %s", values[id+1], lineNum, err)
-					}
-					headers[id].AsicId = int(asic_id)
-				}
+			for id := 0; id < int(numReadGroups); id++ {
+				headers[id].Attributes[values[0]] = values[id+1]
 			}
 		}
 		lineNum++
