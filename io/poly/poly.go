@@ -1,3 +1,17 @@
+/*
+Package poly provides the core Sequence struct and methods for working with DNA, RNA, and Amino Acid sequences in Poly.
+
+Each Sequence struct can be broken down into the following:
+
+Meta: Author, Date, Description, Name, Version, etc.
+Features:	A list of Feature structs containing feature locations and other information.
+Sequece:	The actual sequence string.
+
+As well as other info like source file checksums, etc.
+
+This package will likely be overhauled before 1.0 release to be more flexible and robust.
+So be on the lookup for breaking changes in future releases.
+*/
 package poly
 
 import (
@@ -103,6 +117,7 @@ type Sequence struct {
 	SequenceHashFunction string    `json:"hash_function"`
 	Sequence             string    `json:"sequence"`
 	Features             []Feature `json:"features"`
+	CheckSum             [32]byte  `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
 // AddFeature is the canonical way to add a Feature into a Sequence struct. Appending a Feature struct directly to Sequence.Feature's will break .GetSequence() method.

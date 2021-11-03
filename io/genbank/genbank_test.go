@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -73,7 +73,7 @@ func TestGbkIO(t *testing.T) {
 	Write(gbk, tmpGbkFilePath)
 
 	writeTestGbk := Read(tmpGbkFilePath)
-	if diff := cmp.Diff(gbk, writeTestGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
@@ -108,7 +108,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testInputGbk := Read("../../data/sample.gbk")
 	testOutputGbk := Read(tmpGbkFilePath)
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -133,7 +133,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	testInputGb := Read("../../data/t4_intron.gb")
 	testOutputGb := Read(tmpGbFilePath)
 
-	if diff := cmp.Diff(testInputGb, testOutputGb, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -313,3 +313,11 @@ func ExampleParseFlat() {
 GbkMulti/GbkFlat related tests end here.
 
 ******************************************************************************/
+
+func TestBenchlingGenbank(t *testing.T) {
+	sequence := Read("../../data/benchling.gb")
+
+	if len(sequence.Features) != 17 {
+		t.Errorf("Parsing benchling genbank file not returned the correct quantity of features")
+	}
+}

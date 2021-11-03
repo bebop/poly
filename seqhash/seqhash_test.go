@@ -9,14 +9,6 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-func ExampleHash() {
-	sequence := genbank.Read("../data/puc19.gbk")
-
-	seqhash, _ := Hash(sequence.Sequence, "DNA", true, true)
-	fmt.Println(seqhash)
-	// output: v1_DCD_4b0616d1b3fc632e42d78521deb38b44fba95cca9fde159e01cd567fa996ceb9
-}
-
 func TestHash(t *testing.T) {
 	// Test TNA as sequenceType
 	_, err := Hash("ATGGGCTAA", "TNA", true, true)
@@ -72,15 +64,6 @@ func TestHash(t *testing.T) {
 		t.Errorf("Linear single stranded hashing failed. Expected v1_PLS_922ec11f5227ce77a42f07f565a7a1a479772b5cf3f1f6e93afc5ecbc0fd5955, got: " + seqhash)
 	}
 
-}
-
-func ExampleRotateSequence() {
-	sequence := genbank.Read("../data/puc19.gbk")
-	sequenceLength := len(sequence.Sequence)
-	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
-
-	fmt.Println(RotateSequence(sequence.Sequence) == RotateSequence(testSequence))
-	// output: true
 }
 
 func TestLeastRotation(t *testing.T) {

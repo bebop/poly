@@ -1,3 +1,23 @@
+/*
+Package uniprot provides an XML parser for Uniprot data dumps.
+
+Uniprot is comprehensive, high-quality and freely accessible resource of protein
+sequence and functional information. It is the best(1) protein database out there.
+
+Uniprot database dumps are available as gzipped FASTA files or gzipped XML files.
+The XML files have significantly more information than the FASTA files, and this
+parser specifically works on the gzipped XML files from Uniprot.
+
+Uniprot provides an XML schema of their data dumps(3), which is useful for
+autogeneration of Golang structs. xsdgen was used to automatically generate
+xml.go from uniprot.xsd.
+
+Each protein in Uniprot is known as an "Entry" (as defined in xml.go).
+
+The function Parse stream-reads Uniprot into an Entry channel, from which you
+can use the entries however you want. Read simplifies reading gzipped files
+from a disk into an Entry channel.
+*/
 package uniprot
 
 import (

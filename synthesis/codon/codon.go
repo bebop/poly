@@ -1,12 +1,31 @@
+/*
+Package codon is a package for optimizing codons for expression when synthesizing DNA.
+
+This package contains almost everything you need to do standard codon optimization.
+
+Biological context: certain cells favor certain codons and will reject or under
+express sequences that don't use a similar ratio of codons.
+This is called codon bias: https://en.wikipedia.org/wiki/Codon_usage_bias
+
+Furthermore, different ribosomes in different organisms will interpret codons differently.
+What may be a start codon for one ribosome may be a stop in the other.
+Heck, apparently nucleomorphs contain 4 different kinds of ribosomes.
+https://en.wikipedia.org/wiki/Nucleomorph <- Thanks Keoni for mentioning this example!
+
+TTFN,
+Tim
+*/
 package codon
 
 import (
 	"errors"
+	"fmt"
+
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/TimothyStiles/poly"
+	"github.com/TimothyStiles/poly/io/poly"
 	weightedRand "github.com/mroth/weightedrand"
 
 	"encoding/json"
@@ -31,28 +50,9 @@ File is structured as so:
 		Optimize - given an amino acid sequence string and codon table it translates
 							 sequences to UPPERCASE nucleic acid sequences.
 
-This file contains almost everything you need to do standard codon optimization.
-
-Biological context: certain cells favor certain codons and will reject or under
-express sequences that don't use a similar ratio of codons.
-This is called codon bias: https://en.wikipedia.org/wiki/Codon_usage_bias
-
-Furthermore, different ribosomes in different organisms will interpret codons differently.
-What may be a start codon for one ribosome may be a stop in the other.
-Heck, apparently nucleomorphs contain 4 different kinds of ribosomes.
-https://en.wikipedia.org/wiki/Nucleomorph <- Thanks Keoni for mentioning this example!
-
 Anywho, most of this file and Table's struct methods are meant to help overcome
 this codon bias. There's a default Table generator near the bottom of this file
 with a whole section on how it works and why it's gotta be that way.
-
-Like most codebases, best usage examples come from tests. You can check out
-TestTranslate and TestOptimize in transformations_test.go for pretty solid
-examples of what you can do with this code.
-
-TTFN,
-Tim
-
 ******************************************************************************/
 
 var errEmtpyCodonTable error = errors.New("empty codon table")
@@ -120,7 +120,10 @@ func Optimize(aminoAcids string, codonTable Table) (string, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	var codons strings.Builder
-	codonChooser := codonTable.chooser()
+	codonChooser, err := codonTable.chooser()
+	if err != nil {
+		return "", err
+	}
 
 	for _, aminoAcid := range aminoAcids {
 		aminoAcidString := string(aminoAcid)
@@ -190,7 +193,7 @@ func getCodonFrequency(sequence string) map[string]int {
 }
 
 // chooser is a Table method to convert a codon table to a chooser
-func (codonTable Table) chooser() map[string]weightedRand.Chooser {
+func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
 
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
@@ -218,9 +221,14 @@ func (codonTable Table) chooser() map[string]weightedRand.Chooser {
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
-		codonChooser[aminoAcid.Letter] = weightedRand.NewChooser(codonChoices...)
+		chooser, err := weightedRand.NewChooser(codonChoices...)
+		if err != nil {
+			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
+		}
+
+		codonChooser[aminoAcid.Letter] = *chooser
 	}
-	return codonChooser
+	return codonChooser, nil
 }
 
 // Generate map of codons -> amino acid

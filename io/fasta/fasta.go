@@ -1,3 +1,14 @@
+/*
+Package fasta contains fasta parsers and writers.
+
+Fasta is a flat text file format developed in 1985 to store nucleotide and
+amino acid sequences. It is extremely simple and well supported across many
+languages. However, this simplicity means that annotation of genetic objects
+is not supported.
+
+This package provides a parser and writer for working with Fasta formatted
+genetic sequences.
+*/
 package fasta
 
 import (
@@ -13,7 +24,7 @@ import (
 /******************************************************************************
 Apr 25, 2021
 
- Parser begins here
+Fasta Parser begins here
 
 Many thanks to Jordan Campbell (https://github.com/0x106) for building the first
 parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
@@ -21,13 +32,13 @@ for helping complete that PR. This work expands on the previous work by allowing
 for concurrent  parsing and giving Poly a specific  parser subpackage,
 as well as few bug fixes.
 
- is a very simple file format for working with DNA, RNA, or protein sequences.
+Fasta is a very simple file format for working with DNA, RNA, or protein sequences.
 It was first released in 1985 and is still widely used in bioinformatics.
 
 https://en.wikipedia.org/wiki/_format
 
 One interesting use of the concurrent  parser is working with the Uniprot
- dump files, which are far too large to fit into RAM. This parser is able
+fasta dump files, which are far too large to fit into RAM. This parser is able
 to easily handle those files by doing computation actively while the data dump
 is getting parsed.
 

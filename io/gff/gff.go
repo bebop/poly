@@ -1,3 +1,14 @@
+/*
+Package gff provides gff parsers and writers.
+
+GFF stands for "general feature format". It is an alternative to GenBank for
+storing data about genomic sequences. While not often used in synthetic biology
+research, it is more commonly used in bioinformatics for digesting features of
+genomic sequences.
+
+This package provides a parser and writer to convert between the gff file
+format and the more general poly.Sequence struct.
+*/
 package gff
 
 import (
@@ -9,7 +20,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/TimothyStiles/poly"
+	"lukechampine.com/blake3"
+
+	"github.com/TimothyStiles/poly/io/poly"
 )
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
@@ -17,6 +30,9 @@ func Parse(file []byte) poly.Sequence {
 
 	gff := string(file)
 	sequence := poly.Sequence{}
+
+	// Add the CheckSum to sequence (blake3)
+	sequence.CheckSum = blake3.Sum256(file)
 
 	lines := strings.Split(gff, "\n")
 	metaString := lines[0:2]

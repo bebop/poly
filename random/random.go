@@ -1,3 +1,6 @@
+/*
+Package random provides functions to generate randon DNA and protein sequences.
+*/
 package random
 
 import (

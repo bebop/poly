@@ -1,3 +1,22 @@
+/*
+Package primers provides utilities for creating primers and DNA barcodes.
+
+Primers are short sequences of DNA that can be used to amplify DNA sequences
+and they are the workhorse of modern molecular biology.
+
+Essentially primers are short pieces of single stranded DNA that can
+bind to a target sequence of single stranded DNA. These primers serve as a
+marker for polymerases (the enzyme Poly is named after!) to bind and start adding
+free floating nucleotides (ACTGs) to a single strand piece of DNA to form a
+double stranded piece of DNA.
+
+This is a crucial step in the process of PCR (polymerase chain reaction).
+https://en.wikipedia.org/wiki/Polymerase_chain_reaction
+
+You can read more about that at the link above but just know that an absolute huge
+number of protocols from diagnostics to plasmid cloning use these primers so they're
+super important.
+*/
 package primers
 
 import (

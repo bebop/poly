@@ -1,10 +1,10 @@
-package io_test
+package io
 
 import (
 	"testing"
 
-	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

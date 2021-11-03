@@ -1,10 +1,14 @@
-package transform
+package transform_test
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/TimothyStiles/poly/transform"
+)
 
 func ExampleReverseComplement() {
 	sequence := "GATTACA"
-	reverseComplement := ReverseComplement(sequence)
+	reverseComplement := transform.ReverseComplement(sequence)
 	fmt.Println(reverseComplement)
 
 	// Output: TGTAATC
@@ -12,7 +16,7 @@ func ExampleReverseComplement() {
 
 func ExampleComplement() {
 	sequence := "GATTACA"
-	complement := Complement(sequence)
+	complement := transform.Complement(sequence)
 	fmt.Println(complement)
 
 	// Output: CTAATGT
@@ -20,7 +24,7 @@ func ExampleComplement() {
 
 func ExampleReverse() {
 	sequence := "GATTACA"
-	reverse := Reverse(sequence)
+	reverse := transform.Reverse(sequence)
 	fmt.Println(reverse)
 
 	// Output: ACATTAG

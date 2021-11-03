@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -62,7 +62,7 @@ func TestConvertPipe(t *testing.T) {
 		baseTestSequence := parseExt(match)
 		pipeOutputTestSequence := polyjson.Parse(writeBuffer.Bytes())
 
-		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 			t.Errorf(" mismatch converting from %q to json (-want +got):\n%s", extension, diff)
 		}
 	}
@@ -92,7 +92,7 @@ func TestConvertIO(t *testing.T) {
 
 		pipeOutputTestSequence := parseFlag(writeBuffer.Bytes(), extension)
 
-		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, pipeOutputTestSequence, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
 		}
 	}
@@ -121,7 +121,7 @@ func TestConvertWriteFile(t *testing.T) {
 		outputSequence := parseExt(testOutputPath)
 		os.Remove(testOutputPath)
 
-		if diff := cmp.Diff(baseTestSequence, outputSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
+		if diff := cmp.Diff(baseTestSequence, outputSequence, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
 			t.Errorf(" mismatch reading and writing %q (-want +got):\n%s", extension, diff)
 		}
 	}
