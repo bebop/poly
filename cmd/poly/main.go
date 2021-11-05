@@ -64,7 +64,7 @@ func application() *cli.App {
 		Name:  "poly",
 		Usage: "A command line utility for engineering organisms.",
 
-		// This is where you define global flags. Each sub command can also have its own flags that overide globals
+		// This is where you define global flags. Each sub command can also have its own flags that override globals
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "y",
