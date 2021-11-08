@@ -67,6 +67,11 @@ func DesignPrimers(sequence string, targetTm float64) (string, string) {
 // your reactions. The variable `circular` is for if the target template is
 // circular, like a plasmid.
 func SimulateSimple(sequences []string, targetTm float64, circular bool, primerList []string) []string {
+	// Set all primers to uppercase.
+	for i := range primerList {
+		primerList[i] = strings.ToUpper(primerList[i])
+	}
+
 	var pcrFragments []string
 	for _, sequence := range sequences {
 		sequence = strings.ToUpper(sequence)
@@ -127,15 +132,18 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 				for _, reverseLocation := range reverseLocationInts {
 					if forwardLocation < reverseLocation {
 						pcrFragments = append(pcrFragments, generatePcrFragments(sequence, forwardLocation, reverseLocation, forwardLocations[forwardLocation], reverseLocations[reverseLocation], minimalPrimers, primerList)...)
+						foundFragment = true
 					}
-					foundFragment = true
 				}
 				// If the sequence is circular and we haven't found a fragment yet, check the other side of the origin
 				if circular && !foundFragment {
 					for _, reverseLocation := range reverseLocationInts {
 						if forwardLocationInts[0] > reverseLocation {
 							// If either one of these are true, create a new pcrFragment and append to pcrFragments
-							pcrFragments = append(pcrFragments, generatePcrFragments(sequence, forwardLocation, reverseLocation, forwardLocations[forwardLocation], reverseLocations[reverseLocation], minimalPrimers, primerList)...)
+							rotatedSequence := sequence[forwardLocation:] + sequence[:forwardLocation]
+							rotatedForwardLocation := 0
+							rotatedReverseLocation := len(sequence[forwardLocation:]) + reverseLocation
+							pcrFragments = append(pcrFragments, generatePcrFragments(rotatedSequence, rotatedForwardLocation, rotatedReverseLocation, forwardLocations[forwardLocation], reverseLocations[reverseLocation], minimalPrimers, primerList)...)
 
 						}
 					}
