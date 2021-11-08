@@ -1,14 +1,46 @@
-package pcr
+package pcr_test
 
 import (
 	"fmt"
+	"github.com/TimothyStiles/poly/primers/pcr"
 )
+
+// This example shows how to design a sequence.
+func Example_basic() {
+	// We aim to amplify the tfoX gene.
+	tfoX := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+
+	// Our cloning scheme requires that we add some overhangs, so lets add them
+	// now.
+	forwardOverhang := "TTATAGGTCTCATACT"
+	reverseOverhang := "ATGAAGAGACCATATA"
+
+	// Let's design primers with our overhangs for a targetTm of 55.
+	fwd, rev := pcr.DesignPrimersWithOverhangs(tfoX, forwardOverhang, reverseOverhang, 55.0)
+
+	// Now we want to be sure that our primer set will only amplify our
+	// target sequence, so we'll simulate a PCR reaction. We'll also want
+	// to include other sequences that will be in our PCR. For example,
+	// perhaps we know that `badFragment` will be within our reaction. This
+	// could be another plasmid, another chromosome, or anything else.
+	badFragment := "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG"
+	fragments, _ := pcr.Simulate([]string{tfoX, badFragment}, 55.0, false, []string{fwd, rev})
+
+	// Now let's make sure it only amplified our target.
+	if len(fragments) != 1 {
+		fmt.Println("Failed to amplify a single fragment!")
+	}
+
+	// Else, print out our primers
+	fmt.Printf("%s, %s\n", fwd, rev)
+	// Output: TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG, TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC
+}
 
 func ExampleDesignPrimersWithOverhangs() {
 	tfoX := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
 	forwardOverhang := "TTATAGGTCTCATACT"
 	reverseOverhang := "ATGAAGAGACCATATA"
-	fwd, rev := DesignPrimersWithOverhangs(tfoX, forwardOverhang, reverseOverhang, 55.0)
+	fwd, rev := pcr.DesignPrimersWithOverhangs(tfoX, forwardOverhang, reverseOverhang, 55.0)
 
 	fmt.Printf("%s, %s", fwd, rev)
 	// Output: TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG, TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC
@@ -16,7 +48,7 @@ func ExampleDesignPrimersWithOverhangs() {
 
 func ExampleDesignPrimers() {
 	tfoX := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
-	fwd, rev := DesignPrimers(tfoX, 55.0)
+	fwd, rev := pcr.DesignPrimers(tfoX, 55.0)
 
 	fmt.Printf("%s, %s", fwd, rev)
 	// Output: AATAATTACACCGAGATAACACATCATGG, TTAAGAAAGCGCATTTTCCAGC
@@ -25,7 +57,7 @@ func ExampleDesignPrimers() {
 func ExampleSimulate() {
 	tfoX := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
 	primers := []string{"TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG", "TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC"}
-	fragments, _ := Simulate([]string{tfoX}, 55.0, false, primers)
+	fragments, _ := pcr.Simulate([]string{tfoX}, 55.0, false, primers)
 
 	fmt.Println(fragments)
 	// Output: [TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGGATAAACCGATACTCAAAGATTCTATGAAGCTATTTGAGGCACTTGGTACGATCAAGTCGCGCTCAATGTTTGGTGGCTTCGGACTTTTCGCTGATGAAACGATGTTTGCACTGGTTGTGAATGATCAACTTCACATACGAGCAGACCAGCAAACTTCATCTAACTTCGAGAAGCAAGGGCTAAAACCGTACGTTTATAAAAAGCGTGGTTTTCCAGTCGTTACTAAGTACTACGCGATTTCCGACGACTTGTGGGAATCCAGTGAACGCTTGATAGAAGTAGCGAAGAAGTCGTTAGAACAAGCCAATTTGGAAAAAAAGCAACAGGCAAGTAGTAAGCCCGACAGGTTGAAAGACCTGCCTAACTTACGACTAGCGACTGAACGAATGCTTAAGAAAGCTGGTATAAAATCAGTTGAACAACTTGAAGAGAAAGGTGCATTGAATGCTTACAAAGCGATACGTGACTCTCACTCCGCAAAAGTAAGTATTGAGCTACTCTGGGCTTTAGAAGGAGCGATAAACGGCACGCACTGGAGCGTCGTTCCTCAATCTCGCAGAGAAGAGCTGGAAAATGCGCTTTCTTAAATGAAGAGACCATATA]
