@@ -1,8 +1,9 @@
 /*
 Package pcr designs and simulates simple PCR reactions.
 
-PCR, or polymerase chain reaction, is a method developed in 1983 to amplify DNA
-templates using small fragments of synthesized single-stranded DNA. These small
+PCR, or polymerase chain reaction, is a method developed in 1983 to copy DNA
+templates using small fragments of synthesized single-stranded DNA, amplifying
+those DNA templates to ~x1,000,000,000 their starting concentration. These small
 fragments, referred to as "primers" or "oligos", can be designed on a computer
 and then synthesized for amplifying a variety of different templates.
 
@@ -16,7 +17,7 @@ oligo pool, use the `Simulate` rather than `SimulateSimple` function to detect
 if there is concatemerization happening in your multiplex reaction. In most
 other cases, use `SimulateSimple`.
 
-The targetTm in all functions is specifically for Taq polymerase.
+IMPORTANT! The targetTm in all functions is specifically for Taq polymerase.
 */
 package pcr
 
@@ -75,6 +76,10 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 	var pcrFragments []string
 	for _, sequence := range sequences {
 		sequence = strings.ToUpper(sequence)
+		// Suffix array construction allows function to operate on
+		// very large sequences without being worried about exeuction
+		// time. For small sequences, it doesn't really matter.
+		// https://eli.thegreenplace.net/2016/suffix-arrays-in-the-go-standard-library/
 		sequenceIndex := suffixarray.New([]byte(sequence))
 
 		primerLength := len(primerList)
@@ -91,8 +96,8 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 				}
 			}
 			// Use the minimal binding sites of the primer to find positions in the template
-			if primer[len(primer)-minimalLength:] != primer {
-				minimalPrimer := primer[len(primer)-minimalLength:]
+			minimalPrimer := primer[len(primer)-minimalLength:]
+			if minimalPrimer != primer {
 				minimalPrimers[primerIdx] = minimalPrimer
 				for _, forwardLocation := range sequenceIndex.Lookup([]byte(minimalPrimer), -1) {
 					forwardLocations[forwardLocation] = append(forwardLocations[forwardLocation], primerIdx)
