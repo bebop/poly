@@ -40,12 +40,12 @@ var minimalPrimerLength int = 15
 func DesignPrimersWithOverhangs(sequence, forwardOverhang, reverseOverhang string, targetTm float64) (string, string) {
 	sequence = strings.ToUpper(sequence)
 	forwardPrimer := sequence[0:minimalPrimerLength]
-	for i := 0; primers.MeltingTemp(forwardPrimer) < targetTm; i++ {
-		forwardPrimer = sequence[0 : minimalPrimerLength+i]
+	for additionalNucleotides := 0; primers.MeltingTemp(forwardPrimer) < targetTm; additionalNucleotides++ {
+		forwardPrimer = sequence[0 : minimalPrimerLength+additionalNucleotides]
 	}
 	reversePrimer := transform.ReverseComplement(sequence[len(sequence)-minimalPrimerLength:])
-	for i := 0; primers.MeltingTemp(reversePrimer) < targetTm; i++ {
-		reversePrimer = transform.ReverseComplement(sequence[len(sequence)-(minimalPrimerLength+i):])
+	for additionalNucleotides := 0; primers.MeltingTemp(reversePrimer) < targetTm; additionalNucleotides++ {
+		reversePrimer = transform.ReverseComplement(sequence[len(sequence)-(minimalPrimerLength+additionalNucleotides):])
 	}
 
 	// Add overhangs to primer
@@ -69,8 +69,8 @@ func DesignPrimers(sequence string, targetTm float64) (string, string) {
 // circular, like a plasmid.
 func SimulateSimple(sequences []string, targetTm float64, circular bool, primerList []string) []string {
 	// Set all primers to uppercase.
-	for i := range primerList {
-		primerList[i] = strings.ToUpper(primerList[i])
+	for primerIndex := range primerList {
+		primerList[primerIndex] = strings.ToUpper(primerList[primerIndex])
 	}
 
 	var pcrFragments []string
@@ -87,7 +87,7 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 		forwardLocations := make(map[int][]int)
 		reverseLocations := make(map[int][]int)
 		minimalPrimers := make([]string, primerLength)
-		for primerIdx, primer := range primerList {
+		for primerIndex, primer := range primerList {
 			var minimalLength int
 			for index := minimalPrimerLength; primers.MeltingTemp(primer[len(primer)-index:]) < targetTm; index++ {
 				minimalLength = index
@@ -98,12 +98,14 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 			// Use the minimal binding sites of the primer to find positions in the template
 			minimalPrimer := primer[len(primer)-minimalLength:]
 			if minimalPrimer != primer {
-				minimalPrimers[primerIdx] = minimalPrimer
+				minimalPrimers[primerIndex] = minimalPrimer
+				// For each primer, we want to look for all possible binding sites in our gene.
+				// We then append this to a list of binding sites for that primer.
 				for _, forwardLocation := range sequenceIndex.Lookup([]byte(minimalPrimer), -1) {
-					forwardLocations[forwardLocation] = append(forwardLocations[forwardLocation], primerIdx)
+					forwardLocations[forwardLocation] = append(forwardLocations[forwardLocation], primerIndex)
 				}
 				for _, reverseLocation := range sequenceIndex.Lookup([]byte(transform.ReverseComplement(minimalPrimer)), -1) {
-					reverseLocations[reverseLocation] = append(reverseLocations[reverseLocation], primerIdx)
+					reverseLocations[reverseLocation] = append(reverseLocations[reverseLocation], primerIndex)
 				}
 			}
 		}
@@ -176,11 +178,11 @@ func Simulate(sequences []string, targetTm float64, circular bool, primerList []
 
 func generatePcrFragments(sequence string, forwardLocation int, reverseLocation int, forwardPrimerIndxs []int, reversePrimerIndxs []int, minimalPrimers []string, primerList []string) []string {
 	var pcrFragments []string
-	for forwardPrimerIdx := range forwardPrimerIndxs {
-		minimalPrimer := minimalPrimers[forwardPrimerIdx]
-		fullPrimerForward := primerList[forwardPrimerIdx]
-		for _, reversePrimerIdx := range reversePrimerIndxs {
-			fullPrimerReverse := transform.ReverseComplement(primerList[reversePrimerIdx])
+	for forwardPrimerIndex := range forwardPrimerIndxs {
+		minimalPrimer := minimalPrimers[forwardPrimerIndex]
+		fullPrimerForward := primerList[forwardPrimerIndex]
+		for _, reversePrimerIndex := range reversePrimerIndxs {
+			fullPrimerReverse := transform.ReverseComplement(primerList[reversePrimerIndex])
 			pcrFragment := fullPrimerForward[:len(fullPrimerForward)-len(minimalPrimer)] + sequence[forwardLocation:reverseLocation] + fullPrimerReverse
 			pcrFragments = append(pcrFragments, pcrFragment)
 		}
