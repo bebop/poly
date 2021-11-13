@@ -1,0 +1,63 @@
+package pcr_test
+
+import (
+	"fmt"
+	"github.com/TimothyStiles/poly/primers/pcr"
+)
+
+// This example shows how to design a sequence.
+func Example_basic() {
+	gene := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+
+	// Our cloning scheme requires that we add some overhangs, so lets add them
+	// now.
+	forwardOverhang := "TTATAGGTCTCATACT"
+	reverseOverhang := "ATGAAGAGACCATATA"
+
+	// Let's design primers with our overhangs for a targetTm of 55.
+	fwd, rev := pcr.DesignPrimersWithOverhangs(gene, forwardOverhang, reverseOverhang, 55.0)
+
+	// Now we want to be sure that our primer set will only amplify our
+	// target sequence, so we'll simulate a PCR reaction. We'll also want
+	// to include other sequences that will be in our PCR. For example,
+	// perhaps we know that `badFragment` will be within our reaction. This
+	// could be another plasmid, another chromosome, or anything else.
+	badFragment := "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG"
+	fragments, _ := pcr.Simulate([]string{gene, badFragment}, 55.0, false, []string{fwd, rev})
+
+	// Now let's make sure it only amplified our target.
+	if len(fragments) != 1 {
+		fmt.Println("Failed to amplify a single fragment!")
+	}
+
+	// Else, print out our primers
+	fmt.Printf("%s, %s\n", fwd, rev)
+	// Output: TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG, TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC
+}
+
+func ExampleDesignPrimersWithOverhangs() {
+	gene := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+	forwardOverhang := "TTATAGGTCTCATACT"
+	reverseOverhang := "ATGAAGAGACCATATA"
+	fwd, rev := pcr.DesignPrimersWithOverhangs(gene, forwardOverhang, reverseOverhang, 55.0)
+
+	fmt.Printf("%s, %s", fwd, rev)
+	// Output: TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG, TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC
+}
+
+func ExampleDesignPrimers() {
+	gene := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+	fwd, rev := pcr.DesignPrimers(gene, 55.0)
+
+	fmt.Printf("%s, %s", fwd, rev)
+	// Output: AATAATTACACCGAGATAACACATCATGG, TTAAGAAAGCGCATTTTCCAGC
+}
+
+func ExampleSimulate() {
+	gene := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+	primers := []string{"TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG", "TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC"}
+	fragments, _ := pcr.Simulate([]string{gene}, 55.0, false, primers)
+
+	fmt.Println(fragments)
+	// Output: [TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGGATAAACCGATACTCAAAGATTCTATGAAGCTATTTGAGGCACTTGGTACGATCAAGTCGCGCTCAATGTTTGGTGGCTTCGGACTTTTCGCTGATGAAACGATGTTTGCACTGGTTGTGAATGATCAACTTCACATACGAGCAGACCAGCAAACTTCATCTAACTTCGAGAAGCAAGGGCTAAAACCGTACGTTTATAAAAAGCGTGGTTTTCCAGTCGTTACTAAGTACTACGCGATTTCCGACGACTTGTGGGAATCCAGTGAACGCTTGATAGAAGTAGCGAAGAAGTCGTTAGAACAAGCCAATTTGGAAAAAAAGCAACAGGCAAGTAGTAAGCCCGACAGGTTGAAAGACCTGCCTAACTTACGACTAGCGACTGAACGAATGCTTAAGAAAGCTGGTATAAAATCAGTTGAACAACTTGAAGAGAAAGGTGCATTGAATGCTTACAAAGCGATACGTGACTCTCACTCCGCAAAAGTAAGTATTGAGCTACTCTGGGCTTTAGAAGGAGCGATAAACGGCACGCACTGGAGCGTCGTTCCTCAATCTCGCAGAGAAGAGCTGGAAAATGCGCTTTCTTAAATGAAGAGACCATATA]
+}
