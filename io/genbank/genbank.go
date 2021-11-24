@@ -6,7 +6,7 @@ sequences, and has since become the standard for sharing annotated genetic
 sequences.
 
 This package provides a parser and writer to convert between the GenBank file
-format and the more general poly.Sequence struct.
+format and the more general Genbank struct.
 */
 package genbank
 
@@ -43,12 +43,19 @@ func (genbank Genbank) GetMeta() (Meta, error) {
 	return genbank.Meta, nil
 }
 
-func (genbank Genbank) GetSequence() (string, error) {
+func (genbank *Genbank) GetSequence() (string, error) {
 	return genbank.Sequence, nil
 }
 
 func (genbank Genbank) GetFeatures() ([]Feature, error) {
 	return genbank.Features, nil
+}
+
+func (sequence *Genbank) AddFeature(feature *Feature) error {
+	feature.ParentSequence = sequence
+	var featureCopy Feature = *feature
+	sequence.Features = append(sequence.Features, featureCopy)
+	return nil
 }
 
 type Feature struct {
@@ -63,12 +70,7 @@ type Feature struct {
 	ParentSequence       *Genbank          `json:"-"`
 }
 
-func (sequence *Genbank) AddFeature(feature *Feature) error {
-	feature.ParentSequence = sequence
-	var featureCopy Feature = *feature
-	sequence.Features = append(sequence.Features, featureCopy)
-	return nil
-}
+// func (feature Feature)
 
 type Meta struct {
 	Date                 string            `json:"date"`
@@ -857,12 +859,12 @@ Genbank Flat specific IO related things begin here.
 ******************************************************************************/
 
 // ParseMulti parses multiple Genbank files in a byte array to multiple sequences
-func ParseMulti(file []byte) []poly.Sequence {
+func ParseMulti(file []byte) []Genbank {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence)
+	sequences := make(chan Genbank)
 	go ParseConcurrent(r, sequences)
 
-	var outputGenbanks []poly.Sequence
+	var outputGenbanks []Genbank
 	for sequence := range sequences {
 		outputGenbanks = append(outputGenbanks, sequence)
 	}
@@ -872,11 +874,11 @@ func ParseMulti(file []byte) []poly.Sequence {
 // ParseFlat specifically takes the output of a Genbank Flat file that from
 // the genbank ftp dumps. These files have 10 line headers, which are entirely
 // removed
-func ParseFlat(file []byte) []poly.Sequence {
+func ParseFlat(file []byte) []Genbank {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence)
+	sequences := make(chan Genbank)
 	go ParseFlatConcurrent(r, sequences)
-	var outputGenbanks []poly.Sequence
+	var outputGenbanks []Genbank
 	for sequence := range sequences {
 		outputGenbanks = append(outputGenbanks, sequence)
 	}
@@ -884,21 +886,21 @@ func ParseFlat(file []byte) []poly.Sequence {
 }
 
 // ReadMulti reads multiple genbank files from a single file
-func ReadMulti(path string) []poly.Sequence {
+func ReadMulti(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	sequences := ParseMulti(file)
 	return sequences
 }
 
 // ReadFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
-func ReadFlat(path string) []poly.Sequence {
+func ReadFlat(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	sequences := ParseFlat(file)
 	return sequences
 }
 
 // ReadFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
-func ReadFlatGz(path string) []poly.Sequence {
+func ReadFlatGz(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	rdata := bytes.NewReader(file)
 	r, _ := gzip.NewReader(rdata)
@@ -919,10 +921,10 @@ Genbank Concurrent specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of poly.Sequence.
-func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of Genbank.
+func ParseConcurrent(r io.Reader, sequences chan<- Genbank) {
 	var gbkStr string
-	var gbk poly.Sequence
+	var gbk Genbank
 
 	// Start a new scanner
 	scanner := bufio.NewScanner(r)
@@ -944,7 +946,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
 }
 
 // ParseFlatConcurrent concurrently parses a given flat-Genbank file in an io.Reader into a channel of poly.Sequnce.
-func ParseFlatConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+func ParseFlatConcurrent(r io.Reader, sequences chan<- Genbank) {
 	// Start a new reader
 	reader := bufio.NewReader(r)
 	// Read 10 lines, or the header of a flat file
