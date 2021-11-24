@@ -52,33 +52,44 @@ func (genbank Genbank) GetFeatures() ([]Feature, error) {
 }
 
 type Feature struct {
-	Attributes           map[string]string `json:"attributes"` //<- used in both genbank and gff
+	Type                 string            `json:"type"`
+	Attributes           map[string]string `json:"attributes"`
 	GbkLocationString    string            `json:"gbk_location_string"`
 	Sequence             string            `json:"sequence"`
-	SequenceLocation     Location          `json:"sequence_location"`
+	SequenceLocation     poly.Location     `json:"sequence_location"`
 	SequenceHash         string            `json:"sequence_hash"`
 	Description          string            `json:"description"`
 	SequenceHashFunction string            `json:"hash_function"`
-	ParentSequence       *Sequence         `json:"-"`
+	ParentSequence       *Genbank          `json:"-"`
+}
+
+func (sequence *Genbank) AddFeature(feature *Feature) error {
+	feature.ParentSequence = sequence
+	var featureCopy Feature = *feature
+	sequence.Features = append(sequence.Features, featureCopy)
+	return nil
 }
 
 type Meta struct {
-	Type       string             `json:"type"`
-	Date       string             `json:"date"`
-	Definition string             `json:"definition"`
-	Accession  string             `json:"accession"`
-	Version    string             `json:"version"`
-	Keywords   string             `json:"keywords"`
-	Organism   string             `json:"organism"`
-	Source     string             `json:"source"`
-	Origin     string             `json:"origin"`
-	Locus      GenbankLocus       `json:"locus"`
-	References []GenbankReference `json:"references"`
-	Other      map[string]string  `json:"other"`
+	Date                 string            `json:"date"`
+	Definition           string            `json:"definition"`
+	Accession            string            `json:"accession"`
+	Version              string            `json:"version"`
+	Keywords             string            `json:"keywords"`
+	Organism             string            `json:"organism"`
+	Source               string            `json:"source"`
+	Origin               string            `json:"origin"`
+	Locus                Locus             `json:"locus"`
+	References           []Reference       `json:"references"`
+	Other                map[string]string `json:"other"`
+	Name                 string            `json:"name"`
+	SequenceHash         string            `json:"sequence_hash"`
+	SequenceHashFunction string            `json:"hash_function"`
+	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
 // Reference holds information one reference in a Meta struct.
-type GenbankReference struct {
+type Reference struct {
 	Index   string `json:"index"`
 	Authors string `json:"authors"`
 	Title   string `json:"title"`
@@ -89,7 +100,7 @@ type GenbankReference struct {
 }
 
 // Locus holds Locus information in a Meta struct.
-type GenbankLocus struct {
+type Locus struct {
 	Name             string `json:"name"`
 	SequenceLength   string `json:"sequence_length"`
 	MoleculeType     string `json:"molecule_type"`
@@ -111,13 +122,13 @@ func Parse(file []byte) Genbank {
 	meta.Other = make(map[string]string)
 
 	// Create features struct
-	features := []poly.Feature{}
+	features := []Feature{}
 
 	// Create sequence struct
-	sequence := poly.Sequence{}
+	sequence := Genbank{}
 
 	// Add the CheckSum to sequence (blake3)
-	sequence.CheckSum = blake3.Sum256(file)
+	sequence.Meta.CheckSum = blake3.Sum256(file)
 
 	for numLine := 0; numLine < len(lines); numLine++ {
 		line := lines[numLine]
@@ -165,7 +176,7 @@ func Parse(file []byte) Genbank {
 
 	}
 
-	// add meta to annotated sequence
+	// add meta to genbank struct
 	sequence.Meta = meta
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
@@ -177,7 +188,7 @@ func Parse(file []byte) Genbank {
 }
 
 // Build builds a GBK string to be written out to db or file.
-func Build(sequence poly.Sequence) []byte {
+func Build(sequence Genbank) []byte {
 	var gbkString bytes.Buffer
 	locus := sequence.Meta.Locus
 	var shape string
@@ -293,14 +304,14 @@ func Build(sequence poly.Sequence) []byte {
 }
 
 // Read reads a Gbk from path and parses into an Annotated sequence struct.
-func Read(path string) poly.Sequence {
+func Read(path string) Genbank {
 	file, _ := ioutil.ReadFile(path)
 	sequence := Parse(file)
 	return sequence
 }
 
 // Write takes an Sequence struct and a path string and writes out a gff to that path.
-func Write(sequence poly.Sequence, path string) {
+func Write(sequence Genbank, path string) {
 	gbk := Build(sequence)
 	_ = ioutil.WriteFile(path, gbk, 0644)
 }
@@ -431,8 +442,8 @@ func topLevelFeatureCheck(featureString string) bool {
 }
 
 // parses locus from provided string.
-func parseLocus(locusString string) poly.Locus {
-	locus := poly.Locus{}
+func parseLocus(locusString string) Locus {
+	locus := Locus{}
 
 	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
 	circularRegex, _ := regexp.Compile(` circular `)
@@ -529,9 +540,9 @@ func getSourceOrganism(splitLine, subLines []string) (string, string) {
 }
 
 // gets a single reference. Parses headstring and the joins sub lines based on feature.
-func getReference(splitLine, subLines []string) poly.Reference {
+func getReference(splitLine, subLines []string) Reference {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-	reference := poly.Reference{}
+	reference := Reference{}
 	reference.Index = strings.Split(base, " ")[0]
 	if len(base) > 1 {
 		reference.Range = strings.TrimSpace(strings.Join(strings.Split(base, " ")[1:], " "))
@@ -563,9 +574,9 @@ func getReference(splitLine, subLines []string) poly.Reference {
 	return reference
 }
 
-func getFeatures(lines []string) []poly.Feature {
+func getFeatures(lines []string) []Feature {
 	lineIndex := 0
-	features := []poly.Feature{}
+	features := []Feature{}
 
 	// regex to remove quotes and slashes from qualifiers
 	reg, _ := regexp.Compile("[\"/\n]+")
@@ -580,7 +591,7 @@ func getFeatures(lines []string) []poly.Feature {
 			break
 		}
 
-		feature := poly.Feature{}
+		feature := Feature{}
 
 		// split the current line for feature type and location fields.
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
@@ -798,7 +809,7 @@ func BuildLocationString(location poly.Location) string {
 }
 
 // BuildFeatureString is a helper function to build gbk feature strings for Build()
-func BuildFeatureString(feature poly.Feature) string {
+func BuildFeatureString(feature Feature) string {
 	whiteSpaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
 	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
