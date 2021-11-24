@@ -25,26 +25,54 @@ import (
 	"github.com/TimothyStiles/poly/io/poly"
 )
 
-// Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func Parse(file []byte) poly.Sequence {
+type Gff struct {
+	Meta     poly.Meta
+	Features []poly.Feature // will need a GetFeatures interface to standardize
+	Sequence poly.Sequence
+	GffMeta  GffMeta
+}
 
-	gff := string(file)
-	sequence := poly.Sequence{}
+type GffSequence struct {
+}
+
+type GffMeta struct {
+	GffVersion  string `json:"gff_version"`
+	RegionStart int    `json:"region_start"`
+	RegionEnd   int    `json:"region_end"`
+	Size        int    `json:"size"`
+}
+
+func (sequence *Gff) AddFeature(feature *poly.Feature) []poly.Feature {
+	feature.ParentSequence = sequence
+	var featureCopy Feature = *feature
+	sequence.Features = append(sequence.Features, featureCopy)
+	return sequence.Features
+}
+
+// Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
+func Parse(file []byte) Gff {
+
+	gffString := string(file)
+	gff := Gff{}
 
 	// Add the CheckSum to sequence (blake3)
-	sequence.CheckSum = blake3.Sum256(file)
+	gff.Meta.CheckSum = blake3.Sum256(file)
 
-	lines := strings.Split(gff, "\n")
+	lines := strings.Split(gffString, "\n")
 	metaString := lines[0:2]
 	versionString := metaString[0]
 	regionStringArray := strings.Split(metaString[1], " ")
 
+	// get name for general meta
 	meta := poly.Meta{}
-	meta.GffVersion = strings.Split(versionString, " ")[1]
 	meta.Name = regionStringArray[1] // Formally region name, but changed to name here for generality/interoperability.
-	meta.RegionStart, _ = strconv.Atoi(regionStringArray[2])
-	meta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
-	meta.Size = meta.RegionEnd - meta.RegionStart
+
+	// get meta info only specific to GFF files
+	gffMeta := GffMeta{}
+	gffMeta.GffVersion = strings.Split(versionString, " ")[1]
+	gffMeta.RegionStart, _ = strconv.Atoi(regionStringArray[2])
+	gffMeta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
+	gffMeta.Size = gffMeta.RegionEnd - gffMeta.RegionStart
 
 	var sequenceBuffer bytes.Buffer
 	fastaFlag := false
@@ -59,7 +87,7 @@ func Parse(file []byte) poly.Sequence {
 			// sequence.Sequence = sequence.Sequence + line
 			sequenceBuffer.WriteString(line)
 		} else if fastaFlag && line[0:1] == ">" {
-			sequence.Description = line
+			gff.Sequence.Description = line
 		} else {
 			record := poly.Feature{}
 			fields := strings.Split(line, "\t")
@@ -86,13 +114,13 @@ func Parse(file []byte) poly.Sequence {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			sequence.AddFeature(&record)
+			gff.AddFeature(&record)
 		}
 	}
-	sequence.Sequence = sequenceBuffer.String()
-	sequence.Meta = meta
+	gff.Sequence.Sequence = sequenceBuffer.String()
+	gff.Meta = meta
 
-	return sequence
+	return gff
 }
 
 // Build takes an Annotated sequence and returns a byte array representing a gff to be written out.

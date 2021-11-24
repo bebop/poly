@@ -33,14 +33,81 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
+type Genbank struct {
+	Meta     Meta
+	Features []Feature
+	Sequence string // will be changed and include reader, writer, and byte slice.
+}
+
+func (genbank Genbank) GetMeta() (Meta, error) {
+	return genbank.Meta, nil
+}
+
+func (genbank Genbank) GetSequence() (string, error) {
+	return genbank.Sequence, nil
+}
+
+func (genbank Genbank) GetFeatures() ([]Feature, error) {
+	return genbank.Features, nil
+}
+
+type Feature struct {
+	Attributes           map[string]string `json:"attributes"` //<- used in both genbank and gff
+	GbkLocationString    string            `json:"gbk_location_string"`
+	Sequence             string            `json:"sequence"`
+	SequenceLocation     Location          `json:"sequence_location"`
+	SequenceHash         string            `json:"sequence_hash"`
+	Description          string            `json:"description"`
+	SequenceHashFunction string            `json:"hash_function"`
+	ParentSequence       *Sequence         `json:"-"`
+}
+
+type Meta struct {
+	Type       string             `json:"type"`
+	Date       string             `json:"date"`
+	Definition string             `json:"definition"`
+	Accession  string             `json:"accession"`
+	Version    string             `json:"version"`
+	Keywords   string             `json:"keywords"`
+	Organism   string             `json:"organism"`
+	Source     string             `json:"source"`
+	Origin     string             `json:"origin"`
+	Locus      GenbankLocus       `json:"locus"`
+	References []GenbankReference `json:"references"`
+	Other      map[string]string  `json:"other"`
+}
+
+// Reference holds information one reference in a Meta struct.
+type GenbankReference struct {
+	Index   string `json:"index"`
+	Authors string `json:"authors"`
+	Title   string `json:"title"`
+	Journal string `json:"journal"`
+	PubMed  string `json:"pub_med"`
+	Remark  string `json:"remark"`
+	Range   string `json:"range"`
+}
+
+// Locus holds Locus information in a Meta struct.
+type GenbankLocus struct {
+	Name             string `json:"name"`
+	SequenceLength   string `json:"sequence_length"`
+	MoleculeType     string `json:"molecule_type"`
+	GenbankDivision  string `json:"genbank_division"`
+	ModificationDate string `json:"modification_date"`
+	SequenceCoding   string `json:"sequence_coding"`
+	Circular         bool   `json:"circular"`
+	Linear           bool   `json:"linear"`
+}
+
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func Parse(file []byte) poly.Sequence {
+func Parse(file []byte) Genbank {
 
 	gbk := string(file)
 	lines := strings.Split(gbk, "\n")
 
 	// Create meta struct
-	meta := poly.Meta{}
+	meta := Meta{}
 	meta.Other = make(map[string]string)
 
 	// Create features struct
