@@ -6,11 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/io/gff"
 	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/TimothyStiles/poly/seqhash"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -22,10 +24,40 @@ JSON related tests begin here.
 
 ******************************************************************************/
 
+func Example() {
+	//initiate a new polyjson sequence struct
+	var sequence polyjson.Poly
+
+	// Define the meta section of our sequence.
+	sequence.Meta.Name = "Cat DNA"
+	sequence.Meta.Description = "Synthetic Cat DNA for testing purposes."
+	sequence.Meta.CreatedBy = "Catz (all you basepair are belong to us)"
+	sequence.Meta.CreatedOn = time.Now()
+	sequence.Meta.URL.Host = "www.catz.com"
+	sequence.Meta.URL.Path = "/catz"
+	sequence.Meta.CreatedWith = "Poly - The world's most modern, open source software library for engineering organisms."
+
+	// add our sequence string and its hash to use as a unique identifier.
+	sequence.Sequence = "CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT"
+	sequence.Meta.Hash, _ = seqhash.Hash(sequence.Sequence, "DNA", false, true)
+
+	// add our sequence features
+	catFeature := polyjson.Feature{}
+	catFeature.Name = "Cat coding region."
+	catFeature.Description = "a cat coding region at the beginning of our sequence."
+	catFeature.Type = "CDS"
+	catFeature.Location.Start = 0
+	catFeature.Location.End = 8
+	catFeature.Tags = map[string]string{"product": "cat protein"}
+
+	sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
+
+}
+
 func ExampleRead() {
 	sequence := polyjson.Read("../../data/sample.json")
 
-	fmt.Println(sequence.Meta.Source)
+	fmt.Println(sequence.Meta)
 	//output: Saccharomyces cerevisiae (baker's yeast)
 }
 

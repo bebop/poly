@@ -27,9 +27,4 @@ func Example() {
 	fasta.Write(fastaInput, "test.fasta")
 	polyjson.Write(jsonInput, "test.json")
 
-	// Poly can also output digested gff and gbk as JSON.
-
-	polyjson.Write(gffInput, "gff_test.json")
-	polyjson.Write(gbkInput, "gbk_test.json")
-
 }

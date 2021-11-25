@@ -1,9 +1,11 @@
-package poly
+package poly_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -13,22 +15,23 @@ func ExampleSequence_AddFeature() {
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence Sequence
-	var feature Feature
+	var sequence genbank.Genbank
+	var feature genbank.Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
 
 	// Set the initialized feature name and sequence location.
-	feature.Name = "Green Flourescent Protein"
-	feature.SequenceLocation.Start = 0
-	feature.SequenceLocation.End = len(sequence.Sequence)
+	feature.Description = "Green Flourescent Protein"
+	feature.Location = poly.Location{}
+	feature.Location.Start = 0
+	feature.Location.End = len(sequence.Sequence)
 
 	// Add the GFP feature to the sequence struct.
 	sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence := feature.GetSequence()
+	featureSequence, _ := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -42,22 +45,22 @@ func ExampleFeature_GetSequence() {
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence Sequence
-	var feature Feature
+	var sequence genbank.Genbank
+	var feature genbank.Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
 
 	// Set the initialized feature name and sequence location.
-	feature.Name = "Green Flourescent Protein"
-	feature.SequenceLocation.Start = 0
-	feature.SequenceLocation.End = len(sequence.Sequence)
+	feature.Description = "Green Flourescent Protein"
+	feature.Location.Start = 0
+	feature.Location.End = len(sequence.Sequence)
 
 	// Add the GFP feature to the sequence struct.
 	sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence := feature.GetSequence()
+	featureSequence, _ := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -84,15 +87,15 @@ func TestFeature_GetSequence(t *testing.T) {
 	gfpSequenceModified := sequenceFirstHalf + sequenceSecondHalf
 
 	// initialize sequence and feature structs.
-	var sequence Sequence
-	var feature Feature
+	var sequence genbank.Genbank
+	var feature genbank.Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequenceModified
 	// initialize sublocations to be usedin the feature.
 
-	var subLocation Location
-	var subLocationReverseComplemented Location
+	var subLocation poly.Location
+	var subLocationReverseComplemented poly.Location
 
 	subLocation.Start = 0
 	subLocation.End = sequenceLength / 2
@@ -101,14 +104,14 @@ func TestFeature_GetSequence(t *testing.T) {
 	subLocationReverseComplemented.End = sequenceLength
 	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
-	feature.Name = "Green Flourescent Protein"
-	feature.SequenceLocation.SubLocations = []Location{subLocation, subLocationReverseComplemented}
+	feature.Description = "Green Flourescent Protein"
+	feature.Location.SubLocations = []poly.Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
 	sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence := feature.GetSequence()
+	featureSequence, _ := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	if gfpSequence != featureSequence {

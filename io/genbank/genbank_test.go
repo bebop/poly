@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -73,7 +72,7 @@ func TestGbkIO(t *testing.T) {
 	Write(gbk, tmpGbkFilePath)
 
 	writeTestGbk := Read(tmpGbkFilePath)
-	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
@@ -108,7 +107,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testInputGbk := Read("../../data/sample.gbk")
 	testOutputGbk := Read(tmpGbkFilePath)
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -133,7 +132,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	testInputGb := Read("../../data/t4_intron.gb")
 	testOutputGb := Read(tmpGbFilePath)
 
-	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(poly.Sequence{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -142,9 +141,9 @@ func TestPartialLocationParseRegression(t *testing.T) {
 	gbk := Read("../../data/sample.gbk")
 
 	for _, feature := range gbk.Features {
-		if feature.GbkLocationString == "687..3158>" && (feature.SequenceLocation.Start != 686 || feature.SequenceLocation.End != 3158) {
+		if feature.GbkLocationString == "687..3158>" && (feature.Location.Start != 686 || feature.Location.End != 3158) {
 			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read()")
-		} else if feature.GbkLocationString == "<1..206" && (feature.SequenceLocation.Start != 0 || feature.SequenceLocation.End != 206) {
+		} else if feature.GbkLocationString == "<1..206" && (feature.Location.Start != 0 || feature.Location.End != 206) {
 			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read().")
 		}
 	}
@@ -163,7 +162,7 @@ func TestGetSequenceMethod(t *testing.T) {
 	gbk := Read("../../data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Features struct
-	feature := gbk.Features[1].GetSequence()
+	feature, _ := gbk.Features[1].GetSequence()
 	seq := "atgagattacaacgccagagcatcaaagattcagaagttagaggtaaatggtattttaatatcatcggtaaagattctgaacttgttgaaaaagctgaacatcttttacgtgatatgggatgggaagatgaatgcgatggatgtcctctttatgaagacggagaaagcgcaggattttggatttaccattctgacgtcgagcagtttaaagctgattggaaaattgtgaaaaagtctgtttga"
 	if feature != seq {
 		t.Errorf("Feature GetSequence method has failed. Got this:\n%s instead of \n%s", feature, seq)
@@ -175,21 +174,21 @@ func TestLocationParser(t *testing.T) {
 	gbk := Read("../../data/t4_intron.gb")
 
 	// Read 1..243
-	feature := gbk.Features[1].GetSequence()
+	feature, _ := gbk.Features[1].GetSequence()
 	seq := "atgagattacaacgccagagcatcaaagattcagaagttagaggtaaatggtattttaatatcatcggtaaagattctgaacttgttgaaaaagctgaacatcttttacgtgatatgggatgggaagatgaatgcgatggatgtcctctttatgaagacggagaaagcgcaggattttggatttaccattctgacgtcgagcagtttaaagctgattggaaaattgtgaaaaagtctgtttga"
 	if feature != seq {
 		t.Errorf("Feature sequence parser has changed on test '1..243'. Got this:\n%s instead of \n%s", feature, seq)
 	}
 
 	// Read join(893..1441,2459..2770)
-	featureJoin := gbk.Features[6].GetSequence()
+	featureJoin, _ := gbk.Features[6].GetSequence()
 	seqJoin := "atgaaacaataccaagatttaattaaagacatttttgaaaatggttatgaaaccgatgatcgtacaggcacaggaacaattgctctgttcggatctaaattacgctgggatttaactaaaggttttcctgcggtaacaactaagaagctcgcctggaaagcttgcattgctgagctaatatggtttttatcaggaagcacaaatgtcaatgatttacgattaattcaacacgattcgttaatccaaggcaaaacagtctgggatgaaaattacgaaaatcaagcaaaagatttaggataccatagcggtgaacttggtccaatttatggaaaacagtggcgtgattttggtggtgtagaccaaattatagaagttattgatcgtattaaaaaactgccaaatgataggcgtcaaattgtttctgcatggaatccagctgaacttaaatatatggcattaccgccttgtcatatgttctatcagtttaatgtgcgtaatggctatttggatttgcagtggtatcaacgctcagtagatgttttcttgggtctaccgtttaatattgcgtcatatgctacgttagttcatattgtagctaagatgtgtaatcttattccaggggatttgatattttctggtggtaatactcatatctatatgaatcacgtagaacaatgtaaagaaattttgaggcgtgaacctaaagagctttgtgagctggtaataagtggtctaccttataaattccgatatctttctactaaagaacaattaaaatatgttcttaaacttaggcctaaagatttcgttcttaacaactatgtatcacaccctcctattaaaggaaagatggcggtgtaa"
 	if featureJoin != seqJoin {
 		t.Errorf("Feature sequence parser has changed on test 'join(893..1441,2459..2770)'. Got this:\n%s instead of \n%s", featureJoin, seqJoin)
 	}
 
 	// Read complement(2791..3054)
-	featureComplement := gbk.Features[10].GetSequence()
+	featureComplement, _ := gbk.Features[10].GetSequence()
 	seqComplement := "ttattcactacccggcatagacggcccacgctggaataattcgtcatattgtttttccgttaaaacagtaatatcgtagtaacagtcagaagaagttttaactgtggaaattttattatcaaaatactcacgagtcattttatgagtatagtattttttaccataaatggtaataggctgttctggtcctggaacttctaactcgcttgggttaggaagtgtaaaaagaactacaccagaagtatctttaaatcgtaaaatcat"
 	if featureComplement != seqComplement {
 		t.Errorf("Feature sequence parser has changed on test 'complement(2791..3054)'. Got this:\n%s instead of \n%s", featureComplement, seqComplement)
@@ -200,14 +199,14 @@ func TestLocationParser(t *testing.T) {
 	// that the first sequence should be appended to the reverse sequence, instead of the second sequence
 	// getting appended to the first. Biopython appends the second sequence to the first, and that is logically
 	// the most obvious thing to do, so we are implementing it that way.
-	featureJoinComplement := gbk.Features[3].GetSequence()
+	featureJoinComplement, _ := gbk.Features[3].GetSequence()
 	seqJoinComplement := "ataccaatttaatcattcatttatatactgattccgtaagggttgttacttcatctattttataccaatgcgtttcaaccatttcacgcttgcttatatcatcaagaaaacttgcgtctaattgaactgttgaattaacacgatgccttttaacgatgcgagaaacaactacttcatctgcataaggtaatgcagcatataacagagcaggcccgccaattacacttactttagaattctgatcaagcatagtttcgaatggtgcattagggcttgacacttgaatttcgccgccagaaatgtaagttatatattgctcccaagtaatatagaaatgtgctaaatcgccgtctttagttacaggataatcacgcgcaaggtcacacaccacaatatggctacgaccaggaagtaatgtaggcaatgactggaacgttttagcacccataatcataattgtgccttcagtacgagctttaaaattctggaggtcctttttaactcgtccccatggtaaaccatcacctaaaccgaatgctaattcattaaagccgtcgaccgttttagttggaga"
 	if featureJoinComplement != seqJoinComplement {
 		t.Errorf("Feature sequence parser has changed on test 'join(complement(315..330),complement(339..896))'. Got this:\n%s instead of \n%s", featureJoinComplement, seqJoinComplement)
 	}
 
 	// Read complement(join(893..1098,1101..2770))
-	featureComplementJoin := gbk.Features[5].GetSequence()
+	featureComplementJoin, _ := gbk.Features[5].GetSequence()
 	seqComplementJoin := "ttacaccgccatctttcctttaataggagggtgtgatacatagttgttaagaacgaaatctttaggcctaagtttaagaacatattttaattgttctttagtagaaagatatcggaatttataaggtagaccacttattaccagctcacaaagctctttaggttcacgcctcaaaatttctttacattgttctacgtgattcatatagatatgagtattaccaccagaaaatatcaaatcccctggaataagattacacatcttagctacaatatgaactaacgtagcatatgacgcaatattaaacggtagcattatgttcagataaggtcgttaatcttaccccggaattatatccagctgcatgtcaccatgcagagcagactatatctccaacttgttaaagcaagttgtctatcgtttcgagtcacttgaccctactccccaaagggatagtcgttaggcatttatgtagaaccaattccatttatcagattttacacgataagtaactaatccagacgaaattttaaaatgtctagctgcatctgctgcacaatcaaaaataaccccatcacatgaaatctttttaatattactaggctttttacctttcatcttttctgatattttagatttagttatgtctgaatgcttatgattaaagaatgaattattttcacctgaacgatttctgcatttactacaagtataagcagaagtttgtatgcgaacaccgcacttacaaaacttatgggtttctggattccaacgcccgtttttacttccgggtttactgtaaagagctttccgaccatcaggtccaagtttaagcatcttagctttaacagtttcagaacgtttcttaataatttcttcttttaatggatgcgtagaacatgtatcaccaaacgttgcatcagcaatattgtatccattaattttagaattaagctctttaatccaaaaattttctcgttcaataatcaaatctttctcatatggaatttcttccaaaatagaacattcaaacacattaccatgtttgttaaaagacctctgaagttttatagaagaatggcatcctttttctaaatctttaaaatgcctcttccatctcttttcaaaatctttagcacttcctacatatactttattgtttaaagtatttttaatctgataaattccgcttttcataaatacctctttaaatatagaagtatttattaaagggcaagtcctacaatttagcacgggattgtctactagagaggttccccgtttagatagattacaagtataagtcaccttatactcaggcctcaattaacccaagaaaacatctactgagcgttgataccactgcaaatccaaatagccattacgcacattaaactgatagaacatatgacaaggcggtaatgccatatatttaagttcagctggattccatgcagaaacaatttgacgcctatcatttggcagttttttaatacgatcaataacttctataatttggtctacaccaccaaaatcacgccactgttttccataaattggaccaagttcaccgctatggtatcctaaatcttttgcttgattttcgtaattttcatcccagactgttttgccttggattaacgaatcgtgttgaattaatcgtaaatcatacatttgtgcttcctgataaaaaccatattagctcagcaatgcaagctttccaggcgagcttcttagttgttaccgcaggaaaacctttagttaaatcccagcgtaatttagatccgaacagagcaattgttcctgtgcctgtacgatcatcggtttcataaccattttcaaaaatgtctttaattaaatcttggtattgtttcat"
 	if featureComplementJoin != seqComplementJoin {
 		t.Errorf("Feature sequence parser has changed on test 'complement(join(893..1098,1101..2770))'. Got this:\n%s instead of \n%s", featureComplementJoin, seqComplementJoin)
@@ -218,7 +217,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	gbk := Read("../../data/puc19.gbk")
 
 	for _, feature := range gbk.Features {
-		if feature.SequenceLocation.Start == 410 && feature.SequenceLocation.End == 1750 && feature.Type == "CDS" {
+		if feature.Location.Start == 410 && feature.Location.End == 1750 && feature.Type == "CDS" {
 			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}

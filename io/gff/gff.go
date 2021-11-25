@@ -21,6 +21,7 @@ import (
 	"lukechampine.com/blake3"
 
 	"github.com/TimothyStiles/poly/io/poly"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 type Gff struct {
@@ -57,6 +58,42 @@ func (sequence *Gff) AddFeature(feature *Feature) error {
 	var featureCopy Feature = *feature
 	sequence.Features = append(sequence.Features, featureCopy)
 	return nil
+}
+
+func (gff *Gff) GetSequence() (string, error) {
+	return gff.Sequence, nil
+}
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location poly.Location) (string, error) {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
+			sequenceBuffer.WriteString(sequence)
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString, nil
 }
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.

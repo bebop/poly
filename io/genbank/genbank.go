@@ -24,6 +24,7 @@ import (
 	"lukechampine.com/blake3"
 
 	"github.com/TimothyStiles/poly/io/poly"
+	"github.com/TimothyStiles/poly/transform"
 	"github.com/mitchellh/go-wordwrap"
 )
 
@@ -60,17 +61,49 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 
 type Feature struct {
 	Type                 string            `json:"type"`
-	Attributes           map[string]string `json:"attributes"`
-	GbkLocationString    string            `json:"gbk_location_string"`
-	Sequence             string            `json:"sequence"`
-	SequenceLocation     poly.Location     `json:"sequence_location"`
-	SequenceHash         string            `json:"sequence_hash"`
 	Description          string            `json:"description"`
+	Attributes           map[string]string `json:"attributes"`
+	SequenceHash         string            `json:"sequence_hash"`
 	SequenceHashFunction string            `json:"hash_function"`
+	Sequence             string            `json:"sequence"`
+	GbkLocationString    string            `json:"gbk_location_string"`
+	Location             poly.Location     `json:"sequence_location"`
 	ParentSequence       *Genbank          `json:"-"`
 }
 
-// func (feature Feature)
+func (feature Feature) GetSequence() (string, error) {
+	sequence, err := getFeatureSequence(feature, feature.Location)
+	return sequence, err
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location poly.Location) (string, error) {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
+			sequenceBuffer.WriteString(sequence)
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString, nil
+}
 
 type Meta struct {
 	Date                 string            `json:"date"`
@@ -616,7 +649,7 @@ func getFeatures(lines []string) []Feature {
 				break
 			}
 		}
-		feature.SequenceLocation = parseLocation(feature.GbkLocationString)
+		feature.Location = parseLocation(feature.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -819,7 +852,7 @@ func BuildFeatureString(feature Feature) string {
 	if feature.GbkLocationString != "" {
 		location = feature.GbkLocationString
 	} else {
-		location = BuildLocationString(feature.SequenceLocation)
+		location = BuildLocationString(feature.Location)
 	}
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
