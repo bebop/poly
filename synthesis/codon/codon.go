@@ -59,6 +59,7 @@ var errEmtpyCodonTable error = errors.New("empty codon table")
 var errEmtpyAminoAcidString error = errors.New("empty amino acid string")
 var errEmtpySequenceString error = errors.New("empty sequence string")
 
+// InvalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
 type InvalidAminoAcidError struct {
 	AminoAcid rune
 }
