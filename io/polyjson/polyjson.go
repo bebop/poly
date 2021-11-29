@@ -9,7 +9,6 @@ package polyjson
 import (
 	"encoding/json"
 	"io/ioutil"
-	"net/url"
 	"time"
 
 	"github.com/TimothyStiles/poly/io/poly"
@@ -31,7 +30,7 @@ type Meta struct {
 	Name        string    `json:"name"`
 	Hash        string    `json:"hash"`
 	Description string    `json:"description"`
-	URL         url.URL   `json:"url"`
+	URL         string    `json:"url"`
 	CreatedBy   string    `json:"created_by"`
 	CreatedWith string    `json:"created_with"`
 	CreatedOn   time.Time `json:"created_on"`
@@ -48,9 +47,10 @@ type Feature struct {
 	ParentSequence *Poly             `json:"-"`
 }
 
-func (sequence *Poly) AddFeature(feature *Feature) {
+func (sequence *Poly) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
+	return nil
 }
 
 func (sequence *Poly) GetFeatures() ([]Feature, error) {
@@ -65,34 +65,46 @@ func (sequence *Poly) GetMeta() (Meta, error) {
 	return sequence.Meta, nil
 }
 
-func (sequence *Poly) Write(path string) {
-	Write(*sequence, path)
-}
-
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
-func Parse(file []byte) Poly {
+func Parse(file []byte) (Poly, error) {
 	var sequence Poly
-	_ = json.Unmarshal([]byte(file), &sequence)
+	err := json.Unmarshal([]byte(file), &sequence)
+	if err != nil {
+		return sequence, err
+	}
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
 		sequence.AddFeature(&feature)
 	}
-	return sequence
+	return sequence, nil
 }
 
 // Read reads a Poly JSON file.
-func Read(path string) Poly {
-	file, _ := ioutil.ReadFile(path)
-	sequence := Parse(file)
-	return sequence
+func Read(path string) (Poly, error) {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		return Poly{}, err
+	}
+	sequence, err := Parse(file)
+	if err != nil {
+		return Poly{}, err
+	}
+	return sequence, nil
 }
 
 // Write writes a Poly struct out to json.
-func Write(sequence Poly, path string) {
-	file, _ := json.MarshalIndent(sequence, "", " ")
-	_ = ioutil.WriteFile(path, file, 0644)
+func Write(sequence Poly, path string) error {
+	file, err := json.MarshalIndent(sequence, "", " ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, file, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /******************************************************************************

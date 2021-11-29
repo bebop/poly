@@ -16,16 +16,7 @@ package poly
 
 /******************************************************************************
 
-File is structured as so:
-
-Structs:
-	Sequence - main struct for sequence handling plus sub structs.
-
-******************************************************************************/
-
-/******************************************************************************
-
-Sequence related structs begin here.
+Sequence related interfaces begin here.
 
 ******************************************************************************/
 

@@ -60,7 +60,7 @@ type Fasta struct {
 }
 
 // Parse parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
-func Parse(r io.Reader) []Fasta {
+func Parse(r io.Reader) ([]Fasta, error) {
 	fastas := make(chan Fasta, 1000) // A buffer is used so that the functions runs as it is appending to outputFastas
 	go ParseConcurrent(r, fastas)
 
@@ -68,11 +68,11 @@ func Parse(r io.Reader) []Fasta {
 	for fasta := range fastas {
 		outputFastas = append(outputFastas, fasta)
 	}
-	return outputFastas
+	return outputFastas, nil
 }
 
 // ParseConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
-func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
+func ParseConcurrent(r io.Reader, sequences chan<- Fasta) error {
 	// Initialize necessary variables
 	var sequenceLines []string
 	var name string
@@ -116,6 +116,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
 		Sequence: sequence}
 	sequences <- newFasta
 	close(sequences)
+	return nil
 }
 
 /******************************************************************************
@@ -125,31 +126,60 @@ Start of  Read functions
 ******************************************************************************/
 
 // ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
-func ReadGzConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path)
-	r, _ := gzip.NewReader(file)
-	go ParseConcurrent(r, sequences)
+func ReadGzConcurrent(path string, sequences chan<- Fasta) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	reader, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	go ParseConcurrent(reader, sequences)
+	return nil
 }
 
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
-func ReadConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path)
+func ReadConcurrent(path string, sequences chan<- Fasta) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
 	go ParseConcurrent(file, sequences)
+	return nil
 }
 
 // ReadGz reads a gzipped  file into an array of Fasta structs.
-func ReadGz(path string) []Fasta {
-	file, _ := os.Open(path)
-	r, _ := gzip.NewReader(file)
-	fastas := Parse(r)
-	return fastas
+func ReadGz(path string) ([]Fasta, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	reader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+	fastas, err := Parse(reader)
+	if err != nil {
+		return nil, err
+	}
+	return fastas, nil
 }
 
 // Read reads a  file into an array of Fasta structs
-func Read(path string) []Fasta {
-	file, _ := os.Open(path)
-	fastas := Parse(file)
-	return fastas
+func Read(path string) ([]Fasta, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	fastas, err := Parse(file)
+	if err != nil {
+		return nil, err
+	}
+	return fastas, nil
 }
 
 /******************************************************************************
@@ -159,7 +189,7 @@ Start of  Write functions
 ******************************************************************************/
 
 // Build writes a Fasta struct to a  string.
-func Build(fastas []Fasta) []byte {
+func Build(fastas []Fasta) ([]byte, error) {
 	var fastaString bytes.Buffer
 	for _, fasta := range fastas {
 		fastaString.WriteString(">")
@@ -168,10 +198,15 @@ func Build(fastas []Fasta) []byte {
 		fastaString.WriteString(fasta.Sequence)
 		fastaString.WriteString("\n")
 	}
-	return fastaString.Bytes()
+	return fastaString.Bytes(), nil
 }
 
-// Write writes a  string to a file.
-func Write(fastas []Fasta, path string) {
-	_ = ioutil.WriteFile(path, Build(fastas), 0644)
+// Write writes a fasta array to a file.
+func Write(fastas []Fasta, path string) error {
+	fastaBytes, err := Build(fastas)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, fastaBytes, 0644)
+	return err
 }

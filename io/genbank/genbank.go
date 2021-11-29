@@ -147,7 +147,7 @@ type Locus struct {
 }
 
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func Parse(file []byte) Genbank {
+func Parse(file []byte) (Genbank, error) {
 
 	gbk := string(file)
 	lines := strings.Split(gbk, "\n")
@@ -219,11 +219,11 @@ func Parse(file []byte) Genbank {
 		sequence.AddFeature(&feature)
 	}
 
-	return sequence
+	return sequence, nil
 }
 
 // Build builds a GBK string to be written out to db or file.
-func Build(sequence Genbank) []byte {
+func Build(sequence Genbank) ([]byte, error) {
 	var gbkString bytes.Buffer
 	locus := sequence.Meta.Locus
 	var shape string
@@ -335,20 +335,32 @@ func Build(sequence Genbank) []byte {
 	// finish genbank file with "//" on newline (again a genbank convention)
 	gbkString.WriteString("\n//")
 
-	return gbkString.Bytes()
+	return gbkString.Bytes(), nil
 }
 
 // Read reads a Gbk from path and parses into an Annotated sequence struct.
-func Read(path string) Genbank {
-	file, _ := ioutil.ReadFile(path)
-	sequence := Parse(file)
-	return sequence
+func Read(path string) (Genbank, error) {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		return Genbank{}, err
+	}
+
+	sequence, err := Parse(file)
+	if err != nil {
+		return Genbank{}, err
+	}
+
+	return sequence, nil
 }
 
 // Write takes an Sequence struct and a path string and writes out a gff to that path.
-func Write(sequence Genbank, path string) {
-	gbk := Build(sequence)
-	_ = ioutil.WriteFile(path, gbk, 0644)
+func Write(sequence Genbank, path string) error {
+	gbk, err := Build(sequence)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gbk, 0644)
+	return err
 }
 
 // used in parseLocus function though it could be useful elsewhere.
@@ -966,7 +978,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- Genbank) {
 		if line == "//" {
 			gbkStr = gbkStr + "//"
 			// Parse the genbank string and send it to the channel
-			gbk = Parse([]byte(gbkStr))
+			gbk, _ = Parse([]byte(gbkStr)) // TODO: Ask Keoni how to handle this error
 			sequences <- gbk
 			// Reset the genbank string
 			gbkStr = ""

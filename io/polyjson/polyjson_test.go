@@ -5,17 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"testing"
 	"time"
 
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/TimothyStiles/poly/seqhash"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 /******************************************************************************
@@ -33,8 +26,7 @@ func Example() {
 	sequence.Meta.Description = "Synthetic Cat DNA for testing purposes."
 	sequence.Meta.CreatedBy = "Catz (all you basepair are belong to us)"
 	sequence.Meta.CreatedOn = time.Now()
-	sequence.Meta.URL.Host = "www.catz.com"
-	sequence.Meta.URL.Path = "/catz"
+	sequence.Meta.URL = "www.allyourbasepair.com/catz"
 	sequence.Meta.CreatedWith = "Poly - The world's most modern, open source software library for engineering organisms."
 
 	// add our sequence string and its hash to use as a unique identifier.
@@ -52,21 +44,30 @@ func Example() {
 
 	sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
 
+	// write our sequence to a JSON file
+	_ = polyjson.Write(sequence, "../../data/cat.json")
+
+	// read our sequence from a JSON file
+	exportedSequence, _ := polyjson.Read("../../data/cat.json")
+
+	// print our struct DNA sequence
+	fmt.Println(exportedSequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 func ExampleRead() {
-	sequence := polyjson.Read("../../data/sample.json")
+	sequence, _ := polyjson.Read("../../data/cat.json")
 
-	fmt.Println(sequence.Meta)
-	//output: Saccharomyces cerevisiae (baker's yeast)
+	fmt.Println(sequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 func ExampleParse() {
-	file, _ := ioutil.ReadFile("../../data/sample.json")
-	sequence := polyjson.Parse(file)
+	file, _ := ioutil.ReadFile("../../data/cat.json")
+	sequence, _ := polyjson.Parse(file)
 
-	fmt.Println(sequence.Meta.Source)
-	//output: Saccharomyces cerevisiae (baker's yeast)
+	fmt.Println(sequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 func ExampleWrite() {
@@ -76,54 +77,15 @@ func ExampleWrite() {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequence := polyjson.Read("../../data/sample.json")
+	sequence, _ := polyjson.Read("../../data/cat.json")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
 	polyjson.Write(sequence, tmpJSONFilePath)
 
-	testSequence := polyjson.Read(tmpJSONFilePath)
+	testSequence, _ := polyjson.Read(tmpJSONFilePath)
 
-	fmt.Println(testSequence.Meta.Source)
-	//output: Saccharomyces cerevisiae (baker's yeast)
-}
-
-func TestGbkToJSON(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	testSequence := genbank.Read("../../data/puc19.gbk")
-
-	tmpJSONFilePath := filepath.Join(tmpDataDir, "puc19.json")
-	polyjson.Write(testSequence, tmpJSONFilePath)
-
-	readTestSequence := polyjson.Read(tmpJSONFilePath)
-
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestGffToJSON(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	gffTestSequence := gff.Read("../../data/ecoli-mg1655-short.gff")
-
-	tmpJSONFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.json")
-	polyjson.Write(gffTestSequence, tmpJSONFilePath)
-
-	gffReadTestSequence := polyjson.Read(tmpJSONFilePath)
-
-	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
-	}
-
+	fmt.Println(testSequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 /******************************************************************************

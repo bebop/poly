@@ -97,7 +97,7 @@ func getFeatureSequence(feature Feature, location poly.Location) (string, error)
 }
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func Parse(file []byte) Gff {
+func Parse(file []byte) (Gff, error) {
 
 	gffString := string(file)
 	gff := Gff{}
@@ -166,11 +166,11 @@ func Parse(file []byte) Gff {
 	gff.Sequence = sequenceBuffer.String()
 	gff.Meta = meta
 
-	return gff
+	return gff, nil
 }
 
 // Build takes an Annotated sequence and returns a byte array representing a gff to be written out.
-func Build(sequence Gff) []byte {
+func Build(sequence Gff) ([]byte, error) {
 	var gffBuffer bytes.Buffer
 
 	var versionString string
@@ -255,18 +255,25 @@ func Build(sequence Gff) []byte {
 		}
 	}
 	gffBuffer.WriteString("\n")
-	return gffBuffer.Bytes()
+	return gffBuffer.Bytes(), nil
 }
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
-func Read(path string) Gff {
+func Read(path string) (Gff, error) {
 	file, _ := ioutil.ReadFile(path)
-	sequence := Parse(file)
-	return sequence
+	sequence, err := Parse(file)
+	if err != nil {
+		return Gff{}, err
+	}
+	return sequence, nil
 }
 
 // Write takes an poly.Sequence struct and a path string and writes out a gff to that path.
-func Write(sequence Gff, path string) {
-	gff := Build(sequence)
-	_ = ioutil.WriteFile(path, gff, 0644)
+func Write(sequence Gff, path string) error {
+	gff, err := Build(sequence)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gff, 0644)
+	return err
 }
