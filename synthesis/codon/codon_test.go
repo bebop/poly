@@ -88,6 +88,20 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 		t.Error("Optimize should return an error if given an empty amino acid string")
 	}
 }
+func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
+	aminoAcids := "TOP"
+	table := GetCodonTable(1) // does not contain 'O'
+	_, err := Optimize(aminoAcids, table)
+
+	want := InvalidAminoAcidError{'O'}
+	got, isInvalidAminoAcidError := err.(InvalidAminoAcidError)
+	if !isInvalidAminoAcidError {
+		t.Errorf("Optimize should return an InvalidAminoAcidError, got %T", got)
+	}
+	if got != want {
+		t.Errorf("Optimize should return an InvalidAminoAcidError for %q, got %q", want.AminoAcid, got.AminoAcid)
+	}
+}
 
 func TestGetCodonFrequency(t *testing.T) {
 

@@ -59,6 +59,15 @@ var errEmtpyCodonTable error = errors.New("empty codon table")
 var errEmtpyAminoAcidString error = errors.New("empty amino acid string")
 var errEmtpySequenceString error = errors.New("empty sequence string")
 
+// InvalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
+type InvalidAminoAcidError struct {
+	AminoAcid rune
+}
+
+func (e InvalidAminoAcidError) Error() string {
+	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
+}
+
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string `json:"triplet"`
@@ -126,8 +135,11 @@ func Optimize(aminoAcids string, codonTable Table) (string, error) {
 	}
 
 	for _, aminoAcid := range aminoAcids {
-		aminoAcidString := string(aminoAcid)
-		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
+		chooser, ok := codonChooser[string(aminoAcid)]
+		if !ok {
+			return "", InvalidAminoAcidError{aminoAcid}
+		}
+		codons.WriteString(chooser.Pick().(string))
 	}
 	return codons.String(), nil
 }
