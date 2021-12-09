@@ -28,10 +28,11 @@ type Sequence interface {
 }
 
 type Feature interface {
-	GetParent() (*AnnotatedSequence, error)
-	GetSequence() (Sequence, error)
-	GetLocation() (Location, error)
-	SetLocation(Location) error
+	// GetParent() (*AnnotatedSequence, error)
+	GetSequence() (string, error)
+	// GetLocation() (Location, error)
+	// SetLocation(Location) error
+	GetType() (string, error)
 	// GetAttributes() (map[string]string, error)
 }
 
@@ -39,7 +40,7 @@ type AnnotatedSequence interface {
 	GetMeta() (Meta, error)
 	GetFeatures() ([]Feature, error)
 	GetSequence() (string, error)
-	AddFeature(Feature) error
+	// AddFeature(*Feature) error
 }
 
 type Location struct {

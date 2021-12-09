@@ -66,6 +66,9 @@ func (gff *Gff) GetSequence() (string, error) {
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
+func (feature *Feature) GetType() (string, error) {
+	return feature.Type, nil
+}
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location poly.Location) (string, error) {

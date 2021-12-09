@@ -57,9 +57,9 @@ func TestTranslationLowerCase(t *testing.T) {
 func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
+	codingRegions, _ := GetCodingRegions(sequence)
 
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
@@ -161,14 +161,14 @@ Codon Compromise + Add related tests begin here.
 
 ******************************************************************************/
 func TestCompromiseCodonTable(t *testing.T) {
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
+	codingRegions, _ := GetCodingRegions(sequence)
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := genbank.Read("../../data/phix174.gb")
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	codonTable2 := GetCodonTable(11)
-	codingRegions2 := GetCodingRegions(sequence2)
+	codingRegions2, _ := GetCodingRegions(sequence2)
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low

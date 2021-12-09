@@ -65,6 +65,10 @@ func (sequence *Poly) GetMeta() (Meta, error) {
 	return sequence.Meta, nil
 }
 
+func (feature *Feature) GetType() (string, error) {
+	return feature.Type, nil
+}
+
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
 func Parse(file []byte) (Poly, error) {
 	var sequence Poly

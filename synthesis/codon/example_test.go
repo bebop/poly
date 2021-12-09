@@ -23,9 +23,9 @@ func ExampleOptimize() {
 
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := codon.GetCodonTable(11)
-	codingRegions := codon.GetCodingRegions(sequence)
+	codingRegions, _ := codon.GetCodingRegions(sequence)
 
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
@@ -40,11 +40,12 @@ func ExampleGetCodingRegions() {
 
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	// sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
 	codonTable := codon.GetCodonTable(11)
 
 	// GetCodingRegions returns a single concatenated string of all coding regions.
-	codingRegions := codon.GetCodingRegions(sequence)
+	codingRegions, _ := codon.GetCodingRegions(sequence)
 
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
@@ -84,14 +85,14 @@ func ExampleWriteCodonJSON() {
 }
 
 func ExampleCompromiseCodonTable() {
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := codon.GetCodonTable(11)
-	codingRegions := codon.GetCodingRegions(sequence)
+	codingRegions, _ := codon.GetCodingRegions(sequence)
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := genbank.Read("../../data/phix174.gb")
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	codonTable2 := codon.GetCodonTable(11)
-	codingRegions2 := codon.GetCodingRegions(sequence2)
+	codingRegions2, _ := codon.GetCodingRegions(sequence2)
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable, _ := codon.CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
@@ -106,14 +107,14 @@ func ExampleCompromiseCodonTable() {
 }
 
 func ExampleAddCodonTable() {
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := codon.GetCodonTable(11)
-	codingRegions := codon.GetCodingRegions(sequence)
+	codingRegions, _ := codon.GetCodingRegions(sequence)
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := genbank.Read("../../data/phix174.gb")
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	codonTable2 := codon.GetCodonTable(11)
-	codingRegions2 := codon.GetCodingRegions(sequence2)
+	codingRegions2, _ := codon.GetCodingRegions(sequence2)
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable := codon.AddCodonTable(optimizationTable, optimizationTable2)

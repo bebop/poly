@@ -40,23 +40,22 @@ type Genbank struct {
 	Sequence string // will be changed and include reader, writer, and byte slice.
 }
 
-func (genbank Genbank) GetMeta() (Meta, error) {
-	return genbank.Meta, nil
-}
-
-func (genbank *Genbank) GetSequence() (string, error) {
-	return genbank.Sequence, nil
-}
-
-func (genbank Genbank) GetFeatures() ([]Feature, error) {
-	return genbank.Features, nil
-}
-
-func (sequence *Genbank) AddFeature(feature *Feature) error {
-	feature.ParentSequence = sequence
-	var featureCopy Feature = *feature
-	sequence.Features = append(sequence.Features, featureCopy)
-	return nil
+type Meta struct {
+	Date                 string            `json:"date"`
+	Definition           string            `json:"definition"`
+	Accession            string            `json:"accession"`
+	Version              string            `json:"version"`
+	Keywords             string            `json:"keywords"`
+	Organism             string            `json:"organism"`
+	Source               string            `json:"source"`
+	Origin               string            `json:"origin"`
+	Locus                Locus             `json:"locus"`
+	References           []Reference       `json:"references"`
+	Other                map[string]string `json:"other"`
+	Name                 string            `json:"name"`
+	SequenceHash         string            `json:"sequence_hash"`
+	SequenceHashFunction string            `json:"hash_function"`
+	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
 type Feature struct {
@@ -71,10 +70,59 @@ type Feature struct {
 	ParentSequence       *Genbank          `json:"-"`
 }
 
+// Reference holds information one reference in a Meta struct.
+type Reference struct {
+	Index   string `json:"index"`
+	Authors string `json:"authors"`
+	Title   string `json:"title"`
+	Journal string `json:"journal"`
+	PubMed  string `json:"pub_med"`
+	Remark  string `json:"remark"`
+	Range   string `json:"range"`
+}
+
+// Locus holds Locus information in a Meta struct.
+type Locus struct {
+	Name             string `json:"name"`
+	SequenceLength   string `json:"sequence_length"`
+	MoleculeType     string `json:"molecule_type"`
+	GenbankDivision  string `json:"genbank_division"`
+	ModificationDate string `json:"modification_date"`
+	SequenceCoding   string `json:"sequence_coding"`
+	Circular         bool   `json:"circular"`
+	Linear           bool   `json:"linear"`
+}
+
+func (genbank Genbank) GetMeta() (Meta, error) {
+	return genbank.Meta, nil
+}
+
+func (genbank Genbank) GetFeatures() ([]Feature, error) {
+	return genbank.Features, nil
+}
+
+func (genbank *Genbank) GetSequence() (string, error) {
+	return genbank.Sequence, nil
+}
+
+func (sequence *Genbank) AddFeature(feature *Feature) error {
+	feature.ParentSequence = sequence
+	sequence.Features = append(sequence.Features, *feature)
+	return nil
+}
+
 func (feature Feature) GetSequence() (string, error) {
 	sequence, err := getFeatureSequence(feature, feature.Location)
 	return sequence, err
 }
+
+func (feature Feature) GetType() (string, error) {
+	return feature.Type, nil
+}
+
+// func (feature *Feature) GetParent() (*poly.AnnotatedSequence, error) {
+// 	return feature.ParentSequence, nil
+// }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location poly.Location) (string, error) {
@@ -103,47 +151,6 @@ func getFeatureSequence(feature Feature, location poly.Location) (string, error)
 	}
 
 	return sequenceString, nil
-}
-
-type Meta struct {
-	Date                 string            `json:"date"`
-	Definition           string            `json:"definition"`
-	Accession            string            `json:"accession"`
-	Version              string            `json:"version"`
-	Keywords             string            `json:"keywords"`
-	Organism             string            `json:"organism"`
-	Source               string            `json:"source"`
-	Origin               string            `json:"origin"`
-	Locus                Locus             `json:"locus"`
-	References           []Reference       `json:"references"`
-	Other                map[string]string `json:"other"`
-	Name                 string            `json:"name"`
-	SequenceHash         string            `json:"sequence_hash"`
-	SequenceHashFunction string            `json:"hash_function"`
-	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
-}
-
-// Reference holds information one reference in a Meta struct.
-type Reference struct {
-	Index   string `json:"index"`
-	Authors string `json:"authors"`
-	Title   string `json:"title"`
-	Journal string `json:"journal"`
-	PubMed  string `json:"pub_med"`
-	Remark  string `json:"remark"`
-	Range   string `json:"range"`
-}
-
-// Locus holds Locus information in a Meta struct.
-type Locus struct {
-	Name             string `json:"name"`
-	SequenceLength   string `json:"sequence_length"`
-	MoleculeType     string `json:"molecule_type"`
-	GenbankDivision  string `json:"genbank_division"`
-	ModificationDate string `json:"modification_date"`
-	SequenceCoding   string `json:"sequence_coding"`
-	Circular         bool   `json:"circular"`
-	Linear           bool   `json:"linear"`
 }
 
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
