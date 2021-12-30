@@ -20,7 +20,6 @@ import (
 
 	"lukechampine.com/blake3"
 
-	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -30,17 +29,6 @@ type Gff struct {
 	Sequence string
 }
 
-type Feature struct {
-	Name           string            `json:"name"`
-	Source         string            `json:"source"`
-	Type           string            `json:"type"`
-	Score          string            `json:"score"`
-	Strand         string            `json:"strand"`
-	Phase          string            `json:"phase"`
-	Attributes     map[string]string `json:"attributes"`
-	ParentSequence *Gff              `json:"-"`
-	Location       poly.Location
-}
 type Meta struct {
 	Name                 string   `json:"name"`
 	Description          string   `json:"description"`
@@ -53,6 +41,28 @@ type Meta struct {
 	CheckSum             [32]byte `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
+type Feature struct {
+	Name           string            `json:"name"`
+	Source         string            `json:"source"`
+	Type           string            `json:"type"`
+	Score          string            `json:"score"`
+	Strand         string            `json:"strand"`
+	Phase          string            `json:"phase"`
+	Attributes     map[string]string `json:"attributes"`
+	Location       Location          `json:"location"`
+	ParentSequence *Gff              `json:"-"`
+}
+
+type Location struct {
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	SubLocations      []Location `json:"sub_locations"`
+}
+
 func (sequence *Gff) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	var featureCopy Feature = *feature
@@ -60,9 +70,6 @@ func (sequence *Gff) AddFeature(feature *Feature) error {
 	return nil
 }
 
-func (gff *Gff) GetSequence() (string, error) {
-	return gff.Sequence, nil
-}
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
@@ -71,7 +78,7 @@ func (feature *Feature) GetType() (string, error) {
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location poly.Location) (string, error) {
+func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence

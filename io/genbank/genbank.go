@@ -21,11 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"lukechampine.com/blake3"
-
-	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/mitchellh/go-wordwrap"
+	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -65,8 +63,7 @@ type Feature struct {
 	SequenceHash         string            `json:"sequence_hash"`
 	SequenceHashFunction string            `json:"hash_function"`
 	Sequence             string            `json:"sequence"`
-	GbkLocationString    string            `json:"gbk_location_string"`
-	Location             poly.Location     `json:"sequence_location"`
+	Location             Location          `json:"location"`
 	ParentSequence       *Genbank          `json:"-"`
 }
 
@@ -93,16 +90,15 @@ type Locus struct {
 	Linear           bool   `json:"linear"`
 }
 
-func (genbank Genbank) GetMeta() (Meta, error) {
-	return genbank.Meta, nil
-}
-
-func (genbank Genbank) GetFeatures() ([]Feature, error) {
-	return genbank.Features, nil
-}
-
-func (genbank *Genbank) GetSequence() (string, error) {
-	return genbank.Sequence, nil
+type Location struct {
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	GbkLocationString string     `json:"gbk_location_string"`
+	SubLocations      []Location `json:"sub_locations"`
 }
 
 func (sequence *Genbank) AddFeature(feature *Feature) error {
@@ -111,21 +107,8 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 	return nil
 }
 
-func (feature Feature) GetSequence() (string, error) {
-	sequence, err := getFeatureSequence(feature, feature.Location)
-	return sequence, err
-}
-
-func (feature Feature) GetType() (string, error) {
-	return feature.Type, nil
-}
-
-// func (feature *Feature) GetParent() (*poly.AnnotatedSequence, error) {
-// 	return feature.ParentSequence, nil
-// }
-
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location poly.Location) (string, error) {
+func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
@@ -653,7 +636,7 @@ func getFeatures(lines []string) []Feature {
 		// assign type and location to feature.
 		feature.Type = strings.TrimSpace(splitLine[0])
 		// feature.GbkLocationString is the string used by GBK to denote location
-		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+		feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
 		// Check if the location string is multiple lines.
 		nextLineNum := 0
@@ -663,12 +646,12 @@ func getFeatures(lines []string) []Feature {
 			// Check if the next line is not a qualifier, it is part of the
 			// GbkLocation String
 			if !strings.Contains(nextLine, "/") {
-				feature.GbkLocationString = feature.GbkLocationString + strings.TrimSpace(nextLine)
+				feature.Location.GbkLocationString = feature.Location.GbkLocationString + strings.TrimSpace(nextLine)
 			} else {
 				break
 			}
 		}
-		feature.Location = parseLocation(feature.GbkLocationString)
+		feature.Location = parseLocation(feature.Location.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -746,19 +729,19 @@ func getSequence(subLines []string) string {
 	return sequence
 }
 
-func parseLocation(locationString string) poly.Location {
-	var location poly.Location
+func parseLocation(locationString string) Location {
+	var location Location
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
 			position, _ := strconv.Atoi(locationString)
-			location = poly.Location{Start: position, End: position}
+			location = Location{Start: position, End: position}
 		} else {
 			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
 			partialRegex, _ := regexp.Compile("<|>")
 			startEndSplit := strings.Split(locationString, "..")
 			start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
 			end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
-			location = poly.Location{Start: start - 1, End: end}
+			location = Location{Start: start - 1, End: end}
 		}
 
 	} else {
@@ -834,7 +817,7 @@ func buildMetaString(name string, data string) string {
 }
 
 // BuildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
-func BuildLocationString(location poly.Location) string {
+func BuildLocationString(location Location) string {
 
 	var locationString string
 
@@ -868,8 +851,8 @@ func BuildFeatureString(feature Feature) string {
 	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
 
-	if feature.GbkLocationString != "" {
-		location = feature.GbkLocationString
+	if feature.Location.GbkLocationString != "" {
+		location = feature.Location.GbkLocationString
 	} else {
 		location = BuildLocationString(feature.Location)
 	}

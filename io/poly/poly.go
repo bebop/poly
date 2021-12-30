@@ -14,44 +14,33 @@ So be on the lookup for breaking changes in future releases.
 */
 package poly
 
+import (
+	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/fasta"
+	"github.com/TimothyStiles/poly/io/gff")
+
 /******************************************************************************
 
 Sequence related interfaces begin here.
 
 ******************************************************************************/
 
-type Meta interface {
-	GetMeta() (Meta, error)
-}
 type Sequence interface {
-	GetSequence() (string, error)
-}
-
-type Feature interface {
-	// GetParent() (*AnnotatedSequence, error)
-	GetSequence() (string, error)
-	// GetLocation() (Location, error)
-	// SetLocation(Location) error
-	GetType() (string, error)
-	// GetAttributes() (map[string]string, error)
+	polyjson.Poly | genbank.Genbank | fasta.Fasta | gff.Gff
 }
 
 type AnnotatedSequence interface {
-	GetMeta() (Meta, error)
-	GetFeatures() ([]Feature, error)
-	GetSequence() (string, error)
-	// AddFeature(*Feature) error
+	polyjson.Poly | genbank.Genbank | gff.Gff
+}
+type Feature interface {
+	polyjson.Feature | genbank.Feature | gff.Feature
 }
 
-type Location struct {
-	Start             int        `json:"start"`
-	End               int        `json:"end"`
-	Complement        bool       `json:"complement"`
-	Join              bool       `json:"join"`
-	FivePrimePartial  bool       `json:"five_prime_partial"`
-	ThreePrimePartial bool       `json:"three_prime_partial"`
-	SubLocations      []Location `json:"sub_locations"`
+type Location interface {
+	polyjson.Location | genbank.Location | gff.Location
 }
+
 
 /******************************************************************************
 

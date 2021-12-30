@@ -10,8 +10,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"time"
-
-	"github.com/TimothyStiles/poly/io/poly"
 )
 
 /******************************************************************************
@@ -41,32 +39,26 @@ type Feature struct {
 	Hash           string            `json:"hash"`
 	Type           string            `json:"type"`
 	Description    string            `json:"description"`
-	Location       poly.Location     `json:"location"`
+	Location       Location          `json:"location"`
 	Tags           map[string]string `json:"tags"`
 	Sequence       string            `json:"sequence"`
 	ParentSequence *Poly             `json:"-"`
+}
+
+type Location struct {
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	SubLocations      []Location `json:"sub_locations"`
 }
 
 func (sequence *Poly) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
 	return nil
-}
-
-func (sequence *Poly) GetFeatures() ([]Feature, error) {
-	return sequence.Features, nil
-}
-
-func (sequence *Poly) GetSequence() (string, error) {
-	return sequence.Sequence, nil
-}
-
-func (sequence *Poly) GetMeta() (Meta, error) {
-	return sequence.Meta, nil
-}
-
-func (feature *Feature) GetType() (string, error) {
-	return feature.Type, nil
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
