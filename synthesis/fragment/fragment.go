@@ -43,6 +43,11 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 	for _, overhang := range currentOverhangs {
 		currentOverhangMap[overhang] = true
 	}
+
+	// These 4 for loops generate all combinations of 4 base pairs
+	// checking all 256 4mer combinations for palindromes. Palindromes
+	// can cause problems in large combinatorial reactions, so are
+	// removed here.
 	bases := []rune{'A', 'T', 'G', 'C'}
 	var overhangsToTest []string
 	for _, base1 := range bases {
