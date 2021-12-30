@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -23,7 +22,7 @@ func ExampleSequence_AddFeature() {
 
 	// Set the initialized feature name and sequence location.
 	feature.Description = "Green Flourescent Protein"
-	feature.Location = poly.Location{}
+	feature.Location = genbank.Location{}
 	feature.Location.Start = 0
 	feature.Location.End = len(sequence.Sequence)
 
@@ -94,8 +93,8 @@ func TestFeature_GetSequence(t *testing.T) {
 	sequence.Sequence = gfpSequenceModified
 	// initialize sublocations to be usedin the feature.
 
-	var subLocation poly.Location
-	var subLocationReverseComplemented poly.Location
+	var subLocation genbank.Location
+	var subLocationReverseComplemented genbank.Location
 
 	subLocation.Start = 0
 	subLocation.End = sequenceLength / 2
@@ -105,7 +104,7 @@ func TestFeature_GetSequence(t *testing.T) {
 	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
 	feature.Description = "Green Flourescent Protein"
-	feature.Location.SubLocations = []poly.Location{subLocation, subLocationReverseComplemented}
+	feature.Location.SubLocations = []genbank.Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
 	sequence.AddFeature(&feature)

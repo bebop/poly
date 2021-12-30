@@ -107,6 +107,10 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 	return nil
 }
 
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer

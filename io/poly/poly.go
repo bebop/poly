@@ -41,7 +41,6 @@ type Location interface {
 	polyjson.Location | genbank.Location | gff.Location
 }
 
-
 /******************************************************************************
 
 Sequence related structs end here.

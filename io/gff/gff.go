@@ -23,12 +23,14 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 )
 
+// Gff is a struct that represents a gff file.
 type Gff struct {
 	Meta     Meta
 	Features []Feature // will need a GetFeatures interface to standardize
 	Sequence string
 }
 
+// Meta holds meta information about a gff file.
 type Meta struct {
 	Name                 string   `json:"name"`
 	Description          string   `json:"description"`
@@ -41,6 +43,7 @@ type Meta struct {
 	CheckSum             [32]byte `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
+// Feature is a struct that represents a feature in a gff file.
 type Feature struct {
 	Name           string            `json:"name"`
 	Source         string            `json:"source"`
@@ -53,6 +56,7 @@ type Feature struct {
 	ParentSequence *Gff              `json:"-"`
 }
 
+// Location is a struct that represents a location in a gff file.
 type Location struct {
 	Start             int        `json:"start"`
 	End               int        `json:"end"`
@@ -63,6 +67,7 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
+//AddFeature takes a feature and adds it to the Gff struct.
 func (sequence *Gff) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	var featureCopy Feature = *feature
@@ -70,11 +75,9 @@ func (sequence *Gff) AddFeature(feature *Feature) error {
 	return nil
 }
 
+// GetSequence takes a feature and returns a sequence string for that feature.
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
-}
-func (feature *Feature) GetType() (string, error) {
-	return feature.Type, nil
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
