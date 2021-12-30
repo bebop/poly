@@ -1,3 +1,11 @@
+/*
+Package variants contains a function for generating all variants of a sequence.
+
+Sometimes sequencers will only give you an *estimate* of what the basepair at
+a given position is. This package provides a function for generating all
+possible deterministic variants of a sequence given a sequence
+with ambiguous bases.
+*/
 package variants
 
 import (

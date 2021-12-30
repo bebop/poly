@@ -14,7 +14,7 @@ This is the roadmap for specific Poly features. Roadmaps for devops and communit
 
 * If you're a c-suite / marketing and sales type just hype Poly as much as you can to your clients, customers, friends, and business partners.
 
-## Features for Summer 2021 - The Summer of Metabalomics and optimized expression
+## Features for Summer 2021 - The Summer of Metabolomics and optimized expression
 
 * Ribosome site calculation, RNA folding, and minimum free energy calculations will be merged from Vivek's ongoing PRs.
 

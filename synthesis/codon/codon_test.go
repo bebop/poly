@@ -1,8 +1,6 @@
 package codon
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -10,16 +8,6 @@ import (
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 )
-
-func ExampleTranslate() {
-
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	testTranslation, _ := Translate(gfpDnaSequence, GetCodonTable(11)) // need to specify which codons map to which amino acids per NCBI table
-
-	fmt.Println(gfpTranslation == testTranslation)
-	// output: true
-}
 
 func TestTranslation(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
@@ -66,23 +54,6 @@ func TestTranslationLowerCase(t *testing.T) {
 
 }
 
-func ExampleOptimize() {
-
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-
-	sequence := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
-
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
-
-	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
-	// output: true
-}
-
 func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
@@ -115,6 +86,20 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 
 	if err != errEmtpyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
+	}
+}
+func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
+	aminoAcids := "TOP"
+	table := GetCodonTable(1) // does not contain 'O'
+	_, err := Optimize(aminoAcids, table)
+
+	want := InvalidAminoAcidError{'O'}
+	got, isInvalidAminoAcidError := err.(InvalidAminoAcidError)
+	if !isInvalidAminoAcidError {
+		t.Errorf("Optimize should return an InvalidAminoAcidError, got %T", got)
+	}
+	if got != want {
+		t.Errorf("Optimize should return an InvalidAminoAcidError for %q, got %q", want.AminoAcid, got.AminoAcid)
 	}
 }
 
@@ -164,58 +149,11 @@ func TestGetCodonFrequency(t *testing.T) {
 
 }
 
-func ExampleGetCodingRegions() {
-
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-
-	sequence := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-
-	// GetCodingRegions returns a single concatenated string of all coding regions.
-	codingRegions := GetCodingRegions(sequence)
-
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
-
-	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
-	// output: true
-
-}
-
 /******************************************************************************
 
 JSON related tests begin here.
 
 ******************************************************************************/
-
-func ExampleReadCodonJSON() {
-	codontable := ReadCodonJSON("../../data/bsub_codon_test.json")
-
-	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
-	//output: 28327
-}
-
-func ExampleParseCodonJSON() {
-	file, _ := ioutil.ReadFile("../../data/bsub_codon_test.json")
-	codontable := ParseCodonJSON(file)
-
-	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
-	//output: 28327
-}
-
-func ExampleWriteCodonJSON() {
-	codontable := ReadCodonJSON("../../data/bsub_codon_test.json")
-	WriteCodonJSON(codontable, "../../data/codon_test.json")
-	testCodonTable := ReadCodonJSON("../../data/codon_test.json")
-
-	// cleaning up test data
-	os.Remove("../../data/codon_test.json")
-
-	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
-	//output: 28327
-}
 
 func TestWriteCodonJSON(t *testing.T) {
 	testCodonTable := ReadCodonJSON("../../data/bsub_codon_test.json")
@@ -236,29 +174,6 @@ func TestWriteCodonJSON(t *testing.T) {
 Codon Compromise + Add related tests begin here.
 
 ******************************************************************************/
-
-func ExampleCompromiseCodonTable() {
-	sequence := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	sequence2 := genbank.Read("../../data/phix174.gb")
-	codonTable2 := GetCodonTable(11)
-	codingRegions2 := GetCodingRegions(sequence2)
-	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
-
-	finalTable, _ := CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
-	for _, aa := range finalTable.AminoAcids {
-		for _, codon := range aa.Codons {
-			if codon.Triplet == "TAA" {
-				fmt.Println(codon.Weight)
-			}
-		}
-	}
-	//output: 2727
-}
-
 func TestCompromiseCodonTable(t *testing.T) {
 	sequence := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
@@ -278,26 +193,4 @@ func TestCompromiseCodonTable(t *testing.T) {
 	if err == nil {
 		t.Errorf("Compromise table should fail on 10.0")
 	}
-}
-
-func ExampleAddCodonTable() {
-	sequence := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	sequence2 := genbank.Read("../../data/phix174.gb")
-	codonTable2 := GetCodonTable(11)
-	codingRegions2 := GetCodingRegions(sequence2)
-	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
-
-	finalTable := AddCodonTable(optimizationTable, optimizationTable2)
-	for _, aa := range finalTable.AminoAcids {
-		for _, codon := range aa.Codons {
-			if codon.Triplet == "GGC" {
-				fmt.Println(codon.Weight)
-			}
-		}
-	}
-	//output: 90
 }

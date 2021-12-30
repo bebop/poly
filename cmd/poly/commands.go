@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/TimothyStiles/poly"
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/io/gff"
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/TimothyStiles/poly/seqhash"
 	"github.com/urfave/cli/v2"

@@ -17,12 +17,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"lukechampine.com/blake3"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/TimothyStiles/poly"
+	"lukechampine.com/blake3"
+
+	"github.com/TimothyStiles/poly/io/poly"
 	"github.com/mitchellh/go-wordwrap"
 )
 
