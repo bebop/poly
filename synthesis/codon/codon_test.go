@@ -1,12 +1,13 @@
 package codon
 
 import (
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTranslation(t *testing.T) {
