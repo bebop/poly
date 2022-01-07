@@ -7,6 +7,7 @@ import (
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTranslation(t *testing.T) {
@@ -91,16 +92,9 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	aminoAcids := "TOP"
 	table := GetCodonTable(1) // does not contain 'O'
-	_, err := Optimize(aminoAcids, table)
 
-	want := InvalidAminoAcidError{'O'}
-	got, isInvalidAminoAcidError := err.(InvalidAminoAcidError)
-	if !isInvalidAminoAcidError {
-		t.Errorf("Optimize should return an InvalidAminoAcidError, got %T", got)
-	}
-	if got != want {
-		t.Errorf("Optimize should return an InvalidAminoAcidError for %q, got %q", want.AminoAcid, got.AminoAcid)
-	}
+	_, optimizeErr := Optimize(aminoAcids, table)
+	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
 func TestGetCodonFrequency(t *testing.T) {

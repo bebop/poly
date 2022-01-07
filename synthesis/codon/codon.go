@@ -55,16 +55,16 @@ this codon bias. There's a default Table generator near the bottom of this file
 with a whole section on how it works and why it's gotta be that way.
 ******************************************************************************/
 
-var errEmtpyCodonTable error = errors.New("empty codon table")
-var errEmtpyAminoAcidString error = errors.New("empty amino acid string")
-var errEmtpySequenceString error = errors.New("empty sequence string")
+var errEmtpyCodonTable = errors.New("empty codon table")
+var errEmtpyAminoAcidString = errors.New("empty amino acid string")
+var errEmtpySequenceString = errors.New("empty sequence string")
 
-// InvalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
-type InvalidAminoAcidError struct {
+// invalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
+type invalidAminoAcidError struct {
 	AminoAcid rune
 }
 
-func (e InvalidAminoAcidError) Error() string {
+func (e invalidAminoAcidError) Error() string {
 	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
 }
 
@@ -137,7 +137,7 @@ func Optimize(aminoAcids string, codonTable Table) (string, error) {
 	for _, aminoAcid := range aminoAcids {
 		chooser, ok := codonChooser[string(aminoAcid)]
 		if !ok {
-			return "", InvalidAminoAcidError{aminoAcid}
+			return "", invalidAminoAcidError{aminoAcid}
 		}
 		codons.WriteString(chooser.Pick().(string))
 	}
