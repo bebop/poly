@@ -24,7 +24,6 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -304,16 +303,4 @@ func CreateBarcodesWithBannedSequences(length int, maxSubSequence int, bannedSeq
 // CreateBarcodes is a simplified version of CreateBarcodesWithBannedSequences with sane defaults.
 func CreateBarcodes(length int, maxSubSequence int) []string {
 	return CreateBarcodesWithBannedSequences(length, maxSubSequence, []string{}, []func(string) bool{})
-}
-
-// CreateBarcodesGcRange creates a list of barcodes within a given GC range.
-func CreateBarcodesGcRange(length int, maxSubSequence int, minGcContent float64, maxGcContent float64) []string {
-	gcBarcodeFunc := func(barcodeToCheck string) bool {
-		gcContent := checks.GcContent(barcodeToCheck)
-		if gcContent < minGcContent || gcContent > maxGcContent {
-			return false
-		}
-		return true
-	}
-	return CreateBarcodesWithBannedSequences(length, maxSubSequence, []string{}, []func(string) bool{gcBarcodeFunc})
 }
