@@ -107,7 +107,7 @@ func ExampleCreateBarcodes() {
 }
 
 func ExampleCreateBarcodesGcRange() {
-	barcodes := CreateBarcodesGcRange(20, 4, .25, .75)
+	barcodes := primers.CreateBarcodesGcRange(20, 4, .25, .75)
 
 	fmt.Println(barcodes[0])
 	// Output: GAAACAATTAATGAATCAAG
