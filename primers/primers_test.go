@@ -106,13 +106,6 @@ func ExampleCreateBarcodes() {
 	// Output: AAAATAAAGAAACAATTAAT
 }
 
-func ExampleCreateBarcodesGcRange() {
-	barcodes := CreateBarcodesGcRange(20, 4, .25, .75)
-
-	fmt.Println(barcodes[0])
-	// Output: GAAACAATTAATGAATCAAG
-}
-
 func TestCreateBarcode(t *testing.T) {
 	testFunc := func(s string) bool {
 		return !strings.Contains(s, "GGCCGCGCCCC")
