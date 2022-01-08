@@ -1,0 +1,35 @@
+run:
+  timeout: 1m
+  skip-dirs:
+    - data
+linters:
+  enable:
+    - bodyclose
+    ##- dogsled
+    - dupl
+    #- exhaustivestruct
+    - exportloopref
+    #- funlen
+    - gochecknoinits
+    ##- goconst
+    ##- gocritic
+    ##- gocyclo
+    ##- gofmt
+    ##- goimports
+    #- gomnd
+    - goprintffuncname
+    ##- gosec
+    #- lll
+    ##- misspell
+    - nakedret
+    - nilnil
+    - noctx
+    - nolintlint
+    ##- stylecheck
+    ##- unconvert
+    ##- unparam
+    ##- whitespace
+#linters-settings:
+#  stylecheck:
+#    # https://staticcheck.io/docs/options#checks
+#    checks: ["all", "-ST1005"]
