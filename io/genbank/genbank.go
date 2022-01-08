@@ -13,17 +13,17 @@ package genbank
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/mitchellh/go-wordwrap"
-	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -46,6 +46,7 @@ type Meta struct {
 	Keywords             string            `json:"keywords"`
 	Organism             string            `json:"organism"`
 	Source               string            `json:"source"`
+	Taxonomy             []string          `json:"taxonomy"`
 	Origin               string            `json:"origin"`
 	Locus                Locus             `json:"locus"`
 	References           []Reference       `json:"references"`
@@ -69,7 +70,6 @@ type Feature struct {
 
 // Reference holds information one reference in a Meta struct.
 type Reference struct {
-	Index   string `json:"index"`
 	Authors string `json:"authors"`
 	Title   string `json:"title"`
 	Journal string `json:"journal"`
@@ -141,79 +141,377 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 }
 
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func Parse(file []byte) (Genbank, error) {
-
-	gbk := string(file)
-	lines := strings.Split(gbk, "\n")
+func Parse(r io.Reader) (Genbank, error) {
+	scanner := bufio.NewScanner(r)
+	var sequence = Genbank{}
 
 	// Create meta struct
-	meta := Meta{}
+	var meta = Meta{}
+
 	meta.Other = make(map[string]string)
 
 	// Create features struct
-	features := []Feature{}
+	var features = []Feature{}
+	var feature = Feature{}
+	feature.Attributes = make(map[string]string)
 
-	// Create sequence struct
-	sequence := Genbank{}
+	// Metadata setup
+	var metadataTag string
+	var metadataData []string
 
-	// Add the CheckSum to sequence (blake3)
-	sequence.Meta.CheckSum = blake3.Sum256(file)
+	// Feature setup
+	var newLocation bool
+	var quoteActive bool
 
-	for numLine := 0; numLine < len(lines); numLine++ {
-		line := lines[numLine]
-		splitLine := strings.Split(line, " ")
-		subLines := lines[numLine+1:]
+	var attribute string
+	var attributeValue string
 
-		// This is to keep the cursor from scrolling to the bottom another time after GetSequence() is called.
-		// Break has to be in scope and can't be called within switch statement.
-		// Otherwise it will just break the switch which is redundant.
-		sequenceBreakFlag := false
-		if sequenceBreakFlag {
+	// Sequence setup
+	reg, _ := regexp.Compile("[^a-zA-Z]+")
+	var sequenceBuilder strings.Builder
+
+	// Sequence breaking
+	parseStep := "metadata" // we can be parsing metadata, features, or sequence
+
+	genbankStarted := false
+	for lineNum := 0; scanner.Scan(); lineNum++ {
+		line := scanner.Text()
+		splitLine := strings.Split(strings.TrimSpace(line), " ")
+		if !genbankStarted {
+			// We detect the beginning of a new genbank file with "LOCUS"
+			if line[:5] == "LOCUS" {
+				metadataTag = strings.TrimSpace(splitLine[0])
+				meta.Locus = parseLocus(line)
+				metadataData = []string{strings.TrimSpace(line[len(metadataTag):])}
+				genbankStarted = true
+				continue
+			}
+			// Otherwise, we continue scanning
+			continue
+		}
+		switch parseStep {
+		case "metadata":
+			// Handle empty lines
+			if len(line) == 0 {
+				return Genbank{}, fmt.Errorf("Empty metadata line on line %d", lineNum)
+			}
+
+			// If we are currently reading a line, we need to figure out if it is a new meta line.
+			if string(line[0]) != " " || metadataTag == "FEATURES" {
+				// If this is true, it means we are beginning a new meta tag. In that case, let's save
+				// the older data, and then continue along.
+				switch metadataTag {
+				case "DEFINITION":
+					meta.Definition = parseMetadata(metadataData)
+				case "ACCESSION":
+					meta.Accession = parseMetadata(metadataData)
+				case "VERSION":
+					meta.Version = parseMetadata(metadataData)
+				case "KEYWORDS":
+					meta.Keywords = parseMetadata(metadataData)
+				case "SOURCE":
+					meta.Source, meta.Organism, meta.Taxonomy = getSourceOrganism(metadataData)
+				case "REFERENCE":
+					reference, err := parseReferences(metadataData)
+					if err != nil {
+						return Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+					}
+					meta.References = append(meta.References, reference)
+				case "FEATURES":
+					parseStep = "features"
+					sequence.Meta = meta
+					// We know that we are now parsing features, so lets initialize our first
+					// feature
+					feature.Type = strings.TrimSpace(splitLine[0])
+					feature.Location = parseLocation(strings.TrimSpace(splitLine[len(splitLine)-1]))
+					newLocation = true
+
+					continue
+				default:
+					meta.Other[metadataTag] = parseMetadata(metadataData)
+				}
+
+				metadataTag = strings.TrimSpace(splitLine[0])
+				metadataData = []string{strings.TrimSpace(line[len(metadataTag):])}
+			} else {
+				metadataData = append(metadataData, line)
+			}
+		case "features":
+			// Switch to sequence parsing
+			if splitLine[0] == "ORIGIN" {
+				parseStep = "sequence"
+				// This checks for our initial feature
+				if feature.Type != "" {
+					features = append(features, feature)
+				}
+				for _, feature := range features {
+					sequence.AddFeature(&feature)
+				}
+				continue
+			}
+
+			// If there is no active quote and the line does not have a / and newLocation == false, we know this is a top level feature.
+			if !quoteActive && !strings.Contains(line, "/") && !newLocation {
+				// Check for empty types
+				if feature.Type != "" {
+					features = append(features, feature)
+				}
+				feature = Feature{}
+				feature.Attributes = make(map[string]string)
+				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
+				if len(splitLine) < 2 {
+					return Genbank{}, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+				}
+				feature.Type = strings.TrimSpace(splitLine[0])
+				feature.Location = parseLocation(strings.TrimSpace(splitLine[len(splitLine)-1]))
+
+				// Set newLocation = true to so that we can check the next line for a multi-line location string
+				newLocation = true
+				continue
+			}
+
+			// If not a newFeature, check if the next line does not contain "/". If it does not, then it is a multi-line location string.
+			if !strings.Contains(line, "/") && newLocation {
+				feature.Location.GbkLocationString = feature.Location.GbkLocationString + strings.TrimSpace(line)
+				continue
+			}
+			newLocation = false
+
+			// First, let's check if we have a quote active (basically, if a attribute is using multiple lines)
+			if quoteActive {
+				trimmedLine := strings.TrimSpace(line)
+				if len(trimmedLine) < 1 {
+					continue
+				}
+				// If the trimmed line ends, append to the attribute and set quoteActive set to false
+				if trimmedLine[len(trimmedLine)-1] == '"' {
+					quoteActive = false
+					attributeValue = attributeValue + trimmedLine[:len(trimmedLine)-1]
+					feature.Attributes[attribute] = attributeValue
+					continue
+				}
+
+				// If there is still lines to go, just append and continue
+				attributeValue = attributeValue + trimmedLine
+				continue
+			}
+
+			// We know a quote isn't active, that we are not parsing location data, and that we are not at a new top level feature.
+			attribute = strings.TrimSpace(strings.Split(line, "=")[0])
+			if attribute[0] != '/' {
+				return Genbank{}, fmt.Errorf("Feature attribute does not start with a / on line %d. Got line: %s", lineNum, line)
+			}
+			attribute = attribute[1:]
+
+			// We have the attribute, now we need attributeValue. We do the following in case '=' is in the attribute value
+			index := strings.Index(line, `"`)
+			if index == -1 {
+				// If `"` is not -1, check for = sign.
+				index = strings.Index(line, `=`)
+				if index == -1 {
+					return Genbank{}, fmt.Errorf("Double-quote and = not found on feature attribute on line %d. Got line: %s", lineNum, line)
+				}
+			}
+			if len(line) < index+1 {
+				return Genbank{}, fmt.Errorf("Attribute has no data after initial double quote or = on line %d. Got line: %s", lineNum, line)
+			}
+			attributeValue = strings.TrimSpace(line[index+1:])
+			// If true, we have completed the attribute string
+			if attributeValue[len(attributeValue)-1] == '"' {
+				attributeValue = attributeValue[:len(attributeValue)-1]
+				feature.Attributes[attribute] = attributeValue
+				continue
+			}
+			// If false, we'll have to continue with a quoteActive
+			quoteActive = true
+		case "sequence":
+			if len(line) < 2 {
+				return Genbank{}, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+			}
+			if line[0:2] == "//" {
+				sequence.Sequence = sequenceBuilder.String()
+				return sequence, nil
+			}
+			sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+		}
+	}
+	return Genbank{}, fmt.Errorf("No termination of file")
+}
+
+func parseMetadata(metadataData []string) string {
+	var outputMetadata string
+	if len(metadataData) == 0 {
+		return "."
+	}
+	for _, data := range metadataData {
+		outputMetadata = outputMetadata + strings.TrimSpace(strings.Join(strings.Split(data, " ")[1:], " "))
+	}
+	return outputMetadata
+}
+
+// really important helper function. It finds sublines of a feature and joins them.
+func joinSubLines(splitLine, subLines []string) string {
+	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
+
+	for _, subLine := range subLines {
+		if !quickMetaCheck(subLine) && !quickSubMetaCheck(subLine) {
+			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
+		} else {
 			break
 		}
+	}
+	return base
+}
 
-		switch strings.TrimSpace(splitLine[0]) {
+func parseReferences(metadataData []string) (Reference, error) {
+	var reference Reference
+	rangeIndex := strings.Index(metadataData[0], "(")
+	if rangeIndex != -1 {
+		reference.Range = metadataData[0][rangeIndex:]
+	}
+	var referenceKey string
+	var referenceValue string
 
-		case "":
-			continue
-		case "LOCUS":
-			meta.Locus = parseLocus(line)
-		case "DEFINITION":
-			meta.Definition = joinSubLines(splitLine, subLines)
-		case "ACCESSION":
-			meta.Accession = joinSubLines(splitLine, subLines)
-		case "VERSION":
-			meta.Version = joinSubLines(splitLine, subLines)
-		case "KEYWORDS":
-			meta.Keywords = joinSubLines(splitLine, subLines)
-		case "SOURCE":
-			meta.Source, meta.Organism = getSourceOrganism(splitLine, subLines)
-		case "REFERENCE":
-			meta.References = append(meta.References, getReference(splitLine, subLines))
-			continue
-		case "FEATURES":
-			features = getFeatures(subLines)
-		case "ORIGIN":
-			sequence.Sequence = getSequence(subLines)
-			sequenceBreakFlag = true
-		default:
-			if quickMetaCheck(line) {
-				key := strings.TrimSpace(splitLine[0])
-				meta.Other[key] = joinSubLines(splitLine, subLines)
+	if len(metadataData) == 1 {
+		return Reference{}, fmt.Errorf("Got reference with no additional information")
+	}
+
+	referenceKey = strings.Split(strings.TrimSpace(metadataData[1]), " ")[0]
+	referenceValue = strings.TrimSpace(metadataData[1][len(referenceKey)+2:])
+	for index := 2; index < len(metadataData); index++ {
+		if len(metadataData[index]) > 3 {
+			if metadataData[index][3] != ' ' || index+1 == len(metadataData) {
+				if index+1 == len(metadataData) {
+					referenceValue = referenceValue + " " + strings.TrimSpace(metadataData[index])
+				}
+				switch referenceKey {
+				case "AUTHORS":
+					reference.Authors = referenceValue
+				case "TITLE":
+					reference.Title = referenceValue
+				case "JOURNAL":
+					reference.Journal = referenceValue
+				case "PUBMED":
+					reference.PubMed = referenceValue
+				case "REMARK":
+					reference.Remark = referenceValue
+				default:
+					return reference, fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: %s", referenceKey)
+				}
+				referenceKey = strings.Split(strings.TrimSpace(metadataData[index]), " ")[0]
+				referenceValue = strings.TrimSpace(metadataData[index][len(referenceKey)+2:])
+			} else {
+				// Otherwise, simply append the next metadata.
+				referenceValue = referenceValue + " " + strings.TrimSpace(metadataData[index])
 			}
 		}
-
 	}
 
-	// add meta to genbank struct
-	sequence.Meta = meta
+	return reference, nil
+}
 
-	// add features to annotated sequence with pointer to annotated sequence in each feature
-	for _, feature := range features {
-		sequence.AddFeature(&feature)
+var genBankMoleculeTypes = []string{
+	"DNA",
+	"genomic DNA",
+	"genomic RNA",
+	"mRNA",
+	"tRNA",
+	"rRNA",
+	"other RNA",
+	"other DNA",
+	"transcribed RNA",
+	"viral cRNA",
+	"unassigned DNA",
+	"unassigned RNA",
+}
+
+// used in parseLocus function though it could be useful elsewhere.
+var genbankDivisions = []string{
+	"PRI", //primate sequences
+	"ROD", //rodent sequences
+	"MAM", //other mamallian sequences
+	"VRT", //other vertebrate sequences
+	"INV", //invertebrate sequences
+	"PLN", //plant, fungal, and algal sequences
+	"BCT", //bacterial sequences
+	"VRL", //viral sequences
+	"PHG", //bacteriophage sequences
+	"SYN", //synthetic sequences
+	"UNA", //unannotated sequences
+	"EST", //EST sequences (expressed sequence tags)
+	"PAT", //patent sequences
+	"STS", //STS sequences (sequence tagged sites)
+	"GSS", //GSS sequences (genome survey sequences)
+	"HTG", //HTG sequences (high-throughput genomic sequences)
+	"HTC", //unfinished high-throughput cDNA sequencing
+	"ENV", //environmental sampling sequences
+}
+
+// TODO rewrite with proper error handling.
+// parses locus from provided string.
+func parseLocus(locusString string) Locus {
+	locus := Locus{}
+
+	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
+	circularRegex, _ := regexp.Compile(` circular `)
+	linearRegex, _ := regexp.Compile(` linear `)
+
+	ModificationDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
+
+	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
+
+	var filteredLocusSplit []string
+	for i := range locusSplit {
+		if locusSplit[i] != "" {
+			filteredLocusSplit = append(filteredLocusSplit, locusSplit[i])
+		}
 	}
 
-	return sequence, nil
+	locus.Name = filteredLocusSplit[1]
+
+	// sequence length and coding
+	baseSequenceLength := string(basePairRegex.FindString(locusString))
+	if baseSequenceLength != "" {
+		splitBaseSequenceLength := strings.Split(strings.TrimSpace(baseSequenceLength), " ")
+		if len(splitBaseSequenceLength) == 2 {
+			locus.SequenceLength = splitBaseSequenceLength[0]
+			locus.SequenceCoding = splitBaseSequenceLength[1]
+		}
+	}
+
+	// molecule type
+	for _, moleculeType := range genBankMoleculeTypes {
+		moleculeRegex, _ := regexp.Compile(moleculeType)
+		match := string(moleculeRegex.Find([]byte(locusString)))
+		if match != "" {
+			locus.MoleculeType = match
+			break
+		}
+	}
+
+	// circularity flag
+	if circularRegex.Match([]byte(locusString)) {
+		locus.Circular = true
+	}
+
+	if linearRegex.Match([]byte(locusString)) {
+		locus.Linear = true
+	}
+
+	// genbank division
+	for _, genbankDivision := range genbankDivisions {
+		genbankDivisionRegex, _ := regexp.Compile(genbankDivision)
+		match := string(genbankDivisionRegex.Find([]byte(locusString)))
+		if match != "" {
+			locus.GenbankDivision = match
+			break
+		}
+	}
+
+	// ModificationDate
+	locus.ModificationDate = ModificationDateRegex.FindString(locusString)
+
+	return locus
 }
 
 // Build builds a GBK string to be written out to db or file.
@@ -254,11 +552,21 @@ func Build(sequence Genbank) ([]byte, error) {
 	organismString := buildMetaString("  ORGANISM", sequence.Meta.Organism)
 	gbkString.WriteString(organismString)
 
+	var taxonomyString strings.Builder
+	for i, taxonomyData := range sequence.Meta.Taxonomy {
+		taxonomyString.WriteString(taxonomyData)
+		if len(taxonomyData) == i+1 {
+			taxonomyString.WriteString(".")
+		} else {
+			taxonomyString.WriteString("; ")
+		}
+	}
+	gbkString.WriteString(buildMetaString("", taxonomyString.String()))
+
 	// building references
 	// TODO: could use reflection to get keys and make more general.
 	for referenceIndex, reference := range sequence.Meta.References {
-		referenceData := strconv.Itoa(referenceIndex+1) + "  " + reference.Range
-		referenceString := buildMetaString("REFERENCE", referenceData)
+		referenceString := buildMetaString("REFERENCE", fmt.Sprintf("%d %s", referenceIndex+1, reference.Range))
 		gbkString.WriteString(referenceString)
 
 		if reference.Authors != "" {
@@ -334,7 +642,7 @@ func Build(sequence Genbank) ([]byte, error) {
 
 // Read reads a Gbk from path and parses into an Annotated sequence struct.
 func Read(path string) (Genbank, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return Genbank{}, err
 	}
@@ -355,43 +663,6 @@ func Write(sequence Genbank, path string) error {
 	}
 	err = ioutil.WriteFile(path, gbk, 0644)
 	return err
-}
-
-// used in parseLocus function though it could be useful elsewhere.
-var genbankDivisions = []string{
-	"PRI", //primate sequences
-	"ROD", //rodent sequences
-	"MAM", //other mamallian sequences
-	"VRT", //other vertebrate sequences
-	"INV", //invertebrate sequences
-	"PLN", //plant, fungal, and algal sequences
-	"BCT", //bacterial sequences
-	"VRL", //viral sequences
-	"PHG", //bacteriophage sequences
-	"SYN", //synthetic sequences
-	"UNA", //unannotated sequences
-	"EST", //EST sequences (expressed sequence tags)
-	"PAT", //patent sequences
-	"STS", //STS sequences (sequence tagged sites)
-	"GSS", //GSS sequences (genome survey sequences)
-	"HTG", //HTG sequences (high-throughput genomic sequences)
-	"HTC", //unfinished high-throughput cDNA sequencing
-	"ENV", //environmental sampling sequences
-}
-
-var genBankMoleculeTypes = []string{
-	"DNA",
-	"genomic DNA",
-	"genomic RNA",
-	"mRNA",
-	"tRNA",
-	"rRNA",
-	"other RNA",
-	"other DNA",
-	"transcribed RNA",
-	"viral cRNA",
-	"unassigned DNA",
-	"unassigned RNA",
 }
 
 // used in feature check functions.
@@ -482,241 +753,30 @@ func topLevelFeatureCheck(featureString string) bool {
 	return flag
 }
 
-// parses locus from provided string.
-func parseLocus(locusString string) Locus {
-	locus := Locus{}
-
-	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
-	circularRegex, _ := regexp.Compile(` circular `)
-	linearRegex, _ := regexp.Compile(` linear `)
-
-	ModificationDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
-
-	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
-
-	var filteredLocusSplit []string
-	for i := range locusSplit {
-		if locusSplit[i] != "" {
-			filteredLocusSplit = append(filteredLocusSplit, locusSplit[i])
-		}
-	}
-
-	locus.Name = filteredLocusSplit[1]
-
-	// sequence length and coding
-	baseSequenceLength := string(basePairRegex.FindString(locusString))
-	if baseSequenceLength != "" {
-		splitBaseSequenceLength := strings.Split(strings.TrimSpace(baseSequenceLength), " ")
-		if len(splitBaseSequenceLength) == 2 {
-			locus.SequenceLength = splitBaseSequenceLength[0]
-			locus.SequenceCoding = splitBaseSequenceLength[1]
-		}
-	}
-
-	// molecule type
-	for _, moleculeType := range genBankMoleculeTypes {
-		moleculeRegex, _ := regexp.Compile(moleculeType)
-		match := string(moleculeRegex.Find([]byte(locusString)))
-		if match != "" {
-			locus.MoleculeType = match
-			break
-		}
-	}
-
-	// circularity flag
-	if circularRegex.Match([]byte(locusString)) {
-		locus.Circular = true
-	}
-
-	if linearRegex.Match([]byte(locusString)) {
-		locus.Linear = true
-	}
-
-	// genbank division
-	for _, genbankDivision := range genbankDivisions {
-		genbankDivisionRegex, _ := regexp.Compile(genbankDivision)
-		match := string(genbankDivisionRegex.Find([]byte(locusString)))
-		if match != "" {
-			locus.GenbankDivision = match
-			break
-		}
-	}
-
-	// ModificationDate
-	locus.ModificationDate = ModificationDateRegex.FindString(locusString)
-
-	return locus
-}
-
-// really important helper function. It finds sublines of a feature and joins them.
-func joinSubLines(splitLine, subLines []string) string {
-	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-
-	for _, subLine := range subLines {
-		if !quickMetaCheck(subLine) && !quickSubMetaCheck(subLine) {
-			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
-		} else {
-			break
-		}
-	}
-	return base
-}
-
-// get organism name and source. Doesn't use joinSubLines.
-func getSourceOrganism(splitLine, subLines []string) (string, string) {
-	source := strings.TrimSpace(strings.Join(splitLine[1:], " "))
+func getSourceOrganism(metadataData []string) (string, string, []string) {
+	source := strings.TrimSpace(metadataData[0])
 	var organism string
-	for numSubLine, subLine := range subLines {
-		headString := strings.Split(strings.TrimSpace(subLine), " ")[0]
-		if string(subLine[0]) == " " && headString != "ORGANISM" {
-			source = strings.TrimSpace(strings.TrimSpace(source) + " " + strings.TrimSpace(subLine))
-		} else {
-			organismSubLines := subLines[numSubLine+1:]
-			organismSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-			organism = joinSubLines(organismSplitLine, organismSubLines)
-			break
+	var taxonomy []string
+	for iterator := 1; iterator < len(metadataData); iterator++ {
+		dataLine := metadataData[iterator]
+		headString := strings.Split(strings.TrimSpace(dataLine), " ")[0]
+		if headString == "ORGANISM" {
+			index := strings.Index(dataLine, `ORGANISM`)
+			organism = strings.TrimSpace(dataLine[index+len("ORGANISM"):])
+			continue
 		}
-	}
-	return source, organism
-}
-
-// gets a single reference. Parses headstring and the joins sub lines based on feature.
-func getReference(splitLine, subLines []string) Reference {
-	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-	reference := Reference{}
-	reference.Index = strings.Split(base, " ")[0]
-	if len(base) > 1 {
-		reference.Range = strings.TrimSpace(strings.Join(strings.Split(base, " ")[1:], " "))
-	}
-
-	for numSubLine, subLine := range subLines {
-		featureSubLines := subLines[numSubLine+1:]
-		featureSplitLine := strings.Split(strings.TrimSpace(subLine), " ")
-		headString := featureSplitLine[0]
-		if topLevelFeatureCheck(headString) {
-			break
-		}
-		switch headString {
-		case "AUTHORS":
-			reference.Authors = joinSubLines(featureSplitLine, featureSubLines)
-		case "TITLE":
-			reference.Title = joinSubLines(featureSplitLine, featureSubLines)
-		case "JOURNAL":
-			reference.Journal = joinSubLines(featureSplitLine, featureSubLines)
-		case "PUBMED":
-			reference.PubMed = joinSubLines(featureSplitLine, featureSubLines)
-		case "REMARK":
-			reference.Remark = joinSubLines(featureSplitLine, featureSubLines)
-		default:
-			break
-		}
-
-	}
-	return reference
-}
-
-func getFeatures(lines []string) []Feature {
-	lineIndex := 0
-	features := []Feature{}
-
-	// regex to remove quotes and slashes from qualifiers
-	reg, _ := regexp.Compile("[\"/\n]+")
-
-	// go through every line.
-	for lineIndex < len(lines) {
-		line := lines[lineIndex]
-		// This is a break to ensure that cursor doesn't go beyond ORIGIN which is the last top level feature.
-		// This could pick up random sequence strings that aren't helpful and will mess with parser.
-		// DO NOT MOVE/REMOVE WITHOUT CAUSE AND CONSIDERATION
-		if quickMetaCheck(line) || !quickFeatureCheck(line) {
-			break
-		}
-
-		feature := Feature{}
-
-		// split the current line for feature type and location fields.
-		splitLine := strings.Split(strings.TrimSpace(line), " ")
-
-		// assign type and location to feature.
-		feature.Type = strings.TrimSpace(splitLine[0])
-		// feature.GbkLocationString is the string used by GBK to denote location
-		feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-
-		// Check if the location string is multiple lines.
-		nextLineNum := 0
-		for {
-			nextLineNum++
-			nextLine := lines[lineIndex+nextLineNum]
-			// Check if the next line is not a qualifier, it is part of the
-			// GbkLocation String
-			if !strings.Contains(nextLine, "/") {
-				feature.Location.GbkLocationString = feature.Location.GbkLocationString + strings.TrimSpace(nextLine)
-			} else {
-				break
-			}
-		}
-		feature.Location = parseLocation(feature.Location.GbkLocationString)
-
-		// initialize attributes.
-		feature.Attributes = make(map[string]string)
-
-		// end of feature declaration line. Bump to next line and begin looking for qualifiers.
-		lineIndex++
-		line = lines[lineIndex+nextLineNum-1]
-
-		// loop through potential qualifiers. Break if not a qualifier or sub line.
-		// Definition of qualifiers here: http://www.insdc.org/files/feature_table.html#3.3
-		for {
-			// make sure what we're parsing is a qualifier. Break if not.
-			// keeping out of normal if else pattern because of phantom brackets that are hard to trace.
-			if !quickQualifierCheck(line) {
-				break
-			}
-
-			qualifier := line
-			qualifierKey := strings.TrimSpace(strings.Split(line, "=")[0])
-
-			// end of qualifier declaration line. Bump to next line and begin looking for qualifier sublines.
-			lineIndex++
-			line = lines[lineIndex]
-
-			// loop through any potential continuing lines of qualifiers. Break if not.
-			for {
-				// keeping out of normal if else pattern because of phantom brackets that are hard to trace.
-				if !quickQualifierSubLineCheck(line) {
-					break
+		for _, taxonomyData := range strings.Split(strings.TrimSpace(dataLine), ";") {
+			taxonomyDataTrimmed := strings.TrimSpace(taxonomyData)
+			// Taxonomy ends with a ".", which we check for here
+			if len(taxonomyDataTrimmed) > 1 {
+				if taxonomyDataTrimmed[len(taxonomyDataTrimmed)-1] == '.' {
+					taxonomyDataTrimmed = taxonomyDataTrimmed[:len(taxonomyDataTrimmed)-1]
 				}
-				//append to current qualifier
-				// qualifier += strings.TrimSpace(line)
-				if qualifierKey != "/translation" {
-					qualifier += " " + strings.TrimSpace(line)
-				} else {
-					qualifier += strings.TrimSpace(line)
-				}
-
-				// nextline
-				lineIndex++
-				line = lines[lineIndex]
+				taxonomy = append(taxonomy, taxonomyDataTrimmed)
 			}
-			//add qualifier to feature.
-			attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
-			attributeLabel := strings.TrimSpace(attributeSplit[0])
-			var attributeValue string
-			// This if-statement is not tested, and panics when run. Not sure why
-			// it is still here - KG 19 Dec 2020
-			if len(attributeSplit) < 2 {
-				attributeValue = ""
-			} else {
-				attributeValue = strings.TrimSpace(attributeSplit[1])
-			}
-			feature.Attributes[attributeLabel] = attributeValue
 		}
-
-		//append the parsed feature to the features list to be returned.
-		features = append(features, feature)
-
 	}
-	return features
+	return source, organism, taxonomy
 }
 
 // takes every line after origin feature and removes anything that isn't in the alphabet. Returns sequence string.
@@ -813,7 +873,7 @@ func buildMetaString(name string, data string) string {
 		if index == 0 {
 			returnData = name + datum + "\n"
 		} else {
-			returnData += generateWhiteSpace(11) + datum + "\n"
+			returnData += generateWhiteSpace(12) + datum + "\n"
 		}
 	}
 
@@ -897,56 +957,56 @@ Genbank Flat specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseMulti parses multiple Genbank files in a byte array to multiple sequences
-func ParseMulti(file []byte) []Genbank {
-	r := bytes.NewReader(file)
-	sequences := make(chan Genbank)
-	go ParseConcurrent(r, sequences)
-
-	var outputGenbanks []Genbank
-	for sequence := range sequences {
-		outputGenbanks = append(outputGenbanks, sequence)
-	}
-	return outputGenbanks
-}
-
-// ParseFlat specifically takes the output of a Genbank Flat file that from
-// the genbank ftp dumps. These files have 10 line headers, which are entirely
-// removed
-func ParseFlat(file []byte) []Genbank {
-	r := bytes.NewReader(file)
-	sequences := make(chan Genbank)
-	go ParseFlatConcurrent(r, sequences)
-	var outputGenbanks []Genbank
-	for sequence := range sequences {
-		outputGenbanks = append(outputGenbanks, sequence)
-	}
-	return outputGenbanks
-}
-
-// ReadMulti reads multiple genbank files from a single file
-func ReadMulti(path string) []Genbank {
-	file, _ := ioutil.ReadFile(path)
-	sequences := ParseMulti(file)
-	return sequences
-}
-
-// ReadFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
-func ReadFlat(path string) []Genbank {
-	file, _ := ioutil.ReadFile(path)
-	sequences := ParseFlat(file)
-	return sequences
-}
-
-// ReadFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
-func ReadFlatGz(path string) []Genbank {
-	file, _ := ioutil.ReadFile(path)
-	rdata := bytes.NewReader(file)
-	r, _ := gzip.NewReader(rdata)
-	s, _ := ioutil.ReadAll(r)
-	sequences := ParseFlat(s)
-	return sequences
-}
+//// ParseMulti parses multiple Genbank files in a byte array to multiple sequences
+//func ParseMulti(file []byte) []Genbank {
+//	r := bytes.NewReader(file)
+//	sequences := make(chan Genbank)
+//	go ParseConcurrent(r, sequences)
+//
+//	var outputGenbanks []Genbank
+//	for sequence := range sequences {
+//		outputGenbanks = append(outputGenbanks, sequence)
+//	}
+//	return outputGenbanks
+//}
+//
+//// ParseFlat specifically takes the output of a Genbank Flat file that from
+//// the genbank ftp dumps. These files have 10 line headers, which are entirely
+//// removed
+//func ParseFlat(file []byte) []Genbank {
+//	r := bytes.NewReader(file)
+//	sequences := make(chan Genbank)
+//	go ParseFlatConcurrent(r, sequences)
+//	var outputGenbanks []Genbank
+//	for sequence := range sequences {
+//		outputGenbanks = append(outputGenbanks, sequence)
+//	}
+//	return outputGenbanks
+//}
+//
+//// ReadMulti reads multiple genbank files from a single file
+//func ReadMulti(path string) []Genbank {
+//	file, _ := ioutil.ReadFile(path)
+//	sequences := ParseMulti(file)
+//	return sequences
+//}
+//
+//// ReadFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
+//func ReadFlat(path string) []Genbank {
+//	file, _ := ioutil.ReadFile(path)
+//	sequences := ParseFlat(file)
+//	return sequences
+//}
+//
+//// ReadFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
+//func ReadFlatGz(path string) []Genbank {
+//	file, _ := ioutil.ReadFile(path)
+//	rdata := bytes.NewReader(file)
+//	r, _ := gzip.NewReader(rdata)
+//	s, _ := ioutil.ReadAll(r)
+//	sequences := ParseFlat(s)
+//	return sequences
+//}
 
 /******************************************************************************
 
@@ -960,42 +1020,42 @@ Genbank Concurrent specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of Genbank.
-func ParseConcurrent(r io.Reader, sequences chan<- Genbank) {
-	var gbkStr string
-	var gbk Genbank
-
-	// Start a new scanner
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "//" {
-			gbkStr = gbkStr + "//"
-			// Parse the genbank string and send it to the channel
-			gbk, _ = Parse([]byte(gbkStr)) // TODO: Ask Keoni how to handle this error
-			sequences <- gbk
-			// Reset the genbank string
-			gbkStr = ""
-		} else {
-			// Append new lines of the Genbank file to a growing string
-			gbkStr = gbkStr + line + "\n"
-		}
-	}
-	close(sequences)
-}
-
-// ParseFlatConcurrent concurrently parses a given flat-Genbank file in an io.Reader into a channel of poly.Sequnce.
-func ParseFlatConcurrent(r io.Reader, sequences chan<- Genbank) {
-	// Start a new reader
-	reader := bufio.NewReader(r)
-	// Read 10 lines, or the header of a flat file
-	// Header data is not needed to parse the Genbank files, though it may contain useful information.
-	for i := 0; i < 10; i++ {
-		_, _, _ = reader.ReadLine()
-	}
-	go ParseConcurrent(reader, sequences)
-}
-
+//// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of Genbank.
+//func ParseConcurrent(r io.Reader, sequences chan<- Genbank) {
+//	var gbkStr string
+//	var gbk Genbank
+//
+//	// Start a new scanner
+//	scanner := bufio.NewScanner(r)
+//	for scanner.Scan() {
+//		line := scanner.Text()
+//		if line == "//" {
+//			gbkStr = gbkStr + "//"
+//			// Parse the genbank string and send it to the channel
+//			gbk, _ = Parse([]byte(gbkStr)) // TODO: Ask Keoni how to handle this error
+//			sequences <- gbk
+//			// Reset the genbank string
+//			gbkStr = ""
+//		} else {
+//			// Append new lines of the Genbank file to a growing string
+//			gbkStr = gbkStr + line + "\n"
+//		}
+//	}
+//	close(sequences)
+//}
+//
+//// ParseFlatConcurrent concurrently parses a given flat-Genbank file in an io.Reader into a channel of poly.Sequnce.
+//func ParseFlatConcurrent(r io.Reader, sequences chan<- Genbank) {
+//	// Start a new reader
+//	reader := bufio.NewReader(r)
+//	// Read 10 lines, or the header of a flat file
+//	// Header data is not needed to parse the Genbank files, though it may contain useful information.
+//	for i := 0; i < 10; i++ {
+//		_, _, _ = reader.ReadLine()
+//	}
+//	go ParseConcurrent(reader, sequences)
+//}
+//
 /******************************************************************************
 
 Genbank Concurrent specific IO related things end here.
