@@ -59,45 +59,34 @@ func ExampleWrite() {
 	// Output: 22-OCT-2019
 }
 
-func TestGetSourceOrganism(t *testing.T) {
-	// The following is a regression test for getSourceOrganism, fixing troubles with SOURCE.ORGANISM parsing.
-	gbk, _ := Read("../../data/sample.gbk")
-	gbkBytes, _ := Build(gbk)
-	testSequence, _ := Parse(bytes.NewReader(gbkBytes))
+func TestGbkIO(t *testing.T) {
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(tmpDataDir)
 
-	fmt.Println(gbk.Meta.Organism)
-	fmt.Println(testSequence.Meta.Organism)
-	fmt.Println(string(gbkBytes))
+	gbk, _ := Read("../../data/puc19.gbk")
 
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
+	Write(gbk, tmpGbkFilePath)
+
+	writeTestGbk, _ := Read(tmpGbkFilePath)
+	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
+	}
+
+	// Test multiline Genbank features
+	pichia, _ := Read("../../data/pichia_chr1_head.gb")
+	var multilineOutput string
+	for _, feature := range pichia.Features {
+		multilineOutput = feature.Location.GbkLocationString
+	}
+
+	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
+		t.Errorf("Failed to parse multiline genbank feature string")
+	}
 }
-
-//func TestGbkIO(t *testing.T) {
-//	tmpDataDir, err := ioutil.TempDir("", "data-*")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	defer os.RemoveAll(tmpDataDir)
-//
-//	gbk, _ := Read("../../data/puc19.gbk")
-//
-//	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-//	Write(gbk, tmpGbkFilePath)
-//
-//	writeTestGbk, _ := Read(tmpGbkFilePath)
-//	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
-//		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
-//	}
-//
-//	// Test multiline Genbank features
-//	pichia, _ := Read("../../data/pichia_chr1_head.gb")
-//	var multilineOutput string
-//	for _, feature := range pichia.Features {
-//		multilineOutput = feature.Location.GbkLocationString
-//	}
-//	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
-//		t.Errorf("Failed to parse multiline genbank feature string")
-//	}
-//}
 
 func TestGbkLocationStringBuilder(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
@@ -122,16 +111,9 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testInputGbk, _ := Read("../../data/sample.gbk")
 	testOutputGbk, _ := Read(tmpGbkFilePath)
 
-	gbkInputBytes, _ := Build(testInputGbk)
-	gbkOutputBytes, _ := Build(testOutputGbk)
-
-	fmt.Println(string(gbkInputBytes))
-	fmt.Println("=====")
-	fmt.Println(string(gbkOutputBytes))
-
-	//if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
-	//	t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
-	//}
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
+	}
 }
 
 func TestGbLocationStringBuilder(t *testing.T) {

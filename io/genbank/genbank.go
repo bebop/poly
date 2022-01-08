@@ -180,9 +180,7 @@ func Parse(r io.Reader) (Genbank, error) {
 		if !genbankStarted {
 			// We detect the beginning of a new genbank file with "LOCUS"
 			if line[:5] == "LOCUS" {
-				metadataTag = strings.TrimSpace(splitLine[0])
 				meta.Locus = parseLocus(line)
-				metadataData = []string{strings.TrimSpace(line[len(metadataTag):])}
 				genbankStarted = true
 				continue
 			}
@@ -223,12 +221,14 @@ func Parse(r io.Reader) (Genbank, error) {
 					// We know that we are now parsing features, so lets initialize our first
 					// feature
 					feature.Type = strings.TrimSpace(splitLine[0])
-					feature.Location = parseLocation(strings.TrimSpace(splitLine[len(splitLine)-1]))
+					feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 					newLocation = true
 
 					continue
 				default:
-					meta.Other[metadataTag] = parseMetadata(metadataData)
+					if metadataTag != "" {
+						meta.Other[metadataTag] = parseMetadata(metadataData)
+					}
 				}
 
 				metadataTag = strings.TrimSpace(splitLine[0])
@@ -242,6 +242,7 @@ func Parse(r io.Reader) (Genbank, error) {
 				parseStep = "sequence"
 				// This checks for our initial feature
 				if feature.Type != "" {
+					feature.Location = parseLocation(feature.Location.GbkLocationString)
 					features = append(features, feature)
 				}
 				for _, feature := range features {
@@ -254,6 +255,7 @@ func Parse(r io.Reader) (Genbank, error) {
 			if !quoteActive && !strings.Contains(line, "/") && !newLocation {
 				// Check for empty types
 				if feature.Type != "" {
+					feature.Location = parseLocation(feature.Location.GbkLocationString)
 					features = append(features, feature)
 				}
 				feature = Feature{}
@@ -263,7 +265,7 @@ func Parse(r io.Reader) (Genbank, error) {
 					return Genbank{}, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
 				}
 				feature.Type = strings.TrimSpace(splitLine[0])
-				feature.Location = parseLocation(strings.TrimSpace(splitLine[len(splitLine)-1]))
+				feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
 				// Set newLocation = true to so that we can check the next line for a multi-line location string
 				newLocation = true
@@ -344,8 +346,9 @@ func parseMetadata(metadataData []string) string {
 		return "."
 	}
 	for _, data := range metadataData {
-		outputMetadata = outputMetadata + strings.TrimSpace(strings.Join(strings.Split(data, " ")[1:], " "))
+		outputMetadata = outputMetadata + strings.TrimSpace(data) + " "
 	}
+	outputMetadata = outputMetadata[:len(outputMetadata)-1] // Remove trailing whitespace
 	return outputMetadata
 }
 
@@ -380,24 +383,8 @@ func parseReferences(metadataData []string) (Reference, error) {
 	referenceValue = strings.TrimSpace(metadataData[1][len(referenceKey)+2:])
 	for index := 2; index < len(metadataData); index++ {
 		if len(metadataData[index]) > 3 {
-			if metadataData[index][3] != ' ' || index+1 == len(metadataData) {
-				if index+1 == len(metadataData) {
-					referenceValue = referenceValue + " " + strings.TrimSpace(metadataData[index])
-				}
-				switch referenceKey {
-				case "AUTHORS":
-					reference.Authors = referenceValue
-				case "TITLE":
-					reference.Title = referenceValue
-				case "JOURNAL":
-					reference.Journal = referenceValue
-				case "PUBMED":
-					reference.PubMed = referenceValue
-				case "REMARK":
-					reference.Remark = referenceValue
-				default:
-					return reference, fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: %s", referenceKey)
-				}
+			if metadataData[index][3] != ' ' {
+				reference.addKey(referenceKey, referenceValue)
 				referenceKey = strings.Split(strings.TrimSpace(metadataData[index]), " ")[0]
 				referenceValue = strings.TrimSpace(metadataData[index][len(referenceKey)+2:])
 			} else {
@@ -406,8 +393,27 @@ func parseReferences(metadataData []string) (Reference, error) {
 			}
 		}
 	}
+	reference.addKey(referenceKey, referenceValue)
 
 	return reference, nil
+}
+
+func (reference *Reference) addKey(referenceKey string, referenceValue string) error {
+	switch referenceKey {
+	case "AUTHORS":
+		reference.Authors = referenceValue
+	case "TITLE":
+		reference.Title = referenceValue
+	case "JOURNAL":
+		reference.Journal = referenceValue
+	case "PUBMED":
+		reference.PubMed = referenceValue
+	case "REMARK":
+		reference.Remark = referenceValue
+	default:
+		return fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: %s", referenceKey)
+	}
+	return nil
 }
 
 var genBankMoleculeTypes = []string{
@@ -566,7 +572,7 @@ func Build(sequence Genbank) ([]byte, error) {
 	// building references
 	// TODO: could use reflection to get keys and make more general.
 	for referenceIndex, reference := range sequence.Meta.References {
-		referenceString := buildMetaString("REFERENCE", fmt.Sprintf("%d %s", referenceIndex+1, reference.Range))
+		referenceString := buildMetaString("REFERENCE", fmt.Sprintf("%d  %s", referenceIndex+1, reference.Range))
 		gbkString.WriteString(referenceString)
 
 		if reference.Authors != "" {
@@ -855,6 +861,7 @@ func parseLocation(locationString string) Location {
 		location = location.SubLocations[0]
 	}
 
+	location.GbkLocationString = locationString
 	return location
 }
 
