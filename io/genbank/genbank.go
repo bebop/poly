@@ -54,7 +54,6 @@ type Meta struct {
 	Name                 string            `json:"name"`
 	SequenceHash         string            `json:"sequence_hash"`
 	SequenceHashFunction string            `json:"hash_function"`
-	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
 type Feature struct {
