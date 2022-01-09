@@ -72,7 +72,7 @@ func TestGbkIO(t *testing.T) {
 	Write(gbk, tmpGbkFilePath)
 
 	writeTestGbk, _ := Read(tmpGbkFilePath)
-	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
@@ -111,7 +111,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testInputGbk, _ := Read("../../data/sample.gbk")
 	testOutputGbk, _ := Read(tmpGbkFilePath)
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -136,7 +136,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	testInputGb, _ := Read("../../data/t4_intron.gb")
 	testOutputGb, _ := Read(tmpGbFilePath)
 
-	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
