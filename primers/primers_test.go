@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -126,4 +127,52 @@ func TestCreateBarcode(t *testing.T) {
 	if output != "CTCTCGGTCGCTCCGTCCCG" {
 		t.Errorf("TestUniqueSequence string should return CTCTCGGTCGCTCCGTCCCG. Got:\n%s", output)
 	}
+}
+
+// Example of creating a large number of DNA Primers with the following properties:
+// x consistent GC content
+// x roughly the same melting temperature
+// - do not dimerize with themselves or other primers in the set
+// x don't share any subsequences >4bp with any other primer in the set
+// - don't bind to any DNA sequences from a list of bkgnd sequences (ie FreeGenes, and genomes of E.coli,B.subtilis,S.cerevisiae,P.pastoris)
+func ExamplePrimerWorkflow() {
+
+	WithinMeltingTempRange := func(dna string, target_temp float64, margin float64) bool {
+		if math.Abs(MeltingTemp(dna)-target_temp) > margin {
+			return false
+		} else {
+			return true
+		}
+	}
+	WithinGCRange := func(dna string, target_GC float64, margin float64) bool {
+		if math.Abs(checks.GcContent(dna)-target_GC) > margin {
+			return false
+		} else {
+			return true
+		}
+	}
+
+	target_temp := 40.0
+	temp_margin := 1.0
+	IsBannedMeltingTemperature := func(dna string) bool {
+		return !WithinMeltingTempRange(dna, target_temp, temp_margin)
+	}
+
+	target_GC := 40.0
+	GC_margin := 1.0
+	IsBannedGcContent := func(dna string) bool {
+		return !WithinGCRange(dna, target_GC, GC_margin)
+	}
+
+	banned_functions := []func(string) bool{
+		IsBannedMeltingTemperature, IsBannedGcContent,
+	}
+	barcode_length := 10
+	maxSubSequence := 5
+	bannedSequences := []string{}
+	generated_primers := CreateBarcodesWithBannedSequences(
+		barcode_length, maxSubSequence, bannedSequences, banned_functions,
+	)
+
+	fmt.Println(generated_primers[0])
 }
