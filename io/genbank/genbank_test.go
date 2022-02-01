@@ -1,4 +1,4 @@
-package genbank
+package genbank_test
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -19,23 +20,23 @@ Gbk/gb/genbank related benchmarks begin here.
 ******************************************************************************/
 
 func ExampleRead() {
-	sequence, _ := Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
 func ExampleParse() {
 	file, _ := ioutil.ReadFile("../../data/puc19.gbk")
-	sequence, _ := Parse(file)
+	sequence, _ := genbank.Parse(file)
 
 	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
 func ExampleBuild() {
-	sequence, _ := Read("../../data/puc19.gbk")
-	gbkBytes, _ := Build(sequence)
-	testSequence, _ := Parse(gbkBytes)
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	gbkBytes, _ := genbank.Build(sequence)
+	testSequence, _ := genbank.Parse(gbkBytes)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -48,12 +49,12 @@ func ExampleWrite() {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequence, _ := Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	Write(sequence, tmpGbkFilePath)
+	genbank.Write(sequence, tmpGbkFilePath)
 
-	testSequence, _ := Read(tmpGbkFilePath)
+	testSequence, _ := genbank.Read(tmpGbkFilePath)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
@@ -66,21 +67,21 @@ func TestGbkIO(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	gbk, _ := Read("../../data/puc19.gbk")
+	gbk, _ := genbank.Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	Write(gbk, tmpGbkFilePath)
+	genbank.Write(gbk, tmpGbkFilePath)
 
-	writeTestGbk, _ := Read(tmpGbkFilePath)
-	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	writeTestGbk, _ := genbank.Read(tmpGbkFilePath)
+	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(genbank.Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 
 	// Test multiline Genbank features
-	pichia, _ := Read("../../data/pichia_chr1_head.gb")
+	pichia, _ := genbank.Read("../../data/pichia_chr1_head.gb")
 	var multilineOutput string
 	for _, feature := range pichia.Features {
-		multilineOutput = feature.GbkLocationString
+		multilineOutput = feature.Location.GbkLocationString
 	}
 	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
 		t.Errorf("Failed to parse multiline genbank feature string")
@@ -94,20 +95,20 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGbk, _ := Read("../../data/sample.gbk")
+	scrubbedGbk, _ := genbank.Read("../../data/sample.gbk")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGbk.Features {
-		scrubbedGbk.Features[featureIndex].GbkLocationString = ""
+		scrubbedGbk.Features[featureIndex].Location.GbkLocationString = ""
 	}
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
-	Write(scrubbedGbk, tmpGbkFilePath)
+	genbank.Write(scrubbedGbk, tmpGbkFilePath)
 
-	testInputGbk, _ := Read("../../data/sample.gbk")
-	testOutputGbk, _ := Read(tmpGbkFilePath)
+	testInputGbk, _ := genbank.Read("../../data/sample.gbk")
+	testOutputGbk, _ := genbank.Read(tmpGbkFilePath)
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(genbank.Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -119,38 +120,38 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGb, _ := Read("../../data/t4_intron.gb")
+	scrubbedGb, _ := genbank.Read("../../data/t4_intron.gb")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGb.Features {
-		scrubbedGb.Features[featureIndex].GbkLocationString = ""
+		scrubbedGb.Features[featureIndex].Location.GbkLocationString = ""
 	}
 
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
-	Write(scrubbedGb, tmpGbFilePath)
+	genbank.Write(scrubbedGb, tmpGbFilePath)
 
-	testInputGb, _ := Read("../../data/t4_intron.gb")
-	testOutputGb, _ := Read(tmpGbFilePath)
+	testInputGb, _ := genbank.Read("../../data/t4_intron.gb")
+	testOutputGb, _ := genbank.Read(tmpGbFilePath)
 
-	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence"), cmpopts.IgnoreFields(Meta{}, "CheckSum")}...); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(genbank.Meta{}, "CheckSum")}...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
 
 func TestPartialLocationParseRegression(t *testing.T) {
-	gbk, _ := Read("../../data/sample.gbk")
+	gbk, _ := genbank.Read("../../data/sample.gbk")
 
 	for _, feature := range gbk.Features {
-		if feature.GbkLocationString == "687..3158>" && (feature.Location.Start != 686 || feature.Location.End != 3158) {
+		if feature.Location.GbkLocationString == "687..3158>" && (feature.Location.Start != 686 || feature.Location.End != 3158) {
 			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read()")
-		} else if feature.GbkLocationString == "<1..206" && (feature.Location.Start != 0 || feature.Location.End != 206) {
+		} else if feature.Location.GbkLocationString == "<1..206" && (feature.Location.Start != 0 || feature.Location.End != 206) {
 			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read().")
 		}
 	}
 }
 
 func TestSnapgeneGenbankRegression(t *testing.T) {
-	snapgene, _ := Read("../../data/puc19_snapgene.gb")
+	snapgene, _ := genbank.Read("../../data/puc19_snapgene.gb")
 
 	if snapgene.Sequence == "" {
 		t.Errorf("Parsing snapgene returned an empty string")
@@ -159,7 +160,7 @@ func TestSnapgeneGenbankRegression(t *testing.T) {
 
 func TestGetSequenceMethod(t *testing.T) {
 
-	gbk, _ := Read("../../data/t4_intron.gb")
+	gbk, _ := genbank.Read("../../data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Features struct
 	feature, _ := gbk.Features[1].GetSequence()
@@ -171,7 +172,7 @@ func TestGetSequenceMethod(t *testing.T) {
 }
 
 func TestLocationParser(t *testing.T) {
-	gbk, _ := Read("../../data/t4_intron.gb")
+	gbk, _ := genbank.Read("../../data/t4_intron.gb")
 
 	// Read 1..243
 	feature, _ := gbk.Features[1].GetSequence()
@@ -214,7 +215,7 @@ func TestLocationParser(t *testing.T) {
 }
 
 func TestGenbankNewlineParsingRegression(t *testing.T) {
-	gbk, _ := Read("../../data/puc19.gbk")
+	gbk, _ := genbank.Read("../../data/puc19.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.Location.Start == 410 && feature.Location.End == 1750 && feature.Type == "CDS" {
@@ -228,7 +229,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Read("../../data/bsub.gbk")
+		genbank.Read("../../data/bsub.gbk")
 	}
 }
 
@@ -251,7 +252,7 @@ GbkMulti/GbkFlat related tests begin here.
 ******************************************************************************/
 
 func ExampleReadMulti() {
-	sequences := ReadMulti("../../data/multiGbk_test.seq")
+	sequences := genbank.ReadMulti("../../data/multiGbk_test.seq")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -262,7 +263,7 @@ func ExampleReadMulti() {
 }
 
 func ExampleReadFlat() {
-	sequences := ReadFlat("../../data/long_comment.seq")
+	sequences := genbank.ReadFlat("../../data/long_comment.seq")
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -273,7 +274,7 @@ func ExampleReadFlat() {
 }
 
 func ExampleReadFlatGz() {
-	sequences := ReadFlatGz("../../data/flatGbk_test.seq.gz")
+	sequences := genbank.ReadFlatGz("../../data/flatGbk_test.seq.gz")
 	//sequences := ReadFlatGz("../../data/gbbct358.seq.gz")
 	var locus []string
 	for _, sequence := range sequences {
@@ -285,7 +286,7 @@ func ExampleReadFlatGz() {
 
 func ExampleParseMulti() {
 	file, _ := ioutil.ReadFile("../../data/multiGbk_test.seq")
-	sequences := ParseMulti(file)
+	sequences := genbank.ParseMulti(file)
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -297,7 +298,7 @@ func ExampleParseMulti() {
 
 func ExampleParseFlat() {
 	file, _ := ioutil.ReadFile("../../data/flatGbk_test.seq")
-	sequences := ParseFlat(file)
+	sequences := genbank.ParseFlat(file)
 	var locus []string
 	for _, sequence := range sequences {
 		locus = append(locus, sequence.Meta.Locus.Name)
@@ -314,7 +315,7 @@ GbkMulti/GbkFlat related tests end here.
 ******************************************************************************/
 
 func TestBenchlingGenbank(t *testing.T) {
-	sequence, _ := Read("../../data/benchling.gb")
+	sequence, _ := genbank.Read("../../data/benchling.gb")
 
 	if len(sequence.Features) != 17 {
 		t.Errorf("Parsing benchling genbank file not returned the correct quantity of features")
