@@ -116,8 +116,8 @@ func Translate(sequence string, codonTable Table) (string, error) {
 	return aminoAcids.String(), nil
 }
 
-// Optimize takes an amino acid sequence and Table and returns an optimized codon sequence
-func Optimize(aminoAcids string, codonTable Table) (string, error) {
+// Optimize takes an amino acid sequence and Table and returns an optimized codon sequence. Takes an optional random seed as last argument.
+func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, error) {
 	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
 		return "", errEmtpyCodonTable
 	}
@@ -126,7 +126,11 @@ func Optimize(aminoAcids string, codonTable Table) (string, error) {
 	}
 
 	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
-	rand.Seed(time.Now().UTC().UnixNano())
+	if len(randomState) > 0 {
+		rand.Seed(int64(randomState[0]))
+	} else {
+		rand.Seed(time.Now().UTC().UnixNano())
+	}
 
 	var codons strings.Builder
 	codonChooser, err := codonTable.chooser()
