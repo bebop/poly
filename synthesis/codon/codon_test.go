@@ -59,7 +59,7 @@ func TestOptimize(t *testing.T) {
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	codingRegions, _ := GetCodingRegions(sequence)
+	codingRegions, _ := GetCodingRegions[genbank.Genbank](sequence)
 
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 

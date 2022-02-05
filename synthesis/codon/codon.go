@@ -150,7 +150,7 @@ func (codonTable Table) OptimizeTable(sequence string) Table {
 }
 
 // GetCodingRegions is a helper function to pull coding regions out of an Sequence as input for optimizing codon tables.
-func GetCodingRegions(sequence poly.AnnotatedSequence) (string, error) {
+func GetCodingRegions[T poly.AnnotatedSequence](sequence T) (string, error) {
 	// pick out the each coding region in the Sequence and add it to the sequence Builder
 	var sequenceBuilder strings.Builder
 

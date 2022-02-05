@@ -7,9 +7,12 @@ approach the 1.0 release.
 package polyjson
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"time"
+
+	"github.com/TimothyStiles/poly/transform"
 )
 
 /******************************************************************************
@@ -59,6 +62,50 @@ func (sequence *Poly) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
 	return nil
+}
+
+// GetFeatures returns a slice of features from a Poly struct. Is equivalent to sequence.Features but for interfaces.
+func (sequence *Poly) GetFeatures() ([]Feature, error) {
+	return sequence.Features, nil
+}
+
+// GetSequence takes a feature and returns a sequence string for that feature.
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
+// GetType takes a feature and returns a sequence type for that feature.
+func (feature Feature) GetType() (string, error) {
+	return feature.Type, nil
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) (string, error) {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
+			sequenceBuffer.WriteString(sequence)
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString, nil
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
