@@ -55,20 +55,38 @@ func TestTranslationLowerCase(t *testing.T) {
 
 }
 
+var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+var sequence = genbank.Read("../../data/puc19.gbk")
+var codonTable = GetCodonTable(11)
+var codingRegions = GetCodingRegions(sequence)
+var optimizationTable = codonTable.OptimizeTable(codingRegions)
+
 func TestOptimize(t *testing.T) {
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-
-	sequence := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
-
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
 
 	if optimizedSequenceTranslation != gfpTranslation {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
+}
+
+func TestOptimizeSameSeed(t *testing.T) {
+	randomSeed := 10
+
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
+	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
+
+	if optimizedSequence != otherOptimizedSequence {
+		t.Error("Optimized sequence with the same random seed are not the same")
+	}
+}
+
+func TestOptimizeDifferentSeed(t *testing.T) {
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+
+	if optimizedSequence == otherOptimizedSequence {
+		t.Error("Optimized sequence with different random seed have the same result")
 	}
 }
 
