@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TimothyStiles/poly/io/poly"
 	weightedRand "github.com/mroth/weightedrand"
 
 	"encoding/json"
@@ -147,33 +146,6 @@ func (codonTable Table) OptimizeTable(sequence string) Table {
 
 	}
 	return codonTable
-}
-
-// GetCodingRegions is a helper function to pull coding regions out of an Sequence as input for optimizing codon tables.
-func GetCodingRegions[T poly.AnnotatedSequence](sequence T) (string, error) {
-	// pick out the each coding region in the Sequence and add it to the sequence Builder
-	var sequenceBuilder strings.Builder
-
-	features, err := sequence.GetFeatures()
-	if err != nil {
-		return "", err
-	}
-
-	for _, feature := range features {
-		featureType, err := feature.GetType()
-		if err != nil {
-			return "", err
-		}
-		if featureType == "CDS" {
-			sequence, err := feature.GetSequence()
-			if err != nil {
-				return "", err
-			}
-			sequenceBuilder.WriteString(sequence)
-		}
-	}
-
-	return sequenceBuilder.String(), nil
 }
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
