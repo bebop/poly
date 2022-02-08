@@ -205,7 +205,7 @@ func TestCompromiseCodonTable(t *testing.T) {
 	for _, feature := range sequence2.Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
+			codingRegionsBuilder2.WriteString(sequence)
 		}
 	}
 

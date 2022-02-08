@@ -108,7 +108,7 @@ func ExampleCompromiseCodonTable() {
 	for _, feature := range sequence2.Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
+			codingRegionsBuilder2.WriteString(sequence)
 		}
 	}
 
@@ -160,7 +160,7 @@ func ExampleAddCodonTable() {
 	for _, feature := range sequence2.Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
+			codingRegionsBuilder2.WriteString(sequence)
 		}
 	}
 
