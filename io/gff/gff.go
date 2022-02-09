@@ -209,6 +209,12 @@ func Build(sequence Gff) ([]byte, error) {
 	var start string
 	var end string
 
+	if sequence.Meta.Name != "" {
+		name = sequence.Meta.Name
+	} else {
+		name = "Sequence"
+	}
+
 	if sequence.Meta.RegionStart != 0 {
 		start = strconv.Itoa(sequence.Meta.RegionStart)
 	} else {

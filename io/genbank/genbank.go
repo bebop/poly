@@ -745,6 +745,7 @@ func getSequence(subLines []string) string {
 
 func parseLocation(locationString string) Location {
 	var location Location
+	location.GbkLocationString = locationString
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
 			position, _ := strconv.Atoi(locationString)

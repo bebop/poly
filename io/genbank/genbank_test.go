@@ -227,6 +227,15 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	}
 }
 
+func TestLocusParseRegression(t *testing.T) {
+	gbk, _ := genbank.Read("../../data/puc19.gbk")
+	staticGbk, _ := genbank.Read("../../data/puc19static.gbk")
+
+	if diff := cmp.Diff(gbk, staticGbk, cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")); diff != "" {
+		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
+	}
+}
+
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		genbank.Read("../../data/bsub.gbk")

@@ -18,10 +18,19 @@ JSON related tests begin here.
 ******************************************************************************/
 
 func Example() {
-	//initiate a new polyjson sequence struct
+
+	// this example also is run by the poly's suite so this just sets up a temporary directory for writing files
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	defer os.RemoveAll(tmpDataDir)
+
+	// initiate a new polyjson sequence struct
 	var sequence polyjson.Poly
 
-	// Define the meta section of our sequence.
+	// define the meta section of our sequence.
 	sequence.Meta.Name = "Cat DNA"
 	sequence.Meta.Description = "Synthetic Cat DNA for testing purposes."
 	sequence.Meta.CreatedBy = "Catz (all you basepair are belong to us)"
@@ -45,10 +54,10 @@ func Example() {
 	sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
 
 	// write our sequence to a JSON file
-	_ = polyjson.Write(sequence, "../../data/cat.json")
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
+	polyjson.Write(sequence, tmpJSONFilePath)
 
-	// read our sequence from a JSON file
-	exportedSequence, _ := polyjson.Read("../../data/cat.json")
+	exportedSequence, _ := polyjson.Read(tmpJSONFilePath)
 
 	// print our struct DNA sequence
 	fmt.Println(exportedSequence.Sequence)

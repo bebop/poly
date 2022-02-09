@@ -21,12 +21,14 @@ JSON specific IO related things begin here.
 
 ******************************************************************************/
 
+// Poly is poly's native JSON representation of a sequence.
 type Poly struct {
 	Meta     Meta      `json:"meta"`
 	Features []Feature `json:"features"`
 	Sequence string    `json:"sequence"`
 }
 
+// Meta contains all the metadata for a poly sequence struct.
 type Meta struct {
 	Name        string    `json:"name"`
 	Hash        string    `json:"hash"`
@@ -37,6 +39,8 @@ type Meta struct {
 	CreatedOn   time.Time `json:"created_on"`
 	Schema      string    `json:"schema"`
 }
+
+// Feature contains all the feature data for a poly feature struct.
 type Feature struct {
 	Name           string            `json:"name"`
 	Hash           string            `json:"hash"`
@@ -48,6 +52,7 @@ type Feature struct {
 	ParentSequence *Poly             `json:"-"`
 }
 
+// Location contains all the location data for a poly feature's location.
 type Location struct {
 	Start             int        `json:"start"`
 	End               int        `json:"end"`
@@ -58,25 +63,16 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
+// AddFeature adds a feature to a Poly struct. Does not add the feature's sequence
 func (sequence *Poly) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
 	return nil
 }
 
-// GetFeatures returns a slice of features from a Poly struct. Is equivalent to sequence.Features but for interfaces.
-func (sequence *Poly) GetFeatures() ([]Feature, error) {
-	return sequence.Features, nil
-}
-
 // GetSequence takes a feature and returns a sequence string for that feature.
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
-}
-
-// GetType takes a feature and returns a sequence type for that feature.
-func (feature Feature) GetType() (string, error) {
-	return feature.Type, nil
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
