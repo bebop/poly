@@ -14,39 +14,6 @@ So be on the lookup for breaking changes in future releases.
 */
 package poly
 
-import (
-	"github.com/TimothyStiles/poly/io/fasta"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/polyjson"
-)
-
-/******************************************************************************
-
-Sequence related interfaces begin here.
-
-******************************************************************************/
-
-type Sequence interface {
-	polyjson.Poly | genbank.Genbank | fasta.Fasta | gff.Gff
-}
-
 type AnnotatedSequence interface {
-	// polyjson.Poly | genbank.Genbank | gff.Gff
-	GetFeatures() ([]Feature, error)
+	AddFeature
 }
-type Feature interface {
-	// polyjson.Feature | genbank.Feature | gff.Feature
-	GetType() (string, error)
-	GetSequence() (string, error)
-}
-
-type Location interface {
-	polyjson.Location | genbank.Location | gff.Location
-}
-
-/******************************************************************************
-
-Sequence related structs end here.
-
-******************************************************************************/
