@@ -124,7 +124,7 @@ func ExamplePoly_AddFeature() {
 	feature.Location.End = len(sequence.Sequence)
 
 	// Add the GFP feature to the sequence struct.
-	sequence.AddFeature(&feature)
+	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
 	featureSequence, _ := feature.GetSequence()
@@ -153,7 +153,7 @@ func ExampleFeature_GetSequence() {
 	feature.Location.End = len(sequence.Sequence)
 
 	// Add the GFP feature to the sequence struct.
-	sequence.AddFeature(&feature)
+	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
 	featureSequence, _ := feature.GetSequence()
@@ -203,7 +203,7 @@ func TestFeature_GetSequence(t *testing.T) {
 	feature.Location.SubLocations = []polyjson.Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
-	sequence.AddFeature(&feature)
+	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
 	featureSequence, _ := feature.GetSequence()

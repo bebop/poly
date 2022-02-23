@@ -216,7 +216,8 @@ func Parse(file []byte) (Genbank, error) {
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
 	for _, feature := range features {
-		sequence.AddFeature(&feature)
+		_ = sequence.AddFeature(&feature)
+
 	}
 
 	return sequence, nil

@@ -115,7 +115,7 @@ func Parse(file []byte) (Poly, error) {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		sequence.AddFeature(&feature)
+		_ = sequence.AddFeature(&feature)
 	}
 	return sequence, nil
 }
