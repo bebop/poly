@@ -7,6 +7,7 @@ import (
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTranslation(t *testing.T) {
@@ -77,11 +78,32 @@ func TestOptimize(t *testing.T) {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
+func TestOptimize(t *testing.T) {
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
 
 	if optimizedSequenceTranslation != gfpTranslation {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
+}
+
+func TestOptimizeSameSeed(t *testing.T) {
+	randomSeed := 10
+
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
+	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
+
+	if optimizedSequence != otherOptimizedSequence {
+		t.Error("Optimized sequence with the same random seed are not the same")
+	}
+}
+
+func TestOptimizeDifferentSeed(t *testing.T) {
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+
+	if optimizedSequence == otherOptimizedSequence {
+		t.Error("Optimized sequence with different random seed have the same result")
 	}
 }
 
@@ -101,6 +123,13 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 	if err != errEmtpyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
 	}
+}
+func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
+	aminoAcids := "TOP"
+	table := GetCodonTable(1) // does not contain 'O'
+
+	_, optimizeErr := Optimize(aminoAcids, table)
+	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
 func TestGetCodonFrequency(t *testing.T) {
