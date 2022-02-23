@@ -32,12 +32,14 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
+// Genbank is the main struct for the Genbank file format.
 type Genbank struct {
 	Meta     Meta
 	Features []Feature
 	Sequence string // will be changed and include reader, writer, and byte slice.
 }
 
+// Meta holds the meta data for Genbank and other annotated sequence files.
 type Meta struct {
 	Date                 string            `json:"date"`
 	Definition           string            `json:"definition"`
@@ -56,6 +58,7 @@ type Meta struct {
 	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
 }
 
+// Feature holds the information for a feature in a Genbank file and other annotated sequence files.
 type Feature struct {
 	Type                 string            `json:"type"`
 	Description          string            `json:"description"`
@@ -67,7 +70,7 @@ type Feature struct {
 	ParentSequence       *Genbank          `json:"-"`
 }
 
-// Reference holds information one reference in a Meta struct.
+// Reference holds information for one reference in a Meta struct.
 type Reference struct {
 	Index   string `json:"index"`
 	Authors string `json:"authors"`
@@ -90,6 +93,7 @@ type Locus struct {
 	Linear           bool   `json:"linear"`
 }
 
+// Location is a struct that holds the location of a feature.
 type Location struct {
 	Start             int        `json:"start"`
 	End               int        `json:"end"`
@@ -101,12 +105,14 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
+// AddFeature adds a feature to a Genbank struct.
 func (sequence *Genbank) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
 	return nil
 }
 
+// GetSequence returns the sequence of a feature.
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
