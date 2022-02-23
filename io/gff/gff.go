@@ -75,19 +75,9 @@ func (sequence *Gff) AddFeature(feature *Feature) error {
 	return nil
 }
 
-// GetFeatures returns a slice of features from a Gff struct. Is equivalent to sequence.Features but for interfaces.
-func (sequence *Gff) GetFeatures() ([]Feature, error) {
-	return sequence.Features, nil
-}
-
 // GetSequence takes a feature and returns a sequence string for that feature.
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
-}
-
-// Gettype takes a feature and returns a sequence type for that feature.
-func (feature Feature) GetType() (string, error) {
-	return feature.Type, nil
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
