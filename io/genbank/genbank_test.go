@@ -52,7 +52,7 @@ func ExampleWrite() {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	genbank.Write(sequence, tmpGbkFilePath)
+	_ = genbank.Write(sequence, tmpGbkFilePath)
 
 	testSequence, _ := genbank.Read(tmpGbkFilePath)
 
@@ -70,7 +70,7 @@ func TestGbkIO(t *testing.T) {
 	gbk, _ := genbank.Read("../../data/puc19.gbk")
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	genbank.Write(gbk, tmpGbkFilePath)
+	_ = genbank.Write(gbk, tmpGbkFilePath)
 
 	writeTestGbk, _ := genbank.Read(tmpGbkFilePath)
 	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"), cmpopts.IgnoreFields(genbank.Meta{}, "CheckSum")}...); diff != "" {
@@ -103,7 +103,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	}
 
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
-	genbank.Write(scrubbedGbk, tmpGbkFilePath)
+	_ = genbank.Write(scrubbedGbk, tmpGbkFilePath)
 
 	testInputGbk, _ := genbank.Read("../../data/sample.gbk")
 	testOutputGbk, _ := genbank.Read(tmpGbkFilePath)
@@ -128,7 +128,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
-	genbank.Write(scrubbedGb, tmpGbFilePath)
+	_ = genbank.Write(scrubbedGb, tmpGbFilePath)
 
 	testInputGb, _ := genbank.Read("../../data/t4_intron.gb")
 	testOutputGb, _ := genbank.Read(tmpGbFilePath)
@@ -238,7 +238,7 @@ func TestLocusParseRegression(t *testing.T) {
 
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		genbank.Read("../../data/bsub.gbk")
+		_, _ = genbank.Read("../../data/bsub.gbk")
 	}
 }
 

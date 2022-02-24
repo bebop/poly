@@ -72,7 +72,7 @@ func Parse(r io.Reader) ([]Fasta, error) {
 }
 
 // ParseConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
-func ParseConcurrent(r io.Reader, sequences chan<- Fasta) error {
+func ParseConcurrent(r io.Reader, sequences chan<- Fasta) {
 	// Initialize necessary variables
 	var sequenceLines []string
 	var name string
@@ -116,7 +116,6 @@ func ParseConcurrent(r io.Reader, sequences chan<- Fasta) error {
 		Sequence: sequence}
 	sequences <- newFasta
 	close(sequences)
-	return nil
 }
 
 /******************************************************************************
