@@ -125,29 +125,18 @@ Start of  Read functions
 ******************************************************************************/
 
 // ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
-func ReadGzConcurrent(path string, sequences chan<- Fasta) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
+func ReadGzConcurrent(path string, sequences chan<- Fasta) {
+	file, _ := os.Open(path) // these errors need to be handled/logged
 
-	reader, err := gzip.NewReader(file)
-	if err != nil {
-		return err
-	}
+	reader, _ := gzip.NewReader(file)
 	defer reader.Close()
 	go ParseConcurrent(reader, sequences)
-	return nil
 }
 
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
-func ReadConcurrent(path string, sequences chan<- Fasta) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
+func ReadConcurrent(path string, sequences chan<- Fasta) {
+	file, _ := os.Open(path) // these errors need to be handled/logged
 	go ParseConcurrent(file, sequences)
-	return nil
 }
 
 // ReadGz reads a gzipped  file into an array of Fasta structs.
