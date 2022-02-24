@@ -8,7 +8,7 @@ import (
 
 // ExampleRead shows basic usage for Read.
 func ExampleRead() {
-	fastas := Read("data/base.fasta")
+	fastas, _ := Read("data/base.fasta")
 	fmt.Println(fastas[0].Name)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 }
@@ -16,7 +16,7 @@ func ExampleRead() {
 // ExampleParse shows basic usage for Parse.
 func ExampleParse() {
 	file, _ := os.Open("data/base.fasta")
-	fastas := Parse(file)
+	fastas, _ := Parse(file)
 
 	fmt.Println(fastas[0].Name)
 	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
@@ -24,8 +24,8 @@ func ExampleParse() {
 
 // ExampleBuild shows basic usage for Build
 func ExampleBuild() {
-	fastas := Read("data/base.fasta") // get example data
-	fasta := Build(fastas)            // build a fasta byte array
+	fastas, _ := Read("data/base.fasta") // get example data
+	fasta, _ := Build(fastas)            // build a fasta byte array
 	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
 
 	fmt.Println(firstLine)
@@ -34,9 +34,9 @@ func ExampleBuild() {
 
 // ExampleWrite shows basic usage of the  writer.
 func ExampleWrite() {
-	fastas := Read("data/base.fasta")       // get example data
-	Write(fastas, "data/test.fasta")        // write it out again
-	testSequence := Read("data/test.fasta") // read it in again
+	fastas, _ := Read("data/base.fasta")       // get example data
+	_ = Write(fastas, "data/test.fasta")       // write it out again
+	testSequence, _ := Read("data/test.fasta") // read it in again
 
 	os.Remove("data/test.fasta") // getting rid of test file
 
@@ -46,7 +46,7 @@ func ExampleWrite() {
 
 // ExampleReadGz shows basic usage for ReadGz on a gzip'd file.
 func ExampleReadGz() {
-	fastas := ReadGz("data/uniprot_1mb_test.fasta.gz")
+	fastas, _ := ReadGz("data/uniprot_1mb_test.fasta.gz")
 	var name string
 	for _, fasta := range fastas {
 		name = fasta.Name

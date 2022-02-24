@@ -31,7 +31,7 @@ func ExampleHash() {
 }
 
 func ExampleRotateSequence() {
-	sequence := genbank.Read("../data/puc19.gbk")
+	sequence, _ := genbank.Read("../data/puc19.gbk")
 	sequenceLength := len(sequence.Sequence)
 	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
 

@@ -7,10 +7,12 @@ approach the 1.0 release.
 package polyjson
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"time"
 
-	"github.com/TimothyStiles/poly/io/poly"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 /******************************************************************************
@@ -19,30 +21,129 @@ JSON specific IO related things begin here.
 
 ******************************************************************************/
 
-// Parse parses a poly.Sequence JSON file and adds appropriate pointers to struct.
-func Parse(file []byte) poly.Sequence {
-	var sequence poly.Sequence
-	_ = json.Unmarshal([]byte(file), &sequence)
+// Poly is poly's native JSON representation of a sequence.
+type Poly struct {
+	Meta     Meta      `json:"meta"`
+	Features []Feature `json:"features"`
+	Sequence string    `json:"sequence"`
+}
+
+// Meta contains all the metadata for a poly sequence struct.
+type Meta struct {
+	Name        string    `json:"name"`
+	Hash        string    `json:"hash"`
+	Description string    `json:"description"`
+	URL         string    `json:"url"`
+	CreatedBy   string    `json:"created_by"`
+	CreatedWith string    `json:"created_with"`
+	CreatedOn   time.Time `json:"created_on"`
+	Schema      string    `json:"schema"`
+}
+
+// Feature contains all the feature data for a poly feature struct.
+type Feature struct {
+	Name           string            `json:"name"`
+	Hash           string            `json:"hash"`
+	Type           string            `json:"type"`
+	Description    string            `json:"description"`
+	Location       Location          `json:"location"`
+	Tags           map[string]string `json:"tags"`
+	Sequence       string            `json:"sequence"`
+	ParentSequence *Poly             `json:"-"`
+}
+
+// Location contains all the location data for a poly feature's location.
+type Location struct {
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	SubLocations      []Location `json:"sub_locations"`
+}
+
+// AddFeature adds a feature to a Poly struct. Does not add the feature's sequence
+func (sequence *Poly) AddFeature(feature *Feature) error {
+	feature.ParentSequence = sequence
+	sequence.Features = append(sequence.Features, *feature)
+	return nil
+}
+
+// GetSequence takes a feature and returns a sequence string for that feature.
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) (string, error) {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
+			sequenceBuffer.WriteString(sequence)
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString, nil
+}
+
+// Parse parses a Poly JSON file and adds appropriate pointers to struct.
+func Parse(file []byte) (Poly, error) {
+	var sequence Poly
+	err := json.Unmarshal([]byte(file), &sequence)
+	if err != nil {
+		return sequence, err
+	}
 	legacyFeatures := sequence.Features
-	sequence.Features = []poly.Feature{}
+	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		sequence.AddFeature(&feature)
+		_ = sequence.AddFeature(&feature)
 	}
-	return sequence
+	return sequence, nil
 }
 
-// Read reads a poly.Sequence JSON file.
-func Read(path string) poly.Sequence {
-	file, _ := ioutil.ReadFile(path)
-	sequence := Parse(file)
-	return sequence
+// Read reads a Poly JSON file.
+func Read(path string) (Poly, error) {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		return Poly{}, err
+	}
+	sequence, err := Parse(file)
+	if err != nil {
+		return Poly{}, err
+	}
+	return sequence, nil
 }
 
-// Write writes a poly.Sequence struct out to json.
-func Write(sequence poly.Sequence, path string) {
-	file, _ := json.MarshalIndent(sequence, "", " ")
-	_ = ioutil.WriteFile(path, file, 0644)
+// Write writes a Poly struct out to json.
+func Write(sequence Poly, path string) error {
+	file, err := json.MarshalIndent(sequence, "", " ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, file, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /******************************************************************************

@@ -67,7 +67,7 @@ func TestHash(t *testing.T) {
 }
 
 func TestLeastRotation(t *testing.T) {
-	sequence := genbank.Read("../data/puc19.gbk")
+	sequence, _ := genbank.Read("../data/puc19.gbk")
 	var sequenceBuffer bytes.Buffer
 
 	sequenceBuffer.WriteString(sequence.Sequence)

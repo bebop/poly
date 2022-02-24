@@ -14,22 +14,20 @@ func Example() {
 	// Poly can take in basic gff, gbk, fasta, and JSON.
 	// We call the json package "pson" (poly JSON) to prevent namespace collision with Go's standard json package.
 
-	gffInput := gff.Read("../data/ecoli-mg1655-short.gff")
-	gbkInput := genbank.Read("../data/puc19.gbk")
-	fastaInput := fasta.Read("fasta/data/base.fasta")
-	jsonInput := polyjson.Read("../data/puc19static.json")
+	gffInput, _ := gff.Read("../data/ecoli-mg1655-short.gff")
+	gbkInput, _ := genbank.Read("../data/puc19.gbk")
+	fastaInput, _ := fasta.Read("fasta/data/base.fasta")
+	jsonInput, _ := polyjson.Read("../data/cat.json")
 
-	// Poly can also output these file formats though I wouldn't try doing gbk<->gff
-	// or anything like that but JSON <-> anything and back should work.that unless it's JSON.
+	// Poly can also output these file formats. Every file format has a corresponding Write function.
+	_ = gff.Write(gffInput, "test.gff")
+	_ = genbank.Write(gbkInput, "test.gbk")
+	_ = fasta.Write(fastaInput, "test.fasta")
+	_ = polyjson.Write(jsonInput, "test.json")
 
-	gff.Write(gffInput, "test.gff")
-	genbank.Write(gbkInput, "test.gbk")
-	fasta.Write(fastaInput, "test.fasta")
-	polyjson.Write(jsonInput, "test.json")
+	// Extra tips:
 
-	// Poly can also output digested gff and gbk as JSON.
-
-	polyjson.Write(gffInput, "gff_test.json")
-	polyjson.Write(gbkInput, "gbk_test.json")
-
+	// 1. All of these file formats can be read and written in JSON format using their native schemas.
+	// 2. If you want to convert from one format to another (e.g. genbank to polyjson), you can easily do so with a for-loop and some field mapping.
+	// 3. Every file format is unique but they all share a common interface so you can use them with almost every native function in Poly.
 }

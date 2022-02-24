@@ -6,7 +6,7 @@ sequences, and has since become the standard for sharing annotated genetic
 sequences.
 
 This package provides a parser and writer to convert between the GenBank file
-format and the more general poly.Sequence struct.
+format and the more general Genbank struct.
 */
 package genbank
 
@@ -21,10 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"lukechampine.com/blake3"
-
-	"github.com/TimothyStiles/poly/io/poly"
+	"github.com/TimothyStiles/poly/transform"
 	"github.com/mitchellh/go-wordwrap"
+	"lukechampine.com/blake3"
 )
 
 /******************************************************************************
@@ -33,24 +32,138 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
+// Genbank is the main struct for the Genbank file format.
+type Genbank struct {
+	Meta     Meta
+	Features []Feature
+	Sequence string // will be changed and include reader, writer, and byte slice.
+}
+
+// Meta holds the meta data for Genbank and other annotated sequence files.
+type Meta struct {
+	Date                 string            `json:"date"`
+	Definition           string            `json:"definition"`
+	Accession            string            `json:"accession"`
+	Version              string            `json:"version"`
+	Keywords             string            `json:"keywords"`
+	Organism             string            `json:"organism"`
+	Source               string            `json:"source"`
+	Origin               string            `json:"origin"`
+	Locus                Locus             `json:"locus"`
+	References           []Reference       `json:"references"`
+	Other                map[string]string `json:"other"`
+	Name                 string            `json:"name"`
+	SequenceHash         string            `json:"sequence_hash"`
+	SequenceHashFunction string            `json:"hash_function"`
+	CheckSum             [32]byte          `json:"checkSum"` // blake3 checksum of the parsed file itself. Useful for if you want to check if incoming genbank/gff files are different.
+}
+
+// Feature holds the information for a feature in a Genbank file and other annotated sequence files.
+type Feature struct {
+	Type                 string            `json:"type"`
+	Description          string            `json:"description"`
+	Attributes           map[string]string `json:"attributes"`
+	SequenceHash         string            `json:"sequence_hash"`
+	SequenceHashFunction string            `json:"hash_function"`
+	Sequence             string            `json:"sequence"`
+	Location             Location          `json:"location"`
+	ParentSequence       *Genbank          `json:"-"`
+}
+
+// Reference holds information for one reference in a Meta struct.
+type Reference struct {
+	Index   string `json:"index"`
+	Authors string `json:"authors"`
+	Title   string `json:"title"`
+	Journal string `json:"journal"`
+	PubMed  string `json:"pub_med"`
+	Remark  string `json:"remark"`
+	Range   string `json:"range"`
+}
+
+// Locus holds Locus information in a Meta struct.
+type Locus struct {
+	Name             string `json:"name"`
+	SequenceLength   string `json:"sequence_length"`
+	MoleculeType     string `json:"molecule_type"`
+	GenbankDivision  string `json:"genbank_division"`
+	ModificationDate string `json:"modification_date"`
+	SequenceCoding   string `json:"sequence_coding"`
+	Circular         bool   `json:"circular"`
+	Linear           bool   `json:"linear"`
+}
+
+// Location is a struct that holds the location of a feature.
+type Location struct {
+	Start             int        `json:"start"`
+	End               int        `json:"end"`
+	Complement        bool       `json:"complement"`
+	Join              bool       `json:"join"`
+	FivePrimePartial  bool       `json:"five_prime_partial"`
+	ThreePrimePartial bool       `json:"three_prime_partial"`
+	GbkLocationString string     `json:"gbk_location_string"`
+	SubLocations      []Location `json:"sub_locations"`
+}
+
+// AddFeature adds a feature to a Genbank struct.
+func (sequence *Genbank) AddFeature(feature *Feature) error {
+	feature.ParentSequence = sequence
+	sequence.Features = append(sequence.Features, *feature)
+	return nil
+}
+
+// GetSequence returns the sequence of a feature.
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
+// getFeatureSequence takes a feature and location object and returns a sequence string.
+func getFeatureSequence(feature Feature, location Location) (string, error) {
+	var sequenceBuffer bytes.Buffer
+	var sequenceString string
+	parentSequence := feature.ParentSequence.Sequence
+
+	if len(location.SubLocations) == 0 {
+		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+	} else {
+
+		for _, subLocation := range location.SubLocations {
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
+			sequenceBuffer.WriteString(sequence)
+		}
+	}
+
+	// reverse complements resulting string if needed.
+	if location.Complement {
+		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
+	} else {
+		sequenceString = sequenceBuffer.String()
+	}
+
+	return sequenceString, nil
+}
+
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func Parse(file []byte) poly.Sequence {
+func Parse(file []byte) (Genbank, error) {
 
 	gbk := string(file)
 	lines := strings.Split(gbk, "\n")
 
 	// Create meta struct
-	meta := poly.Meta{}
+	meta := Meta{}
 	meta.Other = make(map[string]string)
 
 	// Create features struct
-	features := []poly.Feature{}
+	features := []Feature{}
 
 	// Create sequence struct
-	sequence := poly.Sequence{}
+	sequence := Genbank{}
 
 	// Add the CheckSum to sequence (blake3)
-	sequence.CheckSum = blake3.Sum256(file)
+	sequence.Meta.CheckSum = blake3.Sum256(file)
 
 	for numLine := 0; numLine < len(lines); numLine++ {
 		line := lines[numLine]
@@ -98,19 +211,20 @@ func Parse(file []byte) poly.Sequence {
 
 	}
 
-	// add meta to annotated sequence
+	// add meta to genbank struct
 	sequence.Meta = meta
 
 	// add features to annotated sequence with pointer to annotated sequence in each feature
 	for _, feature := range features {
-		sequence.AddFeature(&feature)
+		_ = sequence.AddFeature(&feature)
+
 	}
 
-	return sequence
+	return sequence, nil
 }
 
 // Build builds a GBK string to be written out to db or file.
-func Build(sequence poly.Sequence) []byte {
+func Build(sequence Genbank) ([]byte, error) {
 	var gbkString bytes.Buffer
 	locus := sequence.Meta.Locus
 	var shape string
@@ -222,20 +336,32 @@ func Build(sequence poly.Sequence) []byte {
 	// finish genbank file with "//" on newline (again a genbank convention)
 	gbkString.WriteString("\n//")
 
-	return gbkString.Bytes()
+	return gbkString.Bytes(), nil
 }
 
 // Read reads a Gbk from path and parses into an Annotated sequence struct.
-func Read(path string) poly.Sequence {
-	file, _ := ioutil.ReadFile(path)
-	sequence := Parse(file)
-	return sequence
+func Read(path string) (Genbank, error) {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		return Genbank{}, err
+	}
+
+	sequence, err := Parse(file)
+	if err != nil {
+		return Genbank{}, err
+	}
+
+	return sequence, nil
 }
 
 // Write takes an Sequence struct and a path string and writes out a gff to that path.
-func Write(sequence poly.Sequence, path string) {
-	gbk := Build(sequence)
-	_ = ioutil.WriteFile(path, gbk, 0644)
+func Write(sequence Genbank, path string) error {
+	gbk, err := Build(sequence)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gbk, 0644)
+	return err
 }
 
 // used in parseLocus function though it could be useful elsewhere.
@@ -364,8 +490,8 @@ func topLevelFeatureCheck(featureString string) bool {
 }
 
 // parses locus from provided string.
-func parseLocus(locusString string) poly.Locus {
-	locus := poly.Locus{}
+func parseLocus(locusString string) Locus {
+	locus := Locus{}
 
 	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
 	circularRegex, _ := regexp.Compile(` circular `)
@@ -462,9 +588,9 @@ func getSourceOrganism(splitLine, subLines []string) (string, string) {
 }
 
 // gets a single reference. Parses headstring and the joins sub lines based on feature.
-func getReference(splitLine, subLines []string) poly.Reference {
+func getReference(splitLine, subLines []string) Reference {
 	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-	reference := poly.Reference{}
+	reference := Reference{}
 	reference.Index = strings.Split(base, " ")[0]
 	if len(base) > 1 {
 		reference.Range = strings.TrimSpace(strings.Join(strings.Split(base, " ")[1:], " "))
@@ -496,9 +622,9 @@ func getReference(splitLine, subLines []string) poly.Reference {
 	return reference
 }
 
-func getFeatures(lines []string) []poly.Feature {
+func getFeatures(lines []string) []Feature {
 	lineIndex := 0
-	features := []poly.Feature{}
+	features := []Feature{}
 
 	// regex to remove quotes and slashes from qualifiers
 	reg, _ := regexp.Compile("[\"/\n]+")
@@ -513,7 +639,7 @@ func getFeatures(lines []string) []poly.Feature {
 			break
 		}
 
-		feature := poly.Feature{}
+		feature := Feature{}
 
 		// split the current line for feature type and location fields.
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
@@ -521,7 +647,7 @@ func getFeatures(lines []string) []poly.Feature {
 		// assign type and location to feature.
 		feature.Type = strings.TrimSpace(splitLine[0])
 		// feature.GbkLocationString is the string used by GBK to denote location
-		feature.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+		feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
 		// Check if the location string is multiple lines.
 		nextLineNum := 0
@@ -531,12 +657,12 @@ func getFeatures(lines []string) []poly.Feature {
 			// Check if the next line is not a qualifier, it is part of the
 			// GbkLocation String
 			if !strings.Contains(nextLine, "/") {
-				feature.GbkLocationString = feature.GbkLocationString + strings.TrimSpace(nextLine)
+				feature.Location.GbkLocationString = feature.Location.GbkLocationString + strings.TrimSpace(nextLine)
 			} else {
 				break
 			}
 		}
-		feature.SequenceLocation = parseLocation(feature.GbkLocationString)
+		feature.Location = parseLocation(feature.Location.GbkLocationString)
 
 		// initialize attributes.
 		feature.Attributes = make(map[string]string)
@@ -614,19 +740,20 @@ func getSequence(subLines []string) string {
 	return sequence
 }
 
-func parseLocation(locationString string) poly.Location {
-	var location poly.Location
+func parseLocation(locationString string) Location {
+	var location Location
+	location.GbkLocationString = locationString
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
 			position, _ := strconv.Atoi(locationString)
-			location = poly.Location{Start: position, End: position}
+			location = Location{Start: position, End: position}
 		} else {
 			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
 			partialRegex, _ := regexp.Compile("<|>")
 			startEndSplit := strings.Split(locationString, "..")
 			start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
 			end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
-			location = poly.Location{Start: start - 1, End: end}
+			location = Location{Start: start - 1, End: end}
 		}
 
 	} else {
@@ -702,7 +829,7 @@ func buildMetaString(name string, data string) string {
 }
 
 // BuildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
-func BuildLocationString(location poly.Location) string {
+func BuildLocationString(location Location) string {
 
 	var locationString string
 
@@ -731,15 +858,15 @@ func BuildLocationString(location poly.Location) string {
 }
 
 // BuildFeatureString is a helper function to build gbk feature strings for Build()
-func BuildFeatureString(feature poly.Feature) string {
+func BuildFeatureString(feature Feature) string {
 	whiteSpaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
 	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
 
-	if feature.GbkLocationString != "" {
-		location = feature.GbkLocationString
+	if feature.Location.GbkLocationString != "" {
+		location = feature.Location.GbkLocationString
 	} else {
-		location = BuildLocationString(feature.SequenceLocation)
+		location = BuildLocationString(feature.Location)
 	}
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
@@ -779,12 +906,12 @@ Genbank Flat specific IO related things begin here.
 ******************************************************************************/
 
 // ParseMulti parses multiple Genbank files in a byte array to multiple sequences
-func ParseMulti(file []byte) []poly.Sequence {
+func ParseMulti(file []byte) []Genbank {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence)
+	sequences := make(chan Genbank)
 	go ParseConcurrent(r, sequences)
 
-	var outputGenbanks []poly.Sequence
+	var outputGenbanks []Genbank
 	for sequence := range sequences {
 		outputGenbanks = append(outputGenbanks, sequence)
 	}
@@ -794,11 +921,11 @@ func ParseMulti(file []byte) []poly.Sequence {
 // ParseFlat specifically takes the output of a Genbank Flat file that from
 // the genbank ftp dumps. These files have 10 line headers, which are entirely
 // removed
-func ParseFlat(file []byte) []poly.Sequence {
+func ParseFlat(file []byte) []Genbank {
 	r := bytes.NewReader(file)
-	sequences := make(chan poly.Sequence)
+	sequences := make(chan Genbank)
 	go ParseFlatConcurrent(r, sequences)
-	var outputGenbanks []poly.Sequence
+	var outputGenbanks []Genbank
 	for sequence := range sequences {
 		outputGenbanks = append(outputGenbanks, sequence)
 	}
@@ -806,21 +933,21 @@ func ParseFlat(file []byte) []poly.Sequence {
 }
 
 // ReadMulti reads multiple genbank files from a single file
-func ReadMulti(path string) []poly.Sequence {
+func ReadMulti(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	sequences := ParseMulti(file)
 	return sequences
 }
 
 // ReadFlat reads flat genbank files, like the ones provided by the NCBI FTP server (after decompression)
-func ReadFlat(path string) []poly.Sequence {
+func ReadFlat(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	sequences := ParseFlat(file)
 	return sequences
 }
 
 // ReadFlatGz reads flat gzip'd genbank files, like the ones provided by the NCBI FTP server
-func ReadFlatGz(path string) []poly.Sequence {
+func ReadFlatGz(path string) []Genbank {
 	file, _ := ioutil.ReadFile(path)
 	rdata := bytes.NewReader(file)
 	r, _ := gzip.NewReader(rdata)
@@ -841,10 +968,10 @@ Genbank Concurrent specific IO related things begin here.
 
 ******************************************************************************/
 
-// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of poly.Sequence.
-func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+// ParseConcurrent concurrently parses a given multi-Genbank file in an io.Reader into a channel of Genbank.
+func ParseConcurrent(r io.Reader, sequences chan<- Genbank) {
 	var gbkStr string
-	var gbk poly.Sequence
+	var gbk Genbank
 
 	// Start a new scanner
 	scanner := bufio.NewScanner(r)
@@ -853,7 +980,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
 		if line == "//" {
 			gbkStr = gbkStr + "//"
 			// Parse the genbank string and send it to the channel
-			gbk = Parse([]byte(gbkStr))
+			gbk, _ = Parse([]byte(gbkStr)) // TODO: Ask Keoni how to handle this error
 			sequences <- gbk
 			// Reset the genbank string
 			gbkStr = ""
@@ -866,7 +993,7 @@ func ParseConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
 }
 
 // ParseFlatConcurrent concurrently parses a given flat-Genbank file in an io.Reader into a channel of poly.Sequnce.
-func ParseFlatConcurrent(r io.Reader, sequences chan<- poly.Sequence) {
+func ParseFlatConcurrent(r io.Reader, sequences chan<- Genbank) {
 	// Start a new reader
 	reader := bufio.NewReader(r)
 	// Read 10 lines, or the header of a flat file

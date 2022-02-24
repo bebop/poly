@@ -55,13 +55,29 @@ func TestTranslationLowerCase(t *testing.T) {
 
 }
 
-var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-var sequence = genbank.Read("../../data/puc19.gbk")
-var codonTable = GetCodonTable(11)
-var codingRegions = GetCodingRegions(sequence)
-var optimizationTable = codonTable.OptimizeTable(codingRegions)
-
 func TestOptimize(t *testing.T) {
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
+
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
 
@@ -71,6 +87,25 @@ func TestOptimize(t *testing.T) {
 }
 
 func TestOptimizeSameSeed(t *testing.T) {
+	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	var sequence, _ = genbank.Read("../../data/puc19.gbk")
+	var codonTable = GetCodonTable(11)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	var optimizationTable = codonTable.OptimizeTable(codingRegions)
 	randomSeed := 10
 
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
@@ -82,6 +117,26 @@ func TestOptimizeSameSeed(t *testing.T) {
 }
 
 func TestOptimizeDifferentSeed(t *testing.T) {
+	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	var sequence, _ = genbank.Read("../../data/puc19.gbk")
+	var codonTable = GetCodonTable(11)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	var optimizationTable = codonTable.OptimizeTable(codingRegions)
+
 	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
 
@@ -187,14 +242,44 @@ Codon Compromise + Add related tests begin here.
 
 ******************************************************************************/
 func TestCompromiseCodonTable(t *testing.T) {
-	sequence := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
-	codingRegions := GetCodingRegions(sequence)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2 := genbank.Read("../../data/phix174.gb")
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	codonTable2 := GetCodonTable(11)
-	codingRegions2 := GetCodingRegions(sequence2)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder2 strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence2.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder2.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions2 := codingRegionsBuilder2.String()
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
