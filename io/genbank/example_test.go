@@ -68,7 +68,7 @@ func ExampleFeature_GetSequence() {
 	feature.Location.End = len(sequence.Sequence)
 
 	// Add the GFP feature to the sequence struct.
-	_, sequence.AddFeature(&feature)
+	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
 	featureSequence, _ := feature.GetSequence()
@@ -120,7 +120,6 @@ func TestFeature_GetSequence(t *testing.T) {
 
 	// Add the GFP feature to the sequence struct.
 	_ = sequence.AddFeature(&feature)
-
 
 	// get the GFP feature sequence string from the sequence struct.
 	featureSequence, _ := feature.GetSequence()
