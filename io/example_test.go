@@ -20,10 +20,10 @@ func Example() {
 	jsonInput, _ := polyjson.Read("../data/cat.json")
 
 	// Poly can also output these file formats. Every file format has a corresponding Write function.
-	gff.Write(gffInput, "test.gff")
-	genbank.Write(gbkInput, "test.gbk")
-	fasta.Write(fastaInput, "test.fasta")
-	polyjson.Write(jsonInput, "test.json")
+	_ = gff.Write(gffInput, "test.gff")
+	_ = genbank.Write(gbkInput, "test.gbk")
+	_ = fasta.Write(fastaInput, "test.fasta")
+	_ = polyjson.Write(jsonInput, "test.json")
 
 	// Extra tips:
 

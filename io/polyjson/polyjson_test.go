@@ -53,11 +53,11 @@ func Example() {
 	catFeature.Location.End = 8
 	catFeature.Tags = map[string]string{"product": "cat protein"}
 
-	sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
+	_ = sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
 
 	// write our sequence to a JSON file
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	polyjson.Write(sequence, tmpJSONFilePath)
+	_ = polyjson.Write(sequence, tmpJSONFilePath)
 
 	exportedSequence, _ := polyjson.Read(tmpJSONFilePath)
 
@@ -91,7 +91,7 @@ func ExampleWrite() {
 	sequence, _ := polyjson.Read("../../data/cat.json")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	polyjson.Write(sequence, tmpJSONFilePath)
+	_ = polyjson.Write(sequence, tmpJSONFilePath)
 
 	testSequence, _ := polyjson.Read(tmpJSONFilePath)
 

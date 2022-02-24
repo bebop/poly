@@ -32,7 +32,7 @@ func TestGffIO(t *testing.T) {
 	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
 
 	testSequence, _ := gff.Read(testInputPath)
-	gff.Write(testSequence, tmpGffFilePath)
+	_ = gff.Write(testSequence, tmpGffFilePath)
 
 	readTestSequence, _ := gff.Read(tmpGffFilePath)
 
@@ -91,7 +91,7 @@ func ExampleWrite() {
 	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
 
 	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
-	gff.Write(sequence, tmpGffFilePath)
+	_ = gff.Write(sequence, tmpGffFilePath)
 
 	testSequence, _ := gff.Read(tmpGffFilePath)
 
@@ -101,7 +101,7 @@ func ExampleWrite() {
 
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		gff.Read("../../data/ecoli-mg1655-short.gff")
+		_, _ = gff.Read("../../data/ecoli-mg1655-short.gff")
 	}
 }
 

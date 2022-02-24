@@ -173,7 +173,7 @@ func Parse(file []byte) (Gff, error) {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			gff.AddFeature(&record)
+			_ = gff.AddFeature(&record)
 		}
 	}
 	gff.Sequence = sequenceBuffer.String()
