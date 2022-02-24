@@ -35,7 +35,7 @@ func ExampleBuild() {
 // ExampleWrite shows basic usage of the  writer.
 func ExampleWrite() {
 	fastas, _ := Read("data/base.fasta")       // get example data
-	Write(fastas, "data/test.fasta")           // write it out again
+	_ = Write(fastas, "data/test.fasta")       // write it out again
 	testSequence, _ := Read("data/test.fasta") // read it in again
 
 	os.Remove("data/test.fasta") // getting rid of test file
