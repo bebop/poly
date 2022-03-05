@@ -44,7 +44,7 @@ is getting parsed.
 
 https://www.uniprot.org/downloads
 
-I have removed the  Parsers from the io.go file and moved them into this
+I have removed the Parsers from the io.go file and moved them into this
 subpackage.
 
 Hack the Planet,
