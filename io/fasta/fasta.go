@@ -29,7 +29,7 @@ Fasta Parser begins here
 Many thanks to Jordan Campbell (https://github.com/0x106) for building the first
 parser for Poly and thanks to Tim Stiles (https://github.com/TimothyStiles)
 for helping complete that PR. This work expands on the previous work by allowing
-for concurrent  parsing and giving Poly a specific  parser subpackage,
+for concurrent  parsing and giving Poly a specific parser subpackage,
 as well as few bug fixes.
 
 Fasta is a very simple file format for working with DNA, RNA, or protein sequences.
@@ -37,7 +37,7 @@ It was first released in 1985 and is still widely used in bioinformatics.
 
 https://en.wikipedia.org/wiki/_format
 
-One interesting use of the concurrent  parser is working with the Uniprot
+One interesting use of the concurrent parser is working with the Uniprot
 fasta dump files, which are far too large to fit into RAM. This parser is able
 to easily handle those files by doing computation actively while the data dump
 is getting parsed.
