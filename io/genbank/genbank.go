@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -251,7 +250,10 @@ func Parse(r io.Reader) ([]Genbank, error) {
 					features = append(features, feature)
 				}
 				for _, feature := range features {
-					sequence.AddFeature(&feature)
+					err := sequence.AddFeature(&feature)
+					if err != nil {
+						return []Genbank{}, err
+					}
 				}
 				continue
 			}
@@ -357,22 +359,9 @@ func parseMetadata(metadataData []string) string {
 	return outputMetadata
 }
 
-// really important helper function. It finds sublines of a feature and joins them.
-func joinSubLines(splitLine, subLines []string) string {
-	base := strings.TrimSpace(strings.Join(splitLine[1:], " "))
-
-	for _, subLine := range subLines {
-		if !quickMetaCheck(subLine) && !quickSubMetaCheck(subLine) {
-			base = strings.TrimSpace(strings.TrimSpace(base) + " " + strings.TrimSpace(subLine))
-		} else {
-			break
-		}
-	}
-	return base
-}
-
 func parseReferences(metadataData []string) (Reference, error) {
 	var reference Reference
+	var err error
 	rangeIndex := strings.Index(metadataData[0], "(")
 	if rangeIndex != -1 {
 		reference.Range = metadataData[0][rangeIndex:]
@@ -389,7 +378,10 @@ func parseReferences(metadataData []string) (Reference, error) {
 	for index := 2; index < len(metadataData); index++ {
 		if len(metadataData[index]) > 3 {
 			if metadataData[index][3] != ' ' {
-				reference.addKey(referenceKey, referenceValue)
+				err = reference.addKey(referenceKey, referenceValue)
+				if err != nil {
+					return reference, err
+				}
 				referenceKey = strings.Split(strings.TrimSpace(metadataData[index]), " ")[0]
 				referenceValue = strings.TrimSpace(metadataData[index][len(referenceKey)+2:])
 			} else {
@@ -398,7 +390,10 @@ func parseReferences(metadataData []string) (Reference, error) {
 			}
 		}
 	}
-	reference.addKey(referenceKey, referenceValue)
+	err = reference.addKey(referenceKey, referenceValue)
+	if err != nil {
+		return reference, err
+	}
 
 	return reference, nil
 }
@@ -678,93 +673,9 @@ func Write(sequences []Genbank, path string) error {
 	return err
 }
 
-// used in feature check functions.
-var genbankTopLevelFeatures = []string{
-	"LOCUS",
-	"DEFINITION",
-	"ACCESSION",
-	"VERSION",
-	"KEYWORDS",
-	"SOURCE",
-	"REFERENCE",
-	"FEATURES",
-	"ORIGIN",
-}
-
 // indeces for random points of interests on a gbk line.
-const metaIndex = 0
 const subMetaIndex = 5
 const qualifierIndex = 21
-
-// benchling actually uses this space between start of the line and /
-const benchlingQualifierIndex = 29
-
-func quickMetaCheck(line string) bool {
-	flag := false
-	// Without line length check, this function
-	// panics on Genbank flat files - KG 19 Dec 2020
-	if len(line) == 0 {
-		return flag
-	}
-	if string(line[metaIndex]) != " " && string(line[0:2]) != "//" {
-		flag = true
-	}
-	return flag
-}
-
-func quickSubMetaCheck(line string) bool {
-	flag := false
-	// Without line length check, this function
-	// panics on Genbank flat files - KG 19 Dec 2020
-	if len(line) == 0 {
-		return flag
-	}
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " " {
-		flag = true
-	}
-	return flag
-}
-
-func quickFeatureCheck(line string) bool {
-	flag := false
-
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " " {
-		flag = true
-	}
-	return flag
-}
-
-func quickQualifierCheck(line string) bool {
-	flag := false
-
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && (string(line[qualifierIndex]) == "/" || string(line[benchlingQualifierIndex]) == "/") {
-		flag = true
-	}
-	return flag
-
-}
-
-func quickQualifierSubLineCheck(line string) bool {
-	flag := false
-
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) == " " && string(line[qualifierIndex]) != "/" && string(line[qualifierIndex-1]) == " " {
-		flag = true
-	}
-	return flag
-}
-
-// checks for only top level features in genbankTopLevelFeatures array
-func topLevelFeatureCheck(featureString string) bool {
-	flag := false
-	cleanedFeatureString := strings.TrimSpace(featureString)
-	for _, feature := range genbankTopLevelFeatures {
-		if feature == cleanedFeatureString {
-			flag = true
-			break
-		}
-	}
-	return flag
-}
 
 func getSourceOrganism(metadataData []string) (string, string, []string) {
 	source := strings.TrimSpace(metadataData[0])
@@ -790,20 +701,6 @@ func getSourceOrganism(metadataData []string) (string, string, []string) {
 		}
 	}
 	return source, organism, taxonomy
-}
-
-// takes every line after origin feature and removes anything that isn't in the alphabet. Returns sequence string.
-func getSequence(subLines []string) string {
-	var sequenceBuffer bytes.Buffer
-	reg, err := regexp.Compile("[^a-zA-Z]+")
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, subLine := range subLines {
-		sequenceBuffer.WriteString(subLine)
-	}
-	sequence := reg.ReplaceAllString(sequenceBuffer.String(), "")
-	return sequence
 }
 
 func parseLocation(locationString string) Location {
