@@ -11,8 +11,8 @@ import (
 // This example shows how to open a genbank file and search for a gene given
 // its name. After finding it, notes about the particular gene are read.
 func Example_basic() {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	for _, feature := range sequence.Features {
+	sequences, _ := genbank.Read("../../data/puc19.gbk")
+	for _, feature := range sequences[0].Features {
 		if feature.Attributes["gene"] == "bla" {
 			fmt.Println(feature.Attributes["note"])
 		}
