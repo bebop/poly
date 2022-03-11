@@ -65,7 +65,7 @@ func TestOptimize(t *testing.T) {
 	var codingRegionsBuilder strings.Builder
 
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
+	for _, feature := range sequence[0].Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
@@ -95,7 +95,7 @@ func TestOptimizeSameSeed(t *testing.T) {
 	var codingRegionsBuilder strings.Builder
 
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
+	for _, feature := range sequence[0].Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
@@ -125,7 +125,7 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 	var codingRegionsBuilder strings.Builder
 
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
+	for _, feature := range sequence[0].Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
@@ -249,7 +249,7 @@ func TestCompromiseCodonTable(t *testing.T) {
 	var codingRegionsBuilder strings.Builder
 
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
+	for _, feature := range sequence[0].Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
@@ -269,7 +269,7 @@ func TestCompromiseCodonTable(t *testing.T) {
 	var codingRegionsBuilder2 strings.Builder
 
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence2.Features {
+	for _, feature := range sequence2[0].Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder2.WriteString(sequence)

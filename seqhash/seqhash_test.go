@@ -70,7 +70,7 @@ func TestLeastRotation(t *testing.T) {
 	sequence, _ := genbank.Read("../data/puc19.gbk")
 	var sequenceBuffer bytes.Buffer
 
-	sequenceBuffer.WriteString(sequence.Sequence)
+	sequenceBuffer.WriteString(sequence[0].Sequence)
 	bufferLength := sequenceBuffer.Len()
 
 	var rotatedSequence string
