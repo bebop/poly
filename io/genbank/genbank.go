@@ -766,7 +766,6 @@ func parseLocation(locationString string) Location {
 		location = location.SubLocations[0]
 	}
 
-	location.GbkLocationString = locationString
 	return location
 }
 
