@@ -20,7 +20,7 @@ func TestTranslation(t *testing.T) {
 
 }
 func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := Table{}
+	emtpyCodonTable := codonTable{}
 	_, err := Translate("A", emtpyCodonTable)
 
 	if err != errEmptyCodonTable {
@@ -146,7 +146,7 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 }
 
 func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := Table{}
+	emtpyCodonTable := codonTable{}
 	_, err := Optimize("A", emtpyCodonTable)
 
 	if err != errEmptyCodonTable {
@@ -172,7 +172,7 @@ func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 
 func TestGetCodonFrequency(t *testing.T) {
 
-	translationTable := GetCodonTable(11).generateTranslationTable()
+	translationTable := GetCodonTable(11).GenerateTranslationTable()
 
 	var codons strings.Builder
 
