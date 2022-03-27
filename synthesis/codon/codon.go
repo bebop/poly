@@ -52,9 +52,11 @@ this codon bias. There's a default Table generator near the bottom of this file
 with a whole section on how it works and why it's gotta be that way.
 ******************************************************************************/
 
-var errEmptyCodonTable = errors.New("empty codon table")
-var errEmptyAminoAcidString = errors.New("empty amino acid string")
-var errEmptySequenceString = errors.New("empty sequence string")
+var (
+	errEmptyCodonTable      = errors.New("empty codon table")
+	errEmptyAminoAcidString = errors.New("empty amino acid string")
+	errEmptySequenceString  = errors.New("empty sequence string")
+)
 
 // invalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
 type invalidAminoAcidError struct {
@@ -389,21 +391,21 @@ Keoni
 
 // ParseCodonJSON parses a Table JSON file.
 func ParseCodonJSON(file []byte) Table {
-	var codontable Table
-	_ = json.Unmarshal([]byte(file), &codontable)
-	return codontable
+	var codonTable Table
+	_ = json.Unmarshal([]byte(file), &codonTable)
+	return codonTable
 }
 
 // ReadCodonJSON reads a Table JSON file.
 func ReadCodonJSON(path string) Table {
 	file, _ := ioutil.ReadFile(path)
-	codontable := ParseCodonJSON(file)
-	return codontable
+	codonTable := ParseCodonJSON(file)
+	return codonTable
 }
 
 // WriteCodonJSON writes a Table struct out to JSON.
-func WriteCodonJSON(codontable Table, path string) {
-	file, _ := json.MarshalIndent(codontable, "", " ")
+func WriteCodonJSON(codonTable Table, path string) {
+	file, _ := json.MarshalIndent(codonTable, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
 }
 
@@ -438,7 +440,7 @@ Keoni
 
 // CompromiseCodonTable takes 2 CodonTables and makes a new Table
 // that is an equal compromise between the two tables.
-func CompromiseCodonTable(firstCodonTable Table, secondCodonTable Table, cutOff float64) (Table, error) {
+func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float64) (Table, error) {
 	// Initialize output Table, c
 	var c Table
 	// Check if cutOff is too high or low (this is converted to a percent)
@@ -520,7 +522,7 @@ func CompromiseCodonTable(firstCodonTable Table, secondCodonTable Table, cutOff 
 
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new Table.
-func AddCodonTable(firstCodonTable Table, secondCodonTable Table) Table {
+func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
 	var c Table
 
 	// Take start and stop strings from first table
