@@ -34,6 +34,9 @@ Oct, 15, 2020
 
 File is structured as so:
 
+	Interfaces:
+		Table - specifies the functions that all table types must implement
+
 	Structs:
 		codonTable - holds all information mapping codons <-> amino acids during transformations.
 		AminoAcid - holds amino acid related info for codonTable struct
@@ -56,6 +59,7 @@ var (
 	errEmptyCodonTable      = errors.New("empty codon table")
 	errEmptyAminoAcidString = errors.New("empty amino acid string")
 	errEmptySequenceString  = errors.New("empty sequence string")
+	newChooserFn            = weightedRand.NewChooser
 )
 
 // invalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
@@ -158,19 +162,19 @@ func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, 
 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
 // This function actually mutates the codonTable struct itself.
-func (codonTable codonTable) OptimizeTable(sequence string) codonTable {
+func (t codonTable) OptimizeTable(sequence string) codonTable {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
 
-	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
+	for aminoAcidIndex, aminoAcid := range t.AminoAcids {
 		// apply weights to codonTable
 		for codonIndex, codon := range aminoAcid.Codons {
-			codonTable.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
+			t.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
 
 	}
-	return codonTable
+	return t
 }
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
@@ -202,31 +206,31 @@ func getCodonFrequency(sequence string) map[string]int {
 	return codonFrequencyHashMap
 }
 
-func (codonTable codonTable) IsEmpty() bool {
-	return len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0
+func (t codonTable) IsEmpty() bool {
+	return len(t.StartCodons) == 0 && len(t.StopCodons) == 0 && len(t.AminoAcids) == 0
 }
 
 // Chooser is a codonTable method to convert a codon table to a chooser
-func (codonTable codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
+func (t codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
 
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
 
 	// iterate over every amino acid in the codonTable
-	for _, aminoAcid := range codonTable.AminoAcids {
+	for _, aminoAcid := range t.AminoAcids {
 
 		// create a list of codon choices for this specific amino acid
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
 
-		// Get sum of codon occurences for particular amino acid
-		codonOccurenceSum := 0
+		// Get sum of codon occurrences for particular amino acid
+		codonOccurrenceSum := 0
 		for _, codon := range aminoAcid.Codons {
-			codonOccurenceSum += codon.Weight
+			codonOccurrenceSum += codon.Weight
 		}
 
 		// Threshold codons that occur less than 10% for coding a particular amino acid
 		for _, codon := range aminoAcid.Codons {
-			codonPercentage := float64(codon.Weight) / float64(codonOccurenceSum)
+			codonPercentage := float64(codon.Weight) / float64(codonOccurrenceSum)
 
 			if codonPercentage > 0.10 {
 				// for every codon related to current amino acid append its Triplet and Weight to codonChoices after thresholding
@@ -235,7 +239,7 @@ func (codonTable codonTable) Chooser() (map[string]weightedRand.Chooser, error) 
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
-		chooser, err := weightedRand.NewChooser(codonChoices...)
+		chooser, err := newChooserFn(codonChoices...)
 		if err != nil {
 			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
 		}
@@ -245,10 +249,10 @@ func (codonTable codonTable) Chooser() (map[string]weightedRand.Chooser, error) 
 	return codonChooser, nil
 }
 
-// Generate map of codons -> amino acid
-func (codonTable codonTable) GenerateTranslationTable() map[string]string {
+// GenerateTranslationTable generates a map of codons -> amino acid
+func (t codonTable) GenerateTranslationTable() map[string]string {
 	var translationMap = make(map[string]string)
-	for _, aminoAcid := range codonTable.AminoAcids {
+	for _, aminoAcid := range t.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
 			translationMap[codon.Triplet] = aminoAcid.Letter
 		}
@@ -256,16 +260,16 @@ func (codonTable codonTable) GenerateTranslationTable() map[string]string {
 	return translationMap
 }
 
-func (codonTable codonTable) GetStartCodons() []string {
-	return codonTable.StartCodons
+func (t codonTable) GetStartCodons() []string {
+	return t.StartCodons
 }
 
-func (codonTable codonTable) GetStopCodons() []string {
-	return codonTable.StopCodons
+func (t codonTable) GetStopCodons() []string {
+	return t.StopCodons
 }
 
-func (codonTable codonTable) GetAminoAcids() []AminoAcid {
-	return codonTable.AminoAcids
+func (t codonTable) GetAminoAcids() []AminoAcid {
+	return t.AminoAcids
 }
 
 /******************************************************************************
@@ -548,12 +552,6 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new codonTable.
 func AddCodonTable(firstCodonTable, secondCodonTable Table) codonTable {
-	var c codonTable
-
-	// Take start and stop strings from first table
-	c.StartCodons = firstCodonTable.GetStartCodons()
-	c.StopCodons = firstCodonTable.GetStopCodons()
-
 	// Add up codons
 	var finalAminoAcids []AminoAcid
 	for _, firstAa := range firstCodonTable.GetAminoAcids() {
@@ -569,6 +567,10 @@ func AddCodonTable(firstCodonTable, secondCodonTable Table) codonTable {
 		}
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
-	c.AminoAcids = finalAminoAcids
-	return c
+
+	return codonTable{
+		StartCodons: firstCodonTable.GetStartCodons(),
+		StopCodons:  firstCodonTable.GetStopCodons(),
+		AminoAcids:  finalAminoAcids,
+	}
 }
