@@ -18,17 +18,15 @@ Tim
 package codon
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-
+	"io/ioutil"
 	"math/rand"
 	"strings"
 	"time"
 
 	weightedRand "github.com/mroth/weightedrand"
-
-	"encoding/json"
-	"io/ioutil"
 )
 
 /******************************************************************************
@@ -37,8 +35,8 @@ Oct, 15, 2020
 File is structured as so:
 
 	Structs:
-		Table - holds all information mapping codons <-> aminoacids during transformations.
-		AnimoAcid - holds amino acide related info for Table struct
+		Table - holds all information mapping codons <-> amino acids during transformations.
+		AminoAcid - holds amino acid related info for Table struct
 		Codon - holds codon related info for AminoAcid struct
 
 	Big functions that everything else is related to:
@@ -54,9 +52,9 @@ this codon bias. There's a default Table generator near the bottom of this file
 with a whole section on how it works and why it's gotta be that way.
 ******************************************************************************/
 
-var errEmtpyCodonTable = errors.New("empty codon table")
-var errEmtpyAminoAcidString = errors.New("empty amino acid string")
-var errEmtpySequenceString = errors.New("empty sequence string")
+var errEmptyCodonTable = errors.New("empty codon table")
+var errEmptyAminoAcidString = errors.New("empty amino acid string")
+var errEmptySequenceString = errors.New("empty sequence string")
 
 // invalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
 type invalidAminoAcidError struct {
@@ -89,10 +87,10 @@ type Table struct {
 // Translate translates a codon sequence to an amino acid sequence
 func Translate(sequence string, codonTable Table) (string, error) {
 	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
-		return "", errEmtpyCodonTable
+		return "", errEmptyCodonTable
 	}
 	if len(sequence) == 0 {
-		return "", errEmtpySequenceString
+		return "", errEmptySequenceString
 	}
 
 	var aminoAcids strings.Builder
@@ -118,10 +116,10 @@ func Translate(sequence string, codonTable Table) (string, error) {
 // Optimize takes an amino acid sequence and Table and returns an optimized codon sequence. Takes an optional random seed as last argument.
 func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, error) {
 	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
-		return "", errEmtpyCodonTable
+		return "", errEmptyCodonTable
 	}
 	if len(aminoAcids) == 0 {
-		return "", errEmtpyAminoAcidString
+		return "", errEmptyAminoAcidString
 	}
 
 	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
@@ -257,9 +255,9 @@ different things.
 The NCBI publishes this weird data format for developers to use for generating
 codon tables and mapping codons to amino acids for different organisms.
 
-All this stuff is experimentally derived and I'm not sure how it's done really.
+All this stuff is experimentally derived, and I'm not sure how it's done really.
 I won't really have a chance to find out for a while but there's some future
-work where I may want to do experiments like this and you'll see more about it.
+work where I may want to do experiments like this, and you'll see more about it.
 
 There are two tables. I got annoyed since the original only went by number so
 I made one that went by name too. Looking back on it this was useless so I removed
@@ -430,7 +428,7 @@ multiple organisms.
 
 == Add tables ==
 Some organisms have multiple chromosomes. We need to add em all up
-to get an accurate codon table (different than compromise tables,
+to get an accurate codon table (different from compromise tables,
 since these are all already balanced).
 
 Godspeed,

@@ -23,7 +23,7 @@ func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
 	emtpyCodonTable := Table{}
 	_, err := Translate("A", emtpyCodonTable)
 
-	if err != errEmtpyCodonTable {
+	if err != errEmptyCodonTable {
 		t.Error("Translation should return an error if given an empty codon table")
 	}
 }
@@ -32,7 +32,7 @@ func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
 	nonEmptyCodonTable := GetCodonTable(1)
 	_, err := Translate("", nonEmptyCodonTable)
 
-	if err != errEmtpySequenceString {
+	if err != errEmptySequenceString {
 		t.Error("Translation should return an error if given an empty sequence string")
 	}
 }
@@ -149,7 +149,7 @@ func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
 	emtpyCodonTable := Table{}
 	_, err := Optimize("A", emtpyCodonTable)
 
-	if err != errEmtpyCodonTable {
+	if err != errEmptyCodonTable {
 		t.Error("Optimize should return an error if given an empty codon table")
 	}
 }
@@ -158,7 +158,7 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 	nonEmptyCodonTable := GetCodonTable(1)
 	_, err := Optimize("", nonEmptyCodonTable)
 
-	if err != errEmtpyAminoAcidString {
+	if err != errEmptyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
 	}
 }
