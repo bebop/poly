@@ -83,20 +83,21 @@ type AminoAcid struct {
 	Codons []Codon `json:"codons"`
 }
 
+// Table is an interface that specifies the functions that all table types must implement
+type Table interface {
+	Chooser() (map[string]weightedRand.Chooser, error)
+	GenerateTranslationTable() map[string]string
+	GetAminoAcids() []AminoAcid
+	GetStartCodons() []string
+	GetStopCodons() []string
+	IsEmpty() bool
+}
+
 // codonTable holds information for a codon table.
 type codonTable struct {
 	StartCodons []string    `json:"start_codons"`
 	StopCodons  []string    `json:"stop_codons"`
 	AminoAcids  []AminoAcid `json:"amino_acids"`
-}
-
-type Table interface {
-	Chooser() (map[string]weightedRand.Chooser, error)
-	GenerateTranslationTable() map[string]string
-	GetStartCodons() []string
-	GetStopCodons() []string
-	GetAminoAcids() []AminoAcid
-	IsEmpty() bool
 }
 
 // Translate translates a codon sequence to an amino acid sequence
@@ -474,10 +475,10 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 	var c codonTable
 	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
-		return c, errors.New("Cut off too low. Cannot be less than 0 or greater than 1")
+		return c, errors.New("cut off too low, cannot be less than 0")
 	}
 	if cutOff > 1 {
-		return c, errors.New("Cut off too high. Cannot be greater than 1")
+		return c, errors.New("cut off too high, cannot be greater than 1")
 	}
 
 	// Take start and stop strings from first table
