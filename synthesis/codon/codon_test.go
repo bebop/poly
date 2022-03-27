@@ -1,12 +1,14 @@
 package codon
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -170,6 +172,24 @@ func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
+func TestOptimizeErrorsOnBrokenChooser(t *testing.T) {
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	chooserErr := errors.New("chooser rigged to fail")
+
+	codonTable := &mockTable{
+		ChooserFn: func() (map[string]weightedRand.Chooser, error) {
+			return nil, chooserErr
+		},
+		IsEmptyFn: func() bool {
+			return false
+		},
+	}
+
+	_, err := Optimize(gfpTranslation, codonTable)
+	assert.EqualError(t, err, chooserErr.Error())
+}
+
 func TestGetCodonFrequency(t *testing.T) {
 
 	translationTable := GetCodonTable(11).GenerateTranslationTable()
@@ -214,6 +234,21 @@ func TestGetCodonFrequency(t *testing.T) {
 		}
 	}
 
+}
+
+func TestChooserError(t *testing.T) {
+	codonTable := GetCodonTable(11)
+
+	oldChooserFn := newChooserFn
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+	defer func() {
+		newChooserFn = oldChooserFn
+	}()
+
+	_, err := codonTable.Chooser()
+	assert.EqualError(t, err, "weightedRand.NewChooser() error: new chooser rigged to fail")
 }
 
 /******************************************************************************
@@ -290,4 +325,37 @@ func TestCompromiseCodonTable(t *testing.T) {
 	if err == nil {
 		t.Errorf("Compromise table should fail on 10.0")
 	}
+}
+
+type mockTable struct {
+	ChooserFn                  func() (map[string]weightedRand.Chooser, error)
+	GenerateTranslationTableFn func() map[string]string
+	GetStartCodonsFn           func() []string
+	GetStopCodonsFn            func() []string
+	GetAminoAcidsFn            func() []AminoAcid
+	IsEmptyFn                  func() bool
+}
+
+func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
+	return t.ChooserFn()
+}
+
+func (t *mockTable) GenerateTranslationTable() map[string]string {
+	return t.GenerateTranslationTableFn()
+}
+
+func (t *mockTable) GetStartCodons() []string {
+	return t.GetStartCodonsFn()
+}
+
+func (t *mockTable) GetStopCodons() []string {
+	return t.GetStopCodonsFn()
+}
+
+func (t *mockTable) GetAminoAcids() []AminoAcid {
+	return t.GetAminoAcidsFn()
+}
+
+func (t *mockTable) IsEmpty() bool {
+	return t.IsEmptyFn()
 }
