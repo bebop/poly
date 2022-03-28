@@ -91,6 +91,7 @@ type Table interface {
 	GetStartCodons() []string
 	GetStopCodons() []string
 	IsEmpty() bool
+	OptimizeTable(string) Table
 }
 
 // codonTable holds information for a codon table.
@@ -163,7 +164,7 @@ func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, 
 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
 // This function actually mutates the codonTable struct itself.
-func (t codonTable) OptimizeTable(sequence string) codonTable {
+func (t codonTable) OptimizeTable(sequence string) Table {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
@@ -331,7 +332,7 @@ func generateCodonTable(aminoAcids, starts string) codonTable {
 }
 
 // GetCodonTable takes the index of desired NCBI codon table and returns it.
-func GetCodonTable(index int) codonTable {
+func GetCodonTable(index int) Table {
 	return defaultCodonTablesByNumber[index]
 }
 
@@ -420,21 +421,21 @@ Keoni
 ******************************************************************************/
 
 // ParseCodonJSON parses a codonTable JSON file.
-func ParseCodonJSON(file []byte) codonTable {
+func ParseCodonJSON(file []byte) Table {
 	var codonTable codonTable
 	_ = json.Unmarshal([]byte(file), &codonTable)
 	return codonTable
 }
 
 // ReadCodonJSON reads a codonTable JSON file.
-func ReadCodonJSON(path string) codonTable {
+func ReadCodonJSON(path string) Table {
 	file, _ := ioutil.ReadFile(path)
 	codonTable := ParseCodonJSON(file)
 	return codonTable
 }
 
 // WriteCodonJSON writes a codonTable struct out to JSON.
-func WriteCodonJSON(codonTable codonTable, path string) {
+func WriteCodonJSON(codonTable Table, path string) {
 	file, _ := json.MarshalIndent(codonTable, "", " ")
 	_ = ioutil.WriteFile(path, file, 0644)
 }
@@ -470,7 +471,7 @@ Keoni
 
 // CompromiseCodonTable takes 2 CodonTables and makes a new codonTable
 // that is an equal compromise between the two tables.
-func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float64) (codonTable, error) {
+func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float64) (Table, error) {
 	// Initialize output codonTable, c
 	var c codonTable
 	// Check if cutOff is too high or low (this is converted to a percent)
@@ -552,7 +553,7 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new codonTable.
-func AddCodonTable(firstCodonTable, secondCodonTable Table) codonTable {
+func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
 	// Add up codons
 	var finalAminoAcids []AminoAcid
 	for _, firstAa := range firstCodonTable.GetAminoAcids() {

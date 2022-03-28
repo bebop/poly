@@ -54,7 +54,7 @@ func ExampleOptimize() {
 func ExampleReadCodonJSON() {
 	codontable := codon.ReadCodonJSON("../../data/bsub_codon_test.json")
 
-	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	fmt.Println(codontable.GetAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
@@ -62,7 +62,7 @@ func ExampleParseCodonJSON() {
 	file, _ := ioutil.ReadFile("../../data/bsub_codon_test.json")
 	codontable := codon.ParseCodonJSON(file)
 
-	fmt.Println(codontable.AminoAcids[0].Codons[0].Weight)
+	fmt.Println(codontable.GetAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
@@ -74,7 +74,7 @@ func ExampleWriteCodonJSON() {
 	// cleaning up test data
 	os.Remove("../../data/codon_test.json")
 
-	fmt.Println(testCodonTable.AminoAcids[0].Codons[0].Weight)
+	fmt.Println(testCodonTable.GetAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
@@ -119,7 +119,7 @@ func ExampleCompromiseCodonTable() {
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable, _ := codon.CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
-	for _, aa := range finalTable.AminoAcids {
+	for _, aa := range finalTable.GetAminoAcids() {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "TAA" {
 				fmt.Println(codon.Weight)
@@ -171,7 +171,7 @@ func ExampleAddCodonTable() {
 	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
 
 	finalTable := codon.AddCodonTable(optimizationTable, optimizationTable2)
-	for _, aa := range finalTable.AminoAcids {
+	for _, aa := range finalTable.GetAminoAcids() {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "GGC" {
 				fmt.Println(codon.Weight)

@@ -334,6 +334,7 @@ type mockTable struct {
 	GetStopCodonsFn            func() []string
 	GetAminoAcidsFn            func() []AminoAcid
 	IsEmptyFn                  func() bool
+	OptimizeTableFn            func(sequence string) Table
 }
 
 func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
@@ -358,4 +359,8 @@ func (t *mockTable) GetAminoAcids() []AminoAcid {
 
 func (t *mockTable) IsEmpty() bool {
 	return t.IsEmptyFn()
+}
+
+func (t *mockTable) OptimizeTable(sequence string) Table {
+	return t.OptimizeTableFn(sequence)
 }
