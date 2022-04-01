@@ -164,19 +164,19 @@ func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, 
 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
 // This function actually mutates the codonTable struct itself.
-func (t codonTable) OptimizeTable(sequence string) Table {
+func (table codonTable) OptimizeTable(sequence string) Table {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
 
-	for aminoAcidIndex, aminoAcid := range t.AminoAcids {
+	for aminoAcidIndex, aminoAcid := range table.AminoAcids {
 		// apply weights to codonTable
 		for codonIndex, codon := range aminoAcid.Codons {
-			t.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
+			table.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
 
 	}
-	return t
+	return table
 }
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
@@ -208,18 +208,18 @@ func getCodonFrequency(sequence string) map[string]int {
 	return codonFrequencyHashMap
 }
 
-func (t codonTable) IsEmpty() bool {
-	return len(t.StartCodons) == 0 && len(t.StopCodons) == 0 && len(t.AminoAcids) == 0
+func (table codonTable) IsEmpty() bool {
+	return len(table.StartCodons) == 0 && len(table.StopCodons) == 0 && len(table.AminoAcids) == 0
 }
 
 // Chooser is a codonTable method to convert a codon table to a chooser
-func (t codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
+func (table codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
 
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
 
 	// iterate over every amino acid in the codonTable
-	for _, aminoAcid := range t.AminoAcids {
+	for _, aminoAcid := range table.AminoAcids {
 
 		// create a list of codon choices for this specific amino acid
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
@@ -252,9 +252,9 @@ func (t codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
 }
 
 // GenerateTranslationTable generates a map of codons -> amino acid
-func (t codonTable) GenerateTranslationTable() map[string]string {
+func (table codonTable) GenerateTranslationTable() map[string]string {
 	var translationMap = make(map[string]string)
-	for _, aminoAcid := range t.AminoAcids {
+	for _, aminoAcid := range table.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
 			translationMap[codon.Triplet] = aminoAcid.Letter
 		}
@@ -262,16 +262,16 @@ func (t codonTable) GenerateTranslationTable() map[string]string {
 	return translationMap
 }
 
-func (t codonTable) GetStartCodons() []string {
-	return t.StartCodons
+func (table codonTable) GetStartCodons() []string {
+	return table.StartCodons
 }
 
-func (t codonTable) GetStopCodons() []string {
-	return t.StopCodons
+func (table codonTable) GetStopCodons() []string {
+	return table.StopCodons
 }
 
-func (t codonTable) GetAminoAcids() []AminoAcid {
-	return t.AminoAcids
+func (table codonTable) GetAminoAcids() []AminoAcid {
+	return table.AminoAcids
 }
 
 /******************************************************************************
