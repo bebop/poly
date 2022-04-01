@@ -328,39 +328,15 @@ func TestCompromiseCodonTable(t *testing.T) {
 }
 
 type mockTable struct {
-	ChooserFn                  func() (map[string]weightedRand.Chooser, error)
-	GenerateTranslationTableFn func() map[string]string
-	GetStartCodonsFn           func() []string
-	GetStopCodonsFn            func() []string
-	GetAminoAcidsFn            func() []AminoAcid
-	IsEmptyFn                  func() bool
-	OptimizeTableFn            func(sequence string) Table
+	codonTable
+	ChooserFn func() (map[string]weightedRand.Chooser, error)
+	IsEmptyFn func() bool
 }
 
 func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
 	return t.ChooserFn()
 }
 
-func (t *mockTable) GenerateTranslationTable() map[string]string {
-	return t.GenerateTranslationTableFn()
-}
-
-func (t *mockTable) GetStartCodons() []string {
-	return t.GetStartCodonsFn()
-}
-
-func (t *mockTable) GetStopCodons() []string {
-	return t.GetStopCodonsFn()
-}
-
-func (t *mockTable) GetAminoAcids() []AminoAcid {
-	return t.GetAminoAcidsFn()
-}
-
 func (t *mockTable) IsEmpty() bool {
 	return t.IsEmptyFn()
-}
-
-func (t *mockTable) OptimizeTable(sequence string) Table {
-	return t.OptimizeTableFn(sequence)
 }
