@@ -21,6 +21,12 @@ JSON specific IO related things begin here.
 
 ******************************************************************************/
 
+var (
+	marshalIndentFn = json.MarshalIndent
+	readFileFn      = ioutil.ReadFile
+	unmarshalFn     = json.Unmarshal
+)
+
 // Poly is poly's native JSON representation of a sequence.
 type Poly struct {
 	Meta     Meta      `json:"meta"`
@@ -71,12 +77,12 @@ func (sequence *Poly) AddFeature(feature *Feature) error {
 }
 
 // GetSequence takes a feature and returns a sequence string for that feature.
-func (feature Feature) GetSequence() (string, error) {
+func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.Location)
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) (string, error) {
+func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
@@ -84,12 +90,8 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
-
 		for _, subLocation := range location.SubLocations {
-			sequence, err := getFeatureSequence(feature, subLocation)
-			if err != nil {
-				return sequenceBuffer.String(), err
-			}
+			sequence := getFeatureSequence(feature, subLocation)
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -101,16 +103,16 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 		sequenceString = sequenceBuffer.String()
 	}
 
-	return sequenceString, nil
+	return sequenceString
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
 func Parse(file []byte) (Poly, error) {
 	var sequence Poly
-	err := json.Unmarshal([]byte(file), &sequence)
-	if err != nil {
+	if err := unmarshalFn(file, &sequence); err != nil {
 		return sequence, err
 	}
+
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 
@@ -122,28 +124,20 @@ func Parse(file []byte) (Poly, error) {
 
 // Read reads a Poly JSON file.
 func Read(path string) (Poly, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := readFileFn(path)
 	if err != nil {
 		return Poly{}, err
 	}
-	sequence, err := Parse(file)
-	if err != nil {
-		return Poly{}, err
-	}
-	return sequence, nil
+	return Parse(file)
 }
 
 // Write writes a Poly struct out to json.
 func Write(sequence Poly, path string) error {
-	file, err := json.MarshalIndent(sequence, "", " ")
+	file, err := marshalIndentFn(sequence, "", " ")
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, file, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(path, file, 0644)
 }
 
 /******************************************************************************

@@ -1,6 +1,7 @@
-package polyjson_test
+package polyjson
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/TimothyStiles/poly/io/polyjson"
 	"github.com/TimothyStiles/poly/seqhash"
 	"github.com/TimothyStiles/poly/transform"
+	"github.com/stretchr/testify/assert"
 )
 
 /******************************************************************************
@@ -30,7 +31,7 @@ func Example() {
 	defer os.RemoveAll(tmpDataDir)
 
 	// initiate a new polyjson sequence struct
-	var sequence polyjson.Poly
+	var sequence Poly
 
 	// define the meta section of our sequence.
 	sequence.Meta.Name = "Cat DNA"
@@ -45,7 +46,7 @@ func Example() {
 	sequence.Meta.Hash, _ = seqhash.Hash(sequence.Sequence, "DNA", false, true)
 
 	// add our sequence features
-	catFeature := polyjson.Feature{}
+	catFeature := Feature{}
 	catFeature.Name = "Cat coding region."
 	catFeature.Description = "a cat coding region at the beginning of our sequence."
 	catFeature.Type = "CDS"
@@ -57,9 +58,9 @@ func Example() {
 
 	// write our sequence to a JSON file
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	_ = polyjson.Write(sequence, tmpJSONFilePath)
+	_ = Write(sequence, tmpJSONFilePath)
 
-	exportedSequence, _ := polyjson.Read(tmpJSONFilePath)
+	exportedSequence, _ := Read(tmpJSONFilePath)
 
 	// print our struct DNA sequence
 	fmt.Println(exportedSequence.Sequence)
@@ -67,7 +68,7 @@ func Example() {
 }
 
 func ExampleRead() {
-	sequence, _ := polyjson.Read("../../data/cat.json")
+	sequence, _ := Read("../../data/cat.json")
 
 	fmt.Println(sequence.Sequence)
 	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
@@ -75,7 +76,7 @@ func ExampleRead() {
 
 func ExampleParse() {
 	file, _ := ioutil.ReadFile("../../data/cat.json")
-	sequence, _ := polyjson.Parse(file)
+	sequence, _ := Parse(file)
 
 	fmt.Println(sequence.Sequence)
 	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
@@ -88,12 +89,12 @@ func ExampleWrite() {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequence, _ := polyjson.Read("../../data/cat.json")
+	sequence, _ := Read("../../data/cat.json")
 
 	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	_ = polyjson.Write(sequence, tmpJSONFilePath)
+	_ = Write(sequence, tmpJSONFilePath)
 
-	testSequence, _ := polyjson.Read(tmpJSONFilePath)
+	testSequence, _ := Read(tmpJSONFilePath)
 
 	fmt.Println(testSequence.Sequence)
 	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
@@ -111,15 +112,15 @@ func ExamplePoly_AddFeature() {
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence polyjson.Poly
-	var feature polyjson.Feature
+	var sequence Poly
+	var feature Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
 
 	// Set the initialized feature name and sequence location.
 	feature.Description = "Green Flourescent Protein"
-	feature.Location = polyjson.Location{}
+	feature.Location = Location{}
 	feature.Location.Start = 0
 	feature.Location.End = len(sequence.Sequence)
 
@@ -127,7 +128,7 @@ func ExamplePoly_AddFeature() {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -141,8 +142,8 @@ func ExampleFeature_GetSequence() {
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence polyjson.Poly
-	var feature polyjson.Feature
+	var sequence Poly
+	var feature Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
@@ -156,7 +157,7 @@ func ExampleFeature_GetSequence() {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -182,15 +183,15 @@ func TestFeature_GetSequence(t *testing.T) {
 	gfpSequenceModified := sequenceFirstHalf + sequenceSecondHalf
 
 	// initialize sequence and feature structs.
-	var sequence polyjson.Poly
-	var feature polyjson.Feature
+	var sequence Poly
+	var feature Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequenceModified
 	// initialize sublocations to be usedin the feature.
 
-	var subLocation polyjson.Location
-	var subLocationReverseComplemented polyjson.Location
+	var subLocation Location
+	var subLocationReverseComplemented Location
 
 	subLocation.Start = 0
 	subLocation.End = sequenceLength / 2
@@ -200,17 +201,56 @@ func TestFeature_GetSequence(t *testing.T) {
 	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
 	feature.Description = "Green Flourescent Protein"
-	feature.Location.SubLocations = []polyjson.Location{subLocation, subLocationReverseComplemented}
+	feature.Location.SubLocations = []Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	if gfpSequence != featureSequence {
 		t.Error("Feature sequence was not properly retrieved.")
 	}
 
+}
+
+func TestParse_error(t *testing.T) {
+	unmarshalErr := errors.New("unmarshal error")
+	oldUnmarshalFn := unmarshalFn
+	unmarshalFn = func(data []byte, v interface{}) error {
+		return unmarshalErr
+	}
+	defer func() {
+		unmarshalFn = oldUnmarshalFn
+	}()
+	_, err := Parse([]byte{})
+	assert.EqualError(t, err, unmarshalErr.Error())
+}
+
+func TestRead_error(t *testing.T) {
+	readErr := errors.New("read error")
+	oldReadFileFn := readFileFn
+	readFileFn = func(filename string) ([]byte, error) {
+		return nil, readErr
+	}
+	defer func() {
+		readFileFn = oldReadFileFn
+	}()
+	_, err := Read("/tmp/file")
+	assert.EqualError(t, err, readErr.Error())
+}
+
+func TestWrite_error(t *testing.T) {
+	marshalIndentErr := errors.New("marshal indent error")
+	oldMarshalIndentFn := marshalIndentFn
+	marshalIndentFn = func(v interface{}, prefix, indent string) ([]byte, error) {
+		return nil, marshalIndentErr
+	}
+	defer func() {
+		marshalIndentFn = oldMarshalIndentFn
+	}()
+	err := Write(Poly{}, "/tmp/file")
+	assert.EqualError(t, err, marshalIndentErr.Error())
 }

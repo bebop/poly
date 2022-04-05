@@ -2,8 +2,14 @@ package fasta
 
 import (
 	"bytes"
+	"compress/gzip"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // ExampleRead shows basic usage for Read.
@@ -25,7 +31,7 @@ func ExampleParse() {
 // ExampleBuild shows basic usage for Build
 func ExampleBuild() {
 	fastas, _ := Read("data/base.fasta") // get example data
-	fasta, _ := Build(fastas)            // build a fasta byte array
+	fasta := Build(fastas)               // build a fasta byte array
 	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
 
 	fmt.Println(firstLine)
@@ -80,4 +86,50 @@ func ExampleReadConcurrent() {
 
 	fmt.Println(name)
 	// Output: MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+}
+
+func TestRead_error(t *testing.T) {
+	t.Run("Read errors opening the file", func(t *testing.T) {
+		openErr := errors.New("open error")
+		oldOpenFn := openFn
+		openFn = func(name string) (*os.File, error) {
+			return nil, openErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+		}()
+		_, err := Read("/tmp/file")
+		assert.EqualError(t, err, openErr.Error())
+	})
+
+	t.Run("ReadGz errors opening the file", func(t *testing.T) {
+		openErr := errors.New("open error")
+		oldOpenFn := openFn
+		openFn = func(name string) (*os.File, error) {
+			return nil, openErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+		}()
+		_, err := ReadGz("/tmp/file")
+		assert.EqualError(t, err, openErr.Error())
+	})
+
+	t.Run("ReadGz errors reading the file", func(t *testing.T) {
+		readErr := errors.New("read error")
+		oldOpenFn := openFn
+		oldGzipReaderFn := gzipReaderFn
+		openFn = func(name string) (*os.File, error) {
+			return nil, nil
+		}
+		gzipReaderFn = func(r io.Reader) (*gzip.Reader, error) {
+			return nil, readErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+			gzipReaderFn = oldGzipReaderFn
+		}()
+		_, err := ReadGz("/tmp/file")
+		assert.EqualError(t, err, readErr.Error())
+	})
 }

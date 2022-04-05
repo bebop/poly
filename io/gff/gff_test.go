@@ -74,7 +74,7 @@ func ExampleParse() {
 
 func ExampleBuild() {
 	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
-	gffBytes, _ := gff.Build(sequence)
+	gffBytes := gff.Build(sequence)
 	reparsedSequence, _ := gff.Parse(gffBytes)
 
 	fmt.Println(reparsedSequence.Meta.Name)

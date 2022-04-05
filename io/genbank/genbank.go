@@ -32,6 +32,12 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
+var (
+	logFatalFn      = log.Fatal
+	readFileFn      = ioutil.ReadFile
+	regexpCompileFn = regexp.Compile
+)
+
 // Genbank is the main struct for the Genbank file format.
 type Genbank struct {
 	Meta     Meta
@@ -113,12 +119,12 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 }
 
 // GetSequence returns the sequence of a feature.
-func (feature Feature) GetSequence() (string, error) {
+func (feature Feature) GetSequence() string {
 	return getFeatureSequence(feature, feature.Location)
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) (string, error) {
+func getFeatureSequence(feature Feature, location Location) string {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
@@ -128,10 +134,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequence, err := getFeatureSequence(feature, subLocation)
-			if err != nil {
-				return sequenceBuffer.String(), err
-			}
+			sequence := getFeatureSequence(feature, subLocation)
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -143,7 +146,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 		sequenceString = sequenceBuffer.String()
 	}
 
-	return sequenceString, nil
+	return sequenceString
 }
 
 // Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
@@ -165,15 +168,16 @@ func Parse(file []byte) (Genbank, error) {
 	// Add the CheckSum to sequence (blake3)
 	sequence.Meta.CheckSum = blake3.Sum256(file)
 
+	// This is to keep the cursor from scrolling to the bottom another time after GetSequence() is called.
+	// Break has to be in scope and can't be called within switch statement.
+	// Otherwise, it will just break the switch which is redundant.
+	sequenceBreakFlag := false
+
 	for numLine := 0; numLine < len(lines); numLine++ {
 		line := lines[numLine]
 		splitLine := strings.Split(line, " ")
 		subLines := lines[numLine+1:]
 
-		// This is to keep the cursor from scrolling to the bottom another time after GetSequence() is called.
-		// Break has to be in scope and can't be called within switch statement.
-		// Otherwise it will just break the switch which is redundant.
-		sequenceBreakFlag := false
 		if sequenceBreakFlag {
 			break
 		}
@@ -224,7 +228,7 @@ func Parse(file []byte) (Genbank, error) {
 }
 
 // Build builds a GBK string to be written out to db or file.
-func Build(sequence Genbank) ([]byte, error) {
+func Build(sequence Genbank) []byte {
 	var gbkString bytes.Buffer
 	locus := sequence.Meta.Locus
 	var shape string
@@ -336,32 +340,23 @@ func Build(sequence Genbank) ([]byte, error) {
 	// finish genbank file with "//" on newline (again a genbank convention)
 	gbkString.WriteString("\n//")
 
-	return gbkString.Bytes(), nil
+	return gbkString.Bytes()
 }
 
 // Read reads a Gbk from path and parses into an Annotated sequence struct.
 func Read(path string) (Genbank, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := readFileFn(path)
 	if err != nil {
 		return Genbank{}, err
 	}
 
-	sequence, err := Parse(file)
-	if err != nil {
-		return Genbank{}, err
-	}
-
-	return sequence, nil
+	return Parse(file)
 }
 
 // Write takes an Sequence struct and a path string and writes out a gff to that path.
 func Write(sequence Genbank, path string) error {
-	gbk, err := Build(sequence)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(path, gbk, 0644)
-	return err
+	gbk := Build(sequence)
+	return ioutil.WriteFile(path, gbk, 0644)
 }
 
 // used in parseLocus function though it could be useful elsewhere.
@@ -436,25 +431,11 @@ func quickMetaCheck(line string) bool {
 }
 
 func quickSubMetaCheck(line string) bool {
-	flag := false
-	// Without line length check, this function
-	// panics on Genbank flat files - KG 19 Dec 2020
-	if len(line) == 0 {
-		return flag
-	}
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " " {
-		flag = true
-	}
-	return flag
+	return len(line) > 0 && string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " "
 }
 
 func quickFeatureCheck(line string) bool {
-	flag := false
-
-	if string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " " {
-		flag = true
-	}
-	return flag
+	return string(line[metaIndex]) == " " && string(line[subMetaIndex]) != " "
 }
 
 func quickQualifierCheck(line string) bool {
@@ -708,14 +689,7 @@ func getFeatures(lines []string) []Feature {
 			//add qualifier to feature.
 			attributeSplit := strings.Split(reg.ReplaceAllString(qualifier, ""), "=")
 			attributeLabel := strings.TrimSpace(attributeSplit[0])
-			var attributeValue string
-			// This if-statement is not tested, and panics when run. Not sure why
-			// it is still here - KG 19 Dec 2020
-			if len(attributeSplit) < 2 {
-				attributeValue = ""
-			} else {
-				attributeValue = strings.TrimSpace(attributeSplit[1])
-			}
+			attributeValue := getAttributeValue(attributeSplit)
 			feature.Attributes[attributeLabel] = attributeValue
 		}
 
@@ -726,12 +700,21 @@ func getFeatures(lines []string) []Feature {
 	return features
 }
 
+func getAttributeValue(attributeSplit []string) string {
+	// This if-statement is not tested, and panics when run. Not sure why
+	// it is still here - KG 19 Dec 2020
+	if len(attributeSplit) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(attributeSplit[1])
+}
+
 // takes every line after origin feature and removes anything that isn't in the alphabet. Returns sequence string.
 func getSequence(subLines []string) string {
 	var sequenceBuffer bytes.Buffer
-	reg, err := regexp.Compile("[^a-zA-Z]+")
+	reg, err := regexpCompileFn("[^a-zA-Z]+")
 	if err != nil {
-		log.Fatal(err)
+		logFatalFn(err)
 	}
 	for _, subLine := range subLines {
 		sequenceBuffer.WriteString(subLine)
@@ -764,19 +747,7 @@ func parseLocation(locationString string) Location {
 			location.Join = true
 			// This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
 			if strings.ContainsAny(expression, "(") {
-				firstInnerParentheses := strings.Index(expression, "(")
-				ParenthesesCount := 1
-				comma := 0
-				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParentheses+i] {
-					case []byte("(")[0]:
-						ParenthesesCount++
-					case []byte(")")[0]:
-						ParenthesesCount--
-					}
-				}
-				location.SubLocations = append(location.SubLocations, parseLocation(expression[:firstInnerParentheses+comma+1]), parseLocation(expression[2+firstInnerParentheses+comma:]))
+				parseComplicatedJoin(expression, &location)
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
 					location.SubLocations = append(location.SubLocations, parseLocation(numberRange))
@@ -804,6 +775,22 @@ func parseLocation(locationString string) Location {
 	}
 
 	return location
+}
+
+func parseComplicatedJoin(expression string, location *Location) {
+	firstInnerParentheses := strings.Index(expression, "(")
+	ParenthesesCount := 1
+	comma := 0
+	for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
+		comma = i
+		switch expression[firstInnerParentheses+i] {
+		case []byte("(")[0]:
+			ParenthesesCount++
+		case []byte(")")[0]:
+			ParenthesesCount--
+		}
+	}
+	location.SubLocations = append(location.SubLocations, parseLocation(expression[:firstInnerParentheses+comma+1]), parseLocation(expression[2+firstInnerParentheses+comma:]))
 }
 
 // buildMetaString is a helper function to build the meta section of genbank files.

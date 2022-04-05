@@ -42,7 +42,7 @@ func ExampleGenbank_AddFeature() {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -71,7 +71,7 @@ func ExampleFeature_GetSequence() {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	fmt.Println(gfpSequence == featureSequence)
@@ -122,7 +122,7 @@ func TestFeature_GetSequence(t *testing.T) {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence, _ := feature.GetSequence()
+	featureSequence := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	if gfpSequence != featureSequence {
