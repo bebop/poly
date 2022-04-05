@@ -1,12 +1,14 @@
 package codon
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,10 +22,10 @@ func TestTranslation(t *testing.T) {
 
 }
 func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := Table{}
+	emtpyCodonTable := codonTable{}
 	_, err := Translate("A", emtpyCodonTable)
 
-	if err != errEmtpyCodonTable {
+	if err != errEmptyCodonTable {
 		t.Error("Translation should return an error if given an empty codon table")
 	}
 }
@@ -32,7 +34,7 @@ func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
 	nonEmptyCodonTable := GetCodonTable(1)
 	_, err := Translate("", nonEmptyCodonTable)
 
-	if err != errEmtpySequenceString {
+	if err != errEmptySequenceString {
 		t.Error("Translation should return an error if given an empty sequence string")
 	}
 }
@@ -146,10 +148,10 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 }
 
 func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := Table{}
+	emtpyCodonTable := codonTable{}
 	_, err := Optimize("A", emtpyCodonTable)
 
-	if err != errEmtpyCodonTable {
+	if err != errEmptyCodonTable {
 		t.Error("Optimize should return an error if given an empty codon table")
 	}
 }
@@ -158,7 +160,7 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 	nonEmptyCodonTable := GetCodonTable(1)
 	_, err := Optimize("", nonEmptyCodonTable)
 
-	if err != errEmtpyAminoAcidString {
+	if err != errEmptyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
 	}
 }
@@ -170,9 +172,27 @@ func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
+func TestOptimizeErrorsOnBrokenChooser(t *testing.T) {
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	chooserErr := errors.New("chooser rigged to fail")
+
+	codonTable := &mockTable{
+		ChooserFn: func() (map[string]weightedRand.Chooser, error) {
+			return nil, chooserErr
+		},
+		IsEmptyFn: func() bool {
+			return false
+		},
+	}
+
+	_, err := Optimize(gfpTranslation, codonTable)
+	assert.EqualError(t, err, chooserErr.Error())
+}
+
 func TestGetCodonFrequency(t *testing.T) {
 
-	translationTable := GetCodonTable(11).generateTranslationTable()
+	translationTable := GetCodonTable(11).GenerateTranslationTable()
 
 	var codons strings.Builder
 
@@ -214,6 +234,21 @@ func TestGetCodonFrequency(t *testing.T) {
 		}
 	}
 
+}
+
+func TestChooserError(t *testing.T) {
+	codonTable := GetCodonTable(11)
+
+	oldChooserFn := newChooserFn
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+	defer func() {
+		newChooserFn = oldChooserFn
+	}()
+
+	_, err := codonTable.Chooser()
+	assert.EqualError(t, err, "weightedRand.NewChooser() error: new chooser rigged to fail")
 }
 
 /******************************************************************************
@@ -290,4 +325,18 @@ func TestCompromiseCodonTable(t *testing.T) {
 	if err == nil {
 		t.Errorf("Compromise table should fail on 10.0")
 	}
+}
+
+type mockTable struct {
+	codonTable
+	ChooserFn func() (map[string]weightedRand.Chooser, error)
+	IsEmptyFn func() bool
+}
+
+func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
+	return t.ChooserFn()
+}
+
+func (t *mockTable) IsEmpty() bool {
+	return t.IsEmptyFn()
 }
