@@ -120,7 +120,7 @@ func TestRead_error(t *testing.T) {
 		oldOpenFn := openFn
 		oldGzipReaderFn := gzipReaderFn
 		openFn = func(name string) (*os.File, error) {
-			return nil, nil
+			return &os.File{}, nil
 		}
 		gzipReaderFn = func(r io.Reader) (*gzip.Reader, error) {
 			return nil, readErr
