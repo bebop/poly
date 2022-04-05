@@ -56,6 +56,7 @@ Keoni
 
 ******************************************************************************/
 
+// Decoder decodes XML elements2
 type Decoder interface {
 	DecodeElement(v interface{}, start *xml.StartElement) error
 	Token() (xml.Token, error)
