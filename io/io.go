@@ -1,5 +1,5 @@
 /*
-Package IO provides utilities for reading and writing sequence data.
+Package io provides utilities for reading and writing sequence data.
 */
 package io
 
