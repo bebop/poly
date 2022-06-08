@@ -16,3 +16,4 @@ on:
   with:
     webhook_id: ${{ secrets.DISCORD_ID }}
     webhook_token: ${{ secrets.DISCORD_WEBHOOK}}
+    
