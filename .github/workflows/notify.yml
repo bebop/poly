@@ -1,15 +1,13 @@
 name: notify social media
 
 on:
+  [release, issues, pull_request, issue_comment, pull_request_review, pull_request_review_comment, discussion, discussion_comment]
   push:
     branches:
       - dev
       - prime
       - main
-  issues:
-  pull_request:
-  issue_comment:
-  release:
+
 
 - name: notify discord
   uses: appleboy/discord-action@master
