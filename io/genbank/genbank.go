@@ -144,8 +144,19 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	return sequenceString, nil
 }
 
-// Parse takes in a string representing a gbk/gb/genbank file and parses it into an Sequence object.
-func Parse(r io.Reader) ([]Genbank, error) {
+// Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
+func Parse(r io.Reader) (Genbank, error) {
+	genbankSlice, err := ParseMulti(r)
+
+	if err != nil {
+		return Genbank{}, err
+	}
+
+	return genbankSlice[0], err
+}
+
+// ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into an Genbank struct slice.
+func ParseMulti(r io.Reader) ([]Genbank, error) {
 	scanner := bufio.NewScanner(r)
 	var sequence = Genbank{}
 
@@ -161,7 +172,7 @@ func Parse(r io.Reader) ([]Genbank, error) {
 
 	// Metadata setup
 	var metadataTag string
-	var metadataData []string
+	var metadataData []string //this stutters but will remain to make it easier to batch rename variables when compared to metadataTag.
 
 	// Feature setup
 	var newLocation bool
@@ -648,14 +659,14 @@ func Build(sequences []Genbank) ([]byte, error) {
 	return gbkString.Bytes(), nil
 }
 
-// Read reads a Gbk from path and parses into an Annotated sequence struct.
-func Read(path string) ([]Genbank, error) {
+// ReadMulti reads a multi Gbk from path and parses into an Genbank struct slice.
+func ReadMulti(path string) ([]Genbank, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return []Genbank{}, err
 	}
 
-	sequence, err := Parse(file)
+	sequence, err := ParseMulti(file)
 	if err != nil {
 		return []Genbank{}, err
 	}
