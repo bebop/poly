@@ -12,7 +12,7 @@ import (
 // its name. After finding it, notes about the particular gene are read.
 func Example_basic() {
 	sequences, _ := genbank.Read("../../data/puc19.gbk")
-	for _, feature := range sequences[0].Features {
+	for _, feature := range sequences.Features {
 		if feature.Attributes["gene"] == "bla" {
 			fmt.Println(feature.Attributes["note"])
 		}

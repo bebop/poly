@@ -146,7 +146,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 
 // Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
 func Parse(r io.Reader) (Genbank, error) {
-	genbankSlice, err := ParseMulti(r)
+	genbankSlice, err := ParseMultiNth(r, 1)
 
 	if err != nil {
 		return Genbank{}, err
@@ -155,8 +155,20 @@ func Parse(r io.Reader) (Genbank, error) {
 	return genbankSlice[0], err
 }
 
-// ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into an Genbank struct slice.
+// ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into a slice of Genbank structs.
 func ParseMulti(r io.Reader) ([]Genbank, error) {
+
+	genbankSlice, err := ParseMultiNth(r, -1)
+
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	return genbankSlice, err
+}
+
+// ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
+func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 	scanner := bufio.NewScanner(r)
 	var sequence = Genbank{}
 
@@ -531,8 +543,25 @@ func parseLocus(locusString string) Locus {
 	return locus
 }
 
-// Build builds a GBK string to be written out to db or file.
-func Build(sequences []Genbank) ([]byte, error) {
+// Build builds a GBK byte slice to be written out to db or file.
+func Build(gbk Genbank) ([]byte, error) {
+	gbkSlice := []Genbank{gbk}
+	multiGBK, err := buildMultiNth(gbkSlice, -1)
+	if err != nil {
+		return []byte{}, err
+	}
+	return multiGBK, err
+
+}
+
+// BuildMulti builds a MultiGBK byte slice to be written out to db or file.
+func BuildMulti(sequence []Genbank) ([]byte, error) {
+	multiGBK, err := buildMultiNth(sequence, -1)
+	return multiGBK, err
+}
+
+// buildMultiNth builds a MultiGBK byte slice to be written out to db or file.
+func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 	var gbkString bytes.Buffer
 	for _, sequence := range sequences {
 		locus := sequence.Meta.Locus
@@ -659,14 +688,29 @@ func Build(sequences []Genbank) ([]byte, error) {
 	return gbkString.Bytes(), nil
 }
 
-// ReadMulti reads a multi Gbk from path and parses into an Genbank struct slice.
+// Read reads a GBK file from path and returns a Genbank struct.
+func Read(path string) (Genbank, error) {
+	genbankSlice, err := ReadMultiNth(path, 1)
+	if err != nil {
+		return Genbank{}, err
+	}
+	genbank := genbankSlice[0]
+	return genbank, err
+}
+
+// ReadMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
 func ReadMulti(path string) ([]Genbank, error) {
+	return ReadMultiNth(path, -1)
+}
+
+// ReadMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
+func ReadMultiNth(path string, count int) ([]Genbank, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return []Genbank{}, err
 	}
 
-	sequence, err := ParseMulti(file)
+	sequence, err := ParseMultiNth(file, count)
 	if err != nil {
 		return []Genbank{}, err
 	}
@@ -674,9 +718,19 @@ func ReadMulti(path string) ([]Genbank, error) {
 	return sequence, nil
 }
 
-// Write takes an Genbank list and a path string and writes out a gff to that path.
-func Write(sequences []Genbank, path string) error {
+// Write takes an Genbank list and a path string and writes out a genbank record to that path.
+func Write(sequences Genbank, path string) error {
 	gbk, err := Build(sequences)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gbk, 0644)
+	return err
+}
+
+// WriteMulti takes a slice of Genbank structs and a path string and writes out a multi genbank record to that path.
+func WriteMulti(sequences []Genbank, path string) error {
+	gbk, err := BuildMulti(sequences)
 	if err != nil {
 		return err
 	}
