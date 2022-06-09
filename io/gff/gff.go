@@ -135,8 +135,14 @@ func Parse(file io.Reader) (Gff, error) {
 
 	// get meta info only specific to GFF files
 	meta.Version = strings.Split(versionString, " ")[1]
-	meta.RegionStart, _ = strconv.Atoi(regionStringArray[2])
-	meta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
+	meta.RegionStart, err = strconv.Atoi(regionStringArray[2])
+	if err != nil {
+		return Gff{}, err
+	}
+	meta.RegionEnd, err = strconv.Atoi(regionStringArray[3])
+	if err != nil {
+		return Gff{}, err
+	}
 	meta.Size = meta.RegionEnd - meta.RegionStart
 
 	var sequenceBuffer bytes.Buffer
@@ -161,9 +167,16 @@ func Parse(file io.Reader) (Gff, error) {
 			record.Type = fields[2]
 
 			// Indexing starts at 1 for gff so we need to shift down for Sequence 0 index.
-			record.Location.Start, _ = strconv.Atoi(fields[3])
+			record.Location.Start, err = strconv.Atoi(fields[3])
+			if err != nil {
+				return Gff{}, err
+			}
+
 			record.Location.Start--
-			record.Location.End, _ = strconv.Atoi(fields[4])
+			record.Location.End, err = strconv.Atoi(fields[4])
+			if err != nil {
+				return Gff{}, err
+			}
 
 			record.Score = fields[5]
 			record.Strand = fields[6]
@@ -179,7 +192,10 @@ func Parse(file io.Reader) (Gff, error) {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			_ = gff.AddFeature(&record)
+			err = gff.AddFeature(&record)
+			if err != nil {
+				return Gff{}, err
+			}
 		}
 	}
 	gff.Sequence = sequenceBuffer.String()
@@ -285,7 +301,11 @@ func Build(sequence Gff) ([]byte, error) {
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
 func Read(path string) (Gff, error) {
-	file, _ := os.Open(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return Gff{}, err
+	}
+
 	sequence, err := Parse(file)
 	if err != nil {
 		return Gff{}, err

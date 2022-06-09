@@ -252,7 +252,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				case "REFERENCE":
 					reference, err := parseReferences(parameters.metadataData)
 					if err != nil {
-						return genbanks, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return []Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
 					parameters.genbank.Meta.References = append(parameters.genbank.Meta.References, reference)
 
@@ -286,7 +286,11 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 				// This checks for our initial parameters.feature
 				if parameters.feature.Type != "" {
-					parameters.feature.Location = parseLocation(parameters.feature.Location.GbkLocationString)
+					var err error
+					parameters.feature.Location, err = parseLocation(parameters.feature.Location.GbkLocationString)
+					if err != nil {
+						return []Genbank{}, err
+					}
 					parameters.features = append(parameters.features, parameters.feature)
 				}
 
@@ -294,7 +298,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				for _, feature := range parameters.features {
 					err := parameters.genbank.AddFeature(&feature)
 					if err != nil {
-						return genbanks, err
+						return []Genbank{}, err
 					}
 				}
 				continue
@@ -304,7 +308,11 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			if !parameters.quoteActive && !strings.Contains(line, "/") && !parameters.newLocation {
 				// Check for empty types
 				if parameters.feature.Type != "" {
-					parameters.feature.Location = parseLocation(parameters.feature.Location.GbkLocationString)
+					var err error
+					parameters.feature.Location, err = parseLocation(parameters.feature.Location.GbkLocationString)
+					if err != nil {
+						return []Genbank{}, err
+					}
 					parameters.features = append(parameters.features, parameters.feature)
 				}
 
@@ -801,19 +809,28 @@ func getSourceOrganism(metadataData []string) (string, string, []string) {
 	return source, organism, taxonomy
 }
 
-func parseLocation(locationString string) Location {
+func parseLocation(locationString string) (Location, error) {
 	var location Location
 	location.GbkLocationString = locationString
 	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
 		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
-			position, _ := strconv.Atoi(locationString)
+			position, err := strconv.Atoi(locationString)
+			if err != nil {
+				return Location{}, err
+			}
 			location = Location{Start: position, End: position}
 		} else {
 			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
 			partialRegex, _ := regexp.Compile("<|>")
 			startEndSplit := strings.Split(locationString, "..")
-			start, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
-			end, _ := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
+			start, err := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
+			if err != nil {
+				return Location{}, err
+			}
+			end, err := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[1], ""))
+			if err != nil {
+				return Location{}, err
+			}
 			location = Location{Start: start - 1, End: end}
 		}
 
@@ -837,15 +854,31 @@ func parseLocation(locationString string) Location {
 						ParenthesesCount--
 					}
 				}
-				location.SubLocations = append(location.SubLocations, parseLocation(expression[:firstInnerParentheses+comma+1]), parseLocation(expression[2+firstInnerParentheses+comma:]))
+				parseLeftLocation, err := parseLocation(expression[:firstInnerParentheses+comma+1])
+				if err != nil {
+					return Location{}, err
+				}
+				parseRightLocation, err := parseLocation(expression[2+firstInnerParentheses+comma:])
+				if err != nil {
+					return Location{}, err
+				}
+
+				location.SubLocations = append(location.SubLocations, parseLeftLocation, parseRightLocation)
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
-					location.SubLocations = append(location.SubLocations, parseLocation(numberRange))
+					joinLocation, err := parseLocation(numberRange)
+					if err != nil {
+						return Location{}, err
+					}
+					location.SubLocations = append(location.SubLocations, joinLocation)
 				}
 			}
 
 		case "complement":
-			subLocation := parseLocation(expression)
+			subLocation, err := parseLocation(expression)
+			if err != nil {
+				return Location{}, err
+			}
 			subLocation.Complement = true
 			location.SubLocations = append(location.SubLocations, subLocation)
 		}
@@ -864,7 +897,7 @@ func parseLocation(locationString string) Location {
 		location = location.SubLocations[0]
 	}
 
-	return location
+	return location, nil
 }
 
 // buildMetaString is a helper function to build the meta section of genbank files.

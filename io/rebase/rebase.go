@@ -257,7 +257,10 @@ func Read(path string) (map[string]Enzyme, error) {
 }
 
 // Export returns a json file of the Rebase database
-func Export(enzymeMap map[string]Enzyme) []byte {
-	jsonRebase, _ := json.Marshal(enzymeMap)
-	return jsonRebase
+func Export(enzymeMap map[string]Enzyme) ([]byte, error) {
+	jsonRebase, err := json.Marshal(enzymeMap)
+	if err != nil {
+		return []byte{}, err
+	}
+	return jsonRebase, nil
 }

@@ -122,7 +122,10 @@ func Parse(file io.Reader) (Poly, error) {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		_ = sequence.AddFeature(&feature)
+		err = sequence.AddFeature(&feature)
+		if err != nil {
+			return sequence, err
+		}
 	}
 	return sequence, nil
 }
