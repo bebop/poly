@@ -280,7 +280,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 		case "features":
 
 			// Switch to sequence parsing
-			originFlag, _ := regexp.MatchString("ORIGIN", line) // we detect the beginning of the sequence with "ORIGIN"
+			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
 			if originFlag {
 				parameters.parseStep = "sequence"
 
