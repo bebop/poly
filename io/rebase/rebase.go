@@ -143,7 +143,9 @@ package rebase
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -160,14 +162,18 @@ type Enzyme struct {
 }
 
 // Parse parses the Rebase database into a map of enzymes
-func Parse(file []byte) map[string]Enzyme {
+func Parse(file io.Reader) (map[string]Enzyme, error) {
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return make(map[string]Enzyme), err
+	}
 	// Setup some variables
 	var enzyme Enzyme
 	enzymeMap := make(map[string]Enzyme)
 	commercialSupplierMap := make(map[rune]string)
 
 	// Get rebase as a large string
-	rebase := string(file)
+	rebase := string(fileBytes)
 
 	// Split those strings into individual lines for parsing
 	lines := strings.Split(rebase, "\n")
@@ -234,16 +240,19 @@ func Parse(file []byte) map[string]Enzyme {
 			enzyme = Enzyme{}
 		}
 	}
-	return enzymeMap
+	return enzymeMap, err
 }
 
 // Read returns an enzymeMap from a Rebase data dump
 func Read(path string) (map[string]Enzyme, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return map[string]Enzyme{}, err
 	}
-	enzymeMap := Parse(file)
+	enzymeMap, err := Parse(file)
+	if err != nil {
+		return map[string]Enzyme{}, err
+	}
 	return enzymeMap, nil
 }
 

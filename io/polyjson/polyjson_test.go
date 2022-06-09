@@ -74,7 +74,7 @@ func ExampleRead() {
 }
 
 func ExampleParse() {
-	file, _ := ioutil.ReadFile("../../data/cat.json")
+	file, _ := os.Open("../../data/cat.json")
 	sequence, _ := polyjson.Parse(file)
 
 	fmt.Println(sequence.Sequence)

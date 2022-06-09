@@ -13,7 +13,9 @@ package gff
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -110,13 +112,17 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 }
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func Parse(file []byte) (Gff, error) {
+func Parse(file io.Reader) (Gff, error) {
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return Gff{}, err
+	}
 
-	gffString := string(file)
+	gffString := string(fileBytes)
 	gff := Gff{}
 
 	// Add the CheckSum to sequence (blake3)
-	gff.Meta.CheckSum = blake3.Sum256(file)
+	gff.Meta.CheckSum = blake3.Sum256(fileBytes)
 
 	lines := strings.Split(gffString, "\n")
 	metaString := lines[0:2]
@@ -279,7 +285,7 @@ func Build(sequence Gff) ([]byte, error) {
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
 func Read(path string) (Gff, error) {
-	file, _ := ioutil.ReadFile(path)
+	file, _ := os.Open(path)
 	sequence, err := Parse(file)
 	if err != nil {
 		return Gff{}, err
