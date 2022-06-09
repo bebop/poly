@@ -124,13 +124,12 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
+
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequence, err := getFeatureSequence(feature, subLocation)
-			if err != nil {
-				return sequenceBuffer.String(), err
-			}
+			sequence, _ := getFeatureSequence(feature, subLocation)
+
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
