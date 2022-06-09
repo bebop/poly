@@ -329,7 +329,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				continue
 			}
 
-			// TODO: this smells bad
+			// this smells bad
 			parameters.newLocation = false
 
 			// First, let's check if we have a quote active (basically, if a attribute is using multiple lines)
