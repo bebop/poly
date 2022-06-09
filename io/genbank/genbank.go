@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/TimothyStiles/poly/transform"
+	"github.com/lunny/log"
 	"github.com/mitchellh/go-wordwrap"
 )
 
@@ -167,207 +168,236 @@ func ParseMulti(r io.Reader) ([]Genbank, error) {
 	return genbankSlice, err
 }
 
+type loopParameters struct {
+	newLocation     bool
+	quoteActive     bool
+	attribute       string
+	attributeValue  string
+	sequenceBuilder strings.Builder
+	parseStep       string
+	genbank         Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
+	feature         Feature
+	features        []Feature
+	metadataTag     string
+	metadataData    []string //this stutters but will remain to make it easier to batch rename variables when compared to parameters.metadataTag.
+	genbankStarted  bool
+}
+
+// method to init loop parameters
+func (params *loopParameters) init() {
+	params.newLocation = true
+	params.feature.Attributes = make(map[string]string)
+	params.parseStep = "metadata"
+	params.genbankStarted = false
+	params.genbank.Meta.Other = make(map[string]string)
+}
+
 // ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
 func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 	scanner := bufio.NewScanner(r)
-	var sequence = Genbank{}
-
-	// Create meta struct
-	var meta = Meta{}
-
-	meta.Other = make(map[string]string)
-
-	// Create features struct
-	var features = []Feature{}
-	var feature = Feature{}
-	feature.Attributes = make(map[string]string)
-
-	// Metadata setup
-	var metadataTag string
-	var metadataData []string //this stutters but will remain to make it easier to batch rename variables when compared to metadataTag.
-
-	// Feature setup
-	var newLocation bool
-	var quoteActive bool
-
-	var attribute string
-	var attributeValue string
+	var genbanks []Genbank
 
 	// Sequence setup
-	reg, _ := regexp.Compile("[^a-zA-Z]+")
 	var sequenceBuilder strings.Builder
 
-	// Sequence breaking
-	parseStep := "metadata" // we can be parsing metadata, features, or sequence
+	var parameters loopParameters
+	parameters.init()
 
-	genbankStarted := false
+	// Loop through each line of the file
 	for lineNum := 0; scanner.Scan(); lineNum++ {
+
+		// get line from scanner and split it
 		line := scanner.Text()
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
-		if !genbankStarted {
+
+		// keep scanning until we find the start of the first record
+		if !parameters.genbankStarted {
+
 			// We detect the beginning of a new genbank file with "LOCUS"
-			if line[:5] == "LOCUS" {
-				meta.Locus = parseLocus(line)
-				genbankStarted = true
-				continue
+			locusFlag, _ := regexp.MatchString("LOCUS", line)
+
+			if locusFlag {
+				parameters = loopParameters{}
+				parameters.init()
+				parameters.genbank.Meta.Locus = parseLocus(line)
+				parameters.genbankStarted = true
 			}
-			// Otherwise, we continue scanning
 			continue
+
 		}
-		switch parseStep {
+
+		switch parameters.parseStep {
+
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
-				return []Genbank{}, fmt.Errorf("Empty metadata line on line %d", lineNum)
+				return genbanks, fmt.Errorf("Empty metadata line on line %d", lineNum)
 			}
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
-			if string(line[0]) != " " || metadataTag == "FEATURES" {
+			if string(line[0]) != " " || parameters.metadataTag == "FEATURES" {
+
 				// If this is true, it means we are beginning a new meta tag. In that case, let's save
 				// the older data, and then continue along.
-				switch metadataTag {
+				switch parameters.metadataTag {
 				case "DEFINITION":
-					meta.Definition = parseMetadata(metadataData)
+					parameters.genbank.Meta.Definition = parseMetadata(parameters.metadataData)
 				case "ACCESSION":
-					meta.Accession = parseMetadata(metadataData)
+					parameters.genbank.Meta.Accession = parseMetadata(parameters.metadataData)
 				case "VERSION":
-					meta.Version = parseMetadata(metadataData)
+					parameters.genbank.Meta.Version = parseMetadata(parameters.metadataData)
 				case "KEYWORDS":
-					meta.Keywords = parseMetadata(metadataData)
+					parameters.genbank.Meta.Keywords = parseMetadata(parameters.metadataData)
 				case "SOURCE":
-					meta.Source, meta.Organism, meta.Taxonomy = getSourceOrganism(metadataData)
+					parameters.genbank.Meta.Source, parameters.genbank.Meta.Organism, parameters.genbank.Meta.Taxonomy = getSourceOrganism(parameters.metadataData)
 				case "REFERENCE":
-					reference, err := parseReferences(metadataData)
+					reference, err := parseReferences(parameters.metadataData)
 					if err != nil {
-						return []Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return genbanks, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
-					meta.References = append(meta.References, reference)
+					parameters.genbank.Meta.References = append(parameters.genbank.Meta.References, reference)
+
 				case "FEATURES":
-					parseStep = "features"
-					sequence.Meta = meta
-					// We know that we are now parsing features, so lets initialize our first
-					// feature
-					feature.Type = strings.TrimSpace(splitLine[0])
-					feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-					newLocation = true
+					parameters.parseStep = "features"
+
+					// We know that we are now parsing features, so lets initialize our first feature
+					parameters.feature.Type = strings.TrimSpace(splitLine[0])
+					parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+					parameters.newLocation = true
 
 					continue
+
 				default:
-					if metadataTag != "" {
-						meta.Other[metadataTag] = parseMetadata(metadataData)
+					if parameters.metadataTag != "" {
+						parameters.genbank.Meta.Other[parameters.metadataTag] = parseMetadata(parameters.metadataData)
 					}
 				}
 
-				metadataTag = strings.TrimSpace(splitLine[0])
-				metadataData = []string{strings.TrimSpace(line[len(metadataTag):])}
+				parameters.metadataTag = strings.TrimSpace(splitLine[0])
+				parameters.metadataData = []string{strings.TrimSpace(line[len(parameters.metadataTag):])}
 			} else {
-				metadataData = append(metadataData, line)
+				parameters.metadataData = append(parameters.metadataData, line)
 			}
 		case "features":
+
 			// Switch to sequence parsing
-			if splitLine[0] == "ORIGIN" {
-				parseStep = "sequence"
-				// This checks for our initial feature
-				if feature.Type != "" {
-					feature.Location = parseLocation(feature.Location.GbkLocationString)
-					features = append(features, feature)
+			originFlag, _ := regexp.MatchString("ORIGIN", line) // we detect the beginning of the sequence with "ORIGIN"
+			if originFlag {
+				parameters.parseStep = "sequence"
+
+				// This checks for our initial parameters.feature
+				if parameters.feature.Type != "" {
+					parameters.feature.Location = parseLocation(parameters.feature.Location.GbkLocationString)
+					parameters.features = append(parameters.features, parameters.feature)
 				}
-				for _, feature := range features {
-					err := sequence.AddFeature(&feature)
+
+				// add our features to the genbank
+				for _, feature := range parameters.features {
+					err := parameters.genbank.AddFeature(&feature)
 					if err != nil {
-						return []Genbank{}, err
+						return genbanks, err
 					}
 				}
 				continue
-			}
+			} // end sequence parsing flag logic
 
 			// If there is no active quote and the line does not have a / and newLocation == false, we know this is a top level feature.
-			if !quoteActive && !strings.Contains(line, "/") && !newLocation {
+			if !parameters.quoteActive && !strings.Contains(line, "/") && !parameters.newLocation {
 				// Check for empty types
-				if feature.Type != "" {
-					feature.Location = parseLocation(feature.Location.GbkLocationString)
-					features = append(features, feature)
+				if parameters.feature.Type != "" {
+					parameters.feature.Location = parseLocation(parameters.feature.Location.GbkLocationString)
+					parameters.features = append(parameters.features, parameters.feature)
 				}
-				feature = Feature{}
-				feature.Attributes = make(map[string]string)
+
+				parameters.feature = Feature{}
+				parameters.feature.Attributes = make(map[string]string)
+
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
-					return []Genbank{}, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+					return genbanks, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
 				}
-				feature.Type = strings.TrimSpace(splitLine[0])
-				feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+				parameters.feature.Type = strings.TrimSpace(splitLine[0])
+				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
-				// Set newLocation = true to so that we can check the next line for a multi-line location string
-				newLocation = true
+				// Set parameters.newLocation = true to so that we can check the next line for a multi-line location string
+				parameters.newLocation = true
 				continue
-			}
+			} // end top level feature logic
 
 			// If not a newFeature, check if the next line does not contain "/". If it does not, then it is a multi-line location string.
-			if !strings.Contains(line, "/") && newLocation {
-				feature.Location.GbkLocationString = feature.Location.GbkLocationString + strings.TrimSpace(line)
+			if !strings.Contains(line, "/") && parameters.newLocation {
+				parameters.feature.Location.GbkLocationString = parameters.feature.Location.GbkLocationString + strings.TrimSpace(line)
 				continue
 			}
-			newLocation = false
+
+			// TODO: this smells bad
+			parameters.newLocation = false
 
 			// First, let's check if we have a quote active (basically, if a attribute is using multiple lines)
-			if quoteActive {
+			if parameters.quoteActive {
 				trimmedLine := strings.TrimSpace(line)
 				if len(trimmedLine) < 1 {
 					continue
 				}
-				// If the trimmed line ends, append to the attribute and set quoteActive set to false
+				// If the trimmed line ends, append to the attribute and set parameters.quoteActive set to false
 				if trimmedLine[len(trimmedLine)-1] == '"' {
-					quoteActive = false
-					attributeValue = attributeValue + trimmedLine[:len(trimmedLine)-1]
-					feature.Attributes[attribute] = attributeValue
+					parameters.quoteActive = false
+					parameters.attributeValue = parameters.attributeValue + trimmedLine[:len(trimmedLine)-1]
+					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
 					continue
 				}
 
 				// If there is still lines to go, just append and continue
-				attributeValue = attributeValue + trimmedLine
+				parameters.attributeValue = parameters.attributeValue + trimmedLine
 				continue
-			}
+			} // end quote active logic
 
 			// We know a quote isn't active, that we are not parsing location data, and that we are not at a new top level feature.
-			attribute = strings.TrimSpace(strings.Split(line, "=")[0])
-			if attribute[0] != '/' {
-				return []Genbank{}, fmt.Errorf("Feature attribute does not start with a / on line %d. Got line: %s", lineNum, line)
+			parameters.attribute = strings.TrimSpace(strings.Split(line, "=")[0])
+			if parameters.attribute[0] != '/' {
+				return genbanks, fmt.Errorf("Feature attribute does not start with a / on line %d. Got line: %s", lineNum, line)
 			}
-			attribute = attribute[1:]
+			parameters.attribute = parameters.attribute[1:]
 
-			// We have the attribute, now we need attributeValue. We do the following in case '=' is in the attribute value
+			// We have the attribute, now we need parameters.attributeValue. We do the following in case '=' is in the attribute value
 			index := strings.Index(line, `"`)
 			if index == -1 {
 				// If `"` is not -1, check for = sign.
 				index = strings.Index(line, `=`)
 				if index == -1 {
-					return []Genbank{}, fmt.Errorf("Double-quote and = not found on feature attribute on line %d. Got line: %s", lineNum, line)
+					return genbanks, fmt.Errorf("Double-quote and = not found on feature attribute on line %d. Got line: %s", lineNum, line)
 				}
 			}
 			if len(line) < index+1 {
-				return []Genbank{}, fmt.Errorf("Attribute has no data after initial double quote or = on line %d. Got line: %s", lineNum, line)
+				return genbanks, fmt.Errorf("Attribute has no data after initial double quote or = on line %d. Got line: %s", lineNum, line)
 			}
-			attributeValue = strings.TrimSpace(line[index+1:])
+			parameters.attributeValue = strings.TrimSpace(line[index+1:])
 			// If true, we have completed the attribute string
-			if attributeValue[len(attributeValue)-1] == '"' {
-				attributeValue = attributeValue[:len(attributeValue)-1]
-				feature.Attributes[attribute] = attributeValue
+			if parameters.attributeValue[len(parameters.attributeValue)-1] == '"' {
+				parameters.attributeValue = parameters.attributeValue[:len(parameters.attributeValue)-1]
+				parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
 				continue
 			}
-			// If false, we'll have to continue with a quoteActive
-			quoteActive = true
+			// If false, we'll have to continue with a parameters.quoteActive
+			parameters.quoteActive = true
 		case "sequence":
 			if len(line) < 2 {
-				return []Genbank{}, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			}
 			if line[0:2] == "//" {
-				sequence.Sequence = sequenceBuilder.String()
-				return []Genbank{sequence}, nil
+				reg, _ := regexp.Compile("[^a-zA-Z]+")
+				sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+				parameters.genbank.Sequence = sequenceBuilder.String()
+
+				genbanks = append(genbanks, parameters.genbank)
+				parameters.genbankStarted = false
 			}
-			sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+		default:
+			log.Warnf("Unknown parse step: %s", parameters.parseStep)
+			parameters.genbankStarted = false
 		}
 	}
-	return []Genbank{}, fmt.Errorf("No termination of file")
+	return genbanks, nil
 }
 
 func parseMetadata(metadataData []string) string {
