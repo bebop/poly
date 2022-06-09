@@ -168,7 +168,7 @@ func ParseMulti(r io.Reader) ([]Genbank, error) {
 	return genbankSlice, err
 }
 
-type loopParameters struct {
+type parseLoopParameters struct {
 	newLocation     bool
 	quoteActive     bool
 	attribute       string
@@ -184,7 +184,7 @@ type loopParameters struct {
 }
 
 // method to init loop parameters
-func (params *loopParameters) init() {
+func (params *parseLoopParameters) init() {
 	params.newLocation = true
 	params.feature.Attributes = make(map[string]string)
 	params.parseStep = "metadata"
@@ -200,7 +200,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 	// Sequence setup
 	var sequenceBuilder strings.Builder
 
-	var parameters loopParameters
+	var parameters parseLoopParameters
 	parameters.init()
 
 	// Loop through each line of the file
@@ -217,7 +217,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			locusFlag, _ := regexp.MatchString("LOCUS", line)
 
 			if locusFlag {
-				parameters = loopParameters{}
+				parameters = parseLoopParameters{}
 				parameters.init()
 				parameters.genbank.Meta.Locus = parseLocus(line)
 				parameters.genbankStarted = true

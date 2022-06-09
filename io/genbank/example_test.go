@@ -75,6 +75,27 @@ func ExampleReadMulti() {
 	// Output: 05-FEB-1999
 }
 
+func ExampleWriteMulti() {
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	sequences, _ := genbank.ReadMulti("../../data/multiGbk_test.seq")
+	tmpGbkFilePath := filepath.Join(tmpDataDir, "multiGbk_test.seq")
+
+	err = genbank.WriteMulti(sequences, tmpGbkFilePath)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	testSequences, _ := genbank.ReadMulti(tmpGbkFilePath)
+	isEqual := sequences[1].Meta.Locus.ModificationDate == testSequences[1].Meta.Locus.ModificationDate
+	fmt.Println(isEqual)
+	// Output: true
+}
+
 func ExampleGenbank_AddFeature() {
 
 	// Sequence for greenflourescent protein (GFP) that we're using as test data for this example.
