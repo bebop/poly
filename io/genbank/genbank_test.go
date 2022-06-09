@@ -1,8 +1,6 @@
 package genbank_test
 
 import (
-	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,47 +16,6 @@ import (
 Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
-
-func ExampleRead() {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	fmt.Println(sequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
-func ExampleParse() {
-	file, _ := os.Open("../../data/puc19.gbk")
-	sequence, _ := genbank.Parse(file)
-
-	fmt.Println(sequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
-func ExampleBuild() {
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
-	gbkBytes, _ := genbank.Build(sequences)
-	testSequence, _ := genbank.Parse(bytes.NewReader(gbkBytes))
-
-	fmt.Println(testSequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
-func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
-
-	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	_ = genbank.Write(sequences, tmpGbkFilePath)
-
-	testSequence, _ := genbank.Read(tmpGbkFilePath)
-
-	fmt.Println(testSequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
 
 func TestGbkIO(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
