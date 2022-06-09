@@ -13,8 +13,8 @@ func ExampleRead() {
 
 func ExampleExport() {
 	enzymeMap, _ := Read("data/rebase_test.txt")
-	enzymeJson := Export(enzymeMap)
-	fmt.Println(string(enzymeJson)[:100])
+	enzymeJSON := Export(enzymeMap)
+	fmt.Println(string(enzymeJSON)[:100])
 	// Output: {"AaaI":{"name":"AaaI","isoschizomers":["XmaIII","BseX3I","BsoDI","BstZI","EagI","EclXI","Eco52I","S
 }
 
