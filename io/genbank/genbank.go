@@ -198,7 +198,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 	var genbanks []Genbank
 
 	// Sequence setup
-	var sequenceBuilder strings.Builder
 
 	var parameters parseLoopParameters
 	parameters.init()
@@ -214,7 +213,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 		if !parameters.genbankStarted {
 
 			// We detect the beginning of a new genbank file with "LOCUS"
-			locusFlag, _ := regexp.MatchString("LOCUS", line)
+			locusFlag := strings.Contains(line, "LOCUS")
 
 			if locusFlag {
 				parameters = parseLoopParameters{}
@@ -387,14 +386,14 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			} else if line[0:2] == "//" { // end of sequence
 
-				parameters.genbank.Sequence = sequenceBuilder.String()
+				parameters.genbank.Sequence = parameters.sequenceBuilder.String()
 
 				genbanks = append(genbanks, parameters.genbank)
 				parameters.genbankStarted = false
-				sequenceBuilder.Reset()
+				parameters.sequenceBuilder.Reset()
 
 			} else { // add line to total sequence
-				sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+				parameters.sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
 			}
 		default:
 			log.Warnf("Unknown parse step: %s", parameters.parseStep)
