@@ -381,16 +381,20 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			// If false, we'll have to continue with a parameters.quoteActive
 			parameters.quoteActive = true
 		case "sequence":
-			if len(line) < 2 {
+			reg, _ := regexp.Compile("[^a-zA-Z]+")
+
+			if len(line) < 2 { // throw error if line is malformed
 				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
-			}
-			if line[0:2] == "//" {
-				reg, _ := regexp.Compile("[^a-zA-Z]+")
-				sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+			} else if line[0:2] == "//" { // end of sequence
+
 				parameters.genbank.Sequence = sequenceBuilder.String()
 
 				genbanks = append(genbanks, parameters.genbank)
 				parameters.genbankStarted = false
+				sequenceBuilder.Reset()
+
+			} else { // add line to total sequence
+				sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
 			}
 		default:
 			log.Warnf("Unknown parse step: %s", parameters.parseStep)
