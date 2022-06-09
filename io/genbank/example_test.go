@@ -96,6 +96,13 @@ func ExampleWriteMulti() {
 	// Output: true
 }
 
+func ExampleParseMulti() {
+	file, _ := os.Open("../../data/multiGbk_test.seq")
+	sequences, _ := genbank.ParseMulti(file)
+	fmt.Println(sequences[1].Meta.Locus.ModificationDate)
+	// Output: 05-FEB-1999
+}
+
 func ExampleGenbank_AddFeature() {
 
 	// Sequence for greenflourescent protein (GFP) that we're using as test data for this example.
