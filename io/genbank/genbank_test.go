@@ -227,107 +227,6 @@ func TestBenchlingGenbank(t *testing.T) {
 	}
 }
 
-func TestGenbank_AddFeature(t *testing.T) {
-	type fields struct {
-		Meta     Meta
-		Features []Feature
-		Sequence string
-	}
-	type args struct {
-		feature *Feature
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sequence := &Genbank{
-				Meta:     tt.fields.Meta,
-				Features: tt.fields.Features,
-				Sequence: tt.fields.Sequence,
-			}
-			if err := sequence.AddFeature(tt.args.feature); (err != nil) != tt.wantErr {
-				t.Errorf("Genbank.AddFeature() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestFeature_GetSequence(t *testing.T) {
-	type fields struct {
-		Type                 string
-		Description          string
-		Attributes           map[string]string
-		SequenceHash         string
-		SequenceHashFunction string
-		Sequence             string
-		Location             Location
-		ParentSequence       *Genbank
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			feature := Feature{
-				Type:                 tt.fields.Type,
-				Description:          tt.fields.Description,
-				Attributes:           tt.fields.Attributes,
-				SequenceHash:         tt.fields.SequenceHash,
-				SequenceHashFunction: tt.fields.SequenceHashFunction,
-				Sequence:             tt.fields.Sequence,
-				Location:             tt.fields.Location,
-				ParentSequence:       tt.fields.ParentSequence,
-			}
-			got, err := feature.GetSequence()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Feature.GetSequence() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Feature.GetSequence() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_getFeatureSequence(t *testing.T) {
-	type args struct {
-		feature  Feature
-		location Location
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := getFeatureSequence(tt.args.feature, tt.args.location)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getFeatureSequence() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getFeatureSequence() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestParse(t *testing.T) {
 	type args struct {
 		r io.Reader
@@ -339,6 +238,13 @@ func TestParse(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		// empty line in genbank meta data
+		// {
+
+		// 	name:    "empty line in genbank meta data",
+		// 	args:    args{r: strings.NewReader("LOCUS       puc19.gbk               2686 bp    DNA     circular  22-OCT-2019")},
+		// 	wantErr: true,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -695,6 +601,20 @@ func TestRead(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{
+			name: "error on missing file",
+			args: args{
+				path: "../../afdaljhdfa.txt",
+			},
+			wantErr: true,
+		},
+		{
+			name: "error on malformed file",
+			args: args{
+				path: "../../data/malformed_read_test.gbk",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

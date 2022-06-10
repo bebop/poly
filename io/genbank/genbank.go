@@ -144,6 +144,56 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	return sequenceString, nil
 }
 
+// Read reads a GBK file from path and returns a Genbank struct.
+func Read(path string) (Genbank, error) {
+	genbankSlice, err := ReadMultiNth(path, 1)
+	if err != nil {
+		return Genbank{}, err
+	}
+	genbank := genbankSlice[0]
+	return genbank, err
+}
+
+// ReadMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
+func ReadMulti(path string) ([]Genbank, error) {
+	return ReadMultiNth(path, -1)
+}
+
+// ReadMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
+func ReadMultiNth(path string, count int) ([]Genbank, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	sequence, err := ParseMultiNth(file, count)
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	return sequence, nil
+}
+
+// Write takes an Genbank list and a path string and writes out a genbank record to that path.
+func Write(sequences Genbank, path string) error {
+	gbk, err := Build(sequences)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gbk, 0644)
+	return err
+}
+
+// WriteMulti takes a slice of Genbank structs and a path string and writes out a multi genbank record to that path.
+func WriteMulti(sequences []Genbank, path string) error {
+	gbk, err := BuildMulti(sequences)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gbk, 0644)
+	return err
+}
+
 // Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
 func Parse(r io.Reader) (Genbank, error) {
 	genbankSlice, err := ParseMultiNth(r, 1)
@@ -726,56 +776,6 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 	}
 
 	return gbkString.Bytes(), nil
-}
-
-// Read reads a GBK file from path and returns a Genbank struct.
-func Read(path string) (Genbank, error) {
-	genbankSlice, err := ReadMultiNth(path, 1)
-	if err != nil {
-		return Genbank{}, err
-	}
-	genbank := genbankSlice[0]
-	return genbank, err
-}
-
-// ReadMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
-func ReadMulti(path string) ([]Genbank, error) {
-	return ReadMultiNth(path, -1)
-}
-
-// ReadMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
-func ReadMultiNth(path string, count int) ([]Genbank, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	sequence, err := ParseMultiNth(file, count)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	return sequence, nil
-}
-
-// Write takes an Genbank list and a path string and writes out a genbank record to that path.
-func Write(sequences Genbank, path string) error {
-	gbk, err := Build(sequences)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(path, gbk, 0644)
-	return err
-}
-
-// WriteMulti takes a slice of Genbank structs and a path string and writes out a multi genbank record to that path.
-func WriteMulti(sequences []Genbank, path string) error {
-	gbk, err := BuildMulti(sequences)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(path, gbk, 0644)
-	return err
 }
 
 // indeces for random points of interests on a gbk line.
