@@ -28,23 +28,6 @@ func ExampleRead() {
 	// Output: 22-OCT-2019
 }
 
-func ExampleParse() {
-	file, _ := os.Open("../../data/puc19.gbk")
-	sequence, _ := genbank.Parse(file)
-
-	fmt.Println(sequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
-func ExampleBuild() {
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
-	gbkBytes, _ := genbank.Build(sequences)
-	testSequence, _ := genbank.Parse(bytes.NewReader(gbkBytes))
-
-	fmt.Println(testSequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
 func ExampleWrite() {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
@@ -60,6 +43,23 @@ func ExampleWrite() {
 	testSequence, _ := genbank.Read(tmpGbkFilePath)
 
 	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleBuild() {
+	sequences, _ := genbank.Read("../../data/puc19.gbk")
+	gbkBytes, _ := genbank.Build(sequences)
+	testSequence, _ := genbank.Parse(bytes.NewReader(gbkBytes))
+
+	fmt.Println(testSequence.Meta.Locus.ModificationDate)
+	// Output: 22-OCT-2019
+}
+
+func ExampleParse() {
+	file, _ := os.Open("../../data/puc19.gbk")
+	sequence, _ := genbank.Parse(file)
+
+	fmt.Println(sequence.Meta.Locus.ModificationDate)
 	// Output: 22-OCT-2019
 }
 
@@ -89,6 +89,16 @@ func ExampleWriteMulti() {
 	}
 
 	testSequences, _ := genbank.ReadMulti(tmpGbkFilePath)
+	isEqual := sequences[1].Meta.Locus.ModificationDate == testSequences[1].Meta.Locus.ModificationDate
+	fmt.Println(isEqual)
+	// Output: true
+}
+
+func ExampleBuildMulti() {
+	sequences, _ := genbank.ReadMulti("../../data/multiGbk_test.seq")
+	gbkBytes, _ := genbank.BuildMulti(sequences)
+	testSequences, _ := genbank.ParseMulti(bytes.NewReader(gbkBytes))
+
 	isEqual := sequences[1].Meta.Locus.ModificationDate == testSequences[1].Meta.Locus.ModificationDate
 	fmt.Println(isEqual)
 	// Output: true

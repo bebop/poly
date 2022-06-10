@@ -176,22 +176,166 @@ func ReadMultiNth(path string, count int) ([]Genbank, error) {
 
 // Write takes an Genbank list and a path string and writes out a genbank record to that path.
 func Write(sequences Genbank, path string) error {
-	gbk, err := Build(sequences)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(path, gbk, 0644)
+	// build function always returns nil error.
+	// This is for API consistency in case we need to
+	// add error handling in the future.
+	gbk, _ := Build(sequences)
+
+	err := ioutil.WriteFile(path, gbk, 0644)
 	return err
 }
 
 // WriteMulti takes a slice of Genbank structs and a path string and writes out a multi genbank record to that path.
 func WriteMulti(sequences []Genbank, path string) error {
-	gbk, err := BuildMulti(sequences)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(path, gbk, 0644)
+	// buildmulti function always returns nil error.
+	// This is for API consistency in case we need to
+	// add error handling in the future.
+	gbk, _ := BuildMulti(sequences)
+
+	err := ioutil.WriteFile(path, gbk, 0644)
 	return err
+}
+
+// Build builds a GBK byte slice to be written out to db or file.
+func Build(gbk Genbank) ([]byte, error) {
+	gbkSlice := []Genbank{gbk}
+	multiGBK, err := buildMultiNth(gbkSlice, -1)
+	return multiGBK, err
+
+}
+
+// BuildMulti builds a MultiGBK byte slice to be written out to db or file.
+func BuildMulti(sequence []Genbank) ([]byte, error) {
+	multiGBK, err := buildMultiNth(sequence, -1)
+	return multiGBK, err
+}
+
+// buildMultiNth builds a MultiGBK byte slice to be written out to db or file.
+func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
+	var gbkString bytes.Buffer
+	for _, sequence := range sequences {
+		locus := sequence.Meta.Locus
+		var shape string
+
+		if locus.Circular {
+			shape = "circular"
+		} else if locus.Linear {
+			shape = "linear"
+		}
+
+		fivespace := generateWhiteSpace(subMetaIndex)
+
+		// building locus
+		locusData := locus.Name + fivespace + locus.SequenceLength + " bp" + fivespace + locus.MoleculeType + fivespace + shape + fivespace + locus.GenbankDivision + fivespace + locus.ModificationDate
+		locusString := "LOCUS       " + locusData + "\n"
+		gbkString.WriteString(locusString)
+
+		// building other standard meta features
+		definitionString := buildMetaString("DEFINITION", sequence.Meta.Definition)
+		gbkString.WriteString(definitionString)
+
+		accessionString := buildMetaString("ACCESSION", sequence.Meta.Accession)
+		gbkString.WriteString(accessionString)
+
+		versionString := buildMetaString("VERSION", sequence.Meta.Version)
+		gbkString.WriteString(versionString)
+
+		keywordsString := buildMetaString("KEYWORDS", sequence.Meta.Keywords)
+		gbkString.WriteString(keywordsString)
+
+		sourceString := buildMetaString("SOURCE", sequence.Meta.Source)
+		gbkString.WriteString(sourceString)
+
+		organismString := buildMetaString("  ORGANISM", sequence.Meta.Organism)
+		gbkString.WriteString(organismString)
+
+		var taxonomyString strings.Builder
+		for i, taxonomyData := range sequence.Meta.Taxonomy {
+			taxonomyString.WriteString(taxonomyData)
+			if len(taxonomyData) == i+1 {
+				taxonomyString.WriteString(".")
+			} else {
+				taxonomyString.WriteString("; ")
+			}
+		}
+		gbkString.WriteString(buildMetaString("", taxonomyString.String()))
+
+		// building references
+		// TODO: could use reflection to get keys and make more general.
+		for referenceIndex, reference := range sequence.Meta.References {
+			referenceString := buildMetaString("REFERENCE", fmt.Sprintf("%d  %s", referenceIndex+1, reference.Range))
+			gbkString.WriteString(referenceString)
+
+			if reference.Authors != "" {
+				authorsString := buildMetaString("  AUTHORS", reference.Authors)
+				gbkString.WriteString(authorsString)
+			}
+
+			if reference.Title != "" {
+				titleString := buildMetaString("  TITLE", reference.Title)
+				gbkString.WriteString(titleString)
+			}
+
+			if reference.Journal != "" {
+				journalString := buildMetaString("  JOURNAL", reference.Journal)
+				gbkString.WriteString(journalString)
+			}
+
+			if reference.PubMed != "" {
+				pubMedString := buildMetaString("  PUBMED", reference.PubMed)
+				gbkString.WriteString(pubMedString)
+			}
+
+		}
+
+		// building other meta fields that are catch all
+		otherKeys := make([]string, 0, len(sequence.Meta.Other))
+		for key := range sequence.Meta.Other {
+			otherKeys = append(otherKeys, key)
+		}
+
+		for _, otherKey := range otherKeys {
+			otherString := buildMetaString(otherKey, sequence.Meta.Other[otherKey])
+			gbkString.WriteString(otherString)
+		}
+
+		// start writing features section.
+		gbkString.WriteString("FEATURES             Location/Qualifiers\n")
+		for _, feature := range sequence.Features {
+			gbkString.WriteString(BuildFeatureString(feature))
+		}
+
+		// start writing sequence section.
+		gbkString.WriteString("ORIGIN\n")
+
+		// iterate over every character in sequence range.
+		for index, base := range sequence.Sequence {
+			// if 60th character add newline then whitespace and index number and space before adding next base.
+			if index%60 == 0 {
+				if index != 0 {
+					gbkString.WriteString("\n")
+				}
+				lineNumberString := strconv.Itoa(index + 1)          // genbank indexes at 1 for some reason
+				leadingWhiteSpaceLength := 9 - len(lineNumberString) // <- I wish I was kidding
+				for i := 0; i < leadingWhiteSpaceLength; i++ {
+					gbkString.WriteString(" ")
+				}
+				gbkString.WriteString(lineNumberString + " ")
+				gbkString.WriteRune(base)
+				// if base index is divisible by ten add a space (genbank convention)
+			} else if index%10 == 0 {
+				gbkString.WriteString(" ")
+				gbkString.WriteRune(base)
+				// else just add the base.
+			} else {
+				gbkString.WriteRune(base)
+			}
+		}
+		// finish genbank file with "//" on newline (again a genbank convention)
+		gbkString.WriteString("\n//\n")
+	}
+
+	return gbkString.Bytes(), nil
 }
 
 // Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
@@ -631,151 +775,6 @@ func parseLocus(locusString string) Locus {
 	locus.ModificationDate = ModificationDateRegex.FindString(locusString)
 
 	return locus
-}
-
-// Build builds a GBK byte slice to be written out to db or file.
-func Build(gbk Genbank) ([]byte, error) {
-	gbkSlice := []Genbank{gbk}
-	multiGBK, err := buildMultiNth(gbkSlice, -1)
-	if err != nil {
-		return []byte{}, err
-	}
-	return multiGBK, err
-
-}
-
-// BuildMulti builds a MultiGBK byte slice to be written out to db or file.
-func BuildMulti(sequence []Genbank) ([]byte, error) {
-	multiGBK, err := buildMultiNth(sequence, -1)
-	return multiGBK, err
-}
-
-// buildMultiNth builds a MultiGBK byte slice to be written out to db or file.
-func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
-	var gbkString bytes.Buffer
-	for _, sequence := range sequences {
-		locus := sequence.Meta.Locus
-		var shape string
-
-		if locus.Circular {
-			shape = "circular"
-		} else if locus.Linear {
-			shape = "linear"
-		}
-
-		fivespace := generateWhiteSpace(subMetaIndex)
-
-		// building locus
-		locusData := locus.Name + fivespace + locus.SequenceLength + " bp" + fivespace + locus.MoleculeType + fivespace + shape + fivespace + locus.GenbankDivision + fivespace + locus.ModificationDate
-		locusString := "LOCUS       " + locusData + "\n"
-		gbkString.WriteString(locusString)
-
-		// building other standard meta features
-		definitionString := buildMetaString("DEFINITION", sequence.Meta.Definition)
-		gbkString.WriteString(definitionString)
-
-		accessionString := buildMetaString("ACCESSION", sequence.Meta.Accession)
-		gbkString.WriteString(accessionString)
-
-		versionString := buildMetaString("VERSION", sequence.Meta.Version)
-		gbkString.WriteString(versionString)
-
-		keywordsString := buildMetaString("KEYWORDS", sequence.Meta.Keywords)
-		gbkString.WriteString(keywordsString)
-
-		sourceString := buildMetaString("SOURCE", sequence.Meta.Source)
-		gbkString.WriteString(sourceString)
-
-		organismString := buildMetaString("  ORGANISM", sequence.Meta.Organism)
-		gbkString.WriteString(organismString)
-
-		var taxonomyString strings.Builder
-		for i, taxonomyData := range sequence.Meta.Taxonomy {
-			taxonomyString.WriteString(taxonomyData)
-			if len(taxonomyData) == i+1 {
-				taxonomyString.WriteString(".")
-			} else {
-				taxonomyString.WriteString("; ")
-			}
-		}
-		gbkString.WriteString(buildMetaString("", taxonomyString.String()))
-
-		// building references
-		// TODO: could use reflection to get keys and make more general.
-		for referenceIndex, reference := range sequence.Meta.References {
-			referenceString := buildMetaString("REFERENCE", fmt.Sprintf("%d  %s", referenceIndex+1, reference.Range))
-			gbkString.WriteString(referenceString)
-
-			if reference.Authors != "" {
-				authorsString := buildMetaString("  AUTHORS", reference.Authors)
-				gbkString.WriteString(authorsString)
-			}
-
-			if reference.Title != "" {
-				titleString := buildMetaString("  TITLE", reference.Title)
-				gbkString.WriteString(titleString)
-			}
-
-			if reference.Journal != "" {
-				journalString := buildMetaString("  JOURNAL", reference.Journal)
-				gbkString.WriteString(journalString)
-			}
-
-			if reference.PubMed != "" {
-				pubMedString := buildMetaString("  PUBMED", reference.PubMed)
-				gbkString.WriteString(pubMedString)
-			}
-
-		}
-
-		// building other meta fields that are catch all
-		otherKeys := make([]string, 0, len(sequence.Meta.Other))
-		for key := range sequence.Meta.Other {
-			otherKeys = append(otherKeys, key)
-		}
-
-		for _, otherKey := range otherKeys {
-			otherString := buildMetaString(otherKey, sequence.Meta.Other[otherKey])
-			gbkString.WriteString(otherString)
-		}
-
-		// start writing features section.
-		gbkString.WriteString("FEATURES             Location/Qualifiers\n")
-		for _, feature := range sequence.Features {
-			gbkString.WriteString(BuildFeatureString(feature))
-		}
-
-		// start writing sequence section.
-		gbkString.WriteString("ORIGIN\n")
-
-		// iterate over every character in sequence range.
-		for index, base := range sequence.Sequence {
-			// if 60th character add newline then whitespace and index number and space before adding next base.
-			if index%60 == 0 {
-				if index != 0 {
-					gbkString.WriteString("\n")
-				}
-				lineNumberString := strconv.Itoa(index + 1)          // genbank indexes at 1 for some reason
-				leadingWhiteSpaceLength := 9 - len(lineNumberString) // <- I wish I was kidding
-				for i := 0; i < leadingWhiteSpaceLength; i++ {
-					gbkString.WriteString(" ")
-				}
-				gbkString.WriteString(lineNumberString + " ")
-				gbkString.WriteRune(base)
-				// if base index is divisible by ten add a space (genbank convention)
-			} else if index%10 == 0 {
-				gbkString.WriteString(" ")
-				gbkString.WriteRune(base)
-				// else just add the base.
-			} else {
-				gbkString.WriteRune(base)
-			}
-		}
-		// finish genbank file with "//" on newline (again a genbank convention)
-		gbkString.WriteString("\n//\n")
-	}
-
-	return gbkString.Bytes(), nil
 }
 
 // indeces for random points of interests on a gbk line.
