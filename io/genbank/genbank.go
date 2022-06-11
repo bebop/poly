@@ -249,16 +249,19 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 		organismString := buildMetaString("  ORGANISM", sequence.Meta.Organism)
 		gbkString.WriteString(organismString)
 
-		var taxonomyString strings.Builder
-		for i, taxonomyData := range sequence.Meta.Taxonomy {
-			taxonomyString.WriteString(taxonomyData)
-			if len(taxonomyData) == i+1 {
-				taxonomyString.WriteString(".")
-			} else {
-				taxonomyString.WriteString("; ")
+		if len(sequence.Meta.Taxonomy) > 0 {
+
+			var taxonomyString strings.Builder
+			for i, taxonomyData := range sequence.Meta.Taxonomy {
+				taxonomyString.WriteString(taxonomyData)
+				if len(sequence.Meta.Taxonomy) == i+1 {
+					taxonomyString.WriteString(".")
+				} else {
+					taxonomyString.WriteString("; ")
+				}
 			}
+			gbkString.WriteString(buildMetaString("", taxonomyString.String()))
 		}
-		gbkString.WriteString(buildMetaString("", taxonomyString.String()))
 
 		// building references
 		// TODO: could use reflection to get keys and make more general.

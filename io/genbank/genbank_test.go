@@ -20,6 +20,16 @@ Gbk/gb/genbank related benchmarks begin here.
 
 ******************************************************************************/
 
+var singleGbkPaths = []string{
+	"../../data/t4_intron.gb",
+	"../../data/puc19.gbk",
+	"../../data/puc19_snapgene.gb",
+	"../../data/benchling.gb",
+	"../../data/phix174.gb",
+	"../../data/pichia_chr1_head.gb",
+	"../../data/sample.gbk",
+}
+
 func TestGbkIO(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
@@ -27,15 +37,18 @@ func TestGbkIO(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	gbk, _ := Read("../../data/puc19.gbk")
+	// test single gbk read, write, build, parse
+	for _, gbkPath := range singleGbkPaths {
+		gbk, _ := Read(gbkPath)
 
-	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	_ = Write(gbk, tmpGbkFilePath)
+		tmpGbkFilePath := filepath.Join(tmpDataDir, filepath.Base(gbkPath))
+		_ = Write(gbk, tmpGbkFilePath)
 
-	writeTestGbk, _ := Read(tmpGbkFilePath)
-	if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
-		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
-	}
+		writeTestGbk, _ := Read(tmpGbkFilePath)
+		if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+			t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
+		}
+	} // end test single gbk read, write, build, parse
 
 	// Test multiline Genbank features
 	pichia, _ := Read("../../data/pichia_chr1_head.gb")
@@ -511,85 +524,6 @@ func Test_parseLocus(t *testing.T) {
 	}
 }
 
-func TestBuild(t *testing.T) {
-	type args struct {
-		gbk Genbank
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Build(tt.args.gbk)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Build() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestBuildMulti(t *testing.T) {
-	type args struct {
-		sequence []Genbank
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildMulti(tt.args.sequence)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BuildMulti() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BuildMulti() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_buildMultiNth(t *testing.T) {
-	type args struct {
-		sequences []Genbank
-		count     int
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildMultiNth(tt.args.sequences, tt.args.count)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("buildMultiNth() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildMultiNth() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRead(t *testing.T) {
 	type args struct {
 		path string
@@ -651,75 +585,6 @@ func TestReadMulti(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ReadMulti() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReadMultiNth(t *testing.T) {
-	type args struct {
-		path  string
-		count int
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []Genbank
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ReadMultiNth(tt.args.path, tt.args.count)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ReadMultiNth() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReadMultiNth() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWrite(t *testing.T) {
-	type args struct {
-		sequences Genbank
-		path      string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := Write(tt.args.sequences, tt.args.path); (err != nil) != tt.wantErr {
-				t.Errorf("Write() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestWriteMulti(t *testing.T) {
-	type args struct {
-		sequences []Genbank
-		path      string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := WriteMulti(tt.args.sequences, tt.args.path); (err != nil) != tt.wantErr {
-				t.Errorf("WriteMulti() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
