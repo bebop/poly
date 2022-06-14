@@ -377,6 +377,8 @@ type parseLoopParameters struct {
 	metadataTag     string
 	metadataData    []string //this stutters but will remain to make it easier to batch rename variables when compared to parameters.metadataTag.
 	genbankStarted  bool
+	currentLine     string
+	prevline        string
 }
 
 // method to init loop parameters
@@ -404,6 +406,10 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 		// get line from scanner and split it
 		line := scanner.Text()
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
+
+		prevline := parameters.currentLine
+		parameters.currentLine = line
+		parameters.prevline = prevline
 
 		// keep scanning until we find the start of the first record
 		if !parameters.genbankStarted {
