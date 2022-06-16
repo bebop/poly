@@ -486,19 +486,26 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			if originFlag {
 				parameters.parseStep = "sequence"
 
-				// This checks for our initial parameters.feature
-				if parameters.feature.Type != "" {
-					var err error
-					parameters.feature.Location, err = parseLocation(parameters.feature.Location.GbkLocationString)
-					if err != nil {
-						return []Genbank{}, err
-					}
+				// save our completed attribute / qualifier string to the current feature
+				if parameters.attributeValue != "" {
+					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.features = append(parameters.features, parameters.feature)
+					parameters.attributeValue = ""
+					parameters.attribute = ""
+					parameters.feature = Feature{}
+					parameters.feature.Attributes = make(map[string]string)
+				} else {
 					parameters.features = append(parameters.features, parameters.feature)
 				}
 
 				// add our features to the genbank
 				for _, feature := range parameters.features {
-					err := parameters.genbank.AddFeature(&feature)
+					location, err := parseLocation(feature.Location.GbkLocationString)
+					if err != nil {
+						return []Genbank{}, err
+					}
+					feature.Location = location
+					err = parameters.genbank.AddFeature(&feature)
 					if err != nil {
 						return []Genbank{}, err
 					}
@@ -515,13 +522,21 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			// determine if current line is a new top level feature
 			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
 
+				// if parameters.prevline != "FEATURES" {
+
+				// save our completed attribute / qualifier string to the current feature
+				if parameters.attributeValue != "" {
+					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.features = append(parameters.features, parameters.feature)
+					parameters.attributeValue = ""
+					parameters.attribute = ""
+					parameters.feature = Feature{}
+					parameters.feature.Attributes = make(map[string]string)
+				}
+
+				// }
 				// checks for empty types
 				if parameters.feature.Type != "" {
-					var err error
-					parameters.feature.Location, err = parseLocation(parameters.feature.Location.GbkLocationString)
-					if err != nil {
-						return []Genbank{}, err
-					}
 					parameters.features = append(parameters.features, parameters.feature)
 				}
 
@@ -556,92 +571,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				removeAttributeValueQuotes := strings.Replace(splitAttribute[1], "\"", "", -1)
 				parameters.attributeValue = removeAttributeValueQuotes
 			}
-			//
 
-			// if !strings.Contains(parameters.currentLine, "/") {
-			// // If there is no active quote and the line does not have a / and newLocation == false, we know this is a top level feature.
-			// if !parameters.quoteActive && !strings.Contains(line, "/") && !parameters.newLocation {
-			// 	// Check for empty types
-			// 	if parameters.feature.Type != "" {
-			// 		var err error
-			// 		parameters.feature.Location, err = parseLocation(parameters.feature.Location.GbkLocationString)
-			// 		if err != nil {
-			// 			return []Genbank{}, err
-			// 		}
-			// 		parameters.features = append(parameters.features, parameters.feature)
-			// 	}
-
-			// 	parameters.feature = Feature{}
-			// 	parameters.feature.Attributes = make(map[string]string)
-
-			// 	// An initial feature line looks like this: `source          1..2686` with a type separated by its location
-			// 	if len(splitLine) < 2 {
-			// 		return genbanks, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
-			// 	}
-			// 	parameters.feature.Type = strings.TrimSpace(splitLine[0])
-			// 	parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-
-			// 	// Set parameters.newLocation = true to so that we can check the next line for a multi-line location string
-			// 	parameters.newLocation = true
-			// 	continue
-			// } // end top level feature logic
-
-			// // If not a newFeature, check if the next line does not contain "/". If it does not, then it is a multi-line location string.
-			// if !strings.Contains(line, "/") && parameters.newLocation {
-			// 	parameters.feature.Location.GbkLocationString = parameters.feature.Location.GbkLocationString + strings.TrimSpace(line)
-			// 	continue
-			// }
-
-			// // this smells bad
-			// parameters.newLocation = false
-
-			// // First, let's check if we have a quote active (basically, if a attribute is using multiple lines)
-			// if parameters.quoteActive {
-			// 	trimmedLine := strings.TrimSpace(line)
-			// 	if len(trimmedLine) < 1 {
-			// 		continue
-			// 	}
-			// 	// If the trimmed line ends, append to the attribute and set parameters.quoteActive set to false
-			// 	if trimmedLine[len(trimmedLine)-1] == '"' {
-			// 		parameters.quoteActive = false
-			// 		parameters.attributeValue = parameters.attributeValue + trimmedLine[:len(trimmedLine)-1]
-			// 		parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
-			// 		continue
-			// 	}
-
-			// 	// If there is still lines to go, just append and continue
-			// 	parameters.attributeValue = parameters.attributeValue + trimmedLine
-			// 	continue
-			// } // end quote active logic
-
-			// // We know a quote isn't active, that we are not parsing location data, and that we are not at a new top level feature.
-			// parameters.attribute = strings.TrimSpace(strings.Split(line, "=")[0])
-			// if parameters.attribute[0] != '/' {
-			// 	return genbanks, fmt.Errorf("Feature attribute does not start with a / on line %d. Got line: %s", lineNum, line)
-			// }
-			// parameters.attribute = parameters.attribute[1:]
-
-			// // We have the attribute, now we need parameters.attributeValue. We do the following in case '=' is in the attribute value
-			// index := strings.Index(line, `"`)
-			// if index == -1 {
-			// 	// If `"` is not -1, check for = sign.
-			// 	index = strings.Index(line, `=`)
-			// 	if index == -1 {
-			// 		return genbanks, fmt.Errorf("Double-quote and = not found on feature attribute on line %d. Got line: %s", lineNum, line)
-			// 	}
-			// }
-			// if len(line) < index+1 {
-			// 	return genbanks, fmt.Errorf("Attribute has no data after initial double quote or = on line %d. Got line: %s", lineNum, line)
-			// }
-			// parameters.attributeValue = strings.TrimSpace(line[index+1:])
-			// // If true, we have completed the attribute string
-			// if parameters.attributeValue[len(parameters.attributeValue)-1] == '"' {
-			// 	parameters.attributeValue = parameters.attributeValue[:len(parameters.attributeValue)-1]
-			// 	parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
-			// 	continue
-			// }
-			// // If false, we'll have to continue with a parameters.quoteActive
-			// parameters.quoteActive = true
 		case "sequence":
 			reg, _ := regexp.Compile("[^a-zA-Z]+")
 
