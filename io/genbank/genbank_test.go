@@ -27,6 +27,7 @@ var singleGbkPaths = []string{
 	"../../data/benchling.gb",
 	"../../data/phix174.gb",
 	"../../data/sample.gbk",
+	// "../../data/pichia_chr1_head.gb",
 }
 
 func TestGbkIO(t *testing.T) {
@@ -48,26 +49,41 @@ func TestGbkIO(t *testing.T) {
 			t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
 		}
 	} // end test single gbk read, write, build, parse
+
 }
 
-// func TestMultiGenbankIO(t *testing.T) {
-// 	tmpDataDir, err := ioutil.TempDir("", "data-*")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	defer os.RemoveAll(tmpDataDir)
+func TestMultiLineFeatureParse(t *testing.T) {
+	pichia, _ := Read("../../data/pichia_chr1_head.gb")
+	var multilineOutput string
+	for _, feature := range pichia.Features {
+		multilineOutput = feature.Location.GbkLocationString
+	}
 
-// 	// Test multiline Genbank features
-// 	pichia, _ := ReadMulti("../../data/pichia_chr1_head.gb")
-// 	var multilineOutput string
-// 	for _, feature := range pichia[1].Features {
-// 		multilineOutput = feature.Location.GbkLocationString
-// 	}
+	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
+		t.Errorf("Failed to parse multiline genbank feature string")
+	}
+}
 
-// 	if multilineOutput != "join(<459260..459456,459556..459637,459685..459739,459810..>460126)" {
-// 		t.Errorf("Failed to parse multiline genbank feature string")
-// 	}
-// }
+func TestMultiGenbankIO(t *testing.T) {
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(tmpDataDir)
+
+	// Test multiline Genbank features
+	gbkPath := "../../data/multiGbk_test.seq"
+	multiGbk, _ := ReadMulti(gbkPath)
+	tmpGbkFilePath := filepath.Join(tmpDataDir, filepath.Base(gbkPath))
+	_ = WriteMulti(multiGbk, tmpGbkFilePath)
+
+	writeTestGbk, _ := ReadMulti(tmpGbkFilePath)
+
+	if diff := cmp.Diff(multiGbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
+	}
+
+}
 
 func TestGbkLocationStringBuilder(t *testing.T) {
 	tmpDataDir, err := ioutil.TempDir("", "data-*")

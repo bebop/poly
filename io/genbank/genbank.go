@@ -522,8 +522,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			// determine if current line is a new top level feature
 			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
 
-				// if parameters.prevline != "FEATURES" {
-
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" {
 					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
@@ -550,11 +548,18 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 
-			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a qualifier (sub-constituent of a feature)
+			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
 
-				removeAttributeValueQuotes := strings.Replace(trimmedLine, "\"", "", -1)
+				// if it's a continuation of the current feature, add it to the location
+				if !strings.Contains(parameters.currentLine, "\"") && countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) {
+					parameters.feature.Location.GbkLocationString += strings.TrimSpace(line)
+				} else { // it's a continued line of a qualifier
 
-				parameters.attributeValue = parameters.attributeValue + removeAttributeValueQuotes
+					removeAttributeValueQuotes := strings.Replace(trimmedLine, "\"", "", -1)
+
+					parameters.attributeValue = parameters.attributeValue + removeAttributeValueQuotes
+				}
+
 			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
 
 				// save our completed attribute / qualifier string to the current feature
