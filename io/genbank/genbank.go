@@ -869,11 +869,13 @@ func parseLocation(locationString string) (Location, error) {
 			}
 
 		case "complement":
+			// location.Complement = true
 			subLocation, err := parseLocation(expression)
 			if err != nil {
 				return Location{}, err
 			}
 			subLocation.Complement = true
+			subLocation.GbkLocationString = locationString
 			location.SubLocations = append(location.SubLocations, subLocation)
 		}
 	}
