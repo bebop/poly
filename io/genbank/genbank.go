@@ -365,20 +365,21 @@ func ParseMulti(r io.Reader) ([]Genbank, error) {
 }
 
 type parseLoopParameters struct {
-	newLocation     bool
-	quoteActive     bool
-	attribute       string
-	attributeValue  string
-	sequenceBuilder strings.Builder
-	parseStep       string
-	genbank         Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
-	feature         Feature
-	features        []Feature
-	metadataTag     string
-	metadataData    []string //this stutters but will remain to make it easier to batch rename variables when compared to parameters.metadataTag.
-	genbankStarted  bool
-	currentLine     string
-	prevline        string
+	newLocation      bool
+	quoteActive      bool
+	attribute        string
+	attributeValue   string
+	sequenceBuilder  strings.Builder
+	parseStep        string
+	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
+	feature          Feature
+	features         []Feature
+	metadataTag      string
+	metadataData     []string //this stutters but will remain to make it easier to batch rename variables when compared to parameters.metadataTag.
+	genbankStarted   bool
+	currentLine      string
+	prevline         string
+	multiLineFeature bool
 }
 
 // method to init loop parameters
@@ -547,12 +548,14 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 				parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 
 			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
 
 				// if it's a continuation of the current feature, add it to the location
-				if !strings.Contains(parameters.currentLine, "\"") && countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) {
+				if !strings.Contains(parameters.currentLine, "\"") && (countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) || parameters.multiLineFeature) {
 					parameters.feature.Location.GbkLocationString += strings.TrimSpace(line)
+					parameters.multiLineFeature = true // without this we can't tell if something is a multiline feature or multiline qualifier
 				} else { // it's a continued line of a qualifier
 
 					removeAttributeValueQuotes := strings.Replace(trimmedLine, "\"", "", -1)
@@ -575,6 +578,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 				removeAttributeValueQuotes := strings.Replace(splitAttribute[1], "\"", "", -1)
 				parameters.attributeValue = removeAttributeValueQuotes
+				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 			}
 
 		case "sequence":
