@@ -13,7 +13,9 @@ package gff
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -110,13 +112,17 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 }
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
-func Parse(file []byte) (Gff, error) {
+func Parse(file io.Reader) (Gff, error) {
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return Gff{}, err
+	}
 
-	gffString := string(file)
+	gffString := string(fileBytes)
 	gff := Gff{}
 
 	// Add the CheckSum to sequence (blake3)
-	gff.Meta.CheckSum = blake3.Sum256(file)
+	gff.Meta.CheckSum = blake3.Sum256(fileBytes)
 
 	lines := strings.Split(gffString, "\n")
 	metaString := lines[0:2]
@@ -129,8 +135,14 @@ func Parse(file []byte) (Gff, error) {
 
 	// get meta info only specific to GFF files
 	meta.Version = strings.Split(versionString, " ")[1]
-	meta.RegionStart, _ = strconv.Atoi(regionStringArray[2])
-	meta.RegionEnd, _ = strconv.Atoi(regionStringArray[3])
+	meta.RegionStart, err = strconv.Atoi(regionStringArray[2])
+	if err != nil {
+		return Gff{}, err
+	}
+	meta.RegionEnd, err = strconv.Atoi(regionStringArray[3])
+	if err != nil {
+		return Gff{}, err
+	}
 	meta.Size = meta.RegionEnd - meta.RegionStart
 
 	var sequenceBuffer bytes.Buffer
@@ -155,9 +167,16 @@ func Parse(file []byte) (Gff, error) {
 			record.Type = fields[2]
 
 			// Indexing starts at 1 for gff so we need to shift down for Sequence 0 index.
-			record.Location.Start, _ = strconv.Atoi(fields[3])
+			record.Location.Start, err = strconv.Atoi(fields[3])
+			if err != nil {
+				return Gff{}, err
+			}
+
 			record.Location.Start--
-			record.Location.End, _ = strconv.Atoi(fields[4])
+			record.Location.End, err = strconv.Atoi(fields[4])
+			if err != nil {
+				return Gff{}, err
+			}
 
 			record.Score = fields[5]
 			record.Strand = fields[6]
@@ -173,7 +192,10 @@ func Parse(file []byte) (Gff, error) {
 				value := attributeSplit[1]
 				record.Attributes[key] = value
 			}
-			_ = gff.AddFeature(&record)
+			err = gff.AddFeature(&record)
+			if err != nil {
+				return Gff{}, err
+			}
 		}
 	}
 	gff.Sequence = sequenceBuffer.String()
@@ -279,7 +301,11 @@ func Build(sequence Gff) ([]byte, error) {
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
 func Read(path string) (Gff, error) {
-	file, _ := ioutil.ReadFile(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return Gff{}, err
+	}
+
 	sequence, err := Parse(file)
 	if err != nil {
 		return Gff{}, err

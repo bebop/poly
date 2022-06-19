@@ -1,83 +1,186 @@
 package fasta
 
 import (
-	"bytes"
-	"fmt"
-	"os"
+	"io"
+	"reflect"
+	"testing"
 )
 
-// ExampleRead shows basic usage for Read.
-func ExampleRead() {
-	fastas, _ := Read("data/base.fasta")
-	fmt.Println(fastas[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleParse shows basic usage for Parse.
-func ExampleParse() {
-	file, _ := os.Open("data/base.fasta")
-	fastas, _ := Parse(file)
-
-	fmt.Println(fastas[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleBuild shows basic usage for Build
-func ExampleBuild() {
-	fastas, _ := Read("data/base.fasta") // get example data
-	fasta, _ := Build(fastas)            // build a fasta byte array
-	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
-
-	fmt.Println(firstLine)
-	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleWrite shows basic usage of the  writer.
-func ExampleWrite() {
-	fastas, _ := Read("data/base.fasta")       // get example data
-	_ = Write(fastas, "data/test.fasta")       // write it out again
-	testSequence, _ := Read("data/test.fasta") // read it in again
-
-	os.Remove("data/test.fasta") // getting rid of test file
-
-	fmt.Println(testSequence[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleReadGz shows basic usage for ReadGz on a gzip'd file.
-func ExampleReadGz() {
-	fastas, _ := ReadGz("data/uniprot_1mb_test.fasta.gz")
-	var name string
-	for _, fasta := range fastas {
-		name = fasta.Name
+func TestParse(t *testing.T) {
+	type args struct {
+		r io.Reader
 	}
-
-	fmt.Println(name)
-	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
+	tests := []struct {
+		name    string
+		args    args
+		want    []Fasta
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Parse(tt.args.r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Parse() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-// ExampleReadGzConcurrent shows how to use the concurrent  parser for larger files.
-func ExampleReadGzConcurrent() {
-	fastas := make(chan Fasta, 1000)
-	go ReadGzConcurrent("data/uniprot_1mb_test.fasta.gz", fastas)
-	var name string
-	for fasta := range fastas {
-		name = fasta.Name
+func TestParseConcurrent(t *testing.T) {
+	type args struct {
+		r         io.Reader
+		sequences chan<- Fasta
 	}
-
-	fmt.Println(name)
-	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ParseConcurrent(tt.args.r, tt.args.sequences)
+		})
+	}
 }
 
-// ExampleReadConcurrent shows how to use the concurrent  parser for decompressed fasta files.
-func ExampleReadConcurrent() {
-	fastas := make(chan Fasta, 100)
-	go ReadConcurrent("data/base.fasta", fastas)
-	var name string
-	for fasta := range fastas {
-		name = fasta.Name
+func TestReadGzConcurrent(t *testing.T) {
+	type args struct {
+		path      string
+		sequences chan<- Fasta
 	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ReadGzConcurrent(tt.args.path, tt.args.sequences)
+		})
+	}
+}
 
-	fmt.Println(name)
-	// Output: MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+func TestReadConcurrent(t *testing.T) {
+	type args struct {
+		path      string
+		sequences chan<- Fasta
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ReadConcurrent(tt.args.path, tt.args.sequences)
+		})
+	}
+}
+
+func TestReadGz(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []Fasta
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ReadGz(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReadGz() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReadGz() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRead(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []Fasta
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Read(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Read() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuild(t *testing.T) {
+	type args struct {
+		fastas []Fasta
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Build(tt.args.fastas)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Build() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWrite(t *testing.T) {
+	type args struct {
+		fastas []Fasta
+		path   string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := Write(tt.args.fastas, tt.args.path); (err != nil) != tt.wantErr {
+				t.Errorf("Write() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
