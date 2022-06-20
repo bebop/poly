@@ -79,12 +79,12 @@ func (sequence *Poly) AddFeature(feature *Feature) error {
 }
 
 // GetSequence takes a feature and returns a sequence string for that feature.
-func (feature Feature) GetSequence() string {
+func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) string {
+func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
@@ -93,7 +93,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
 		for _, subLocation := range location.SubLocations {
-			sequence := getFeatureSequence(feature, subLocation)
+			sequence, _ := getFeatureSequence(feature, subLocation)
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -105,14 +105,16 @@ func getFeatureSequence(feature Feature, location Location) string {
 		sequenceString = sequenceBuffer.String()
 	}
 
-	return sequenceString
+	return sequenceString, nil
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
 func Parse(file io.Reader) (Poly, error) {
 	var sequence Poly
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(file)
+	if _, err := buf.ReadFrom(file); err != nil {
+		return sequence, err
+	}
 	if err := unmarshalFn(buf.Bytes(), &sequence); err != nil {
 		return sequence, err
 	}

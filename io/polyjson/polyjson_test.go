@@ -58,7 +58,7 @@ func TestFeature_GetSequence(t *testing.T) {
 	_ = sequence.AddFeature(&feature)
 
 	// get the GFP feature sequence string from the sequence struct.
-	featureSequence := feature.GetSequence()
+	featureSequence, _ := feature.GetSequence()
 
 	// check to see if the feature was inserted properly into the sequence.
 	if gfpSequence != featureSequence {
