@@ -9,7 +9,9 @@ package polyjson
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/TimothyStiles/poly/transform"
@@ -23,7 +25,7 @@ JSON specific IO related things begin here.
 
 var (
 	marshalIndentFn = json.MarshalIndent
-	readFileFn      = ioutil.ReadFile
+	readFileFn      = os.Open
 	unmarshalFn     = json.Unmarshal
 )
 
@@ -107,9 +109,11 @@ func getFeatureSequence(feature Feature, location Location) string {
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
-func Parse(file []byte) (Poly, error) {
+func Parse(file io.Reader) (Poly, error) {
 	var sequence Poly
-	if err := unmarshalFn(file, &sequence); err != nil {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(file)
+	if err := unmarshalFn(buf.Bytes(), &sequence); err != nil {
 		return sequence, err
 	}
 
@@ -117,7 +121,10 @@ func Parse(file []byte) (Poly, error) {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		_ = sequence.AddFeature(&feature)
+		err := sequence.AddFeature(&feature)
+		if err != nil {
+			return sequence, err
+		}
 	}
 	return sequence, nil
 }

@@ -1,6 +1,7 @@
 package gff_test
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -65,7 +66,7 @@ func ExampleRead() {
 }
 
 func ExampleParse() {
-	file, _ := ioutil.ReadFile("../../data/ecoli-mg1655-short.gff")
+	file, _ := os.Open("../../data/ecoli-mg1655-short.gff")
 	sequence, _ := gff.Parse(file)
 
 	fmt.Println(sequence.Meta.Name)
@@ -74,8 +75,9 @@ func ExampleParse() {
 
 func ExampleBuild() {
 	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
-	gffBytes := gff.Build(sequence)
-	reparsedSequence, _ := gff.Parse(gffBytes)
+	gffBytes, _ := gff.Build(sequence)
+	gffReader := bytes.NewReader(gffBytes)
+	reparsedSequence, _ := gff.Parse(gffReader)
 
 	fmt.Println(reparsedSequence.Meta.Name)
 	// Output: U00096.3

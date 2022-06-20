@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/google/go-cmp v0.5.6
+	github.com/lunny/log v0.0.0-20160921050905-7887c61bf0de
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mroth/weightedrand v0.4.1
 	github.com/pmezard/go-difflib v1.0.0
@@ -11,7 +12,10 @@ require (
 	lukechampine.com/blake3 v1.1.5
 )
 
-require github.com/davecgh/go-spew v1.1.1 // indirect
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/mattn/go-sqlite3 v1.14.13 // indirect
+)
 
 require (
 	github.com/klauspost/cpuid v1.3.1 // indirect

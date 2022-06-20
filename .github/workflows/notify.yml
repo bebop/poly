@@ -1,0 +1,16 @@
+name: notify social media
+
+on:
+  [release, issues, pull_request, issue_comment, pull_request_review, pull_request_review_comment, discussion, discussion_comment]
+  push:
+    branches:
+      - dev
+      - prime
+      - main
+
+
+- name: notify discord
+  uses: appleboy/discord-action@master
+  with:
+    webhook_id: ${{ secrets.DISCORD_ID }}
+    webhook_token: ${{ secrets.DISCORD_WEBHOOK}}

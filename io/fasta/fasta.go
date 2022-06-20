@@ -174,7 +174,7 @@ Start of  Write functions
 ******************************************************************************/
 
 // Build writes a Fasta struct to a  string.
-func Build(fastas []Fasta) []byte {
+func Build(fastas []Fasta) ([]byte, error) {
 	var fastaString bytes.Buffer
 	for _, fasta := range fastas {
 		fastaString.WriteString(">")
@@ -183,11 +183,14 @@ func Build(fastas []Fasta) []byte {
 		fastaString.WriteString(fasta.Sequence)
 		fastaString.WriteString("\n")
 	}
-	return fastaString.Bytes()
+	return fastaString.Bytes(), nil
 }
 
 // Write writes a fasta array to a file.
 func Write(fastas []Fasta, path string) error {
-	fastaBytes := Build(fastas)
+	fastaBytes, err := Build(fastas)
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(path, fastaBytes, 0644)
 }
