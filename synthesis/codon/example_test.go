@@ -33,7 +33,7 @@ func ExampleOptimize() {
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
-			sequence := feature.GetSequence()
+			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
 		}
 	}
@@ -88,7 +88,7 @@ func ExampleCompromiseCodonTable() {
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
-			sequence := feature.GetSequence()
+			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
 		}
 	}
@@ -107,7 +107,7 @@ func ExampleCompromiseCodonTable() {
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence2.Features {
 		if feature.Type == "CDS" {
-			sequence := feature.GetSequence()
+			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder2.WriteString(sequence)
 		}
 	}
@@ -139,7 +139,7 @@ func ExampleAddCodonTable() {
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
-			sequence := feature.GetSequence()
+			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder.WriteString(sequence)
 		}
 	}
@@ -159,7 +159,7 @@ func ExampleAddCodonTable() {
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence2.Features {
 		if feature.Type == "CDS" {
-			sequence := feature.GetSequence()
+			sequence, _ := feature.GetSequence()
 			codingRegionsBuilder2.WriteString(sequence)
 		}
 	}

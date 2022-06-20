@@ -911,24 +911,6 @@ func parseLocation(locationString string) (Location, error) {
 	return location, nil
 }
 
-func parseComplicatedJoin(expression string, location *Location) {
-	firstInnerParentheses := strings.Index(expression, "(")
-	ParenthesesCount := 1
-	comma := 0
-	for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-		comma = i
-		switch expression[firstInnerParentheses+i] {
-		case []byte("(")[0]:
-			ParenthesesCount++
-		case []byte(")")[0]:
-			ParenthesesCount--
-		}
-	}
-	parseLeft, _ := parseLocation(expression[:firstInnerParentheses+comma+1])
-	parseRight, _ := parseLocation(expression[2+firstInnerParentheses+comma:])
-	location.SubLocations = append(location.SubLocations, parseLeft, parseRight)
-}
-
 // buildMetaString is a helper function to build the meta section of genbank files.
 func buildMetaString(name string, data string) string {
 	keyWhitespaceTrailLength := 12 - len(name) // I wish I was kidding.

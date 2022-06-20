@@ -240,15 +240,6 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	}
 }
 
-func TestLocusParseRegression(t *testing.T) {
-	gbk, _ := Read("../../data/puc19.gbk")
-	staticGbk, _ := Read("../../data/puc19static.gbk")
-
-	if diff := cmp.Diff(gbk, staticGbk, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf("The meta parser has changed behaviour. Got this diff:\n%s", diff)
-	}
-}
-
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = Read("../../data/bsub.gbk")
@@ -713,7 +704,7 @@ func Test_generateWhiteSpace(t *testing.T) {
 }
 
 func TestRead_error(t *testing.T) {
-	readErr := errors.New("read error")
+	readErr := errors.New("open /tmp/file: no such file or directory")
 	oldReadFileFn := readFileFn
 	readFileFn = func(filename string) ([]byte, error) {
 		return nil, readErr
@@ -735,94 +726,4 @@ func TestBuildFeatureString(t *testing.T) {
 	}
 	str := BuildFeatureString(feature)
 	assert.Equal(t, str, "     test type       gbk location\n")
-}
-
-// func TestBuildFeatureString(t *testing.T) {
-// 	type args struct {
-// 		feature Feature
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want string
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if got := BuildFeatureString(tt.args.feature); got != tt.want {
-// 				t.Errorf("BuildFeatureString() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
-// func Test_getSourceOrganism(t *testing.T) {
-// 	for _, tc := range []struct {
-// 		splitLine    []string
-// 		subLines     []string
-// 		wantSource   string
-// 		wantOrganism string
-// 	}{
-// 		{
-// 			splitLine:    []string{"test"},
-// 			subLines:     []string{"subline 1", "subline 2"},
-// 			wantSource:   "",
-// 			wantOrganism: "1",
-// 		},
-// 		{
-// 			splitLine:    []string{"test"},
-// 			subLines:     []string{" ", "subline 2"},
-// 			wantSource:   "",
-// 			wantOrganism: "2",
-// 		},
-// 		{
-// 			splitLine:    []string{"test"},
-// 			subLines:     []string{" ", "subline 2"},
-// 			wantSource:   "",
-// 			wantOrganism: "2",
-// 		},
-// 		{
-// 			splitLine:    []string{" something else "},
-// 			subLines:     []string{" ORGANISM", "subline 2", "subline 3"},
-// 			wantSource:   "",
-// 			wantOrganism: "",
-// 		},
-// 	} {
-// 		source, organism, _ := getSourceOrganism([]string{tc.splitLine, tc.subLines})
-// 		assert.Equal(t, tc.wantSource, source)
-// 		assert.Equal(t, tc.wantOrganism, organism)
-// 	}
-// }
-
-func Test_parseComplicatedJoin(t *testing.T) {
-	for _, tc := range []struct {
-		expression   string
-		location     *Location
-		wantLocation *Location
-	}{
-		{
-			expression: "complement(12..34),complement(56..78)",
-			location:   &Location{},
-			wantLocation: &Location{
-				SubLocations: []Location{
-					{Start: 11, End: 34, Complement: true, Join: false, FivePrimePartial: false, ThreePrimePartial: false, GbkLocationString: "", SubLocations: []Location(nil)},
-					{Start: 55, End: 78, Complement: true, Join: false, FivePrimePartial: false, ThreePrimePartial: false, GbkLocationString: "", SubLocations: []Location(nil)},
-				},
-			},
-		},
-		{
-			expression: "complement(complement(12..34)),complement(56..78)",
-			location:   &Location{},
-			wantLocation: &Location{
-				SubLocations: []Location{
-					{Start: 11, End: 34, Complement: true, Join: false, FivePrimePartial: false, ThreePrimePartial: false, GbkLocationString: "", SubLocations: []Location(nil)},
-					{Start: 55, End: 78, Complement: true, Join: false, FivePrimePartial: false, ThreePrimePartial: false, GbkLocationString: "", SubLocations: []Location(nil)},
-				},
-			},
-		},
-	} {
-		parseComplicatedJoin(tc.expression, tc.location)
-		assert.Equal(t, tc.wantLocation, tc.location)
-	}
 }
