@@ -112,9 +112,8 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 func Parse(file io.Reader) (Poly, error) {
 	var sequence Poly
 	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(file); err != nil {
-		return sequence, err
-	}
+	_, _ = buf.ReadFrom(file)
+
 	if err := unmarshalFn(buf.Bytes(), &sequence); err != nil {
 		return sequence, err
 	}
@@ -123,10 +122,7 @@ func Parse(file io.Reader) (Poly, error) {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		err := sequence.AddFeature(&feature)
-		if err != nil {
-			return sequence, err
-		}
+		_ = sequence.AddFeature(&feature)
 	}
 	return sequence, nil
 }
