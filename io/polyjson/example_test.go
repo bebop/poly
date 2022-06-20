@@ -11,12 +11,6 @@ import (
 	"github.com/TimothyStiles/poly/seqhash"
 )
 
-/******************************************************************************
-
-JSON related tests begin here.
-
-******************************************************************************/
-
 func Example() {
 
 	// this example also is run by the poly's suite so this just sets up a temporary directory for writing files
