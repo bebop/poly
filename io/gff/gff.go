@@ -78,12 +78,12 @@ func (sequence *Gff) AddFeature(feature *Feature) error {
 }
 
 // GetSequence takes a feature and returns a sequence string for that feature.
-func (feature Feature) GetSequence() string {
+func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
-func getFeatureSequence(feature Feature, location Location) string {
+func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
@@ -93,7 +93,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequence := getFeatureSequence(feature, subLocation)
+			sequence, _ := getFeatureSequence(feature, subLocation)
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -105,7 +105,7 @@ func getFeatureSequence(feature Feature, location Location) string {
 		sequenceString = sequenceBuffer.String()
 	}
 
-	return sequenceString
+	return sequenceString, nil
 }
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
