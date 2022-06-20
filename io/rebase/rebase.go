@@ -145,8 +145,19 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"regexp"
 	"strings"
+)
+
+var (
+	logFatalFn      = log.Fatal
+	readFileFn      = ioutil.ReadFile
+	readAllFn       = ioutil.ReadAll
+	regexpCompileFn = regexp.Compile
+	parseFn         = Parse
+	marshallFn      = json.Marshal
 )
 
 // Enzyme represents a single enzyme within the Rebase database
@@ -163,7 +174,7 @@ type Enzyme struct {
 
 // Parse parses the Rebase database into a map of enzymes
 func Parse(file io.Reader) (map[string]Enzyme, error) {
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := readAllFn(file)
 	if err != nil {
 		return make(map[string]Enzyme), err
 	}
@@ -249,7 +260,7 @@ func Read(path string) (map[string]Enzyme, error) {
 	if err != nil {
 		return map[string]Enzyme{}, err
 	}
-	enzymeMap, err := Parse(file)
+	enzymeMap, err := parseFn(file)
 	if err != nil {
 		return map[string]Enzyme{}, err
 	}
@@ -258,7 +269,7 @@ func Read(path string) (map[string]Enzyme, error) {
 
 // Export returns a json file of the Rebase database
 func Export(enzymeMap map[string]Enzyme) ([]byte, error) {
-	jsonRebase, err := json.Marshal(enzymeMap)
+	jsonRebase, err := marshallFn(enzymeMap)
 	if err != nil {
 		return []byte{}, err
 	}
