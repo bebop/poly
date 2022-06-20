@@ -13,9 +13,12 @@ package gff
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +26,17 @@ import (
 	"lukechampine.com/blake3"
 
 	"github.com/TimothyStiles/poly/transform"
+)
+
+var (
+	logFatalFn      = log.Fatal
+	readFileFn      = ioutil.ReadFile
+	readAllFn       = ioutil.ReadAll
+	regexpCompileFn = regexp.Compile
+	parseFn         = Parse
+	marshallFn      = json.Marshal
+	atoiFn          = strconv.Atoi
+	openFn          = os.Open
 )
 
 // Gff is a struct that represents a gff file.
@@ -110,7 +124,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
 func Parse(file io.Reader) (Gff, error) {
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := readAllFn(file)
 	if err != nil {
 		return Gff{}, err
 	}
@@ -132,11 +146,11 @@ func Parse(file io.Reader) (Gff, error) {
 
 	// get meta info only specific to GFF files
 	meta.Version = strings.Split(versionString, " ")[1]
-	meta.RegionStart, err = strconv.Atoi(regionStringArray[2])
+	meta.RegionStart, err = atoiFn(regionStringArray[2])
 	if err != nil {
 		return Gff{}, err
 	}
-	meta.RegionEnd, err = strconv.Atoi(regionStringArray[3])
+	meta.RegionEnd, err = atoiFn(regionStringArray[3])
 	if err != nil {
 		return Gff{}, err
 	}
@@ -164,13 +178,13 @@ func Parse(file io.Reader) (Gff, error) {
 			record.Type = fields[2]
 
 			// Indexing starts at 1 for gff so we need to shift down for Sequence 0 index.
-			record.Location.Start, err = strconv.Atoi(fields[3])
+			record.Location.Start, err = atoiFn(fields[3])
 			if err != nil {
 				return Gff{}, err
 			}
 
 			record.Location.Start--
-			record.Location.End, err = strconv.Atoi(fields[4])
+			record.Location.End, err = atoiFn(fields[4])
 			if err != nil {
 				return Gff{}, err
 			}
@@ -287,7 +301,7 @@ func Build(sequence Gff) ([]byte, error) {
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
 func Read(path string) (Gff, error) {
-	file, err := os.Open(path)
+	file, err := openFn(path)
 	if err != nil {
 		return Gff{}, err
 	}
