@@ -188,9 +188,6 @@ func Build(fastas []Fasta) ([]byte, error) {
 
 // Write writes a fasta array to a file.
 func Write(fastas []Fasta, path string) error {
-	fastaBytes, err := Build(fastas)
-	if err != nil {
-		return err
-	}
+	fastaBytes, _ := Build(fastas) //  fasta.Build returns only nil errors.
 	return ioutil.WriteFile(path, fastaBytes, 0644)
 }
