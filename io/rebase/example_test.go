@@ -2,7 +2,6 @@ package rebase_test
 
 import (
 	"fmt"
-	"testing"
 
 	"github.com/TimothyStiles/poly/io/rebase"
 )
@@ -26,11 +25,4 @@ func ExampleExport() {
 	enzymeJSON, _ := rebase.Export(enzymeMap)
 	fmt.Println(string(enzymeJSON)[:100])
 	// Output: {"AaaI":{"name":"AaaI","isoschizomers":["XmaIII","BseX3I","BsoDI","BstZI","EagI","EclXI","Eco52I","S
-}
-
-func TestRead(t *testing.T) {
-	_, err := rebase.Read("data/FAKE.txt")
-	if err == nil {
-		t.Errorf("Failed to error on fake file")
-	}
 }
