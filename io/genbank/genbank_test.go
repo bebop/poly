@@ -727,3 +727,33 @@ func TestBuildFeatureString(t *testing.T) {
 	str := BuildFeatureString(feature)
 	assert.Equal(t, str, "     test type       gbk location\n")
 }
+
+func TestParse_error(t *testing.T) {
+	parseMultiErr := errors.New("parse error")
+	oldParseMultiNthFn := parseMultiNthFn
+	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, error) {
+		return nil, parseMultiErr
+	}
+	defer func() {
+		parseMultiNthFn = oldParseMultiNthFn
+	}()
+	_, err := Parse(strings.NewReader(""))
+	assert.EqualError(t, err, parseMultiErr.Error())
+
+	_, err = ParseMulti(strings.NewReader(""))
+	assert.EqualError(t, err, parseMultiErr.Error())
+}
+
+func TestParseReferences_error(t *testing.T) {
+	parseReferencesErr := errors.New("Failed in parsing reference above line 13. Got error: ")
+	oldParseReferencesFn := parseReferencesFn
+	parseReferencesFn = func(metadataData []string) (Reference, error) {
+		return Reference{}, errors.New("")
+	}
+	defer func() {
+		parseReferencesFn = oldParseReferencesFn
+	}()
+	file, _ := os.Open("../../data/puc19.gbk")
+	_, err := parseMultiNthFn(file, 1)
+	assert.EqualError(t, err, parseReferencesErr.Error())
+}
