@@ -13,7 +13,7 @@ import (
 
 func Example() {
 
-	// this example also is run by the poly's suite so this just sets up a temporary directory for writing files
+	// this example also is run by the poly's test suite so this just sets up a temporary directory for writing files
 	tmpDataDir, err := ioutil.TempDir("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
