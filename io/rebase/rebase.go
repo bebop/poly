@@ -145,19 +145,14 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
-	"regexp"
 	"strings"
 )
 
 var (
-	logFatalFn      = log.Fatal
-	readFileFn      = ioutil.ReadFile
-	readAllFn       = ioutil.ReadAll
-	regexpCompileFn = regexp.Compile
-	parseFn         = Parse
-	marshallFn      = json.Marshal
+	readAllFn  = ioutil.ReadAll
+	parseFn    = Parse
+	marshallFn = json.Marshal
 )
 
 // Enzyme represents a single enzyme within the Rebase database

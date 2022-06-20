@@ -13,12 +13,9 @@ package gff
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,14 +26,9 @@ import (
 )
 
 var (
-	logFatalFn      = log.Fatal
-	readFileFn      = ioutil.ReadFile
-	readAllFn       = ioutil.ReadAll
-	regexpCompileFn = regexp.Compile
-	parseFn         = Parse
-	marshallFn      = json.Marshal
-	atoiFn          = strconv.Atoi
-	openFn          = os.Open
+	readAllFn = ioutil.ReadAll
+	atoiFn    = strconv.Atoi
+	openFn    = os.Open
 )
 
 // Gff is a struct that represents a gff file.

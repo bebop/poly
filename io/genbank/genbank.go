@@ -33,9 +33,7 @@ GBK specific IO related things begin here.
 ******************************************************************************/
 
 var (
-	logFatalFn        = log.Fatal
 	readFileFn        = ioutil.ReadFile
-	regexpCompileFn   = regexp.Compile
 	parseMultiNthFn   = ParseMultiNth
 	parseReferencesFn = parseReferences
 )
