@@ -56,6 +56,7 @@ Keoni
 var (
 	gzipReaderFn = gzip.NewReader
 	openFn       = os.Open
+	buildFn      = Build
 )
 
 // Fasta is a struct representing a single Fasta file element with a Name and its corresponding Sequence.
@@ -131,7 +132,7 @@ Start of  Read functions
 
 // ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
 func ReadGzConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path) // these errors need to be handled/logged
+	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
 
 	reader, _ := gzipReaderFn(file)
 	defer reader.Close()
@@ -140,7 +141,7 @@ func ReadGzConcurrent(path string, sequences chan<- Fasta) {
 
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
 func ReadConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path) // these errors need to be handled/logged
+	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
 	go ParseConcurrent(file, sequences)
 }
 
@@ -188,6 +189,9 @@ func Build(fastas []Fasta) ([]byte, error) {
 
 // Write writes a fasta array to a file.
 func Write(fastas []Fasta, path string) error {
-	fastaBytes, _ := Build(fastas) //  fasta.Build returns only nil errors.
+	fastaBytes, err := buildFn(fastas) //  fasta.Build returns only nil errors.
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(path, fastaBytes, 0644)
 }

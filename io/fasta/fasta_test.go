@@ -235,3 +235,16 @@ func TestRead_error(t *testing.T) {
 		assert.EqualError(t, err, readErr.Error())
 	})
 }
+
+func TestWrite_error(t *testing.T) {
+	buildErr := errors.New("build error")
+	oldBuildFn := buildFn
+	buildFn = func(fastas []Fasta) ([]byte, error) {
+		return nil, buildErr
+	}
+	defer func() {
+		buildFn = oldBuildFn
+	}()
+	err := Write([]Fasta{}, "/tmp/file")
+	assert.EqualError(t, err, buildErr.Error())
+}
