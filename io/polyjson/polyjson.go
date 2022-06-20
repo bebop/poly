@@ -93,7 +93,10 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
 		for _, subLocation := range location.SubLocations {
-			sequence, _ := getFeatureSequence(feature, subLocation)
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil { // todo: test error
+				return "", err
+			}
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -125,7 +128,7 @@ func Parse(file io.Reader) (Poly, error) {
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		_ = sequence.AddFeature(&feature)
+		err = sequence.AddFeature(&feature)
 	}
 	return sequence, nil
 }
