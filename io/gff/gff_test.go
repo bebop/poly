@@ -109,7 +109,7 @@ func TestParseAtoi_error(t *testing.T) {
 	for index := 0; index <= 10; index++ {
 		var gffBuffer bytes.Buffer
 		gffBuffer.WriteString(fileString)
-		Parse(&gffBuffer)
+		_, _ = Parse(&gffBuffer)
 	}
 }
 
