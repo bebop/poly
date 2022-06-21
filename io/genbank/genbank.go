@@ -933,19 +933,19 @@ func buildMetaString(name string, data string) string {
 	return returnData
 }
 
-// BuildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
-func BuildLocationString(location Location) string {
+// buildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
+func buildLocationString(location Location) string {
 
 	var locationString string
 
 	if location.Complement {
 		location.Complement = false
-		locationString = "complement(" + BuildLocationString(location) + ")"
+		locationString = "complement(" + buildLocationString(location) + ")"
 
 	} else if location.Join {
 		locationString = "join("
 		for _, sublocation := range location.SubLocations {
-			locationString += BuildLocationString(sublocation) + ","
+			locationString += buildLocationString(sublocation) + ","
 		}
 		locationString = strings.TrimSuffix(locationString, ",") + ")"
 	} else {
@@ -971,7 +971,7 @@ func BuildFeatureString(feature Feature) string {
 	if feature.Location.GbkLocationString != "" {
 		location = feature.Location.GbkLocationString
 	} else {
-		location = BuildLocationString(feature.Location)
+		location = buildLocationString(feature.Location)
 	}
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
