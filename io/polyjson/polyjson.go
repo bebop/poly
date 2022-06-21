@@ -9,7 +9,9 @@ package polyjson
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/TimothyStiles/poly/transform"
@@ -20,6 +22,12 @@ import (
 JSON specific IO related things begin here.
 
 ******************************************************************************/
+
+var (
+	marshalIndentFn = json.MarshalIndent
+	readFileFn      = os.Open
+	unmarshalFn     = json.Unmarshal
+)
 
 // Poly is poly's native JSON representation of a sequence.
 type Poly struct {
@@ -84,11 +92,10 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
-
 		for _, subLocation := range location.SubLocations {
 			sequence, err := getFeatureSequence(feature, subLocation)
-			if err != nil {
-				return sequenceBuffer.String(), err
+			if err != nil { // todo: test error
+				return "", err
 			}
 			sequenceBuffer.WriteString(sequence)
 		}
@@ -105,45 +112,46 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 }
 
 // Parse parses a Poly JSON file and adds appropriate pointers to struct.
-func Parse(file []byte) (Poly, error) {
+func Parse(file io.Reader) (Poly, error) {
 	var sequence Poly
-	err := json.Unmarshal([]byte(file), &sequence)
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(file) // todo: test error
 	if err != nil {
 		return sequence, err
 	}
+
+	if err := unmarshalFn(buf.Bytes(), &sequence); err != nil {
+		return sequence, err
+	}
+
 	legacyFeatures := sequence.Features
 	sequence.Features = []Feature{}
 
 	for _, feature := range legacyFeatures {
-		_ = sequence.AddFeature(&feature)
+		err = sequence.AddFeature(&feature)
+		if err != nil {
+			return sequence, err
+		}
 	}
 	return sequence, nil
 }
 
 // Read reads a Poly JSON file.
 func Read(path string) (Poly, error) {
-	file, err := ioutil.ReadFile(path)
+	file, err := readFileFn(path)
 	if err != nil {
 		return Poly{}, err
 	}
-	sequence, err := Parse(file)
-	if err != nil {
-		return Poly{}, err
-	}
-	return sequence, nil
+	return Parse(file)
 }
 
 // Write writes a Poly struct out to json.
 func Write(sequence Poly, path string) error {
-	file, err := json.MarshalIndent(sequence, "", " ")
+	file, err := marshalIndentFn(sequence, "", " ")
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, file, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(path, file, 0644)
 }
 
 /******************************************************************************

@@ -1,31 +1,76 @@
-package genbank_test
+package polyjson_test
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/TimothyStiles/poly/seqhash"
 )
 
-// This example shows how to open a genbank file and search for a gene given
-// its name. After finding it, notes about the particular gene are read.
-func Example_basic() {
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
-	for _, feature := range sequences.Features {
-		if feature.Attributes["gene"] == "bla" {
-			fmt.Println(feature.Attributes["note"])
-		}
+func Example() {
+
+	// this example also is run by the poly's test suite so this just sets up a temporary directory for writing files
+	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	// Output: confers resistance to ampicillin, carbenicillin, andrelated antibiotics
+
+	defer os.RemoveAll(tmpDataDir)
+
+	// initiate a new polyjson sequence struct
+	var sequence polyjson.Poly
+
+	// define the meta section of our sequence.
+	sequence.Meta.Name = "Cat DNA"
+	sequence.Meta.Description = "Synthetic Cat DNA for testing purposes."
+	sequence.Meta.CreatedBy = "Catz (all you basepair are belong to us)"
+	sequence.Meta.CreatedOn = time.Now()
+	sequence.Meta.URL = "www.allyourbasepair.com/catz"
+	sequence.Meta.CreatedWith = "Poly - The world's most modern, open source software library for engineering organisms."
+
+	// add our sequence string and its hash to use as a unique identifier.
+	sequence.Sequence = "CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT"
+	sequence.Meta.Hash, _ = seqhash.Hash(sequence.Sequence, "DNA", false, true)
+
+	// add our sequence features
+	catFeature := polyjson.Feature{}
+	catFeature.Name = "Cat coding region."
+	catFeature.Description = "a cat coding region at the beginning of our sequence."
+	catFeature.Type = "CDS"
+	catFeature.Location.Start = 0
+	catFeature.Location.End = 8
+	catFeature.Tags = map[string]string{"product": "cat protein"}
+
+	_ = sequence.AddFeature(&catFeature) // add the feature annotation to our sequence
+
+	// write our sequence to a JSON file
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
+	_ = polyjson.Write(sequence, tmpJSONFilePath)
+
+	exportedSequence, _ := polyjson.Read(tmpJSONFilePath)
+
+	// print our struct DNA sequence
+	fmt.Println(exportedSequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 func ExampleRead() {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	fmt.Println(sequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
+	sequence, _ := polyjson.Read("../../data/cat.json")
+
+	fmt.Println(sequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
+}
+
+func ExampleParse() {
+	file, _ := os.Open("../../data/cat.json")
+	sequence, _ := polyjson.Parse(file)
+
+	fmt.Println(sequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
 func ExampleWrite() {
@@ -35,97 +80,38 @@ func ExampleWrite() {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
+	sequence, _ := polyjson.Read("../../data/cat.json")
 
-	tmpGbkFilePath := filepath.Join(tmpDataDir, "puc19.gbk")
-	_ = genbank.Write(sequences, tmpGbkFilePath)
+	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
+	_ = polyjson.Write(sequence, tmpJSONFilePath)
 
-	testSequence, _ := genbank.Read(tmpGbkFilePath)
+	testSequence, _ := polyjson.Read(tmpJSONFilePath)
 
-	fmt.Println(testSequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
+	fmt.Println(testSequence.Sequence)
+	// Output: CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT
 }
 
-func ExampleBuild() {
-	sequences, _ := genbank.Read("../../data/puc19.gbk")
-	gbkBytes, _ := genbank.Build(sequences)
-	testSequence, _ := genbank.Parse(bytes.NewReader(gbkBytes))
+/******************************************************************************
 
-	fmt.Println(testSequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
+JSON related tests end here.
 
-func ExampleParse() {
-	file, _ := os.Open("../../data/puc19.gbk")
-	sequence, _ := genbank.Parse(file)
+******************************************************************************/
 
-	fmt.Println(sequence.Meta.Locus.ModificationDate)
-	// Output: 22-OCT-2019
-}
-
-func ExampleReadMulti() {
-	sequences, err := genbank.ReadMulti("../../data/multiGbk_test.seq")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	fmt.Println(sequences[1].Meta.Locus.ModificationDate)
-	// Output: 05-FEB-1999
-}
-
-func ExampleWriteMulti() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	sequences, _ := genbank.ReadMulti("../../data/multiGbk_test.seq")
-	tmpGbkFilePath := filepath.Join(tmpDataDir, "multiGbk_test.seq")
-
-	err = genbank.WriteMulti(sequences, tmpGbkFilePath)
-
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	testSequences, _ := genbank.ReadMulti(tmpGbkFilePath)
-	isEqual := sequences[1].Meta.Locus.ModificationDate == testSequences[1].Meta.Locus.ModificationDate
-	fmt.Println(isEqual)
-	// Output: true
-}
-
-func ExampleBuildMulti() {
-	sequences, _ := genbank.ReadMulti("../../data/multiGbk_test.seq")
-	gbkBytes, _ := genbank.BuildMulti(sequences)
-	testSequences, _ := genbank.ParseMulti(bytes.NewReader(gbkBytes))
-
-	isEqual := sequences[1].Meta.Locus.ModificationDate == testSequences[1].Meta.Locus.ModificationDate
-	fmt.Println(isEqual)
-	// Output: true
-}
-
-func ExampleParseMulti() {
-	file, _ := os.Open("../../data/multiGbk_test.seq")
-	sequences, _ := genbank.ParseMulti(file)
-	fmt.Println(sequences[1].Meta.Locus.ModificationDate)
-	// Output: 05-FEB-1999
-}
-
-func ExampleGenbank_AddFeature() {
+func ExamplePoly_AddFeature() {
 
 	// Sequence for greenflourescent protein (GFP) that we're using as test data for this example.
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence genbank.Genbank
-	var feature genbank.Feature
+	var sequence polyjson.Poly
+	var feature polyjson.Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
 
 	// Set the initialized feature name and sequence location.
 	feature.Description = "Green Flourescent Protein"
-	feature.Location = genbank.Location{}
+	feature.Location = polyjson.Location{}
 	feature.Location.Start = 0
 	feature.Location.End = len(sequence.Sequence)
 
@@ -147,8 +133,8 @@ func ExampleFeature_GetSequence() {
 	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
 	// initialize sequence and feature structs.
-	var sequence genbank.Genbank
-	var feature genbank.Feature
+	var sequence polyjson.Poly
+	var feature polyjson.Feature
 
 	// set the initialized sequence struct's sequence.
 	sequence.Sequence = gfpSequence
@@ -168,5 +154,4 @@ func ExampleFeature_GetSequence() {
 	fmt.Println(gfpSequence == featureSequence)
 
 	// Output: true
-
 }
