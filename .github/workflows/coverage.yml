@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.18.*' # The Go version to download (if necessary) and use.
       - name: Generate coverage report
         run: go test -v  -coverprofile=profile.cov ./...
       - name: Parse overall coverage
