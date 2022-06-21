@@ -2,7 +2,7 @@
 Package fasta contains fasta parsers and writers.
 
 Fasta is a flat text file format developed in 1985 to store nucleotide and
-amino acid sequences. It is extremely simple and well supported across many
+amino acid sequences. It is extremely simple and well-supported across many
 languages. However, this simplicity means that annotation of genetic objects
 is not supported.
 
@@ -52,6 +52,12 @@ Hack the Planet,
 Keoni
 
 ******************************************************************************/
+
+var (
+	gzipReaderFn = gzip.NewReader
+	openFn       = os.Open
+	buildFn      = Build
+)
 
 // Fasta is a struct representing a single Fasta file element with a Name and its corresponding Sequence.
 type Fasta struct {
@@ -126,48 +132,40 @@ Start of  Read functions
 
 // ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
 func ReadGzConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path) // these errors need to be handled/logged
+	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
 
-	reader, _ := gzip.NewReader(file)
+	reader, _ := gzipReaderFn(file)
 	defer reader.Close()
 	go ParseConcurrent(reader, sequences)
 }
 
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
 func ReadConcurrent(path string, sequences chan<- Fasta) {
-	file, _ := os.Open(path) // these errors need to be handled/logged
+	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
 	go ParseConcurrent(file, sequences)
 }
 
 // ReadGz reads a gzipped  file into an array of Fasta structs.
 func ReadGz(path string) ([]Fasta, error) {
-	file, err := os.Open(path)
+	file, err := openFn(path)
 	if err != nil {
 		return nil, err
 	}
-	reader, err := gzip.NewReader(file)
+	reader, err := gzipReaderFn(file)
 	if err != nil {
 		return nil, err
 	}
-	fastas, err := Parse(reader)
-	if err != nil {
-		return nil, err
-	}
-	return fastas, nil
+	return Parse(reader)
 }
 
 // Read reads a  file into an array of Fasta structs
 func Read(path string) ([]Fasta, error) {
-	file, err := os.Open(path)
+	file, err := openFn(path)
 	if err != nil {
 		return nil, err
 	}
 
-	fastas, err := Parse(file)
-	if err != nil {
-		return nil, err
-	}
-	return fastas, nil
+	return Parse(file)
 }
 
 /******************************************************************************
@@ -191,10 +189,9 @@ func Build(fastas []Fasta) ([]byte, error) {
 
 // Write writes a fasta array to a file.
 func Write(fastas []Fasta, path string) error {
-	fastaBytes, err := Build(fastas)
+	fastaBytes, err := buildFn(fastas) //  fasta.Build returns only nil errors.
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, fastaBytes, 0644)
-	return err
+	return ioutil.WriteFile(path, fastaBytes, 0644)
 }

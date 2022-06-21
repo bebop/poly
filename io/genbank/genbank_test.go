@@ -1,17 +1,20 @@
 package genbank
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
+
+	"reflect"
 
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 )
 
 /******************************************************************************
@@ -613,35 +616,6 @@ func TestReadMulti(t *testing.T) {
 	}
 }
 
-func Test_getSourceOrganism(t *testing.T) {
-	type args struct {
-		metadataData []string
-	}
-	tests := []struct {
-		name  string
-		args  args
-		want  string
-		want1 string
-		want2 []string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2 := getSourceOrganism(tt.args.metadataData)
-			if got != tt.want {
-				t.Errorf("getSourceOrganism() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("getSourceOrganism() got1 = %v, want %v", got1, tt.want1)
-			}
-			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("getSourceOrganism() got2 = %v, want %v", got2, tt.want2)
-			}
-		})
-	}
-}
-
 func Test_parseLocation(t *testing.T) {
 	type args struct {
 		locationString string
@@ -709,26 +683,6 @@ func TestBuildLocationString(t *testing.T) {
 	}
 }
 
-func TestBuildFeatureString(t *testing.T) {
-	type args struct {
-		feature Feature
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildFeatureString(tt.args.feature); got != tt.want {
-				t.Errorf("BuildFeatureString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_generateWhiteSpace(t *testing.T) {
 	type args struct {
 		length int
@@ -747,4 +701,59 @@ func Test_generateWhiteSpace(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRead_error(t *testing.T) {
+	readErr := errors.New("open /tmp/file: no such file or directory")
+	oldReadFileFn := readFileFn
+	readFileFn = func(filename string) ([]byte, error) {
+		return nil, readErr
+	}
+	defer func() {
+		readFileFn = oldReadFileFn
+	}()
+	_, err := Read("/tmp/file")
+	assert.EqualError(t, err, readErr.Error())
+}
+
+func TestBuildFeatureString(t *testing.T) {
+	feature := Feature{
+		Type:        "test type",
+		Description: "a description",
+		Location: Location{
+			GbkLocationString: "gbk location",
+		},
+	}
+	str := BuildFeatureString(feature)
+	assert.Equal(t, str, "     test type       gbk location\n")
+}
+
+func TestParse_error(t *testing.T) {
+	parseMultiErr := errors.New("parse error")
+	oldParseMultiNthFn := parseMultiNthFn
+	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, error) {
+		return nil, parseMultiErr
+	}
+	defer func() {
+		parseMultiNthFn = oldParseMultiNthFn
+	}()
+	_, err := Parse(strings.NewReader(""))
+	assert.EqualError(t, err, parseMultiErr.Error())
+
+	_, err = ParseMulti(strings.NewReader(""))
+	assert.EqualError(t, err, parseMultiErr.Error())
+}
+
+func TestParseReferences_error(t *testing.T) {
+	parseReferencesErr := errors.New("Failed in parsing reference above line 13. Got error: ")
+	oldParseReferencesFn := parseReferencesFn
+	parseReferencesFn = func(metadataData []string) (Reference, error) {
+		return Reference{}, errors.New("")
+	}
+	defer func() {
+		parseReferencesFn = oldParseReferencesFn
+	}()
+	file, _ := os.Open("../../data/puc19.gbk")
+	_, err := parseMultiNthFn(file, 1)
+	assert.EqualError(t, err, parseReferencesErr.Error())
 }

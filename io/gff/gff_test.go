@@ -1,14 +1,15 @@
-package gff_test
+package gff
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/gff"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pmezard/go-difflib/difflib"
@@ -32,12 +33,12 @@ func TestGffIO(t *testing.T) {
 	testInputPath := "../../data/ecoli-mg1655-short.gff"
 	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
 
-	testSequence, _ := gff.Read(testInputPath)
-	_ = gff.Write(testSequence, tmpGffFilePath)
+	testSequence, _ := Read(testInputPath)
+	_ = Write(testSequence, tmpGffFilePath)
 
-	readTestSequence, _ := gff.Read(tmpGffFilePath)
+	readTestSequence, _ := Read(tmpGffFilePath)
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(gff.Feature{}, "ParentSequence")); diff != "" {
+	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(Feature{}, "ParentSequence")); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
 
@@ -59,51 +60,78 @@ func TestGffIO(t *testing.T) {
 
 }
 
-func ExampleRead() {
-	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
-	fmt.Println(sequence.Meta.Name)
-	// Output: U00096.3
-}
-
-func ExampleParse() {
-	file, _ := os.Open("../../data/ecoli-mg1655-short.gff")
-	sequence, _ := gff.Parse(file)
-
-	fmt.Println(sequence.Meta.Name)
-	// Output: U00096.3
-}
-
-func ExampleBuild() {
-	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
-	gffBytes, _ := gff.Build(sequence)
-	gffReader := bytes.NewReader(gffBytes)
-	reparsedSequence, _ := gff.Parse(gffReader)
-
-	fmt.Println(reparsedSequence.Meta.Name)
-	// Output: U00096.3
-}
-
-func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		fmt.Println(err.Error())
+// testing that readAllFn() returns an error.
+func TestParseReader_error(t *testing.T) {
+	parseErr := errors.New("parse error")
+	oldReadAllFn := readAllFn
+	readAllFn = func(r io.Reader) ([]byte, error) {
+		return nil, parseErr
 	}
-	defer os.RemoveAll(tmpDataDir)
+	defer func() {
+		readAllFn = oldReadAllFn
+	}()
+	_, err := Parse(strings.NewReader(""))
+	if err != parseErr {
+		t.Errorf("Parse() did not return the expected error. Got %v, expected %v", err, parseErr)
+	}
+}
 
-	sequence, _ := gff.Read("../../data/ecoli-mg1655-short.gff")
+// testing that all Atoi() calls return an error.
+func TestParseAtoi_error(t *testing.T) {
+	file, _ := openFn("../../data/ecoli-mg1655-short.gff")
+	fileBytes, _ := readAllFn(file)
+	fileString := string(fileBytes)
+	recievedAtoiInputs := []string{}
 
-	tmpGffFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.gff")
-	_ = gff.Write(sequence, tmpGffFilePath)
+	parseErr := errors.New("parse error")
+	oldAtoiFn := atoiFn
+	// helper function to see if the input string for atoiFn is in the recievedAtoiInputs slice.
+	contains := func(stringSlice []string, expression string) bool {
+		for _, input := range stringSlice {
+			if input == expression {
+				return true
+			}
+		}
+		return false
+	}
+	atoiFn = func(gffString string) (int, error) {
+		if !contains(recievedAtoiInputs, gffString) {
+			recievedAtoiInputs = append(recievedAtoiInputs, gffString)
+			// length = len(recievedAtoiInputs)
+			return 0, parseErr
+		}
+		return oldAtoiFn(gffString)
+	}
 
-	testSequence, _ := gff.Read(tmpGffFilePath)
+	defer func() {
+		atoiFn = oldAtoiFn
+	}()
+	for index := 0; index <= 10; index++ {
+		var gffBuffer bytes.Buffer
+		gffBuffer.WriteString(fileString)
+		_, _ = Parse(&gffBuffer)
+	}
+}
 
-	fmt.Println(testSequence.Meta.Name)
-	// Output: U00096.3
+// testing that Read can return an appropriate error.
+func TestRead_error(t *testing.T) {
+	readErr := errors.New("open : no such file or directory")
+	oldOpenFn := openFn
+	openFn = func(filepath string) (*os.File, error) {
+		return nil, readErr
+	}
+	defer func() {
+		openFn = oldOpenFn
+	}()
+	_, err := Read("../../data/ecoli-mg1655-short.gff")
+	if err != readErr {
+		t.Errorf("Read() did not return the expected error. Got %v, expected %v", err, readErr)
+	}
 }
 
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _ = gff.Read("../../data/ecoli-mg1655-short.gff")
+		_, _ = Read("../../data/ecoli-mg1655-short.gff")
 	}
 }
 

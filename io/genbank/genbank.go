@@ -32,6 +32,12 @@ GBK specific IO related things begin here.
 
 ******************************************************************************/
 
+var (
+	readFileFn        = ioutil.ReadFile
+	parseMultiNthFn   = ParseMultiNth
+	parseReferencesFn = parseReferences
+)
+
 // Genbank is the main struct for the Genbank file format.
 type Genbank struct {
 	Meta     Meta
@@ -166,7 +172,7 @@ func ReadMultiNth(path string, count int) ([]Genbank, error) {
 		return []Genbank{}, err
 	}
 
-	sequence, err := ParseMultiNth(file, count)
+	sequence, err := parseMultiNthFn(file, count)
 	if err != nil {
 		return []Genbank{}, err
 	}
@@ -343,7 +349,7 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 
 // Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
 func Parse(r io.Reader) (Genbank, error) {
-	genbankSlice, err := ParseMultiNth(r, 1)
+	genbankSlice, err := parseMultiNthFn(r, 1)
 
 	if err != nil {
 		return Genbank{}, err
@@ -355,7 +361,7 @@ func Parse(r io.Reader) (Genbank, error) {
 // ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into a slice of Genbank structs.
 func ParseMulti(r io.Reader) ([]Genbank, error) {
 
-	genbankSlice, err := ParseMultiNth(r, -1)
+	genbankSlice, err := parseMultiNthFn(r, -1)
 
 	if err != nil {
 		return []Genbank{}, err
@@ -453,7 +459,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				case "SOURCE":
 					parameters.genbank.Meta.Source, parameters.genbank.Meta.Organism, parameters.genbank.Meta.Taxonomy = getSourceOrganism(parameters.metadataData)
 				case "REFERENCE":
-					reference, err := parseReferences(parameters.metadataData)
+					reference, err := parseReferencesFn(parameters.metadataData)
 					if err != nil {
 						return []Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
