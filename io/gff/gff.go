@@ -25,12 +25,6 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 )
 
-var (
-	readAllFn = ioutil.ReadAll
-	atoiFn    = strconv.Atoi
-	openFn    = os.Open
-)
-
 // Gff is a struct that represents a gff file.
 type Gff struct {
 	Meta     Meta
@@ -99,7 +93,10 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	} else {
 
 		for _, subLocation := range location.SubLocations {
-			sequence, _ := getFeatureSequence(feature, subLocation)
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return sequenceBuffer.String(), err
+			}
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
@@ -116,7 +113,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 
 // Parse Takes in a string representing a gffv3 file and parses it into an Sequence object.
 func Parse(file io.Reader) (Gff, error) {
-	fileBytes, err := readAllFn(file)
+	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return Gff{}, err
 	}
@@ -138,11 +135,11 @@ func Parse(file io.Reader) (Gff, error) {
 
 	// get meta info only specific to GFF files
 	meta.Version = strings.Split(versionString, " ")[1]
-	meta.RegionStart, err = atoiFn(regionStringArray[2])
+	meta.RegionStart, err = strconv.Atoi(regionStringArray[2])
 	if err != nil {
 		return Gff{}, err
 	}
-	meta.RegionEnd, err = atoiFn(regionStringArray[3])
+	meta.RegionEnd, err = strconv.Atoi(regionStringArray[3])
 	if err != nil {
 		return Gff{}, err
 	}
@@ -170,13 +167,13 @@ func Parse(file io.Reader) (Gff, error) {
 			record.Type = fields[2]
 
 			// Indexing starts at 1 for gff so we need to shift down for Sequence 0 index.
-			record.Location.Start, err = atoiFn(fields[3])
+			record.Location.Start, err = strconv.Atoi(fields[3])
 			if err != nil {
 				return Gff{}, err
 			}
 
 			record.Location.Start--
-			record.Location.End, err = atoiFn(fields[4])
+			record.Location.End, err = strconv.Atoi(fields[4])
 			if err != nil {
 				return Gff{}, err
 			}
@@ -204,46 +201,57 @@ func Parse(file io.Reader) (Gff, error) {
 	gff.Sequence = sequenceBuffer.String()
 	gff.Meta = meta
 
-	return gff, err
+	return gff, nil
 }
 
 // Build takes an Annotated sequence and returns a byte array representing a gff to be written out.
 func Build(sequence Gff) ([]byte, error) {
 	var gffBuffer bytes.Buffer
 
-	versionString := "##gff-version 3 \n"
+	var versionString string
 	if sequence.Meta.Version != "" {
 		versionString = "##gff-version " + sequence.Meta.Version + "\n"
+	} else {
+		versionString = "##gff-version 3 \n"
 	}
-
 	gffBuffer.WriteString(versionString)
 
-	name := "Sequence"
-	start := "1"
-	end := strconv.Itoa(sequence.Meta.RegionEnd)
+	var regionString string
+	var name string
+	var start string
+	var end string
 
 	if sequence.Meta.Name != "" {
 		name = sequence.Meta.Name
+	} else {
+		name = "Sequence"
 	}
 
 	if sequence.Meta.RegionStart != 0 {
 		start = strconv.Itoa(sequence.Meta.RegionStart)
+	} else {
+		start = "1"
 	}
 
-	regionString := "##sequence-region " + name + " " + start + " " + end + "\n"
+	end = strconv.Itoa(sequence.Meta.RegionEnd)
+
+	regionString = "##sequence-region " + name + " " + start + " " + end + "\n"
 	gffBuffer.WriteString(regionString)
 
 	for _, feature := range sequence.Features {
 		var featureString string
-
-		featureSource := "feature"
+		var featureSource string
 		if feature.Source != "" {
 			featureSource = feature.Source
+		} else {
+			featureSource = "feature"
 		}
 
-		featureType := "unknown"
+		var featureType string
 		if feature.Type != "" {
 			featureType = feature.Type
+		} else {
+			featureType = "unknown"
 		}
 
 		// Indexing starts at 1 for gff so we need to shift up from Sequence 0 index.
@@ -293,17 +301,24 @@ func Build(sequence Gff) ([]byte, error) {
 
 // Read takes in a filepath for a .gffv3 file and parses it into an Annotated poly.Sequence struct.
 func Read(path string) (Gff, error) {
-	file, err := openFn(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return Gff{}, err
 	}
 
 	sequence, err := Parse(file)
-	return sequence, err
+	if err != nil {
+		return Gff{}, err
+	}
+	return sequence, nil
 }
 
 // Write takes an poly.Sequence struct and a path string and writes out a gff to that path.
 func Write(sequence Gff, path string) error {
-	gff, _ := Build(sequence)
-	return ioutil.WriteFile(path, gff, 0644)
+	gff, err := Build(sequence)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, gff, 0644)
+	return err
 }

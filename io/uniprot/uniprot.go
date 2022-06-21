@@ -23,6 +23,7 @@ package uniprot
 import (
 	"compress/gzip"
 	"encoding/xml"
+	"io"
 	"os"
 )
 
@@ -56,12 +57,6 @@ Keoni
 
 ******************************************************************************/
 
-// Decoder decodes XML elements2
-type Decoder interface {
-	DecodeElement(v interface{}, start *xml.StartElement) error
-	Token() (xml.Token, error)
-}
-
 // Read reads a gzipped Uniprot XML dump. Failing to open the XML dump
 // gives a single error, while errors encountered while decoding the XML dump
 // are added to the errors channel.
@@ -76,13 +71,13 @@ func Read(path string) (chan Entry, chan error, error) {
 	if err != nil {
 		return entries, decoderErrors, err
 	}
-	decoder := xml.NewDecoder(unzippedBytes)
-	go Parse(decoder, entries, decoderErrors)
+	go Parse(unzippedBytes, entries, decoderErrors)
 	return entries, decoderErrors, nil
 }
 
 // Parse parses Uniprot entries into a channel.
-func Parse(decoder Decoder, entries chan<- Entry, errors chan<- error) {
+func Parse(r io.Reader, entries chan<- Entry, errors chan<- error) {
+	decoder := xml.NewDecoder(r)
 	for {
 		decoderToken, err := decoder.Token()
 
