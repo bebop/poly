@@ -1,9 +1,10 @@
 name: notify social media
 
 on:
-  [release, issues, pull_request, issue_comment, pull_request_review, pull_request_review_comment, discussion, discussion_comment]
+  [release, issues, pull_request, issue_comment, pull_request_review, pull_request_review_comment, discussion, discussion_comment,]
   push:
     branches:
+      - notify # for testing purposes
       - dev
       - prime
       - main
