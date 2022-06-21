@@ -3,7 +3,7 @@ on:
     tags:
       - v*
     branches:
-      - prime
+      - main
   pull_request:
 name: Test
 jobs:

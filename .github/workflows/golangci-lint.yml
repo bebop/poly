@@ -4,7 +4,7 @@ on:
     tags:
       - v*
     branches:
-      - prime
+      - main
   pull_request:
 jobs:
   golangci:
