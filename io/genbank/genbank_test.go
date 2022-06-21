@@ -724,7 +724,7 @@ func TestBuildFeatureString(t *testing.T) {
 			GbkLocationString: "gbk location",
 		},
 	}
-	str := BuildFeatureString(feature)
+	str := buildFeatureString(feature)
 	assert.Equal(t, str, "     test type       gbk location\n")
 }
 

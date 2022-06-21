@@ -311,7 +311,7 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 		// start writing features section.
 		gbkString.WriteString("FEATURES             Location/Qualifiers\n")
 		for _, feature := range sequence.Features {
-			gbkString.WriteString(BuildFeatureString(feature))
+			gbkString.WriteString(buildFeatureString(feature))
 		}
 
 		// start writing sequence section.
@@ -962,8 +962,8 @@ func buildLocationString(location Location) string {
 	return locationString
 }
 
-// BuildFeatureString is a helper function to build gbk feature strings for Build()
-func BuildFeatureString(feature Feature) string {
+// buildFeatureString is a helper function to build gbk feature strings for Build()
+func buildFeatureString(feature Feature) string {
 	whiteSpaceTrailLength := 16 - len(feature.Type) // I wish I was kidding.
 	whiteSpaceTrail := generateWhiteSpace(whiteSpaceTrailLength)
 	var location string
