@@ -1,0 +1,30 @@
+name: tweet
+
+on:
+  release: 
+  issues: 
+  pull_request:
+  issue_comment: 
+  discussion: 
+  push:
+    branches:
+      - notify # for testing purposes
+      - dev
+      - main
+
+jobs:
+  tweet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get event payload url
+        run: payload_url=$(grep -oE '"*":[[:space:]]"[^"]*' $GITHUB_EVENT_PATH | grep -o '[^"]*$' | grep -E "github.com/TimothyStiles/poly-sandbox/" | uniq | head -1) && echo "PAYLOAD_URL=$payload_url" >> $GITHUB_ENV
+      - name: debug
+        uses: hmarr/debug-action@v2
+      - name: post event url to twitter
+        uses: m1ner79/Github-Twittction@v1.0.1
+        with:
+            twitter_status: ${{ env.PAYLOAD_URL }}
+            twitter_consumer_key: ${{ secrets.TWITTER_CONSUMER_API_KEY }} 
+            twitter_consumer_secret: ${{ secrets.TWITTER_CONSUMER_API_SECRET }} 
+            twitter_access_token_key: ${{ secrets.TWITTER_ACCESS_TOKEN }} 
+            twitter_access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
