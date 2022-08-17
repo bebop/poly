@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -151,7 +150,7 @@ func Write(sequence Poly, path string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, file, 0644)
+	return os.WriteFile(path, file, 0644)
 }
 
 /******************************************************************************

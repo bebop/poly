@@ -21,112 +21,113 @@ header with the commercial suppliers format and an example enzyme.
 ```
 REBASE version 104                                              withrefm.104
 
-    =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-    REBASE, The Restriction Enzyme Database   http://rebase.neb.com
-    Copyright (c)  Dr. Richard J. Roberts, 2021.   All rights reserved.
-    =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	REBASE, The Restriction Enzyme Database   http://rebase.neb.com
+	Copyright (c)  Dr. Richard J. Roberts, 2021.   All rights reserved.
+	=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-Rich Roberts                                                    Mar 31 2021
-
+# Rich Roberts                                                    Mar 31 2021
 
 <ENZYME NAME>   Restriction enzyme name.
 <ISOSCHIZOMERS> Other enzymes with this specificity.
 <RECOGNITION SEQUENCE>
-                These are written from 5' to 3', only one strand being given.
-                If the point of cleavage has been determined, the precise site
-                is marked with ^.  For enzymes such as HgaI, MboII etc., which
-                cleave away from their recognition sequence the cleavage sites
-                are indicated in parentheses.
 
-                For example HgaI GACGC (5/10) indicates cleavage as follows:
-                                5' GACGCNNNNN^      3'
-                                3' CTGCGNNNNNNNNNN^ 5'
+	These are written from 5' to 3', only one strand being given.
+	If the point of cleavage has been determined, the precise site
+	is marked with ^.  For enzymes such as HgaI, MboII etc., which
+	cleave away from their recognition sequence the cleavage sites
+	are indicated in parentheses.
 
-                In all cases the recognition sequences are oriented so that
-                the cleavage sites lie on their 3' side.
+	For example HgaI GACGC (5/10) indicates cleavage as follows:
+	                5' GACGCNNNNN^      3'
+	                3' CTGCGNNNNNNNNNN^ 5'
 
-                REBASE Recognition sequences representations use the standard
-                abbreviations (Eur. J. Biochem. 150: 1-5, 1985) to represent
-                ambiguity.
-                                R = G or A
-                                Y = C or T
-                                M = A or C
-                                K = G or T
-                                S = G or C
-                                W = A or T
-                                B = not A (C or G or T)
-                                D = not C (A or G or T)
-                                H = not G (A or C or T)
-                                V = not T (A or C or G)
-                                N = A or C or G or T
+	In all cases the recognition sequences are oriented so that
+	the cleavage sites lie on their 3' side.
 
-
-
-                ENZYMES WITH UNUSUAL CLEAVAGE PROPERTIES:
-
-                Enzymes that cut on both sides of their recognition sequences,
-                such as BcgI, Bsp24I, CjeI and CjePI, have 4 cleavage sites
-                each instead of 2.
-
-                Bsp24I
-                          5'      ^NNNNNNNNGACNNNNNNTGGNNNNNNNNNNNN^   3'
-                          3' ^NNNNNNNNNNNNNCTGNNNNNNACCNNNNNNN^        5'
+	REBASE Recognition sequences representations use the standard
+	abbreviations (Eur. J. Biochem. 150: 1-5, 1985) to represent
+	ambiguity.
+	                R = G or A
+	                Y = C or T
+	                M = A or C
+	                K = G or T
+	                S = G or C
+	                W = A or T
+	                B = not A (C or G or T)
+	                D = not C (A or G or T)
+	                H = not G (A or C or T)
+	                V = not T (A or C or G)
+	                N = A or C or G or T
 
 
-                This will be described in some REBASE reports as:
 
-                             Bsp24I (8/13)GACNNNNNNTGG(12/7)
+	ENZYMES WITH UNUSUAL CLEAVAGE PROPERTIES:
+
+	Enzymes that cut on both sides of their recognition sequences,
+	such as BcgI, Bsp24I, CjeI and CjePI, have 4 cleavage sites
+	each instead of 2.
+
+	Bsp24I
+	          5'      ^NNNNNNNNGACNNNNNNTGGNNNNNNNNNNNN^   3'
+	          3' ^NNNNNNNNNNNNNCTGNNNNNNACCNNNNNNN^        5'
+
+
+	This will be described in some REBASE reports as:
+
+	             Bsp24I (8/13)GACNNNNNNTGG(12/7)
 
 <METHYLATION SITE>
-                The site of methylation by the cognate methylase when known
-                is indicated X(Y) or X,X2(Y,Y2), where X is the base within
-                the recognition sequence that is modified.  A negative number
-                indicates the complementary strand, numbered from the 5' base
-                of that strand, and Y is the specific type of methylation
-                involved:
-                               (6) = N6-methyladenosine
-                               (5) = 5-methylcytosine
-                               (4) = N4-methylcytosine
 
-                If the methylation information is different for the 3' strand,
-                X2 and Y2 are given as well.
+	The site of methylation by the cognate methylase when known
+	is indicated X(Y) or X,X2(Y,Y2), where X is the base within
+	the recognition sequence that is modified.  A negative number
+	indicates the complementary strand, numbered from the 5' base
+	of that strand, and Y is the specific type of methylation
+	involved:
+	               (6) = N6-methyladenosine
+	               (5) = 5-methylcytosine
+	               (4) = N4-methylcytosine
+
+	If the methylation information is different for the 3' strand,
+	X2 and Y2 are given as well.
 
 <MICROORGANISM> Organism from which this enzyme had been isolated.
 <SOURCE>        Either an individual or a National Culture Collection.
 <COMMERCIAL AVAILABILITY>
-                Each commercial source of restriction enzymes and/or methylases
-                listed in REBASE is assigned a single character abbreviation
-                code.  For example:
 
-                K        Takara (1/98)
-                M        Boehringer Mannheim (10/97)
-                N        New England Biolabs (4/98)
+	Each commercial source of restriction enzymes and/or methylases
+	listed in REBASE is assigned a single character abbreviation
+	code.  For example:
 
-                The date in parentheses indicates the most recent update of
-                that organization's listings in REBASE.
+	K        Takara (1/98)
+	M        Boehringer Mannheim (10/97)
+	N        New England Biolabs (4/98)
+
+	The date in parentheses indicates the most recent update of
+	that organization's listings in REBASE.
 
 <REFERENCES>only the primary references for the isolation and/or purification
 of the restriction enzyme or methylase, the determination of the recognition
 sequence and cleavage site or the methylation specificity are given.
 
-
 REBASE codes for commercial sources of enzymes
 
-                B        Life Technologies (3/21)
-                C        Minotech Biotechnology (3/21)
-                E        Agilent Technologies (8/20)
-                I        SibEnzyme Ltd. (3/21)
-                J        Nippon Gene Co., Ltd. (3/21)
-                K        Takara Bio Inc. (6/18)
-                M        Roche Applied Science (4/18)
-                N        New England Biolabs (3/21)
-                O        Toyobo Biochemicals (8/14)
-                Q        Molecular Biology Resources - CHIMERx (3/21)
-                R        Promega Corporation (11/20)
-                S        Sigma Chemical Corporation (3/21)
-                V        Vivantis Technologies (1/18)
-                X        EURx Ltd. (1/21)
-                Y        SinaClon BioScience Co. (1/18)
+	B        Life Technologies (3/21)
+	C        Minotech Biotechnology (3/21)
+	E        Agilent Technologies (8/20)
+	I        SibEnzyme Ltd. (3/21)
+	J        Nippon Gene Co., Ltd. (3/21)
+	K        Takara Bio Inc. (6/18)
+	M        Roche Applied Science (4/18)
+	N        New England Biolabs (3/21)
+	O        Toyobo Biochemicals (8/14)
+	Q        Molecular Biology Resources - CHIMERx (3/21)
+	R        Promega Corporation (11/20)
+	S        Sigma Chemical Corporation (3/21)
+	V        Vivantis Technologies (1/18)
+	X        EURx Ltd. (1/21)
+	Y        SinaClon BioScience Co. (1/18)
 
 <1>AaaI
 <2>XmaIII,BseX3I,BsoDI,BstZI,EagI,EclXI,Eco52I,SenPT16I,TauII,Tsp504I
@@ -144,13 +145,12 @@ package rebase
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 )
 
 var (
-	readAllFn  = ioutil.ReadAll
+	readAllFn  = io.ReadAll
 	parseFn    = Parse
 	marshallFn = json.Marshal
 )

@@ -2,7 +2,6 @@ package codon_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -59,7 +58,7 @@ func ExampleReadCodonJSON() {
 }
 
 func ExampleParseCodonJSON() {
-	file, _ := ioutil.ReadFile("../../data/bsub_codon_test.json")
+	file, _ := os.ReadFile("../../data/bsub_codon_test.json")
 	codontable := codon.ParseCodonJSON(file)
 
 	fmt.Println(codontable.GetAminoAcids()[0].Codons[0].Weight)

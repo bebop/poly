@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -33,7 +32,7 @@ GBK specific IO related things begin here.
 ******************************************************************************/
 
 var (
-	readFileFn        = ioutil.ReadFile
+	readFileFn        = os.ReadFile
 	parseMultiNthFn   = ParseMultiNth
 	parseReferencesFn = parseReferences
 )
@@ -187,7 +186,7 @@ func Write(sequences Genbank, path string) error {
 	// add error handling in the future.
 	gbk, _ := Build(sequences)
 
-	err := ioutil.WriteFile(path, gbk, 0644)
+	err := os.WriteFile(path, gbk, 0644)
 	return err
 }
 
@@ -198,7 +197,7 @@ func WriteMulti(sequences []Genbank, path string) error {
 	// add error handling in the future.
 	gbk, _ := BuildMulti(sequences)
 
-	err := ioutil.WriteFile(path, gbk, 0644)
+	err := os.WriteFile(path, gbk, 0644)
 	return err
 }
 

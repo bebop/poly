@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +23,7 @@ Gff related tests and benchmarks begin here.
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,8 +41,8 @@ func TestGffIO(t *testing.T) {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file read with ReadGff(). Got this diff:\n%s", diff)
 	}
 
-	original, _ := ioutil.ReadFile(testInputPath)
-	builtOutput, _ := ioutil.ReadFile(tmpGffFilePath)
+	original, _ := os.ReadFile(testInputPath)
+	builtOutput, _ := os.ReadFile(tmpGffFilePath)
 	gffDiff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(string(original)),
 		B:        difflib.SplitLines(string(builtOutput)),

@@ -21,8 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -429,7 +429,7 @@ func ParseCodonJSON(file []byte) Table {
 
 // ReadCodonJSON reads a codonTable JSON file.
 func ReadCodonJSON(path string) Table {
-	file, _ := ioutil.ReadFile(path)
+	file, _ := os.ReadFile(path)
 	codonTable := ParseCodonJSON(file)
 	return codonTable
 }
@@ -437,7 +437,7 @@ func ReadCodonJSON(path string) Table {
 // WriteCodonJSON writes a codonTable struct out to JSON.
 func WriteCodonJSON(codonTable Table, path string) {
 	file, _ := json.MarshalIndent(codonTable, "", " ")
-	_ = ioutil.WriteFile(path, file, 0644)
+	_ = os.WriteFile(path, file, 0644)
 }
 
 /******************************************************************************

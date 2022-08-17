@@ -14,7 +14,6 @@ package gff
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -26,7 +25,7 @@ import (
 )
 
 var (
-	readAllFn = ioutil.ReadAll
+	readAllFn = io.ReadAll
 	atoiFn    = strconv.Atoi
 	openFn    = os.Open
 )
@@ -305,5 +304,5 @@ func Read(path string) (Gff, error) {
 // Write takes an poly.Sequence struct and a path string and writes out a gff to that path.
 func Write(sequence Gff, path string) error {
 	gff, _ := Build(sequence)
-	return ioutil.WriteFile(path, gff, 0644)
+	return os.WriteFile(path, gff, 0644)
 }

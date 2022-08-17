@@ -3,7 +3,6 @@ package genbank
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,7 +33,7 @@ var singleGbkPaths = []string{
 }
 
 func TestGbkIO(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -68,7 +67,7 @@ func TestMultiLineFeatureParse(t *testing.T) {
 }
 
 func TestMultiGenbankIO(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,7 +88,7 @@ func TestMultiGenbankIO(t *testing.T) {
 }
 
 func TestGbkLocationStringBuilder(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,7 +116,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 }
 
 func TestGbLocationStringBuilder(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}
