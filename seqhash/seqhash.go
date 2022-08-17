@@ -66,6 +66,15 @@ import (
 	"lukechampine.com/blake3"
 )
 
+// Seqhash is a struct that contains the Seqhash algorithm sequence types.
+type SequenceType string
+
+const (
+	DNA SequenceType = "DNA"
+	RNA SequenceType = "RNA"
+	PROTEIN SequenceType = "PROTEIN"
+)
+
 // boothLeastRotation gets the least rotation of a circular string.
 func boothLeastRotation(sequence string) int {
 
@@ -133,27 +142,27 @@ func RotateSequence(sequence string) string {
 }
 
 // Hash is a function to create Seqhashes, a specific kind of identifier.
-func Hash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+func Hash(sequence string, sequenceType SequenceType, circular bool, doubleStranded bool) (string, error) {
 	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
 	// If RNA, convert to a DNA sequence. The hash itself between a DNA and RNA sequence will not
 	// be different, but their Seqhash will have a different metadata string (R vs D)
-	if sequenceType == "RNA" {
+	if sequenceType == SequenceType("RNA") {
 		sequence = strings.ReplaceAll(sequence, "U", "T")
 	}
 
 	// Run checks on the input
-	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
-		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + sequenceType)
+	if sequenceType != DNA && sequenceType != RNA && sequenceType != PROTEIN {
+		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + string(sequenceType))
 	}
-	if sequenceType == "DNA" || sequenceType == "RNA" {
+	if sequenceType == DNA || sequenceType == RNA {
 		for _, char := range sequence {
 			if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
 				return "", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
 			}
 		}
 	}
-	if sequenceType == "PROTEIN" {
+	if sequenceType == PROTEIN {
 		for _, char := range sequence {
 			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
 			// in accordance with https://www.uniprot.org/help/sequences
@@ -166,7 +175,7 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 		}
 	}
 	// There is no check for circular proteins since proteins can be circular
-	if sequenceType == "PROTEIN" && doubleStranded {
+	if sequenceType == PROTEIN && doubleStranded {
 		return "", errors.New("Proteins cannot be double stranded")
 	}
 
@@ -193,11 +202,11 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	var doubleStrandedLetter string
 	// Get first letter. D for DNA, R for RNA, and P for Protein
 	switch sequenceType {
-	case "DNA":
+	case DNA:
 		sequenceTypeLetter = "D"
-	case "RNA":
+	case RNA:
 		sequenceTypeLetter = "R"
-	case "PROTEIN":
+	case PROTEIN:
 		sequenceTypeLetter = "P"
 	}
 	// Get 2nd letter. C for circular, L for Linear
