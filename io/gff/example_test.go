@@ -3,7 +3,6 @@ package gff_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -49,7 +48,7 @@ func ExampleBuild() {
 }
 
 func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}

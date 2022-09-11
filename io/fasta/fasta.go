@@ -16,7 +16,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -193,5 +192,5 @@ func Write(fastas []Fasta, path string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, fastaBytes, 0644)
+	return os.WriteFile(path, fastaBytes, 0644)
 }
