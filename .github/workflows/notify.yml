@@ -5,9 +5,7 @@ on:
   issues: 
   pull_request:
     types: [opened]
-  issue_comment: 
-  pull_request_review:
-  pull_request_review_comment: 
+  issue_comment:
   discussion: 
   discussion_comment:
   push:
