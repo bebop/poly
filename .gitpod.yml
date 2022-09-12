@@ -20,7 +20,4 @@ github:
 
 vscode:
   extensions:
-    - premparihar.gotestexplorer
     - golang.go
-    - eamodi.gitlens
-
