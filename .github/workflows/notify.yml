@@ -2,9 +2,7 @@ name: notify social media
 
 on:
   release: 
-  issues: 
-  pull_request:
-    types: [opened]
+  issues:
   issue_comment:
   discussion: 
   discussion_comment:
