@@ -4,8 +4,6 @@ on:
   release:
   issues: 
     types: [opened]
-  pull_request:
-    types: [opened]
   push:
     branches:
       - notify # for testing purposes
