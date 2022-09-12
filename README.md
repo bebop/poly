@@ -4,6 +4,12 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/main/LICENSE) 
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
 ![Test Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/TimothyStiles/e58f265655ac0acacdd1a38376ccd32a/raw/coverage.json)
+<a href="https://gitpod.io/#github.com/TimothyStiles/poly">
+  <img
+    src="https://img.shields.io/badge/Contribute%20with-Gitpod-908a85?logo=gitpod"
+    alt="Contribute with Gitpod"
+  />
+</a>
 
 Poly is a Go package for engineering organisms.
 
