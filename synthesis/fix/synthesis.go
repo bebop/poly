@@ -346,7 +346,7 @@ func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []fun
 			}
 
 			// Sort potential changes by weight
-			sort.Slice(potentialChanges, func(i, j int) bool {
+			sort.SliceStable(potentialChanges, func(i, j int) bool {
 				return weightMap[potentialChanges[i].To] > weightMap[potentialChanges[j].To]
 			})
 
