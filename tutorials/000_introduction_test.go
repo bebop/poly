@@ -7,14 +7,14 @@ Sep, 12, 2022
 
 To my knowledge this is the first book on computational synthetic biology with
 real, live, running examples that you can modify and play with. Heck, it may
-be the first book on computational synthetic biology period as far as I know.
+be the first "book" on computational synthetic biology period as far as I know.
 
 It feels strange for me to be the first author to write this sort of thing for
 a field that's already been around for 20 ~years but here I am.
 
 When I first entered the field there wasn't anything even close to resembling
 a software framework for engineering organisms and even today Poly (the library
-I created and maintain that we'll be using through this tutorial) is the
+I created and maintain that we'll be using in this tutorial) is the
 closest thing we have.
 
 For a couple of years now I've had friends and strangers tell me that I needed
@@ -25,7 +25,7 @@ deployable, and accessible tutorial series until today.
 This book is built into Poly's source code itself. Each tutorial a series
 of runnable integration tests guaranteed to stay up to date with
 each new release of Poly. It's my hope that you, the reader, student,
-scholar, dreamer, or seasoned synthetic biolgist will take the tutorials here,
+scholar, dreamer, or seasoned synthetic biologist will take the tutorials here,
 make them your own, and then share your changes with the world and me!
 
 I don't by any means consider Poly or its accompanying sibling projects
