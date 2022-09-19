@@ -178,7 +178,7 @@ func TestFileIOTutorial(t *testing.T) {
 	}
 
 	// write the JSON file
-	os.WriteFile(puc19JSONPath, marshaledPuc19, 0644)
+	_ = os.WriteFile(puc19JSONPath, marshaledPuc19, 0644)
 
 	// TODO: write streamlined function to read the plasmid back in from the JSON file and make sure it's the same as the original
 
