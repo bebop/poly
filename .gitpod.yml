@@ -4,7 +4,7 @@
 
 tasks:
   - init: go get && go build ./... && go test ./...
-  - command: if [$isTutorial == true] then cd ./tutorials && gp-code . && gp-code README.md
+  - command: if [ $tutorial == true ]; then cd ./tutorials && gp-code . && gp-code README.md; fi
 
 image:
   file: .gitpod.Dockerfile
