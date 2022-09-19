@@ -21,7 +21,7 @@ tasks:
     command: >
       gp sync-await OpenTutorialDirectory &&
       gp ports await 23000 &&
-      code -r README.md && clear; fi
+      code -r README.md && clear
 
 image:
   file: .gitpod.Dockerfile
