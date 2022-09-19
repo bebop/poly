@@ -4,7 +4,7 @@
 
 tasks:
   - init: go get && go build ./... && go test ./...
-  - command: gp ports await 23000 && if [ $tutorial == true ]; then  && cd ./tutorials && code -r . && code -r README.md; fi
+  - command: gp ports await 23000 && if [ $tutorial == true ]; then cd ./tutorials && code -r . && code -r README.md; fi
 
 image:
   file: .gitpod.Dockerfile
