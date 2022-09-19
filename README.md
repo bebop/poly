@@ -27,6 +27,7 @@ Poly is a Go package for engineering organisms.
 `go install github.com/TimothyStiles/poly`
 
 ## Documentation
+* **[Tutorials](https://gitpod.io/#tutorial=true/https://github.com/TimothyStiles/poly)
 
 * **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
 
