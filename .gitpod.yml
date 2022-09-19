@@ -4,6 +4,7 @@
 
 tasks:
   - init: go get && go build ./... && go test ./...
+  - command: if [$isTutorial == true] then cd ./tutorials
 
 image:
   file: .gitpod.Dockerfile
