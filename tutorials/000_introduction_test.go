@@ -14,7 +14,7 @@ a field that's already been around for 20 ~years but here I am.
 
 When I first entered the field there wasn't anything even close to resembling
 a software framework for engineering organisms and even today Poly (the library
-I created and maintain that we'll be using through this tutorial) is the
+I created and maintain that we'll be using throughout this "book") is the
 closest thing we have.
 
 For a couple of years now I've had friends and strangers tell me that I needed
@@ -24,9 +24,9 @@ deployable, and accessible tutorial series until today.
 
 This book is built into Poly's source code itself. Each tutorial a series
 of runnable integration tests guaranteed to stay up to date with
-each new release of Poly. It's my hope that you, the reader, student,
-scholar, dreamer, or seasoned synthetic biolgist will take the tutorials here,
-make them your own, and then share your changes with the world and me!
+each new release of Poly. It's my hope that you, the reader, will take the
+tutorials here, make them your own, and then share your changes with the world
+and me!
 
 I don't by any means consider Poly or its accompanying sibling projects
 to be complete. There's far more to do than what's already been done and
