@@ -3,8 +3,7 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 tasks:
-  - init: go get && go build ./... && go test ./...
-  - command: gp ports await 23000 && if [ $tutorial == true ]; then cd ./tutorials && code -r . && code README.md; fi
+  - init: go get && go build ./... && go test ./...&& gp ports await 23000 && if [ $tutorial == true ]; then cd ./tutorials && code -r . README.md && clear; fi
 
 image:
   file: .gitpod.Dockerfile
