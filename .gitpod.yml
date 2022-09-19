@@ -11,17 +11,15 @@ tasks:
      gp sync-done Golang
 
   - name: Open Tutorial Directory   
-    init: >
-      gp sync-await Golang
     command: >
+      gp sync-await Golang &&
       gp ports await 23000 &&
       if [ $tutorial == true ]; then cd ./tutorials && code -r . && clear; fi &&
       gp sync-done OpenTutorialDirectory
   
   - name: Open README.md
-    init: >
-      gp sync-await OpenTutorialDirectory
     command: >
+      gp sync-await OpenTutorialDirectory &&
       gp ports await 23000 &&
       code -r README.md && clear; fi
 
