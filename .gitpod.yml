@@ -8,11 +8,9 @@ tasks:
      go get && 
      go build ./... && 
      go test ./...&&
-     gp sync-done Golang
 
   - name: Open Tutorial Directory   
     command: >
-      gp sync-await Golang &&
       gp ports await 23000 &&
       if [ $tutorial == true ]; then cd ./tutorials && code -r . && clear; fi &&
       gp sync-done OpenTutorialDirectory
