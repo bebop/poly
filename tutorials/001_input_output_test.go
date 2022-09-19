@@ -1,10 +1,14 @@
 package tutorials_test
 
 import (
-	"fmt"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 /******************************************************************************
@@ -82,36 +86,103 @@ func TestFileIOTutorial(t *testing.T) {
 
 	// First lets check out the metadata of our puc19 backbone
 	meta := puc19.Meta
-	fmt.Println(meta)
 
 	// The meta data locus is a genbank specific field
-	metaName := meta.Locus.Name
-	fmt.Println(metaName)
+	metaName := meta.Locus.Name     // this is what the genbank file lists the name as
+	expectedMetaName := "puc19.gbk" // this is what we expect the name of the record to be
 
-	sourceOrganism := meta.Source
-	fmt.Println(sourceOrganism)
+	if metaName != expectedMetaName {
+		t.Errorf("Expected puc19 to be named %s but got %s", expectedMetaName, metaName)
+	}
+
+	sourceOrganism := meta.Source                       // this is the source organism from the genbank file
+	expectedSourceOrganism := "synthetic DNA construct" // this is what we expect the source organism to be
+
+	if sourceOrganism != expectedSourceOrganism {
+		t.Errorf("Expected puc19 to be %s but got %s", expectedSourceOrganism, sourceOrganism)
+	}
 
 	// Next let's see what sort of features puc19 has
 	// Features are the parts of the sequence that are annotated.
 
-	for _, feature := range puc19.Features {
-		fmt.Println(feature.Type)
-	}
+	// for _, feature := range puc19.Features {
+	// 	fmt.Println(feature.Type)
+	// }
 
 	// We'll go into more detail about features and DNA parts
 	// in the next tutorial but for now know that we can also
 	// get the sequence of each feature using the GetSequence method.
 
-	randomFeature := puc19.Features[1]
-	randomFeatureSequence, _ := randomFeature.GetSequence()
-	fmt.Println(randomFeatureSequence)
+	feature := puc19.Features[1]
+	featureSequence, _ := feature.GetSequence()       // this is the sequence of the feature
+	expectedFeatureSequence := "gggaaacgcctggtatcttt" // this is what we expect the sequence of the feature to be
+	if featureSequence != expectedFeatureSequence {
+		t.Errorf("Expected feature sequence to be %s but got %s", expectedFeatureSequence, featureSequence)
+	}
 
 	// we can also get the sequence of the entire plasmid
-	sequence := puc19.Sequence
-	fmt.Println(sequence)
+	plasmidSequence := puc19.Sequence // this is the sequence of the plasmid
 
-	// As you've just seen Poly supports many different file formats for DNA most
-	// of which share a general data structure containing these parts:
+	// this is what we expect the sequence of the plasmid to be
+	expectedPlasmidSequence := "gagatacctacagcgtgagctatgagaaagcgccacgcttcccgaagggagaaaggcggacaggtatccggtaagcggcagggtcggaacaggagagcgcacgagggagcttccagggggaaacgcctggtatctttatagtcctgtcgggtttcgccacctctgacttgagcgtcgatttttgtgatgctcgtcaggggggcggagcctatggaaaaacgccagcaacgcggcctttttacggttcctggccttttgctggccttttgctcacatgttctttcctgcgttatcccctgattctgtggataaccgtattaccgcctttgagtgagctgataccgctcgccgcagccgaacgaccgagcgcagcgagtcagtgagcgaggaagcggaagagcgcccaatacgcaaaccgcctctccccgcgcgttggccgattcattaatgcagctggcacgacaggtttcccgactggaaagcgggcagtgagcgcaacgcaattaatgtgagttagctcactcattaggcaccccaggctttacactttatgcttccggctcgtatgttgtgtggaattgtgagcggataacaatttcacacaggaaacagctatgaccatgattacgccaagcttgcatgcctgcaggtcgactctagaggatccccgggtaccgagctcgaattcactggccgtcgttttacaacgtcgtgactgggaaaaccctggcgttacccaacttaatcgccttgcagcacatccccctttcgccagctggcgtaatagcgaagaggcccgcaccgatcgcccttcccaacagttgcgcagcctgaatggcgaatggcgcctgatgcggtattttctccttacgcatctgtgcggtatttcacaccgcatatggtgcactctcagtacaatctgctctgatgccgcatagttaagccagccccgacacccgccaacacccgctgacgcgccctgacgggcttgtctgctcccggcatccgcttacagacaagctgtgaccgtctccgggagctgcatgtgtcagaggttttcaccgtcatcaccgaaacgcgcgagacgaaagggcctcgtgatacgcctatttttataggttaatgtcatgataataatggtttcttagacgtcaggtggcacttttcggggaaatgtgcgcggaacccctatttgtttatttttctaaatacattcaaatatgtatccgctcatgagacaataaccctgataaatgcttcaataatattgaaaaaggaagagtatgagtattcaacatttccgtgtcgcccttattcccttttttgcggcattttgccttcctgtttttgctcacccagaaacgctggtgaaagtaaaagatgctgaagatcagttgggtgcacgagtgggttacatcgaactggatctcaacagcggtaagatccttgagagttttcgccccgaagaacgttttccaatgatgagcacttttaaagttctgctatgtggcgcggtattatcccgtattgacgccgggcaagagcaactcggtcgccgcatacactattctcagaatgacttggttgagtactcaccagtcacagaaaagcatcttacggatggcatgacagtaagagaattatgcagtgctgccataaccatgagtgataacactgcggccaacttacttctgacaacgatcggaggaccgaaggagctaaccgcttttttgcacaacatgggggatcatgtaactcgccttgatcgttgggaaccggagctgaatgaagccataccaaacgacgagcgtgacaccacgatgcctgtagcaatggcaacaacgttgcgcaaactattaactggcgaactacttactctagcttcccggcaacaattaatagactggatggaggcggataaagttgcaggaccacttctgcgctcggcccttccggctggctggtttattgctgataaatctggagccggtgagcgtgggtctcgcggtatcattgcagcactggggccagatggtaagccctcccgtatcgtagttatctacacgacggggagtcaggcaactatggatgaacgaaatagacagatcgctgagataggtgcctcactgattaagcattggtaactgtcagaccaagtttactcatatatactttagattgatttaaaacttcatttttaatttaaaaggatctaggtgaagatcctttttgataatctcatgaccaaaatcccttaacgtgagttttcgttccactgagcgtcagaccccgtagaaaagatcaaaggatcttcttgagatcctttttttctgcgcgtaatctgctgcttgcaaacaaaaaaaccaccgctaccagcggtggtttgtttgccggatcaagagctaccaactctttttccgaaggtaactggcttcagcagagcgcagataccaaatactgttcttctagtgtagccgtagttaggccaccacttcaagaactctgtagcaccgcctacatacctcgctctgctaatcctgttaccagtggctgctgccagtggcgataagtcgtgtcttaccgggttggactcaagacgatagttaccggataaggcgcagcggtcgggctgaacggggggttcgtgcacacagcccagcttggagcgaacgacctacaccgaact"
+
+	if plasmidSequence != expectedPlasmidSequence {
+		t.Errorf("Expected plasmid sequence to be %s but got %s", expectedPlasmidSequence, plasmidSequence)
+	}
+
+	// Now that we've explored the plasmid, let's change it a tiny bit and write it out to both
+	// a GenBank file and a JSON file.
+
+	// First, let's change the name of the plasmid to "pUC19_modified"
+	puc19.Meta.Locus.Name = "pUC19_modified"
+
+	// adding ourselves as the modication author
+	var reference genbank.Reference
+	reference.Authors = "Timothy Stiles"
+	reference.Title = "Modified pUC19"
+	reference.Journal = "Poly"
+	reference.PubMed = "123456789"
+
+	puc19.Meta.References = append(puc19.Meta.References, reference)
+
+	// create a tempdir to write the files to. The tempdir will be deleted when the test is done.
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(tmpDataDir)
+
+	// write the modified plasmid to a GenBank file
+	puc19Path := filepath.Join(tmpDataDir, "pUC19_modified.gb")
+	err = genbank.Write(puc19, puc19Path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// read the plasmid back in from the GenBank file and make sure it's the same as the original
+	puc19Copy, err := genbank.Read(puc19Path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// compare our read-in plasmid to the the one we wrote out
+	if diff := cmp.Diff(puc19, puc19Copy, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")}...); diff != "" {
+		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
+	}
+
+	// write the modified plasmid to a JSON file
+	puc19JSONPath := filepath.Join(tmpDataDir, "pUC19_modified.json")
+	marshaledPuc19, err := json.MarshalIndent(puc19, "", " ")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// write the JSON file
+	_ = os.WriteFile(puc19JSONPath, marshaledPuc19, 0644)
+
+	// TODO: write streamlined function to read the plasmid back in from the JSON file and make sure it's the same as the original
+
+	// Glossary of terms:
 
 	// meta: A place where meta information is stored
 
@@ -121,6 +192,8 @@ func TestFileIOTutorial(t *testing.T) {
 
 	// sequence: the sequence string itself which is either composed of
 	// nucleic acid notation or single letter amino acid notation.
+
+	// more references
 
 	// Nucleic acid notation:
 	// https://en.wikipedia.org/wiki/Nucleic_acid_notation
