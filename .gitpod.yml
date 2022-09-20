@@ -7,7 +7,7 @@ tasks:
   - init: >
      go get && 
      go build ./... && 
-     go test ./...&&
+     go test ./...
 
   - name: Open Tutorial Directory   
     command: >
