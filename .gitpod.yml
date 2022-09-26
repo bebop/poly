@@ -18,18 +18,16 @@ tasks:
       go install -v github.com/haya14busa/goplay/cmd/goplay@latest
       go install -v github.com/josharian/impl@latest
       go install -v github.com/ramya-rao-a/go-outline@latest
+      go install -v github.com/rogpeppe/godef@latest
       go install -v golang.org/x/tools/gopls@latest
       go install -v honnef.co/go/tools/cmd/staticcheck@latest
       clear
 
-  - name: Open Tutorial Directory   
+  - name: Open Tutorial Readme   
     command: >
       gp ports await 23000 &&
       clear &&
-      if [ -n "$tutorial" ]; then cd ./tutorials && code -r . && clear; fi
-# there's a bug within gitpod's fork of VS code web that doesn't allow you to open both 
-# a directory and file from the command line at the same time.
-# See https://github.com/gitpod-io/gitpod/issues/13107
+      if [ -n "$tutorial" ]; then gp open tutorials/README.md && clear; fi
 
 image:
   file: .gitpod.Dockerfile
