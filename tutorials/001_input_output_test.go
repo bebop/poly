@@ -2,6 +2,7 @@ package tutorials_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +49,6 @@ Tim
 // if you're using VS-CODE you should see a DEBUG TEST button right below this
 // comment. Please set break points and use it early and often.
 func TestFileIOTutorial(t *testing.T) {
-
 	// First we're going to read in a Genbank file for the well known plasmid
 	// backbone puc19. Plasmids are super small rings of "Circular DNA" that are
 	// between 1 and 10 kilobases in length.
@@ -87,7 +87,7 @@ func TestFileIOTutorial(t *testing.T) {
 	// First lets check out the metadata of our puc19 backbone
 	meta := puc19.Meta
 
-	// The meta data locus is a genbank specific field
+	// The metadata Locus is a genbank specific field
 	metaName := meta.Locus.Name     // this is what the genbank file lists the name as
 	expectedMetaName := "puc19.gbk" // this is what we expect the name of the record to be
 
@@ -105,9 +105,9 @@ func TestFileIOTutorial(t *testing.T) {
 	// Next let's see what sort of features puc19 has
 	// Features are the parts of the sequence that are annotated.
 
-	// for _, feature := range puc19.Features {
-	// 	fmt.Println(feature.Type)
-	// }
+	for _, feature := range puc19.Features {
+		fmt.Println(feature.Type)
+	}
 
 	// We'll go into more detail about features and DNA parts
 	// in the next tutorial but for now know that we can also
@@ -136,7 +136,7 @@ func TestFileIOTutorial(t *testing.T) {
 	// First, let's change the name of the plasmid to "pUC19_modified"
 	puc19.Meta.Locus.Name = "pUC19_modified"
 
-	// adding ourselves as the modication author
+	// adding ourselves as the modification author
 	var reference genbank.Reference
 	reference.Authors = "Timothy Stiles"
 	reference.Title = "Modified pUC19"
@@ -165,7 +165,8 @@ func TestFileIOTutorial(t *testing.T) {
 		t.Error(err)
 	}
 
-	// compare our read-in plasmid to the the one we wrote out
+	// compare our read-in plasmid to the the one we wrote out.
+	// Ignore ParentSequence as that's a pointer which can't be serialized.
 	if diff := cmp.Diff(puc19, puc19Copy, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
 	}
@@ -180,11 +181,22 @@ func TestFileIOTutorial(t *testing.T) {
 	// write the JSON file
 	_ = os.WriteFile(puc19JSONPath, marshaledPuc19, 0644)
 
-	// TODO: write streamlined function to read the plasmid back in from the JSON file and make sure it's the same as the original
+	// read the plasmid back in from the JSON file and make sure it's the same as the original
+	jsonContent, err := os.ReadFile(puc19JSONPath)
+	if err != nil {
+		t.Error(err)
+	}
+	var unmarshaledPuc19 genbank.Genbank
+	if err := json.Unmarshal(jsonContent, &unmarshaledPuc19); err != nil {
+		t.Error(err)
+	}
+	if diff := cmp.Diff(puc19, unmarshaledPuc19, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")}...); diff != "" {
+		t.Errorf("Parsing the JSON does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
+	}
 
 	// Glossary of terms:
 
-	// meta: A place where meta information is stored
+	// meta: A place where metadata information is stored
 
 	// features: a list of feature annotations that are associated with the
 	// sequence including the sequence type (CDS, rRNA, etc), and where
@@ -200,5 +212,4 @@ func TestFileIOTutorial(t *testing.T) {
 
 	// Amino acid notation:
 	// https://en.wikipedia.org/wiki/Protein_primary_structure#Notation
-
 }
