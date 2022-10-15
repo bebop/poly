@@ -745,7 +745,7 @@ func parseLocus(locusString string) Locus {
 	locus.Name = filteredLocusSplit[1]
 
 	// sequence length and coding
-	baseSequenceLength := string(basePairRegex.FindString(locusString))
+	baseSequenceLength := basePairRegex.FindString(locusString)
 	if baseSequenceLength != "" {
 		splitBaseSequenceLength := strings.Split(strings.TrimSpace(baseSequenceLength), " ")
 		if len(splitBaseSequenceLength) == 2 {

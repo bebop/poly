@@ -423,7 +423,7 @@ Keoni
 // ParseCodonJSON parses a codonTable JSON file.
 func ParseCodonJSON(file []byte) Table {
 	var codonTable codonTable
-	_ = json.Unmarshal([]byte(file), &codonTable)
+	_ = json.Unmarshal(file, &codonTable)
 	return codonTable
 }
 
