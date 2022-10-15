@@ -74,7 +74,7 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
-//AddFeature takes a feature and adds it to the Gff struct.
+// AddFeature takes a feature and adds it to the Gff struct.
 func (sequence *Gff) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	var featureCopy Feature = *feature
@@ -250,7 +250,7 @@ func Build(sequence Gff) ([]byte, error) {
 		featureEnd := strconv.Itoa(feature.Location.End)
 
 		featureScore := feature.Score
-		featureStrand := string(feature.Strand)
+		featureStrand := feature.Strand
 		featurePhase := feature.Phase
 		var featureAttributes string
 
