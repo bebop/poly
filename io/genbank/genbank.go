@@ -109,6 +109,16 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
+// Precompiled regular expressions:
+var (
+	basePairRegex         = regexp.MustCompile(` \d* \w{2} `)
+	circularRegex         = regexp.MustCompile(` circular `)
+	linearRegex           = regexp.MustCompile(` linear `)
+	modificationDateRegex = regexp.MustCompile(`\d{2}-[A-Z]{3}-\d{4}`)
+	partialRegex          = regexp.MustCompile("<|>")
+	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
+)
+
 // AddFeature adds a feature to a Genbank struct.
 func (sequence *Genbank) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
@@ -587,8 +597,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			}
 
 		case "sequence":
-			reg, _ := regexp.Compile("[^a-zA-Z]+")
-
 			if len(line) < 2 { // throw error if line is malformed
 				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			} else if line[0:2] == "//" { // end of sequence
@@ -600,7 +608,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.sequenceBuilder.Reset()
 
 			} else { // add line to total sequence
-				parameters.sequenceBuilder.WriteString(reg.ReplaceAllString(line, ""))
+				parameters.sequenceBuilder.WriteString(sequenceRegex.ReplaceAllString(line, ""))
 			}
 		default:
 			log.Warnf("Unknown parse step: %s", parameters.parseStep)
@@ -725,12 +733,6 @@ var genbankDivisions = []string{
 func parseLocus(locusString string) Locus {
 	locus := Locus{}
 
-	basePairRegex, _ := regexp.Compile(` \d* \w{2} `)
-	circularRegex, _ := regexp.Compile(` circular `)
-	linearRegex, _ := regexp.Compile(` linear `)
-
-	ModificationDateRegex, _ := regexp.Compile(`\d{2}-[A-Z]{3}-\d{4}`)
-
 	locusSplit := strings.Split(strings.TrimSpace(locusString), " ")
 
 	var filteredLocusSplit []string
@@ -782,7 +784,7 @@ func parseLocus(locusString string) Locus {
 	}
 
 	// ModificationDate
-	locus.ModificationDate = ModificationDateRegex.FindString(locusString)
+	locus.ModificationDate = modificationDateRegex.FindString(locusString)
 
 	return locus
 }
@@ -829,7 +831,6 @@ func parseLocation(locationString string) (Location, error) {
 			location = Location{Start: position, End: position}
 		} else {
 			// to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
-			partialRegex, _ := regexp.Compile("<|>")
 			startEndSplit := strings.Split(locationString, "..")
 			start, err := strconv.Atoi(partialRegex.ReplaceAllString(startEndSplit[0], ""))
 			if err != nil {
