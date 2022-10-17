@@ -173,7 +173,7 @@ In our perfect case, we would only need 8 base pair barcodes to represent 65536
 different samples. Reality is a little different, however.
 
 1. Failure of DNA sequencers to accurately sequence the barcode, leading for
-   one barcoed to be mistaken for a different barcode
+   one barcode to be mistaken for a different barcode
 2. Misalignment of the barcode to the sequence. We cannot guarantee that the
    DNA sequencer will begin sequencing our fragment at an exact base pair.
 3. Misreading of sequence as barcode. If our barcode is only 8 base pairs, on
