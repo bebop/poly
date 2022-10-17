@@ -86,23 +86,20 @@ type Enzyme struct {
 	RecognitionSite string
 }
 
+// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
+var enzymeMap = map[string]Enzyme{
+	"BsaI":  {"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
+	"BbsI":  {"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
+	"BtgZI": {"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
+}
+
 /******************************************************************************
 
 Base cloning functions begin here.
 
 ******************************************************************************/
 
-// https://qvault.io/2019/10/21/golang-constant-maps-slices/
 func getBaseRestrictionEnzymes() map[string]Enzyme {
-	// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
-	enzymeMap := make(map[string]Enzyme)
-
-	// Build default enzymes
-	enzymeMap["BsaI"] = Enzyme{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"}
-	enzymeMap["BbsI"] = Enzyme{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"}
-	enzymeMap["BtgZI"] = Enzyme{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"}
-
-	// Return EnzymeMap
 	return enzymeMap
 }
 
