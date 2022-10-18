@@ -169,7 +169,7 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 
 // Fragment fragments a sequence into fragments between the min and max size,
 // choosing fragment ends for optimal assembly efficiency. Since fragments will
-// be insterted into either a vector or primer binding sites, the first 4 and
+// be inserted into either a vector or primer binding sites, the first 4 and
 // last 4 base pairs are the initial overhang set.
 func Fragment(sequence string, minFragmentSize int, maxFragmentSize int) ([]string, float64, error) {
 	sequence = strings.ToUpper(sequence)
