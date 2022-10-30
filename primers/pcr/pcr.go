@@ -23,11 +23,12 @@ package pcr
 
 import (
 	"errors"
-	"github.com/TimothyStiles/poly/primers"
-	"github.com/TimothyStiles/poly/transform"
 	"index/suffixarray"
 	"sort"
 	"strings"
+
+	"github.com/TimothyStiles/poly/primers"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 // https://doi.org/10.1089/dna.1994.13.75
@@ -179,11 +180,19 @@ func Simulate(sequences []string, targetTm float64, circular bool, primerList []
 func generatePcrFragments(sequence string, forwardLocation int, reverseLocation int, forwardPrimerIndxs []int, reversePrimerIndxs []int, minimalPrimers []string, primerList []string) []string {
 	var pcrFragments []string
 	for forwardPrimerIndex := range forwardPrimerIndxs {
+
 		minimalPrimer := minimalPrimers[forwardPrimerIndex]
+		minimalPrimerLength := len(minimalPrimer)
+
 		fullPrimerForward := primerList[forwardPrimerIndex]
+		fullPrimerForwardLength := len(fullPrimerForward)
+
 		for _, reversePrimerIndex := range reversePrimerIndxs {
-			fullPrimerReverse := transform.ReverseComplement(primerList[reversePrimerIndex])
-			pcrFragment := fullPrimerForward[:len(fullPrimerForward)-len(minimalPrimer)] + sequence[forwardLocation:reverseLocation] + fullPrimerReverse
+			fullPrimer := primerList[reversePrimerIndex]
+			fullPrimerReverse := transform.ReverseComplement(fullPrimer)
+			minimizedPrimerForward := fullPrimerForward[fullPrimerForwardLength-minimalPrimerLength:]
+			clonedOutSequence := sequence[forwardLocation:reverseLocation]
+			pcrFragment := minimizedPrimerForward + clonedOutSequence + fullPrimerReverse
 			pcrFragments = append(pcrFragments, pcrFragment)
 		}
 	}
