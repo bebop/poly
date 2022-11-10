@@ -11,6 +11,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func BenchmarkFastaLegacy(b *testing.B) {
+	var fastas []Fasta
+	for i := 0; i < b.N; i++ {
+		fastas, _ = Read("data/uniprot_1mb_test.fasta")
+	}
+	_ = fastas
+}
+
+func BenchmarkParser(b *testing.B) {
+	var fastas []Fasta
+	for i := 0; i < b.N; i++ {
+		fp, _ := os.Open("data/uniprot_1mb_test.fasta")
+		p := NewParser(fp)
+		for {
+			fasta, err := p.ParseNext()
+			if err != nil {
+				break
+			}
+			fastas = append(fastas, fasta)
+		}
+		fastas = nil // Reset memory
+	}
+	_ = fastas
+}
+
 func TestParse(t *testing.T) {
 	type args struct {
 		r io.Reader

@@ -15,9 +15,13 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"errors"
+	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
+	"unsafe"
 )
 
 /******************************************************************************
@@ -74,6 +78,88 @@ func Parse(r io.Reader) ([]Fasta, error) {
 		outputFastas = append(outputFastas, fasta)
 	}
 	return outputFastas, nil
+}
+
+type Parser struct {
+	// rd keeps state of current reader.
+	rd bufio.Reader
+}
+
+func NewParser(r io.Reader) *Parser {
+	// What's the largest line size a fasta can be?
+	const maxLineSize = math.MaxUint16
+	return &Parser{
+		rd: *bufio.NewReaderSize(r, maxLineSize),
+	}
+}
+
+func (p *Parser) ParseNext() (Fasta, error) {
+	if _, err := p.rd.Peek(1); err != nil {
+		// Early return on error. Probably will be EOF.
+		return Fasta{}, err
+	}
+	// Initialization of parser state variables.
+	var (
+		// Parser looks for a line starting with '>' (U+003E)
+		// that contains the next fasta sequence name.
+		lookingForName = true
+		seqName        string
+		sequence, line []byte
+		err            error
+	)
+	for {
+		line, err = p.rd.ReadSlice('\n')
+		if err != nil {
+			break
+		}
+		line = line[:len(line)-1] // Exclude newline delimiter.
+
+		isSkippable := len(line) == 0 || line[0] == ';'
+		peek, _ := p.rd.Peek(1)
+		if !lookingForName && len(peek) == 1 && peek[0] == '>' {
+			// We are currently parsing a fasta and next line contains a new fasta.
+			// We handle this situation by appending current line to sequence if not a comment
+			// and ending the current fasta parsing.
+			if !isSkippable {
+				sequence = append(sequence, line...)
+			}
+			break
+		}
+
+		if isSkippable {
+			continue // Skip comments and empty lines.
+		}
+		if lookingForName {
+			if line[0] == '>' {
+				// We got the start of a fasta.
+				seqName = string(line[1:])
+				lookingForName = false
+			}
+			// This continue will also skip line if we are looking for name
+			// and the current line does not contain the name.
+			continue
+		}
+		// If we got to this point we are currently inside of the fasta
+		// sequence contents. We append line to what we found of sequence so far.
+		sequence = append(sequence, line...)
+	}
+	// Parsing ended. Check for inconsistencies.
+	if lookingForName {
+		return Fasta{}, errors.New("did not find fasta start '>'")
+	}
+	if lookingForName && len(sequence) == 0 {
+		return Fasta{}, fmt.Errorf("empty fasta sequence for %q", seqName)
+	}
+	fasta := Fasta{
+		Name:     seqName,
+		Sequence: *(*string)(unsafe.Pointer(&sequence)),
+	}
+	return fasta, nil
+}
+
+// Reset discards all data and resets state.
+func (p *Parser) Reset(r io.Reader) {
+	p.rd.Reset(r)
 }
 
 // ParseConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.

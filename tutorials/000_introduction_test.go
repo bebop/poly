@@ -22,7 +22,7 @@ to ship a set of real tutorials to get people started with this special
 little library but I just couldn't find the right medium to ship a stable,
 deployable, and accessible tutorial series until today.
 
-This book is built into Poly's source code itself. Each tutorial a series
+This book is built into Poly's source code itself. Each tutorial is a series
 of runnable integration tests guaranteed to stay up to date with
 each new release of Poly. It's my hope that you, the reader, will take the
 tutorials here, make them your own, and then share your changes with the world

@@ -2,11 +2,16 @@ package fasta_test
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/TimothyStiles/poly/io/fasta"
 )
+
+//go:embed data/base.fasta
+var baseFasta string
 
 // This example shows how to open a file with the fasta parser. The sequences
 // within that file can then be analyzed further with different software.
@@ -90,4 +95,20 @@ func ExampleReadConcurrent() {
 
 	fmt.Println(name)
 	// Output: MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+}
+
+func ExampleParser() {
+	parser := fasta.NewParser(strings.NewReader(baseFasta))
+	for {
+		fasta, err := parser.ParseNext()
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		fmt.Println(fasta.Name)
+	}
+	//Output:
+	// gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+	// MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+	// EOF
 }
