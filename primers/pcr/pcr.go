@@ -32,7 +32,7 @@ import (
 )
 
 // https://doi.org/10.1089/dna.1994.13.75
-var minimalPrimerLength int = 15
+var minimalprimerCount int = 15
 
 // DesignPrimersWithOverhangs designs two primers to amplify a target sequence,
 // adding on an overhang to the forward and reverse strand. This overhang can
@@ -40,13 +40,13 @@ var minimalPrimerLength int = 15
 // or GoldenGate restriction enzyme sites.
 func DesignPrimersWithOverhangs(sequence, forwardOverhang, reverseOverhang string, targetTm float64) (string, string) {
 	sequence = strings.ToUpper(sequence)
-	forwardPrimer := sequence[0:minimalPrimerLength]
+	forwardPrimer := sequence[0:minimalprimerCount]
 	for additionalNucleotides := 0; primers.MeltingTemp(forwardPrimer) < targetTm; additionalNucleotides++ {
-		forwardPrimer = sequence[0 : minimalPrimerLength+additionalNucleotides]
+		forwardPrimer = sequence[0 : minimalprimerCount+additionalNucleotides]
 	}
-	reversePrimer := transform.ReverseComplement(sequence[len(sequence)-minimalPrimerLength:])
+	reversePrimer := transform.ReverseComplement(sequence[len(sequence)-minimalprimerCount:])
 	for additionalNucleotides := 0; primers.MeltingTemp(reversePrimer) < targetTm; additionalNucleotides++ {
-		reversePrimer = transform.ReverseComplement(sequence[len(sequence)-(minimalPrimerLength+additionalNucleotides):])
+		reversePrimer = transform.ReverseComplement(sequence[len(sequence)-(minimalprimerCount+additionalNucleotides):])
 	}
 
 	// Add overhangs to primer
@@ -60,25 +60,6 @@ func DesignPrimersWithOverhangs(sequence, forwardOverhang, reverseOverhang strin
 // target sequence (no overhangs).
 func DesignPrimers(sequence string, targetTm float64) (string, string) {
 	return DesignPrimersWithOverhangs(sequence, "", "", targetTm)
-}
-
-// BindDirection is a type that defines the binding direction of a primer.
-type BindDirection string
-
-const (
-
-	// Forward is an enum to denote that a Primer Binding Site is forward facing.
-	Forward BindDirection = "forward"
-
-	// Reverse is an enum to denote that a Primer Binding Site is reverse facing.
-	Reverse BindDirection = "reverse"
-)
-
-type BindingSite struct {
-	ParentSequence *string
-	ParentPrimer   *string
-	Direction      BindDirection
-	LocationIndex  int
 }
 
 // SimulateSimple simulates a PCR reaction. It takes in a list of sequences and
@@ -107,45 +88,28 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 		forwardLocations := make(map[int][]int)
 		reverseLocations := make(map[int][]int)
 		minimalPrimers := make([]string, primerCount)
-
-		// for each primer
-		// 1. get the minimal length for a primer
-		// 2. create a smaller "minimal primer"
-
 		for primerIndex, primer := range primerList {
 			var minimalLength int
-
-			// set the initial index at ~15, add 1 for each loop. Stop loop when index is greater than variable melting Temp
-			// what's with the sliding window based on primer melting temp @Koeng101?
-			// TODO: rename index to something else
-			// get minimalLength
-			for index := minimalPrimerLength; primers.MeltingTemp(primer[len(primer)-index:]) < targetTm; index++ {
+			for index := minimalprimerCount; primers.MeltingTemp(primer[len(primer)-index:]) < targetTm; index++ {
 				minimalLength = index
 				if primer[len(primer)-index:] == primer {
 					break
 				}
 			}
-
 			// Use the minimal binding sites of the primer to find positions in the template
-			currentPrimerLength := len(primer)
-			primerStartIndex := currentPrimerLength - minimalLength
-			minimalPrimer := primer[primerStartIndex:]
-
+			minimalPrimer := primer[len(primer)-minimalLength:]
 			if minimalPrimer != primer {
 				minimalPrimers[primerIndex] = minimalPrimer
 				// For each primer, we want to look for all possible binding sites in our gene.
 				// We then append this to a list of binding sites for that primer.
-				forwardBindingSites := sequenceIndex.Lookup([]byte(minimalPrimer), -1)
-				for _, forwardLocation := range forwardBindingSites {
+				for _, forwardLocation := range sequenceIndex.Lookup([]byte(minimalPrimer), -1) {
 					forwardLocations[forwardLocation] = append(forwardLocations[forwardLocation], primerIndex)
 				}
-
-				reverseBindingSites := sequenceIndex.Lookup([]byte(transform.ReverseComplement(minimalPrimer)), -1)
-				for _, reverseLocation := range reverseBindingSites {
+				for _, reverseLocation := range sequenceIndex.Lookup([]byte(transform.ReverseComplement(minimalPrimer)), -1) {
 					reverseLocations[reverseLocation] = append(reverseLocations[reverseLocation], primerIndex)
 				}
 			}
-		} // iterating over each primer ends here
+		}
 
 		var forwardLocationInts []int
 		var reverseLocationInts []int
@@ -159,11 +123,9 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 		sort.Ints(reverseLocationInts)
 
 		// Next, iterate through the forwardLocations list
-		for index, forwardLocation := range forwardLocationInts { // TODO: rename index
+		for index, forwardLocation := range forwardLocationInts {
 			// First, make sure that this isn't the last element in forwardLocations
-			forwardLocationCount := len(forwardLocationInts)
-			fowardLocationIndexCheck := index + 1
-			if fowardLocationIndexCheck != forwardLocationCount {
+			if index+1 != len(forwardLocationInts) {
 				// If this isn't the last element in forwardLocations, then we can select the first reverseLocation that is less than the next forwardLocation
 				for _, reverseLocation := range reverseLocationInts {
 					if (forwardLocation < reverseLocation) && (reverseLocation < forwardLocationInts[index+1]) {
@@ -196,7 +158,7 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 				}
 			}
 		}
-	} // iterating over each sequence ends here
+	}
 	return pcrFragments
 }
 
@@ -218,19 +180,11 @@ func Simulate(sequences []string, targetTm float64, circular bool, primerList []
 func generatePcrFragments(sequence string, forwardLocation int, reverseLocation int, forwardPrimerIndxs []int, reversePrimerIndxs []int, minimalPrimers []string, primerList []string) []string {
 	var pcrFragments []string
 	for forwardPrimerIndex := range forwardPrimerIndxs {
-
 		minimalPrimer := minimalPrimers[forwardPrimerIndex]
-		minimalPrimerLength := len(minimalPrimer)
-
 		fullPrimerForward := primerList[forwardPrimerIndex]
-		fullPrimerForwardLength := len(fullPrimerForward)
-
 		for _, reversePrimerIndex := range reversePrimerIndxs {
-			fullPrimer := primerList[reversePrimerIndex]
-			fullPrimerReverse := transform.ReverseComplement(fullPrimer)
-			minimizedPrimerForward := fullPrimerForward[fullPrimerForwardLength-minimalPrimerLength:]
-			clonedOutSequence := sequence[forwardLocation:reverseLocation]
-			pcrFragment := minimizedPrimerForward + clonedOutSequence + fullPrimerReverse
+			fullPrimerReverse := transform.ReverseComplement(primerList[reversePrimerIndex])
+			pcrFragment := fullPrimerForward[:len(fullPrimerForward)-len(minimalPrimer)] + sequence[forwardLocation:reverseLocation] + fullPrimerReverse
 			pcrFragments = append(pcrFragments, pcrFragment)
 		}
 	}
