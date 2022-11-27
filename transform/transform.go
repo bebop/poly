@@ -12,7 +12,10 @@ ReverseComplement takes the reverse complement of a sequence.
 */
 package transform
 
-import "strings"
+import (
+	"strings"
+	"unsafe"
+)
 
 // complementBaseRuneMap provides 1:1 mapping between bases and their complements
 var complementBaseRuneMap = map[rune]rune{
@@ -50,9 +53,7 @@ var complementBaseRuneMap = map[rune]rune{
 	121: 114, // y -> r
 }
 
-const aa = 'a'
-
-var complementBaseRuneMap2 = map[rune]rune{
+var complementTable = [256]byte{
 	'A': 'T',
 	'B': 'V',
 	'C': 'G',
@@ -88,15 +89,15 @@ var complementBaseRuneMap2 = map[rune]rune{
 }
 
 // ReverseComplement takes the reverse complement of a sequence.
+// ReverseComplement expects ASCII input.
 func ReverseComplement(sequence string) string {
-	complementString := strings.Map(ComplementBase, sequence)
-	length := len(complementString)
-	newString := make([]rune, length)
-	for _, base := range complementString {
-		length--
-		newString[length] = base
+	n := len(sequence)
+	newSeq := make([]byte, n)
+	for i := 0; i < n; i++ {
+		newSeq[i] = complementTable[sequence[n-i-1]]
 	}
-	return string(newString)
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSeq))
 }
 
 // Complement takes the complement of a sequence.

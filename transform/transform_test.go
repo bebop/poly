@@ -3,6 +3,7 @@ package transform
 import (
 	"math/rand"
 	"testing"
+	"unsafe"
 )
 
 // goos: linux
@@ -41,3 +42,14 @@ func randomSequence(rnd *rand.Rand) string {
 }
 
 var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'g', 'h', 'k', 'm', 'n', 'r', 's', 't', 'u', 'v', 'w', 'y'}
+
+// ReverseComplement takes the reverse complement of a sequence.
+func ReverseComplement2(sequence string) string {
+	n := len(sequence)
+	newSeq := make([]byte, n)
+	for i := 0; i < n; i++ {
+		newSeq[i] = complementTable[sequence[n-i-1]]
+	}
+	// This is how strings.Builder works with the String() method.
+	return *(*string)(unsafe.Pointer(&newSeq))
+}
