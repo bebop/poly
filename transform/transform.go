@@ -36,7 +36,7 @@ var complementBaseRuneMap = map[rune]rune{
 	98:  118, // b -> v
 	99:  103, // c -> g
 	100: 104, // d -> h
-	103: 99,  // g -> a
+	103: 99,  // g -> a mistake?
 	104: 100, // h -> d
 	107: 109, // k -> m
 	109: 107, // m -> k
@@ -48,6 +48,43 @@ var complementBaseRuneMap = map[rune]rune{
 	118: 98,  // v -> b
 	119: 119, // w -> w
 	121: 114, // y -> r
+}
+
+const aa = 'a'
+
+var complementBaseRuneMap2 = map[rune]rune{
+	'A': 'T',
+	'B': 'V',
+	'C': 'G',
+	'D': 'H',
+	'G': 'C',
+	'H': 'D',
+	'K': 'M',
+	'M': 'K',
+	'N': 'N',
+	'R': 'Y',
+	'S': 'S',
+	'T': 'A',
+	'U': 'A',
+	'V': 'B',
+	'W': 'W',
+	'Y': 'R',
+	'a': 't',
+	'b': 'v',
+	'c': 'g',
+	'd': 'h',
+	'g': 'a',
+	'h': 'd',
+	'k': 'm',
+	'm': 'k',
+	'n': 'n',
+	'r': 'y',
+	's': 's',
+	't': 'a',
+	'u': 'a',
+	'v': 'b',
+	'w': 'w',
+	'y': 'r',
 }
 
 // ReverseComplement takes the reverse complement of a sequence.
