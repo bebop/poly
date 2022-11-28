@@ -3,22 +3,48 @@ package transform
 import (
 	"math/rand"
 	"testing"
-	"unsafe"
 )
 
-// goos: linux
-// goarch: amd64
-// pkg: github.com/TimothyStiles/poly/transform
-// cpu: Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz
-// BenchmarkReverseComplement-8   	 1804766	       669.8 ns/op	     224 B/op	       3 allocs/op
-// PASS
-func BenchmarkReverseComplement(b *testing.B) {
+func TestReverse(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
-	seq := randomSequence(rng)
-	for i := 0; i < b.N; i++ {
-		seq = ReverseComplement(seq)
+	sequence := randomSequence(rng)
+	// Test even and odd lengthed string.
+	for _, test := range []string{sequence, sequence[:len(sequence)-1]} {
+		got := Reverse(test)
+		for i := range got[:len(got)/2+1] {
+			gotbase := got[i]
+			expect := test[len(test)-i-1]
+			if gotbase != expect {
+				t.Errorf("mismatch at pos %d, got %q, expect %q", i, gotbase, expect)
+			}
+		}
 	}
-	_ = seq
+}
+
+func TestComplement(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	original := randomSequence(rng)
+	for _, test := range []string{original} {
+		gotSequence := Complement(test)
+		for i, got := range gotSequence {
+			expect := ComplementBase(rune(test[i]))
+			if got != expect {
+				t.Errorf("bad %q complement: got %q, expect %q", test[i], got, expect)
+			}
+		}
+	}
+}
+
+func TestReverseComplement(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	original := randomSequence(rng)
+	for _, test := range []string{original, original[:len(original)-1]} {
+		got := ReverseComplement(test)
+		expect := Reverse(Complement(test))
+		if got != expect {
+			t.Errorf("mismatch with individual Reverse and Complement call:\n%q\n%q", got, expect)
+		}
+	}
 }
 
 func TestComplementBase(t *testing.T) {
@@ -26,11 +52,11 @@ func TestComplementBase(t *testing.T) {
 		got := ComplementBase(rune(c))
 		gotI := ComplementBase(got)
 		gotII := ComplementBase(gotI)
-		if rune(c) != gotI {
-			t.Errorf("double complement should yield start: %q->%q->%q", c, got, gotI)
+		if (c == 'U' && got == 'A') || (c == 'u' && got == 'a') {
+			continue // Edge case: RNA Uracil base-pairs with Adenine.
 		}
-		if gotII != got {
-			t.Errorf("double complement should yield start: %q->%q->%q", got, gotI, gotII)
+		if rune(c) != gotI || gotII != got {
+			t.Errorf("complement transform mismatch: %q->%q->%q->%q", c, got, gotI, gotII)
 		}
 	}
 }
@@ -43,13 +69,29 @@ func randomSequence(rnd *rand.Rand) string {
 
 var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'g', 'h', 'k', 'm', 'n', 'r', 's', 't', 'u', 'v', 'w', 'y'}
 
-// ReverseComplement takes the reverse complement of a sequence.
-func ReverseComplement2(sequence string) string {
-	n := len(sequence)
-	newSeq := make([]byte, n)
-	for i := 0; i < n; i++ {
-		newSeq[i] = complementTable[sequence[n-i-1]]
+func BenchmarkReverseComplement(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	seq := randomSequence(rng)
+	for i := 0; i < b.N; i++ {
+		seq = ReverseComplement(seq)
 	}
-	// This is how strings.Builder works with the String() method.
-	return *(*string)(unsafe.Pointer(&newSeq))
+	_ = seq
+}
+
+func BenchmarkComplement(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	seq := randomSequence(rng)
+	for i := 0; i < b.N; i++ {
+		seq = Complement(seq)
+	}
+	_ = seq
+}
+
+func BenchmarkReverse(b *testing.B) {
+	rng := rand.New(rand.NewSource(1))
+	seq := randomSequence(rng)
+	for i := 0; i < b.N; i++ {
+		seq = Reverse(seq)
+	}
+	_ = seq
 }

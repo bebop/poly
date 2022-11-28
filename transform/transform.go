@@ -12,47 +12,52 @@ ReverseComplement takes the reverse complement of a sequence.
 */
 package transform
 
-import (
-	"strings"
-	"unsafe"
-)
+import "unsafe"
 
-// complementBaseRuneMap provides 1:1 mapping between bases and their complements
-var complementBaseRuneMap = map[rune]rune{
-	65:  84,  // A -> T
-	66:  86,  // B -> V
-	67:  71,  // C -> G
-	68:  72,  // D -> H
-	71:  67,  // G -> C
-	72:  68,  // H -> D
-	75:  77,  // K -> M
-	77:  75,  // M -> K
-	78:  78,  // N -> N
-	82:  89,  // R -> Y
-	83:  83,  // S -> S
-	84:  65,  // T -> A
-	85:  65,  // U -> A
-	86:  66,  // V -> B
-	87:  87,  // W -> W
-	89:  82,  // Y -> R
-	97:  116, // a -> t
-	98:  118, // b -> v
-	99:  103, // c -> g
-	100: 104, // d -> h
-	103: 99,  // g -> a mistake?
-	104: 100, // h -> d
-	107: 109, // k -> m
-	109: 107, // m -> k
-	110: 110, // n -> n
-	114: 121, // r -> y
-	115: 115, // s -> s
-	116: 97,  // t -> a
-	117: 97,  // u -> a
-	118: 98,  // v -> b
-	119: 119, // w -> w
-	121: 114, // y -> r
+// ReverseComplement takes the reverse complement of a sequence.
+// ReverseComplement expects ASCII input.
+func ReverseComplement(sequence string) string {
+	n := len(sequence)
+	newSeq := make([]byte, n)
+	for i := 0; i < n; i++ {
+		newSeq[i] = complementTable[sequence[n-i-1]]
+	}
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSeq))
 }
 
+// Complement takes the complement of a sequence.
+func Complement(sequence string) string {
+	n := len(sequence)
+	newSeq := make([]byte, n)
+	for i := 0; i < n; i++ {
+		newSeq[i] = complementTable[sequence[i]]
+	}
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSeq))
+}
+
+// Reverse takes the reverse of a sequence.
+func Reverse(sequence string) string {
+	n := len(sequence)
+	newSeq := make([]byte, n)
+	for i := 0; i < n; i++ {
+		newSeq[i] = sequence[n-i-1]
+	}
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSeq))
+}
+
+// ComplementBase accepts a base pair and returns its complement base pair
+func ComplementBase(basePair rune) rune {
+	got := rune(complementTable[basePair])
+	if got == 0 {
+		return ' ' // invalid sequence returns empty space.
+	}
+	return got
+}
+
+// complementTable provides 1:1 mapping between bases and their complements
 var complementTable = [256]byte{
 	'A': 'T',
 	'B': 'V',
@@ -74,7 +79,7 @@ var complementTable = [256]byte{
 	'b': 'v',
 	'c': 'g',
 	'd': 'h',
-	'g': 'a',
+	'g': 'c',
 	'h': 'd',
 	'k': 'm',
 	'm': 'k',
@@ -86,38 +91,4 @@ var complementTable = [256]byte{
 	'v': 'b',
 	'w': 'w',
 	'y': 'r',
-}
-
-// ReverseComplement takes the reverse complement of a sequence.
-// ReverseComplement expects ASCII input.
-func ReverseComplement(sequence string) string {
-	n := len(sequence)
-	newSeq := make([]byte, n)
-	for i := 0; i < n; i++ {
-		newSeq[i] = complementTable[sequence[n-i-1]]
-	}
-	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
-	return *(*string)(unsafe.Pointer(&newSeq))
-}
-
-// Complement takes the complement of a sequence.
-func Complement(sequence string) string {
-	complementString := strings.Map(ComplementBase, sequence)
-	return complementString
-}
-
-// Reverse takes the reverse of a sequence.
-func Reverse(sequence string) string {
-	length := len(sequence)
-	newString := make([]rune, length)
-	for _, base := range sequence {
-		length--
-		newString[length] = base
-	}
-	return string(newString)
-}
-
-// ComplementBase accepts a base pair and returns its complement base pair
-func ComplementBase(basePair rune) rune {
-	return complementBaseRuneMap[basePair]
 }
