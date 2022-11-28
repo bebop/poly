@@ -13,10 +13,10 @@ import "unsafe"
 // This function expects byte characters in the range a-z and A-Z and
 // will not check for non-byte characters, i.e. utf-8 encoding.
 func ReverseComplement(sequence string) string {
-	n := len(sequence)
-	newSeq := make([]byte, n)
-	for i := 0; i < n; i++ {
-		newSeq[i] = complementTable[sequence[n-i-1]]
+	seqLen := len(sequence)
+	newSeq := make([]byte, seqLen)
+	for idx := 0; idx < seqLen; idx++ {
+		newSeq[idx] = complementTable[sequence[seqLen-idx-1]]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
 	return *(*string)(unsafe.Pointer(&newSeq))
@@ -37,10 +37,10 @@ func ReverseComplement(sequence string) string {
 //
 // [DNA]: https://en.wikipedia.org/wiki/DNA
 func Complement(sequence string) string {
-	n := len(sequence)
-	newSeq := make([]byte, n)
-	for i := 0; i < n; i++ {
-		newSeq[i] = complementTable[sequence[i]]
+	seqLen := len(sequence)
+	newSeq := make([]byte, seqLen)
+	for idx := 0; idx < seqLen; idx++ {
+		newSeq[idx] = complementTable[sequence[idx]]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
 	return *(*string)(unsafe.Pointer(&newSeq))
@@ -52,10 +52,10 @@ func Complement(sequence string) string {
 // This function expects byte characters in the range a-z and A-Z and
 // will not check for non-byte character, i.e. utf-8 encoding.
 func Reverse(sequence string) string {
-	n := len(sequence)
-	newSeq := make([]byte, n)
-	for i := 0; i < n; i++ {
-		newSeq[i] = sequence[n-i-1]
+	seqLen := len(sequence)
+	newSeq := make([]byte, seqLen)
+	for idx := 0; idx < seqLen; idx++ {
+		newSeq[idx] = sequence[seqLen-idx-1]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
 	return *(*string)(unsafe.Pointer(&newSeq))

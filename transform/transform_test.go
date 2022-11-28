@@ -11,11 +11,11 @@ func TestReverse(t *testing.T) {
 	// Test even and odd lengthed string.
 	for _, test := range []string{sequence, sequence[:len(sequence)-1]} {
 		got := Reverse(test)
-		for i := range got[:len(got)/2+1] {
-			gotbase := got[i]
-			expect := test[len(test)-i-1]
+		for idx := range got[:len(got)/2+1] {
+			gotbase := got[idx]
+			expect := test[len(test)-idx-1]
 			if gotbase != expect {
-				t.Errorf("mismatch at pos %d, got %q, expect %q", i, gotbase, expect)
+				t.Errorf("mismatch at pos %d, got %q, expect %q", idx, gotbase, expect)
 			}
 		}
 	}
@@ -26,10 +26,10 @@ func TestComplement(t *testing.T) {
 	original := randomSequence(rng)
 	for _, test := range []string{original} {
 		gotSequence := Complement(test)
-		for i, got := range gotSequence {
-			expect := ComplementBase(rune(test[i]))
+		for idx, got := range gotSequence {
+			expect := ComplementBase(rune(test[idx]))
 			if got != expect {
-				t.Errorf("bad %q complement: got %q, expect %q", test[i], got, expect)
+				t.Errorf("bad %q complement: got %q, expect %q", test[idx], got, expect)
 			}
 		}
 	}
@@ -74,7 +74,7 @@ var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', '
 func BenchmarkReverseComplement(b *testing.B) {
 	rng := rand.New(rand.NewSource(1))
 	seq := randomSequence(rng)
-	for i := 0; i < b.N; i++ {
+	for idx := 0; idx < b.N; idx++ {
 		seq = ReverseComplement(seq)
 	}
 	_ = seq
@@ -83,7 +83,7 @@ func BenchmarkReverseComplement(b *testing.B) {
 func BenchmarkComplement(b *testing.B) {
 	rng := rand.New(rand.NewSource(1))
 	seq := randomSequence(rng)
-	for i := 0; i < b.N; i++ {
+	for idx := 0; idx < b.N; idx++ {
 		seq = Complement(seq)
 	}
 	_ = seq
@@ -92,7 +92,7 @@ func BenchmarkComplement(b *testing.B) {
 func BenchmarkReverse(b *testing.B) {
 	rng := rand.New(rand.NewSource(1))
 	seq := randomSequence(rng)
-	for i := 0; i < b.N; i++ {
+	for idx := 0; idx < b.N; idx++ {
 		seq = Reverse(seq)
 	}
 	_ = seq
