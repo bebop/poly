@@ -62,9 +62,11 @@ func TestComplementBase(t *testing.T) {
 }
 
 func randomSequence(rnd *rand.Rand) string {
-	cp := letters
-	rnd.Shuffle(len(cp), func(i, j int) { cp[i], cp[j] = cp[j], cp[i] })
-	return string(cp[:])
+	// TODO(soypat): make a more professional random sequencer
+	// Probably could have a length argument.
+	lettersCopy := letters
+	rnd.Shuffle(len(lettersCopy), func(i, j int) { lettersCopy[i], lettersCopy[j] = lettersCopy[j], lettersCopy[i] })
+	return string(lettersCopy[:])
 }
 
 var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'g', 'h', 'k', 'm', 'n', 'r', 's', 't', 'u', 'v', 'w', 'y'}

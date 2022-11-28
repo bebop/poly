@@ -1,21 +1,17 @@
 /*
 Package transform provides functions for transforming sequences.
-
-Complement takes the complement of a sequence.
-(returns a sequence string where each nucleotide has been swapped with its complement A<->T, C<->G)
-
-Reverse takes the reverse of a sequence.
-(literally just reverses a string. Exists in stdlib but hey why not have it here too?)
-
-ReverseComplement takes the reverse complement of a sequence.
-(Reverses the sequence string and returns the complement of the reversed sequence.)
 */
 package transform
 
 import "unsafe"
 
-// ReverseComplement takes the reverse complement of a sequence.
-// ReverseComplement expects ASCII input.
+// ReverseComplement returns the reversed complement of sequence.
+// It is the equivalent of calling
+//
+//	revComplement := Reverse(Complement(sequence))
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte characters, i.e. utf-8 encoding.
 func ReverseComplement(sequence string) string {
 	n := len(sequence)
 	newSeq := make([]byte, n)
@@ -26,7 +22,20 @@ func ReverseComplement(sequence string) string {
 	return *(*string)(unsafe.Pointer(&newSeq))
 }
 
-// Complement takes the complement of a sequence.
+// Complement returns the complement of sequence. In [DNA] each nucleotide
+// (A, T, C or G) is has a deterministic pair. A is paired with T and
+// C is paired with G. The complement of a sequence is formed by exchanging
+// these letters for their pair:
+//
+//	'A' becomes 'T'
+//	'T' becomes 'A'
+//	'C' becomes 'G'
+//	'G' becomes 'C'
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte characters, i.e. utf-8 encoding.
+//
+// [DNA]: https://en.wikipedia.org/wiki/DNA
 func Complement(sequence string) string {
 	n := len(sequence)
 	newSeq := make([]byte, n)
@@ -37,7 +46,11 @@ func Complement(sequence string) string {
 	return *(*string)(unsafe.Pointer(&newSeq))
 }
 
-// Reverse takes the reverse of a sequence.
+// Reverse returns the reverse of sequence. It performs a basic
+// string reversal by working on the bytes.
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte character, i.e. utf-8 encoding.
 func Reverse(sequence string) string {
 	n := len(sequence)
 	newSeq := make([]byte, n)
@@ -48,7 +61,11 @@ func Reverse(sequence string) string {
 	return *(*string)(unsafe.Pointer(&newSeq))
 }
 
-// ComplementBase accepts a base pair and returns its complement base pair
+// ComplementBase accepts a base pair and returns its complement base pair. See Complement.
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will return a space ' ' (U+0020) for characters that are not matched
+// to any known base. This is subject to change.
 func ComplementBase(basePair rune) rune {
 	got := rune(complementTable[basePair])
 	if got == 0 {
