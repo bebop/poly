@@ -80,12 +80,18 @@ func Parse(r io.Reader) ([]Fasta, error) {
 	return outputFastas, nil
 }
 
+// Parser is a flexible parser that provides ample
+// control over reading fasta-formatted sequences.
+// It is initialized with NewParser.
+
 type Parser struct {
 	// rd keeps state of current reader.
 	rd   bufio.Reader
 	line uint
 }
 
+// NewParser returns a Parser that uses r as the source
+// from which to parse fasta formatted sequences.
 func NewParser(r io.Reader) *Parser {
 	// What's the largest line size a fasta can be?
 	const maxLineSize = math.MaxUint16
@@ -199,14 +205,15 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 	}
 	// Parsing ended. Check for inconsistencies.
 	if lookingForName {
-		return Fasta{}, totalRead, fmt.Errorf("did not find fasta start '>', got to line %d", p.line)
+		return Fasta{}, totalRead, fmt.Errorf("did not find fasta start '>', got to line %d: %w", p.line, err)
 	}
-	if lookingForName && len(sequence) == 0 {
-		return Fasta{}, totalRead, fmt.Errorf("empty fasta sequence for %q,  got to line %d", seqName, p.line)
+	if !lookingForName && len(sequence) == 0 {
+		// We found a fasta name but no sequence to go with it.
+		return Fasta{}, totalRead, fmt.Errorf("empty fasta sequence for %q,  got to line %d: %w", seqName, p.line, err)
 	}
 	fasta := Fasta{
 		Name:     seqName,
-		Sequence: *(*string)(unsafe.Pointer(&sequence)),
+		Sequence: *(*string)(unsafe.Pointer(&sequence)), // Stdlib strings.Builder.String() does this so it *should* be safe.
 	}
 	return fasta, totalRead, nil
 }
