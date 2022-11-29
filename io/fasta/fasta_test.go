@@ -25,7 +25,7 @@ func BenchmarkParser(b *testing.B) {
 		fp, _ := os.Open("data/uniprot_1mb_test.fasta")
 		p := NewParser(fp)
 		for {
-			fasta, err := p.ParseNext()
+			fasta, _, err := p.ParseNext()
 			if err != nil {
 				break
 			}
