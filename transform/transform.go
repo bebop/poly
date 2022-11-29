@@ -1,85 +1,111 @@
 /*
 Package transform provides functions for transforming sequences.
-
-Complement takes the complement of a sequence.
-(returns a sequence string where each nucleotide has been swapped with its complement A<->T, C<->G)
-
-Reverse takes the reverse of a sequence.
-(literally just reverses a string. Exists in stdlib but hey why not have it here too?)
-
-ReverseComplement takes the reverse complement of a sequence.
-(Reverses the sequence string and returns the complement of the reversed sequence.)
 */
 package transform
 
-import "strings"
+import "unsafe"
 
-// complementBaseRuneMap provides 1:1 mapping between bases and their complements
-var complementBaseRuneMap = map[rune]rune{
-	65:  84,  // A -> T
-	66:  86,  // B -> V
-	67:  71,  // C -> G
-	68:  72,  // D -> H
-	71:  67,  // G -> C
-	72:  68,  // H -> D
-	75:  77,  // K -> M
-	77:  75,  // M -> K
-	78:  78,  // N -> N
-	82:  89,  // R -> Y
-	83:  83,  // S -> S
-	84:  65,  // T -> A
-	85:  65,  // U -> A
-	86:  66,  // V -> B
-	87:  87,  // W -> W
-	89:  82,  // Y -> R
-	97:  116, // a -> t
-	98:  118, // b -> v
-	99:  103, // c -> g
-	100: 104, // d -> h
-	103: 99,  // g -> a
-	104: 100, // h -> d
-	107: 109, // k -> m
-	109: 107, // m -> k
-	110: 110, // n -> n
-	114: 121, // r -> y
-	115: 115, // s -> s
-	116: 97,  // t -> a
-	117: 97,  // u -> a
-	118: 98,  // v -> b
-	119: 119, // w -> w
-	121: 114, // y -> r
-}
-
-// ReverseComplement takes the reverse complement of a sequence.
+// ReverseComplement returns the reversed complement of sequence.
+// It is the equivalent of calling
+//
+//	revComplement := Reverse(Complement(sequence))
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte characters, i.e. utf-8 encoding.
 func ReverseComplement(sequence string) string {
-	complementString := strings.Map(ComplementBase, sequence)
-	length := len(complementString)
-	newString := make([]rune, length)
-	for _, base := range complementString {
-		length--
-		newString[length] = base
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = complementTable[sequence[sequenceLength-index-1]]
 	}
-	return string(newString)
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSequence))
 }
 
-// Complement takes the complement of a sequence.
+// Complement returns the complement of sequence. In [DNA] each nucleotide
+// (A, T, C or G) is has a deterministic pair. A is paired with T and
+// C is paired with G. The complement of a sequence is formed by exchanging
+// these letters for their pair:
+//
+//	'A' becomes 'T'
+//	'T' becomes 'A'
+//	'C' becomes 'G'
+//	'G' becomes 'C'
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte characters, i.e. utf-8 encoding.
+//
+// [DNA]: https://en.wikipedia.org/wiki/DNA
 func Complement(sequence string) string {
-	complementString := strings.Map(ComplementBase, sequence)
-	return complementString
-}
-
-// Reverse takes the reverse of a sequence.
-func Reverse(sequence string) string {
-	length := len(sequence)
-	newString := make([]rune, length)
-	for _, base := range sequence {
-		length--
-		newString[length] = base
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = complementTable[sequence[index]]
 	}
-	return string(newString)
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSequence))
 }
 
-// ComplementBase accepts a base pair and returns its complement base pair
+// Reverse returns the reverse of sequence. It performs a basic
+// string reversal by working on the bytes.
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will not check for non-byte character, i.e. utf-8 encoding.
+func Reverse(sequence string) string {
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = sequence[sequenceLength-index-1]
+	}
+	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
+	return *(*string)(unsafe.Pointer(&newSequence))
+}
+
+// ComplementBase accepts a base pair and returns its complement base pair. See Complement.
+//
+// This function expects byte characters in the range a-z and A-Z and
+// will return a space ' ' (U+0020) for characters that are not matched
+// to any known base. This is subject to change.
 func ComplementBase(basePair rune) rune {
-	return complementBaseRuneMap[basePair]
+	got := rune(complementTable[basePair])
+	if got == 0 {
+		return ' ' // invalid sequence returns empty space.
+	}
+	return got
+}
+
+// complementTable provides 1:1 mapping between bases and their complements
+var complementTable = [256]byte{
+	'A': 'T',
+	'B': 'V',
+	'C': 'G',
+	'D': 'H',
+	'G': 'C',
+	'H': 'D',
+	'K': 'M',
+	'M': 'K',
+	'N': 'N',
+	'R': 'Y',
+	'S': 'S',
+	'T': 'A',
+	'U': 'A',
+	'V': 'B',
+	'W': 'W',
+	'Y': 'R',
+	'a': 't',
+	'b': 'v',
+	'c': 'g',
+	'd': 'h',
+	'g': 'c',
+	'h': 'd',
+	'k': 'm',
+	'm': 'k',
+	'n': 'n',
+	'r': 'y',
+	's': 's',
+	't': 'a',
+	'u': 'a',
+	'v': 'b',
+	'w': 'w',
+	'y': 'r',
 }
