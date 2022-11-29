@@ -60,6 +60,13 @@ func TestReverseComplement(t *testing.T) {
 	}
 }
 
+func TestComplementBaseError(t *testing.T) {
+	complementBase := ComplementBase('!')
+	if complementBase != ' ' {
+		t.Errorf("expected space for invalid base")
+	}
+}
+
 func BenchmarkReverseComplement(b *testing.B) {
 	seed := rand.New(rand.NewSource(1)).Int63()
 	sequence, _ := random.DNASequence(8, seed)
