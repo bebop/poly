@@ -3,97 +3,86 @@ package transform
 import (
 	"math/rand"
 	"testing"
+
+	"github.com/TimothyStiles/poly/random"
 )
 
 func TestReverse(t *testing.T) {
-	rng := rand.New(rand.NewSource(1))
-	sequence := randomSequence(rng)
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, err := random.DNASequence(20, seed)
+	if err != nil {
+		t.Errorf("failed to generate random DNA sequence")
+	}
 	// Test even and odd lengthed string.
-	for _, test := range []string{sequence, sequence[:len(sequence)-1]} {
-		got := Reverse(test)
-		for idx := range got[:len(got)/2+1] {
-			gotbase := got[idx]
-			expect := test[len(test)-idx-1]
+	evenAndOddLengthSequences := []string{sequence, sequence[:len(sequence)-1]} // indexing just removes last character of sequence for even/odd check
+	for _, testSequence := range evenAndOddLengthSequences {
+		reversedSequence := Reverse(testSequence)
+		for index := range reversedSequence[:len(reversedSequence)/2+1] {
+			gotbase := reversedSequence[index]
+			expect := testSequence[len(testSequence)-index-1]
 			if gotbase != expect {
-				t.Errorf("mismatch at pos %d, got %q, expect %q", idx, gotbase, expect)
+				t.Errorf("mismatch at pos %d, got %q, expect %q", index, gotbase, expect)
 			}
 		}
 	}
 }
 
 func TestComplement(t *testing.T) {
-	rng := rand.New(rand.NewSource(1))
-	original := randomSequence(rng)
-	for _, test := range []string{original} {
-		gotSequence := Complement(test)
-		for idx, got := range gotSequence {
-			expect := ComplementBase(rune(test[idx]))
-			if got != expect {
-				t.Errorf("bad %q complement: got %q, expect %q", test[idx], got, expect)
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, err := random.DNASequence(20, seed)
+	if err != nil {
+		t.Errorf("failed to generate random DNA sequence")
+	}
+	for _, testSequence := range []string{sequence} { // loop is unneeded but makes it easier to add more test cases in the future.
+		complementSequence := Complement(testSequence)
+		for index, complement := range complementSequence {
+			expectedBase := ComplementBase(rune(testSequence[index]))
+			if complement != expectedBase {
+				t.Errorf("bad %q complement: got %q, expect %q", testSequence[index], complement, expectedBase)
 			}
 		}
 	}
 }
 
 func TestReverseComplement(t *testing.T) {
-	rng := rand.New(rand.NewSource(1))
-	original := randomSequence(rng)
-	for _, test := range []string{original, original[:len(original)-1]} {
-		got := ReverseComplement(test)
-		expect := Reverse(Complement(test))
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, err := random.DNASequence(20, seed)
+	if err != nil {
+		t.Errorf("failed to generate random DNA sequence")
+	}
+	evenAndOddLengthSequences := []string{sequence, sequence[:len(sequence)-1]}
+	for _, testSequence := range evenAndOddLengthSequences {
+		got := ReverseComplement(testSequence)
+		expect := Reverse(Complement(testSequence))
 		if got != expect {
 			t.Errorf("mismatch with individual Reverse and Complement call:\n%q\n%q", got, expect)
 		}
 	}
 }
 
-func TestComplementBase(t *testing.T) {
-	for _, c := range letters {
-		got := ComplementBase(rune(c))
-		gotI := ComplementBase(got)
-		gotII := ComplementBase(gotI)
-		if (c == 'U' && got == 'A') || (c == 'u' && got == 'a') {
-			continue // Edge case: RNA Uracil base-pairs with Adenine.
-		}
-		if rune(c) != gotI || gotII != got {
-			t.Errorf("complement transform mismatch: %q->%q->%q->%q", c, got, gotI, gotII)
-		}
-	}
-}
-
-func randomSequence(rnd *rand.Rand) string {
-	// TODO(soypat): make a more professional random sequencer
-	// Probably could have a length argument.
-	lettersCopy := letters
-	rnd.Shuffle(len(lettersCopy), func(i, j int) { lettersCopy[i], lettersCopy[j] = lettersCopy[j], lettersCopy[i] })
-	return string(lettersCopy[:])
-}
-
-var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'g', 'h', 'k', 'm', 'n', 'r', 's', 't', 'u', 'v', 'w', 'y'}
-
 func BenchmarkReverseComplement(b *testing.B) {
-	rng := rand.New(rand.NewSource(1))
-	seq := randomSequence(rng)
-	for idx := 0; idx < b.N; idx++ {
-		seq = ReverseComplement(seq)
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, _ := random.DNASequence(8, seed)
+	for index := 0; index < b.N; index++ {
+		sequence = ReverseComplement(sequence)
 	}
-	_ = seq
+	_ = sequence
 }
 
 func BenchmarkComplement(b *testing.B) {
-	rng := rand.New(rand.NewSource(1))
-	seq := randomSequence(rng)
-	for idx := 0; idx < b.N; idx++ {
-		seq = Complement(seq)
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, _ := random.DNASequence(8, seed)
+	for index := 0; index < b.N; index++ {
+		sequence = Complement(sequence)
 	}
-	_ = seq
+	_ = sequence
 }
 
 func BenchmarkReverse(b *testing.B) {
-	rng := rand.New(rand.NewSource(1))
-	seq := randomSequence(rng)
-	for idx := 0; idx < b.N; idx++ {
-		seq = Reverse(seq)
+	seed := rand.New(rand.NewSource(1)).Int63()
+	sequence, _ := random.DNASequence(8, seed)
+	for index := 0; index < b.N; index++ {
+		sequence = Reverse(sequence)
 	}
-	_ = seq
+	_ = sequence
 }

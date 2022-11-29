@@ -13,13 +13,13 @@ import "unsafe"
 // This function expects byte characters in the range a-z and A-Z and
 // will not check for non-byte characters, i.e. utf-8 encoding.
 func ReverseComplement(sequence string) string {
-	seqLen := len(sequence)
-	newSeq := make([]byte, seqLen)
-	for idx := 0; idx < seqLen; idx++ {
-		newSeq[idx] = complementTable[sequence[seqLen-idx-1]]
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = complementTable[sequence[sequenceLength-index-1]]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
-	return *(*string)(unsafe.Pointer(&newSeq))
+	return *(*string)(unsafe.Pointer(&newSequence))
 }
 
 // Complement returns the complement of sequence. In [DNA] each nucleotide
@@ -37,13 +37,13 @@ func ReverseComplement(sequence string) string {
 //
 // [DNA]: https://en.wikipedia.org/wiki/DNA
 func Complement(sequence string) string {
-	seqLen := len(sequence)
-	newSeq := make([]byte, seqLen)
-	for idx := 0; idx < seqLen; idx++ {
-		newSeq[idx] = complementTable[sequence[idx]]
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = complementTable[sequence[index]]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
-	return *(*string)(unsafe.Pointer(&newSeq))
+	return *(*string)(unsafe.Pointer(&newSequence))
 }
 
 // Reverse returns the reverse of sequence. It performs a basic
@@ -52,13 +52,13 @@ func Complement(sequence string) string {
 // This function expects byte characters in the range a-z and A-Z and
 // will not check for non-byte character, i.e. utf-8 encoding.
 func Reverse(sequence string) string {
-	seqLen := len(sequence)
-	newSeq := make([]byte, seqLen)
-	for idx := 0; idx < seqLen; idx++ {
-		newSeq[idx] = sequence[seqLen-idx-1]
+	sequenceLength := len(sequence)
+	newSequence := make([]byte, sequenceLength)
+	for index := 0; index < sequenceLength; index++ {
+		newSequence[index] = sequence[sequenceLength-index-1]
 	}
 	// This is how strings.Builder works with the String() method. If Mr. Go says it's safe...
-	return *(*string)(unsafe.Pointer(&newSeq))
+	return *(*string)(unsafe.Pointer(&newSequence))
 }
 
 // ComplementBase accepts a base pair and returns its complement base pair. See Complement.
