@@ -60,6 +60,21 @@ func TestReverseComplement(t *testing.T) {
 	}
 }
 
+func TestComplementBase(t *testing.T) {
+	var letters = [...]byte{'A', 'B', 'C', 'D', 'G', 'H', 'K', 'M', 'N', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'a', 'b', 'c', 'd', 'g', 'h', 'k', 'm', 'n', 'r', 's', 't', 'u', 'v', 'w', 'y'}
+	for _, c := range letters {
+		got := ComplementBase(rune(c))
+		gotI := ComplementBase(got)
+		gotII := ComplementBase(gotI)
+		if (c == 'U' && got == 'A') || (c == 'u' && got == 'a') {
+			continue // Edge case: RNA Uracil base-pairs with Adenine.
+		}
+		if rune(c) != gotI || gotII != got {
+			t.Errorf("complement transform mismatch: %q->%q->%q->%q", c, got, gotI, gotII)
+		}
+	}
+}
+
 func TestComplementBaseError(t *testing.T) {
 	complementBase := ComplementBase('!')
 	if complementBase != ' ' {
