@@ -16,20 +16,23 @@ import (
 var uniprotFasta string
 
 func TestMain(m *testing.M) {
-	const uniprotGz = "data/uniprot_1mb_test.fasta.gz"
+	const uniprotFastaGzFilePath = "data/uniprot_1mb_test.fasta.gz"
 	// unzip uniprot data and create uniprotFasta string for benchmarks and testing.
-	fp, err := os.Open(uniprotGz)
+	uniprotFastaGzFile, err := os.Open(uniprotFastaGzFilePath)
 	if err != nil {
-		panic(uniprotGz + " required for tests!")
+		panic(uniprotFastaGzFilePath + " required for tests!")
 	}
-	defer fp.Close()
-	r, _ := gzip.NewReader(fp)
-	defer r.Close()
-	b, err := io.ReadAll(r)
+	defer uniprotFastaGzFile.Close()
+
+	uniprotFastaGzReader, _ := gzip.NewReader(uniprotFastaGzFile)
+	defer uniprotFastaGzReader.Close()
+
+	uniprotFastaBytes, err := io.ReadAll(uniprotFastaGzReader)
 	if err != nil {
 		panic(err)
 	}
-	uniprotFasta = string(b)
+
+	uniprotFasta = string(uniprotFastaBytes)
 	m.Run()
 }
 
@@ -46,22 +49,22 @@ func BenchmarkFastaLegacy(b *testing.B) {
 }
 
 func BenchmarkParser(b *testing.B) {
-	var fastas []Fasta
+	var fastaRecords []Fasta
 	for i := 0; i < b.N; i++ {
-		p := NewParser(strings.NewReader(uniprotFasta), 256)
+		parser := NewParser(strings.NewReader(uniprotFasta), 256)
 		for {
-			fasta, _, err := p.ParseNext()
+			fasta, _, err := parser.ParseNext()
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
 					b.Fatal(err)
 				}
 				break
 			}
-			fastas = append(fastas, fasta)
+			fastaRecords = append(fastaRecords, fasta)
 		}
-		fastas = nil // Reset memory
+		fastaRecords = nil // Reset memory
 	}
-	_ = fastas
+	_ = fastaRecords
 }
 
 func TestParse(t *testing.T) {
