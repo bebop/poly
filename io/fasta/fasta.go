@@ -92,9 +92,7 @@ type Parser struct {
 
 // NewParser returns a Parser that uses r as the source
 // from which to parse fasta formatted sequences.
-func NewParser(r io.Reader) *Parser {
-	// What's the largest line size a fasta can be?
-	const maxLineSize = math.MaxUint16
+func NewParser(r io.Reader, maxLineSize int) *Parser {
 	return &Parser{
 		rd: *bufio.NewReaderSize(r, maxLineSize),
 	}
@@ -167,11 +165,17 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 	)
 	for {
 		line, err = p.rd.ReadSlice('\n')
-		if err != nil {
-			break
-		}
 		totalRead += int64(len(line))
 		p.line++
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break // We end parsing step.
+			} else if errors.Is(err, bufio.ErrBufferFull) {
+				// Buffer size too small to read fasta line.
+				return Fasta{}, totalRead, fmt.Errorf("line %d too large for buffer, use larger maxLineSize: %w", p.line+1, err)
+			}
+			return Fasta{}, totalRead, err // Unexpected error.
+		}
 		line = line[:len(line)-1] // Exclude newline delimiter.
 
 		isSkippable := len(line) == 0 || line[0] == ';'

@@ -48,7 +48,7 @@ func BenchmarkFastaLegacy(b *testing.B) {
 func BenchmarkParser(b *testing.B) {
 	var fastas []Fasta
 	for i := 0; i < b.N; i++ {
-		p := NewParser(strings.NewReader(uniprotFasta))
+		p := NewParser(strings.NewReader(uniprotFasta), 256)
 		for {
 			fasta, _, err := p.ParseNext()
 			if err != nil {

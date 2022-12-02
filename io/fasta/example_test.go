@@ -98,7 +98,7 @@ func ExampleReadConcurrent() {
 }
 
 func ExampleParser() {
-	parser := fasta.NewParser(strings.NewReader(baseFasta))
+	parser := fasta.NewParser(strings.NewReader(baseFasta), 256)
 	for {
 		fasta, _, err := parser.ParseNext()
 		if err != nil {
