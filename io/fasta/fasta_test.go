@@ -6,15 +6,41 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+// Initialized at TestMain.
+var uniprotFasta string
+
+func TestMain(m *testing.M) {
+	const uniprotGz = "data/uniprot_1mb_test.fasta.gz"
+	// unzip uniprot data and create uniprotFasta string for benchmarks and testing.
+	fp, err := os.Open(uniprotGz)
+	if err != nil {
+		panic(uniprotGz + " required for tests!")
+	}
+	defer fp.Close()
+	r, _ := gzip.NewReader(fp)
+	defer r.Close()
+	b, err := io.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+	uniprotFasta = string(b)
+	m.Run()
+}
+
 func BenchmarkFastaLegacy(b *testing.B) {
 	var fastas []Fasta
+	var err error
 	for i := 0; i < b.N; i++ {
-		fastas, _ = Read("data/uniprot_1mb_test.fasta")
+		fastas, err = Parse(strings.NewReader(uniprotFasta))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 	_ = fastas
 }
@@ -22,11 +48,13 @@ func BenchmarkFastaLegacy(b *testing.B) {
 func BenchmarkParser(b *testing.B) {
 	var fastas []Fasta
 	for i := 0; i < b.N; i++ {
-		fp, _ := os.Open("data/uniprot_1mb_test.fasta")
-		p := NewParser(fp)
+		p := NewParser(strings.NewReader(uniprotFasta))
 		for {
 			fasta, _, err := p.ParseNext()
 			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					b.Fatal(err)
+				}
 				break
 			}
 			fastas = append(fastas, fasta)
