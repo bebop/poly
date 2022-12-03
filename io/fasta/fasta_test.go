@@ -304,3 +304,75 @@ func TestWrite_error(t *testing.T) {
 	err := Write([]Fasta{}, "/tmp/file")
 	assert.EqualError(t, err, buildErr.Error())
 }
+
+func TestParser(t *testing.T) {
+	parser := NewParser(nil, 256)
+	for testIndex, test := range []struct {
+		content  string
+		expected []Fasta
+	}{
+		{
+			content:  ">humen\nGATTACA\nCATGAT", // EOF-ended Fasta not valid
+			expected: []Fasta{},
+		},
+		{
+			content:  ">humen\nGATTACA\nCATGAT\n",
+			expected: []Fasta{{Name: "humen", Sequence: "GATTACACATGAT"}},
+		},
+		{
+			content: ">doggy or something\nGATTACA\n\nCATGAT\n" +
+				">homunculus\nAAAA\n",
+			expected: []Fasta{
+				{Name: "doggy or something", Sequence: "GATTACACATGAT"},
+				{Name: "homunculus", Sequence: "AAAA"},
+			},
+		},
+	} {
+		parser.Reset(strings.NewReader(test.content))
+		fastas, err := parser.ParseAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(fastas) != len(test.expected) {
+			t.Errorf("case index %d: got %d fastas, expected %d", testIndex, len(fastas), len(test.expected))
+			continue
+		}
+		for index, gotFasta := range fastas {
+			expected := test.expected[index]
+			if expected != gotFasta {
+				t.Errorf("got!=expected: %+v != %+v", gotFasta, expected)
+			}
+		}
+	}
+}
+
+func TestParseBytes(t *testing.T) {
+	// Partial read test.
+	const testFasta = ">0\nGAT\n>1\nCAC"
+	p := NewParser(strings.NewReader(testFasta), 256)
+	result1, bytesRead, err := p.ParseByteLimited(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result1) != 1 {
+		t.Error("expected result of length 1 (partial read)")
+	}
+	expectBytesRead := 1 + strings.Index(testFasta[1:], ">")
+	if int(bytesRead) != expectBytesRead {
+		t.Errorf("expected %d bytes read, got %d bytes read", expectBytesRead, bytesRead)
+	}
+
+	// Full read test.
+	p.Reset(strings.NewReader(testFasta))
+	result1, bytesRead, err = p.ParseByteLimited(100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result1) != 2 {
+		t.Error("expected result of length 2 (full read)")
+	}
+	expectBytesRead = len(testFasta)
+	if int(bytesRead) != expectBytesRead {
+		t.Errorf("expected %d bytes read, got %d bytes read", expectBytesRead, bytesRead)
+	}
+}

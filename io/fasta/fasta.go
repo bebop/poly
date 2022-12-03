@@ -142,8 +142,10 @@ func (p *Parser) ParseByteLimited(byteLimit int64) (fastas []Fasta, bytesRead in
 // ParseNext reads next fasta genome in underlying reader and returns the result
 // and the amount of bytes read during the call.
 // ParseNext only returns an error if it:
-//   - attempts to read and fails to find a valid fasta sequence
+//   - Attempts to read and fails to find a valid fasta sequence.
 //   - Returns reader's EOF if called after reader has been exhausted.
+//   - If a EOF is encountered immediately after a sequence with no newline ending.
+//     In this case the Fasta up to that point is returned with an EOF error.
 //
 // It is worth noting the amount of bytes read are always right up to before
 // the next fasta starts which means this function can effectively be used
@@ -169,6 +171,13 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		p.line++
 		if err != nil {
 			if errors.Is(err, io.EOF) {
+				if len(line) > 1 && line[0] != ';' {
+					// EOF-ended fasta. We append line if not empty
+					sequence = append(sequence, line...)
+				} else {
+					// Is not an EOF ended fasta.
+					err = nil
+				}
 				break // We end parsing step.
 			} else if errors.Is(err, bufio.ErrBufferFull) {
 				// Buffer size too small to read fasta line.
@@ -219,10 +228,16 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		Name:     seqName,
 		Sequence: *(*string)(unsafe.Pointer(&sequence)), // Stdlib strings.Builder.String() does this so it *should* be safe.
 	}
-	return fasta, totalRead, nil
+	// err is non-nil only in EOF case.
+	// We report this error to note the fasta may be incomplete/corrupt
+	// like in the case of using an io.LimitReader wrapping the underlying reader.
+	// We return the fasta as well since some libraries generate fastas with no
+	// ending newline i.e Zymo. It is up to the user to decide whether they want
+	// an EOF-ended fasta or not, the rest of this library discards EOF-ended fastas.
+	return fasta, totalRead, err
 }
 
-// Reset discards all data and resets state.
+// Reset discards all data in buffer and resets state.
 func (p *Parser) Reset(r io.Reader) {
 	p.rd.Reset(r)
 	p.line = 0
