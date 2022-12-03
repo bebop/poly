@@ -165,6 +165,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		err            error
 		totalRead      int64
 	)
+	const translationStopChar = '*'
 	for {
 		line, err = p.rd.ReadSlice('\n')
 		totalRead += int64(len(line))
@@ -173,7 +174,13 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 			if errors.Is(err, io.EOF) {
 				if len(line) > 1 && line[0] != ';' {
 					// EOF-ended fasta. We append line if not empty
-					sequence = append(sequence, line...)
+					stopTranslate := bytes.IndexByte(line, translationStopChar)
+					if stopTranslate >= 0 {
+						err = nil // We can be sure we have the full sequence since we found a stop translate character.
+					} else {
+						stopTranslate = len(line)
+					}
+					sequence = append(sequence, line[:stopTranslate]...)
 				} else {
 					// Is not an EOF ended fasta.
 					err = nil

@@ -348,7 +348,7 @@ func TestParser(t *testing.T) {
 
 func TestParseBytes(t *testing.T) {
 	// Partial read test.
-	const testFasta = ">0\nGAT\n>1\nCAC"
+	const testFasta = ">0\nGAT\n>1\nCAC\n"
 	p := NewParser(strings.NewReader(testFasta), 256)
 	result1, bytesRead, err := p.ParseByteLimited(1)
 	if err != nil {
