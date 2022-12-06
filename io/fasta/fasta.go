@@ -70,14 +70,8 @@ type Fasta struct {
 
 // Parse parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
 func Parse(r io.Reader) ([]Fasta, error) {
-	fastas := make(chan Fasta, 1000) // A buffer is used so that the functions runs as it is appending to outputFastas
-	go ParseConcurrent(r, fastas)
-
-	var outputFastas []Fasta
-	for fasta := range fastas {
-		outputFastas = append(outputFastas, fasta)
-	}
-	return outputFastas, nil
+	parser := NewParser(r, 256)
+	return parser.ParseAll()
 }
 
 // Parser is a flexible parser that provides ample

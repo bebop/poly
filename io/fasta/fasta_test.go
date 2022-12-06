@@ -376,3 +376,14 @@ func TestParseBytes(t *testing.T) {
 		t.Errorf("expected %d bytes read, got %d bytes read", expectBytesRead, bytesRead)
 	}
 }
+
+// TestReadEmptyFasta tests that an empty fasta file is parsed correctly.
+func TestReadEmptyFasta(t *testing.T) {
+	fastas, err := Read("data/empty.fasta")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fastas) != 0 {
+		t.Errorf("expected 0 fastas, got %d", len(fastas))
+	}
+}
