@@ -301,19 +301,24 @@ Start of  Read functions
 ******************************************************************************/
 
 // ReadGzConcurrent concurrently reads a gzipped Fasta file into a Fasta channel.
+// Deprecated: Use Parser.ParseNext() instead.
 func ReadGzConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
-
 	reader, _ := gzipReaderFn(file)
-	defer reader.Close()
-	go ParseConcurrent(reader, sequences)
+	go func() {
+		defer file.Close()
+		defer reader.Close()
+		ParseConcurrent(reader, sequences)
+	}()
 }
 
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
 func ReadConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
-	defer file.Close()
-	go ParseConcurrent(file, sequences)
+	go func() {
+		defer file.Close()
+		ParseConcurrent(file, sequences)
+	}()
 }
 
 // ReadGz reads a gzipped  file into an array of Fasta structs.
