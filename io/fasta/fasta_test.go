@@ -383,7 +383,7 @@ func TestReadEmptyFasta(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(fastas) != 0 {
-		t.Errorf("expected 0 fastas, got %d", len(fastas))
+	if len(fastas) != 1 {
+		t.Errorf("expected 1 fastas, got %d", len(fastas))
 	}
 }

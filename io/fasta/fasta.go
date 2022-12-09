@@ -70,7 +70,9 @@ type Fasta struct {
 
 // Parse parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
 func Parse(r io.Reader) ([]Fasta, error) {
-	parser := NewParser(r, 1000000)
+	// 32kB is a magic number often used by the Go stdlib for parsing. We multiply it by two.
+	const maxLineSize = 2 * 32 * 1024
+	parser := NewParser(r, maxLineSize)
 	return parser.ParseAll()
 }
 
@@ -103,12 +105,10 @@ func (p *Parser) ParseAll() ([]Fasta, error) {
 // If an non-EOF error is encountered it returns it and all correctly parsed sequences up to then.
 func (p *Parser) ParseN(maxSequences int) (fastas []Fasta, err error) {
 	for counter := 0; counter < maxSequences; counter++ {
-
 		fasta, _, err := p.ParseNext()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
-				fastas = append(fastas, fasta)
 			}
 			return fastas, err
 		}
@@ -165,26 +165,38 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 	// parse loop begins here.
 	for {
 		line, err = p.rd.ReadSlice('\n')
+		isSkippable := len(line) == 0 || line[0] == ';' // OR short circuits so no panic here.
 		totalRead += int64(len(line))
 		p.line++
+
+		// More general case of error handling.
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				if len(line) > 1 && line[0] != ';' {
-					sequence = append(sequence, line...)
-				} else {
-					// Is not an EOF ended fasta.
+			isEOF := errors.Is(err, io.EOF)
+			if isSkippable {
+				if isEOF {
+					// got EOF on a empty or commented line.
 					err = nil
 				}
-				break // We end parsing step.
+				break
 			} else if errors.Is(err, bufio.ErrBufferFull) {
 				// Buffer size too small to read fasta line.
 				return Fasta{}, totalRead, fmt.Errorf("line %d too large for buffer, use larger maxLineSize: %w", p.line+1, err)
+			} else if !isEOF {
+				return Fasta{}, totalRead, err // Unexpected error.
 			}
-			return Fasta{}, totalRead, err // Unexpected error.
-		}
-		line = line[:len(line)-1] // Exclude newline delimiter.
 
-		isSkippable := len(line) == 0 || line[0] == ';'
+			// So got to this point the line is probably OK, we will return a Fasta.
+			// We may or may not exit with error depending on whether we find a terminator.
+			sequence = append(sequence, line...)
+			fastaIsTerminated := bytes.IndexByte(line, '*') >= 0
+			if isEOF && fastaIsTerminated && !isSkippable {
+				// Got EOF on same line that fasta is terminated. Fasta is definetely OK.
+				err = nil
+			}
+			break
+		}
+
+		line = line[:len(line)-1] // Exclude newline delimiter.
 		peek, _ := p.rd.Peek(1)
 		if !lookingForName && len(peek) == 1 && peek[0] == '>' {
 			// We are currently parsing a fasta and next line contains a new fasta.
@@ -194,11 +206,10 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 				sequence = append(sequence, line...)
 			}
 			break
+		} else if isSkippable {
+			continue
 		}
 
-		if isSkippable {
-			continue // Skip comments and empty lines.
-		}
 		if lookingForName {
 			if line[0] == '>' {
 				// We got the start of a fasta.
@@ -306,6 +317,7 @@ func ReadGzConcurrent(path string, sequences chan<- Fasta) {
 // ReadConcurrent concurrently reads a flat Fasta file into a Fasta channel.
 func ReadConcurrent(path string, sequences chan<- Fasta) {
 	file, _ := os.Open(path) // TODO: these errors need to be handled/logged
+	defer file.Close()
 	go ParseConcurrent(file, sequences)
 }
 
@@ -315,10 +327,12 @@ func ReadGz(path string) ([]Fasta, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 	reader, err := gzipReaderFn(file)
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
 	return Parse(reader)
 }
 
@@ -328,7 +342,7 @@ func Read(path string) ([]Fasta, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	defer file.Close()
 	return Parse(file)
 }
 
