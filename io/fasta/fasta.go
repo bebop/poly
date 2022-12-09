@@ -70,7 +70,7 @@ type Fasta struct {
 
 // Parse parses a given Fasta file into an array of Fasta structs. Internally, it uses ParseFastaConcurrent.
 func Parse(r io.Reader) ([]Fasta, error) {
-	parser := NewParser(r, 256)
+	parser := NewParser(r, 1000000)
 	return parser.ParseAll()
 }
 
@@ -103,10 +103,12 @@ func (p *Parser) ParseAll() ([]Fasta, error) {
 // If an non-EOF error is encountered it returns it and all correctly parsed sequences up to then.
 func (p *Parser) ParseN(maxSequences int) (fastas []Fasta, err error) {
 	for counter := 0; counter < maxSequences; counter++ {
+
 		fasta, _, err := p.ParseNext()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
+				fastas = append(fastas, fasta)
 			}
 			return fastas, err
 		}
@@ -159,7 +161,8 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		err            error
 		totalRead      int64
 	)
-	const translationStopChar = '*'
+
+	// parse loop begins here.
 	for {
 		line, err = p.rd.ReadSlice('\n')
 		totalRead += int64(len(line))
@@ -167,14 +170,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				if len(line) > 1 && line[0] != ';' {
-					// EOF-ended fasta. We append line if not empty
-					stopTranslate := bytes.IndexByte(line, translationStopChar)
-					if stopTranslate >= 0 {
-						err = nil // We can be sure we have the full sequence since we found a stop translate character.
-					} else {
-						stopTranslate = len(line)
-					}
-					sequence = append(sequence, line[:stopTranslate]...)
+					sequence = append(sequence, line...)
 				} else {
 					// Is not an EOF ended fasta.
 					err = nil
@@ -216,7 +212,8 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		// If we got to this point we are currently inside of the fasta
 		// sequence contents. We append line to what we found of sequence so far.
 		sequence = append(sequence, line...)
-	}
+	} // parse loop ends here.
+
 	// Parsing ended. Check for inconsistencies.
 	if lookingForName {
 		return Fasta{}, totalRead, fmt.Errorf("did not find fasta start '>', got to line %d: %w", p.line, err)
@@ -344,12 +341,26 @@ Start of  Write functions
 // Build converts a Fastas array into a byte array to be written to a file.
 func Build(fastas []Fasta) ([]byte, error) {
 	var fastaString bytes.Buffer
-	for _, fasta := range fastas {
+	fastaLength := len(fastas)
+	for fastaIndex, fasta := range fastas {
 		fastaString.WriteString(">")
 		fastaString.WriteString(fasta.Name)
 		fastaString.WriteString("\n")
-		fastaString.WriteString(fasta.Sequence)
-		fastaString.WriteString("\n\n")
+
+		lineCount := 0
+		// write the fasta sequence 80 characters at a time
+		for _, character := range fasta.Sequence {
+
+			fastaString.WriteRune(character)
+			lineCount++
+			if lineCount == 80 {
+				fastaString.WriteString("\n")
+				lineCount = 0
+			}
+		}
+		if fastaIndex != fastaLength-1 {
+			fastaString.WriteString("\n\n")
+		}
 	}
 	return fastaString.Bytes(), nil
 }
