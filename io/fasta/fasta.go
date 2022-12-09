@@ -341,7 +341,7 @@ Start of  Write functions
 
 ******************************************************************************/
 
-// Build writes a Fasta struct to a  string.
+// Build converts a Fastas array into a byte array to be written to a file.
 func Build(fastas []Fasta) ([]byte, error) {
 	var fastaString bytes.Buffer
 	for _, fasta := range fastas {
@@ -349,7 +349,7 @@ func Build(fastas []Fasta) ([]byte, error) {
 		fastaString.WriteString(fasta.Name)
 		fastaString.WriteString("\n")
 		fastaString.WriteString(fasta.Sequence)
-		fastaString.WriteString("\n")
+		fastaString.WriteString("\n\n")
 	}
 	return fastaString.Bytes(), nil
 }
