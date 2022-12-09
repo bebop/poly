@@ -186,13 +186,8 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 			}
 
 			// So got to this point the line is probably OK, we will return a Fasta.
-			// We may or may not exit with error depending on whether we find a terminator.
+			// with the EOF error.
 			sequence = append(sequence, line...)
-			fastaIsTerminated := bytes.IndexByte(line, '*') >= 0
-			if isEOF && fastaIsTerminated && !isSkippable {
-				// Got EOF on same line that fasta is terminated. Fasta is definetely OK.
-				err = nil
-			}
 			break
 		}
 
@@ -237,7 +232,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		Name:     seqName,
 		Sequence: *(*string)(unsafe.Pointer(&sequence)), // Stdlib strings.Builder.String() does this so it *should* be safe.
 	}
-	// err is non-nil only in EOF case.
+	// Gotten to this point err is non-nil only in EOF case.
 	// We report this error to note the fasta may be incomplete/corrupt
 	// like in the case of using an io.LimitReader wrapping the underlying reader.
 	// We return the fasta as well since some libraries generate fastas with no
