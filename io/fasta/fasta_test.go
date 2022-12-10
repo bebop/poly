@@ -201,7 +201,7 @@ func TestParseBytes(t *testing.T) {
 func TestReadEmptyFasta(t *testing.T) {
 	fastas, err := Read("data/empty.fasta")
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("error reading empty fasta: %v", err)
 	}
 	if len(fastas) != 1 {
 		t.Errorf("expected 1 fastas, got %d", len(fastas))
