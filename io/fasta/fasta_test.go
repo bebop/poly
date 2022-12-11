@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	// This fasta stream contains no Fasta.
+	emptyFasta = "testing\natagtagtagtagtagatgatgatgatgagatg\n\n\n\n\n\n\n\n\n\n\n"
+)
+
 // Initialized at TestMain.
 var uniprotFasta string
 
@@ -199,19 +204,25 @@ func TestParseBytes(t *testing.T) {
 
 // TestReadEmptyFasta tests that an empty fasta file is parsed correctly.
 func TestReadEmptyFasta(t *testing.T) {
-	fastas, err := Read("data/empty.fasta")
-	if err != nil {
-		t.Errorf("error reading empty fasta: %v", err)
+	fastas, err := Parse(strings.NewReader(emptyFasta))
+	if err == nil {
+		t.Errorf("expected error reading empty fasta stream")
 	}
-	if len(fastas) != 1 {
+	if len(fastas) != 0 {
 		t.Errorf("expected 1 fastas, got %d", len(fastas))
 	}
 }
 
 // TestParseBufferFail tests that the parser fails when the buffer is too small.
 func TestParseBufferFail(t *testing.T) {
-	const testFasta = ">0\nGAT\n>1\nCAC\n"
-	parser := NewParser(strings.NewReader(testFasta), 2) // should this trigger an error because the buffer is too small?
+	// Error only triggered when there is a line greater than 16 bytes in length.
+	// This is because the underlying implementation uses bufio.Reader, which auto-sets
+	// the buffer to 16, the minimum length permissible for the implementation.
+	// We should not test for this anyways because we may change from using
+	// bufio.Reader.ReadSlice to bufio.Reader.ReadLine, which allows for incomplete
+	// line parsing, though this makes parsing more difficult.
+	const testFasta = ">0\n0123456789ABCDEF\n>1\nCAC\n"
+	parser := NewParser(strings.NewReader(testFasta), 2)
 	fasta, err := parser.ParseAll()
 	_ = fasta
 	if err == nil {

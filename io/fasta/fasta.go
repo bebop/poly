@@ -165,7 +165,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 	// parse loop begins here.
 	for {
 		line, err = p.rd.ReadSlice('\n')
-		isSkippable := len(line) == 0 || line[0] == ';' // OR short circuits so no panic here.
+		isSkippable := len(line) <= 1 || line[0] == ';' // OR short circuits so no panic here.
 		totalRead += int64(len(line))
 		p.line++
 
