@@ -229,3 +229,13 @@ func TestParseBufferFail(t *testing.T) {
 		t.Error("expected error, got nil")
 	}
 }
+
+func TestParseEOFAfterName(t *testing.T) {
+	const testFasta = ">OK Fasta\nABGABA\n>NotOKFasta\n"
+	parser := NewParser(strings.NewReader(testFasta), 2)
+	fasta, err := parser.ParseAll()
+	_ = fasta
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+}
