@@ -79,33 +79,32 @@ func Parse(r io.Reader) ([]Fasta, error) {
 // Parser is a flexible parser that provides ample
 // control over reading fasta-formatted sequences.
 // It is initialized with NewParser.
-
 type Parser struct {
-	// rd keeps state of current reader.
-	rd   bufio.Reader
-	line uint
+	// reader keeps state of current reader.
+	reader bufio.Reader
+	line   uint
 }
 
 // NewParser returns a Parser that uses r as the source
 // from which to parse fasta formatted sequences.
 func NewParser(r io.Reader, maxLineSize int) *Parser {
 	return &Parser{
-		rd: *bufio.NewReaderSize(r, maxLineSize),
+		reader: *bufio.NewReaderSize(r, maxLineSize),
 	}
 }
 
 // ParseAll parses all sequences in underlying reader only returning non-EOF errors.
 // It returns all valid fasta sequences up to error if encountered.
-func (p *Parser) ParseAll() ([]Fasta, error) {
-	return p.ParseN(math.MaxInt)
+func (parser *Parser) ParseAll() ([]Fasta, error) {
+	return parser.ParseN(math.MaxInt)
 }
 
 // ParseN parses up to maxSequences fasta sequences from the Parser's underlying reader.
 // ParseN does not return EOF if encountered.
 // If an non-EOF error is encountered it returns it and all correctly parsed sequences up to then.
-func (p *Parser) ParseN(maxSequences int) (fastas []Fasta, err error) {
+func (parser *Parser) ParseN(maxSequences int) (fastas []Fasta, err error) {
 	for counter := 0; counter < maxSequences; counter++ {
-		fasta, _, err := p.ParseNext()
+		fasta, _, err := parser.ParseNext()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -120,9 +119,9 @@ func (p *Parser) ParseN(maxSequences int) (fastas []Fasta, err error) {
 // ParseByteLimited parses fastas until byte limit is reached.
 // This is NOT a hard limit. To set a hard limit on bytes read use a
 // io.LimitReader to wrap the reader passed to the Parser.
-func (p *Parser) ParseByteLimited(byteLimit int64) (fastas []Fasta, bytesRead int64, err error) {
+func (parser *Parser) ParseByteLimited(byteLimit int64) (fastas []Fasta, bytesRead int64, err error) {
 	for bytesRead < byteLimit {
-		fasta, n, err := p.ParseNext()
+		fasta, n, err := parser.ParseNext()
 		bytesRead += n
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -146,8 +145,8 @@ func (p *Parser) ParseByteLimited(byteLimit int64) (fastas []Fasta, bytesRead in
 // It is worth noting the amount of bytes read are always right up to before
 // the next fasta starts which means this function can effectively be used
 // to index where fastas start in a file or string.
-func (p *Parser) ParseNext() (Fasta, int64, error) {
-	if _, err := p.rd.Peek(1); err != nil {
+func (parser *Parser) ParseNext() (Fasta, int64, error) {
+	if _, err := parser.reader.Peek(1); err != nil {
 		// Early return on error. Probably will be EOF.
 		return Fasta{}, 0, err
 	}
@@ -164,10 +163,10 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 
 	// parse loop begins here.
 	for {
-		line, err = p.rd.ReadSlice('\n')
+		line, err = parser.reader.ReadSlice('\n')
 		isSkippable := len(line) <= 1 || line[0] == ';' // OR short circuits so no panic here.
 		totalRead += int64(len(line))
-		p.line++
+		parser.line++
 
 		// More general case of error handling.
 		if err != nil {
@@ -180,7 +179,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 				break
 			} else if errors.Is(err, bufio.ErrBufferFull) {
 				// Buffer size too small to read fasta line.
-				return Fasta{}, totalRead, fmt.Errorf("line %d too large for buffer, use larger maxLineSize: %w", p.line+1, err)
+				return Fasta{}, totalRead, fmt.Errorf("line %d too large for buffer, use larger maxLineSize: %w", parser.line+1, err)
 			} else if !isEOF {
 				return Fasta{}, totalRead, err // Unexpected error.
 			}
@@ -192,7 +191,7 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 		}
 
 		line = line[:len(line)-1] // Exclude newline delimiter.
-		peek, _ := p.rd.Peek(1)
+		peek, _ := parser.reader.Peek(1)
 		if !lookingForName && len(peek) == 1 && peek[0] == '>' {
 			// We are currently parsing a fasta and next line contains a new fasta.
 			// We handle this situation by appending current line to sequence if not a comment
@@ -222,11 +221,11 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 
 	// Parsing ended. Check for inconsistencies.
 	if lookingForName {
-		return Fasta{}, totalRead, fmt.Errorf("did not find fasta start '>', got to line %d: %w", p.line, err)
+		return Fasta{}, totalRead, fmt.Errorf("did not find fasta start '>', got to line %d: %w", parser.line, err)
 	}
 	if !lookingForName && len(sequence) == 0 {
 		// We found a fasta name but no sequence to go with it.
-		return Fasta{}, totalRead, fmt.Errorf("empty fasta sequence for %q,  got to line %d: %w", seqName, p.line, err)
+		return Fasta{}, totalRead, fmt.Errorf("empty fasta sequence for %q,  got to line %d: %w", seqName, parser.line, err)
 	}
 	fasta := Fasta{
 		Name:     seqName,
@@ -242,9 +241,9 @@ func (p *Parser) ParseNext() (Fasta, int64, error) {
 }
 
 // Reset discards all data in buffer and resets state.
-func (p *Parser) Reset(r io.Reader) {
-	p.rd.Reset(r)
-	p.line = 0
+func (parser *Parser) Reset(r io.Reader) {
+	parser.reader.Reset(r)
+	parser.line = 0
 }
 
 // ParseConcurrent concurrently parses a given Fasta file in an io.Reader into a channel of Fasta structs.
