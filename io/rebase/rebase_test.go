@@ -43,6 +43,18 @@ func TestRead_error(t *testing.T) {
 
 }
 
+func TestRead_multipleRefs(t *testing.T) {
+	enzymeMap, err := Read("data/rebase_test.txt")
+	if err != nil {
+		t.Error("Failed to read test file")
+	}
+
+	assert.Equal(t,
+		"Calleja, F., de Waard, A., Unpublished observations.\nHughes, S.G., Bruce, T., Murray, K., Unpublished observations.",
+		enzymeMap["AcaI"].References)
+
+}
+
 func TestExport_error(t *testing.T) {
 	exportErr := errors.New("fake error")
 	oldMarshallFn := marshallFn

@@ -186,6 +186,7 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 
 	commercialParsingLine := 0
 	startCommercialParsing := false
+	startReferenceParsing := false
 	for _, line := range lines {
 		// Parse commercial sources map
 		if line == "REBASE codes for commercial sources of enzymes" {
@@ -218,6 +219,18 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 			}
 		}
 
+		// If we are parsing references, continue appending to the current enzyme's references
+		if startReferenceParsing && line != "" {
+			// Break reference parsing if we encounter a new enzyime
+			if strings.Contains(line, "<1>") {
+				enzymeMap[enzyme.Name] = enzyme
+				enzyme = Enzyme{}
+				startReferenceParsing = false
+			}
+
+			enzyme.References += "\n" + line
+		}
+
 		// Normal enzyme parsing
 		switch {
 		case strings.Contains(line, "<1>"):
@@ -241,9 +254,7 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 			enzyme.CommercialAvailability = commercialSuppliers
 		case strings.Contains(line, "<8>"):
 			enzyme.References = line[3:]
-			// After every <8> a new enzyme will start. So here, we put the current enzyme into the enzymeMap and setup a new enzyme to be filled
-			enzymeMap[enzyme.Name] = enzyme
-			enzyme = Enzyme{}
+			startReferenceParsing = true
 		}
 	}
 	return enzymeMap, err
