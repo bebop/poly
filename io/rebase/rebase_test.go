@@ -3,6 +3,7 @@ package rebase
 import (
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -14,6 +15,25 @@ func TestRead(t *testing.T) {
 	if err == nil {
 		t.Errorf("Failed to error on fake file")
 	}
+}
+
+func TestParse(t *testing.T) {
+	file, err := os.Open("data/rebase_minimal.txt")
+	if err != nil {
+		t.Errorf("Failed to read rebase test file")
+	}
+	emzymeMap, err := parseFn(file)
+	if err != nil {
+		t.Errorf("Error parsing the file data")
+	}
+	exportedJSON, err := Export(emzymeMap)
+	if err != nil {
+		t.Errorf("Error exporing the enzyme map to JSON")
+	}
+	file2, err := os.Create("rebase_minimal.json")
+	file2.WriteString(string(exportedJSON))
+	file2.Close()
+	
 }
 
 func TestParse_error(t *testing.T) {
