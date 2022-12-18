@@ -2,7 +2,6 @@ package polyjson_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,7 +13,7 @@ import (
 func Example() {
 
 	// this example also is run by the poly's test suite so this just sets up a temporary directory for writing files
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -74,7 +73,7 @@ func ExampleParse() {
 }
 
 func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}

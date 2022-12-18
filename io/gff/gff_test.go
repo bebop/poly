@@ -24,7 +24,7 @@ Gff related tests and benchmarks begin here.
 // TODO should delete output files.
 
 func TestGffIO(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		t.Error(err)
 	}

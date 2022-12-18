@@ -37,8 +37,10 @@ func TestParse(t *testing.T) {
 
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'enzymes' which we defined above
-	json.Unmarshal(byteData, &benchmarkEnzymeMap)
-
+	err = json.Unmarshal(byteData, &benchmarkEnzymeMap)
+	if err != nil {
+		t.Errorf("Failed to parse rebase json file into enzyme map")
+	}
 
 	// Open the rebase file
 	rebaseFile, err := os.Open("data/rebase_minimal.txt")

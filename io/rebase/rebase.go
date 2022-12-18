@@ -219,7 +219,7 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 
 			if startCommercialParsing {				
 				// Parse the commercial availability lines and run it through the regex compiler
-				r, _ := regexp.Compile("\\s*([A-Z])\\s+(.*)\\s+\\((\\d+\\/\\d+)\\)")
+				r, _ := regexp.Compile(`\s*([A-Z])\s+(.*)\s+\((\d+\/\d+)\)`)
 				matches := r.FindStringSubmatch(line)
 
 				if matches != nil {
@@ -281,8 +281,6 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 	if lastCodeisReferenceCode {
 		enzymeMap[enzyme.Name] = enzyme
 		enzyme = Enzyme{}
-		lastCodeisReferenceCode = false
-
 	}
 
 	return enzymeMap, err

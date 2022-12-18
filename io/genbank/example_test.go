@@ -3,7 +3,6 @@ package genbank_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -29,7 +28,7 @@ func ExampleRead() {
 }
 
 func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -74,7 +73,7 @@ func ExampleReadMulti() {
 }
 
 func ExampleWriteMulti() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
+	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
