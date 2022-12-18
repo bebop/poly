@@ -144,10 +144,13 @@ package rebase
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -157,6 +160,12 @@ var (
 	marshallFn = json.Marshal
 )
 
+
+type CommercialAvailabilityPair struct {
+	Organization			string `json:"organization"`
+	LastUpdated				time.Time `json:"lastUpdated"`
+}
+
 // Enzyme represents a single enzyme within the Rebase database
 type Enzyme struct {
 	Name                   string   `json:"name"`
@@ -165,7 +174,7 @@ type Enzyme struct {
 	MethylationSite        string   `json:"methylationSite"`
 	MicroOrganism          string   `json:"microorganism"`
 	Source                 string   `json:"source"`
-	CommercialAvailability []string `json:"commercialAvailability"`
+	CommercialAvailability []CommercialAvailabilityPair `json:"commercialAvailability"`
 	References             []string   `json:"references"`
 }
 
@@ -178,7 +187,7 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 	// Setup some variables
 	var enzyme Enzyme
 	enzymeMap := make(map[string]Enzyme)
-	commercialSupplierMap := make(map[rune]string)
+	commercialSupplierMap := make(map[rune]CommercialAvailabilityPair)
 
 	// Get rebase as a large string
 	rebase := string(fileBytes)
@@ -186,8 +195,10 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 	// Split those strings into individual lines for parsing
 	lines := strings.Split(rebase, "\n")
 
-	commercialParsingLine := 0
 	startCommercialParsing := false
+	// Use this flag to keep track of the state transition from <8>-><1>
+	lastCodeisReferenceCode := false
+
 	for _, line := range lines {
 		// Check if line is an empty line, this necessary since we are now checking to 
 		// see if the multi line references are still a thing
@@ -203,34 +214,33 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 		if startCommercialParsing {
 			// if we start enzyme parsing, break the commercial supplier parsing
 			if strings.Contains(line, "<1>") {
-				commercialParsingLine = 0
 				startCommercialParsing = false
 			}
 
-			// Skip two lines
-			commercialParsingLine++
-			if (commercialParsingLine > 3) && (len(strings.TrimLeft(line, "\t")) > 0) {
-				// Trim indentation
-				trimmedString := strings.TrimLeft(line, "\t")
+			if startCommercialParsing {				
+				// Parse the commercial availability lines and run it through the regex compiler
+				r, _ := regexp.Compile("\\s*([A-Z])\\s+(.*)\\s+\\((\\d+\\/\\d+)\\)")
+				matches := r.FindStringSubmatch(line)
 
-				// The first letter of the trimmedString is the single letter code
-				singleLetterCommercialCode := rune(trimmedString[0])
-
-				// There are 8 spaces until the commercial companies's name. We are keeping the dates
-				// attached, since it is additional information that could be useful for users down
-				// the line
-				commercialName := trimmedString[9:]
-
-				// Add both to commercialSuppliermap
-				commercialSupplierMap[singleLetterCommercialCode] = commercialName
+				if matches != nil {
+					singleLetterCommercialCode := rune(matches[1][0])
+					commercialName := matches[2]
+					datesting:= matches[3]
+					parsedDate, _ := time.Parse("15/2/06", fmt.Sprintf("1/%s",datesting))
+				
+					// Add both to commercialSuppliermap
+					commercialSupplierMap[singleLetterCommercialCode] = CommercialAvailabilityPair {
+						Organization: commercialName,
+						LastUpdated: parsedDate,
+					}
+				}
 			}
 		}
 
 		// Normal enzyme parsing
-		var lastCodeisReferenceCode = false
 		switch {
 			case strings.Contains(line, "<1>"):
-				if lastCodeisReferenceCode == true{
+				if lastCodeisReferenceCode {
 					// After every <8> a new enzyme will start. So here, we put the current enzyme into the enzymeMap and 
 					// setup a new enzyme to be filled doing this check ensures that we compile all the multiline 
 					// references into the enzyme
@@ -251,21 +261,30 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 				enzyme.Source = line[3:]
 			case strings.Contains(line, "<7>"):
 				// We need to get a list of specific commercial suppliers from the commercialSupplierMap we previously made
-				var commercialSuppliers []string
+				var commercialSuppliers []CommercialAvailabilityPair
 				for _, commercialLetter := range line[3:] {
 					commercialSuppliers = append(commercialSuppliers, commercialSupplierMap[commercialLetter])
 				}
 				enzyme.CommercialAvailability = commercialSuppliers
 			case strings.Contains(line, "<8>"):
+				lastCodeisReferenceCode = true
 				enzyme.References = append(enzyme.References, line[3:]) 
 			default:
 				// Since the references in the file are in new lines, the flag here checks to make sure that the parsing is 
 				// still conisdering this the references state
-				if lastCodeisReferenceCode == true {
-					enzyme.References = append(enzyme.References, line[3:])
+				if lastCodeisReferenceCode {
+					enzyme.References = append(enzyme.References, line)
 				}
 		}
 	}
+
+	if lastCodeisReferenceCode {
+		enzymeMap[enzyme.Name] = enzyme
+		enzyme = Enzyme{}
+		lastCodeisReferenceCode = false
+
+	}
+
 	return enzymeMap, err
 }
 

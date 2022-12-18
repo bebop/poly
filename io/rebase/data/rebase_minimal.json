@@ -1,0 +1,91 @@
+{
+    "AaaI": {
+        "name": "AaaI",
+        "isoschizomers": [
+            "XmaIII",
+            "BseX3I",
+            "BsoDI",
+            "BstZI",
+            "EagI",
+            "EclXI",
+            "Eco52I",
+            "SenPT16I",
+            "TauII",
+            "Tsp504I"
+        ],
+        "recognitionSequence": "C^GGCCG",
+        "methylationSite": "",
+        "microorganism": "Acetobacter aceti ss aceti",
+        "source": "M. Fukaya",
+        "commercialAvailability": null,
+        "references": [
+            "Tagami, H., Tayama, K., Tohyama, T., Fukaya, M., Okumura, H., Kawamura, Y., Horinouchi, S., Beppu, T., (1988) FEMS Microbiol. Lett., vol. 56, pp. 161-166."
+        ]
+    },
+    "AarI": {
+        "name": "AarI",
+        "isoschizomers": [
+            "PaqCI"
+        ],
+        "recognitionSequence": "CACCTGC(4/8)",
+        "methylationSite": "",
+        "microorganism": "Arthrobacter aurescens SS2-322",
+        "source": "A. Janulaitis",
+        "commercialAvailability": [
+            {
+                "organization": "Life Technologies",
+                "lastUpdated": "2021-01-03T01:00:00Z"
+            }
+        ],
+        "references": [
+            "Grigaite, R., Maneliene, Z., Janulaitis, A., (2002) Nucleic Acids Res., vol. 30.",
+            "Maneliene, Z., Zakareviciene, L., Unpublished observations."
+        ]
+    },
+    "AatII": {
+        "name": "AatII",
+        "isoschizomers": [
+            "AspJI",
+            "Ppu1253I",
+            "Ssp5230I",
+            "ZraI"
+        ],
+        "recognitionSequence": "GACGT^C",
+        "methylationSite": "2(6)",
+        "microorganism": "Acetobacter aceti IFO 3281",
+        "source": "IFO 3281",
+        "commercialAvailability": [
+            {
+                "organization": "Life Technologies",
+                "lastUpdated": "2021-01-03T01:00:00Z"
+            },
+            {
+                "organization": "SibEnzyme Ltd.",
+                "lastUpdated": "2021-01-03T01:00:00Z"
+            },
+            {
+                "organization": "Takara Bio Inc.",
+                "lastUpdated": "2018-01-06T01:00:00Z"
+            },
+            {
+                "organization": "Roche Applied Science",
+                "lastUpdated": "2018-01-04T01:00:00Z"
+            },
+            {
+                "organization": "New England Biolabs",
+                "lastUpdated": "2021-01-03T01:00:00Z"
+            },
+            {
+                "organization": "Vivantis Technologies",
+                "lastUpdated": "2018-01-01T01:00:00Z"
+            }
+        ],
+        "references": [
+            "Clark, T.A., Murray, I.A., Morgan, R.D., Kislyuk, A.O., Spittle, K.E., Boitano, M., Fomenkov, A., Roberts, R.J., Korlach, J., (2012) Nucleic Acids Res., vol. 40.",
+            "Flodman, K., Xu, S.-Y., Unpublished observations.",
+            "Fomenkov, A., Unpublished observations.",
+            "Sugisaki, H., Maekawa, Y., Kanazawa, S., Takanami, M., (1982) Nucleic Acids Res., vol. 10, pp. 5747-5752.",
+            "Xu, S.-Y., Nwankwo, D.O., European Patent Office, 1992."
+        ]
+    }
+}

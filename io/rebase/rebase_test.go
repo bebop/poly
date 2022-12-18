@@ -1,9 +1,12 @@
 package rebase
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -18,22 +21,44 @@ func TestRead(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	file, err := os.Open("data/rebase_minimal.txt")
+
+	// Open the json version of the rebase file to compare against
+	rebaseJSONFile, err := os.Open("data/rebase_minimal.json")
 	if err != nil {
 		t.Errorf("Failed to read rebase test file")
 	}
-	emzymeMap, err := parseFn(file)
+
+	// Parse JSON file into the enzyme maps
+	// read our opened jsonFile as a byte array.
+	byteData, _ := ioutil.ReadAll(rebaseJSONFile)
+
+	// we initialize our enzymes map
+	var benchmarkEnzymeMap map[string]Enzyme
+
+	// we unmarshal our byteArray which contains our
+	// jsonFile's content into 'enzymes' which we defined above
+	json.Unmarshal(byteData, &benchmarkEnzymeMap)
+
+
+	// Open the rebase file
+	rebaseFile, err := os.Open("data/rebase_minimal.txt")
+	if err != nil {
+		t.Errorf("Failed to read rebase test file")
+	}
+
+	
+	// Parse the rebase file
+	emzymeMap, err := parseFn(rebaseFile)
 	if err != nil {
 		t.Errorf("Error parsing the file data")
 	}
-	exportedJSON, err := Export(emzymeMap)
-	if err != nil {
-		t.Errorf("Error exporing the enzyme map to JSON")
+
+	// Compare the enzyme maps
+	eq := reflect.DeepEqual(emzymeMap, benchmarkEnzymeMap)
+	if !eq {
+		t.Errorf("Parsed enzyme map does not match benchmark")
 	}
-	file2, err := os.Create("rebase_minimal.json")
-	file2.WriteString(string(exportedJSON))
-	file2.Close()
-	
+
 }
 
 func TestParse_error(t *testing.T) {
