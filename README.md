@@ -51,4 +51,4 @@ Poly is a Go package for engineering organisms.
 
 * [MIT](LICENSE)
 
-* Copyright (c) 2022 Timothy Stiles
+* Copyright (c) 2023 Timothy Stiles
