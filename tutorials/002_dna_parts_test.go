@@ -66,7 +66,7 @@ https://en.wikipedia.org/wiki/Restriction_enzyme
 With the exception of restriction enzyme binding sites these are all
 features that you'll often find within the annotated features
 of a genome. Often restriction enzyme binding sites are not within
-the feature set itself but instead are detectec via regex in most
+the feature set itself but instead are detected via regex in most
 popular DNA editing tools.
 
 TTFN,
