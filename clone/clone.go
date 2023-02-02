@@ -15,11 +15,11 @@ patterns using ligase. The final product is (99.9% of the time) a circular plasm
 that you can transform into a bacterial cell for propagation.
 
 While simulation is simple for simple cases, there are a lot of edge cases to handle, for example:
-- Which input sequences are circular? How do we handle their rotations?
-- Is the enzyme that is cutting directional? How do we handle that directionality?
-- Are there multiple possible outputs of our ligation reaction? For example, ligations may be
-  to create a "library" of plasmids, in which there are millions of valid combinations.
-- How do we handle sequences that get ligated in multiple orientations?
+  - Which input sequences are circular? How do we handle their rotations?
+  - Is the enzyme that is cutting directional? How do we handle that directionality?
+  - Are there multiple possible outputs of our ligation reaction? For example, ligations may be
+    to create a "library" of plasmids, in which there are millions of valid combinations.
+  - How do we handle sequences that get ligated in multiple orientations?
 
 These cloning functions handle all those problems so that they appear simple to the end user.
 
@@ -34,7 +34,7 @@ with just their input fragments + the enzyme name.
 
 Let's build some DNA!
 
-Keoni
+# Keoni
 
 PS: We do NOT (yet) handle restriction enzymes which recognize one site but cut
 in multiple places (Type IIG enzymes) such as BcgI.
