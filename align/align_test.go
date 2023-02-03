@@ -78,3 +78,39 @@ func TestNeedlemanWunsch(t *testing.T) {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignO, alignP)
 	}
 }
+
+func TestSmithWaterman(t *testing.T) {
+	scoring := align.NewScoring()
+
+	a := "GATTACA"
+	b := "AGCAT"
+
+	score := align.SmithWaterman(a, b, scoring)
+	if score != 2 {
+		t.Errorf("score: %d", score)
+	}
+
+	c := "GATTACA"
+	d := ""
+
+	score = align.SmithWaterman(c, d, scoring)
+	if score != 0 {
+		t.Errorf("score: %d", score)
+	}
+
+	e := "GATTACA"
+	f := "GATTACA"
+
+	score = align.SmithWaterman(e, f, scoring)
+	if score != 7 {
+		t.Errorf("score: %d", score)
+	}
+
+	g := "GATTACA"
+	h := "G"
+
+	score = align.SmithWaterman(g, h, scoring)
+	if score != 1 {
+		t.Errorf("score: %d", score)
+	}
+}
