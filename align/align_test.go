@@ -7,9 +7,12 @@ import (
 )
 
 func TestNeedlemanWunsch(t *testing.T) {
+
+	scoring := align.NewScoring()
+
 	a := "GATTACA"
 	b := "GCATGCU"
-	score, alignA, alignB := align.NeedlemanWunsch(a, b)
+	score, alignA, alignB := align.NeedlemanWunsch(a, b, scoring)
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignA, alignB)
 	}
@@ -17,7 +20,7 @@ func TestNeedlemanWunsch(t *testing.T) {
 	c := "GATTACA"
 	d := "GATTACA"
 
-	score, alignC, alignD := align.NeedlemanWunsch(c, d)
+	score, alignC, alignD := align.NeedlemanWunsch(c, d, scoring)
 	if score != 7 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignC, alignD)
 	}
@@ -25,7 +28,7 @@ func TestNeedlemanWunsch(t *testing.T) {
 	e := "GATTACA"
 	f := "GAT"
 
-	score, alignE, alignF := align.NeedlemanWunsch(e, f)
+	score, alignE, alignF := align.NeedlemanWunsch(e, f, scoring)
 	if score != -1 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignE, alignF)
 	}

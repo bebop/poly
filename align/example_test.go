@@ -9,6 +9,7 @@ import (
 func ExampleNeedlemanWunsch() {
 	a := "GATTACA"
 	b := "GCATGCU"
-	score, alignA, alignB := align.NeedlemanWunsch(a, b)
+	scoring := align.NewScoring()
+	score, alignA, alignB := align.NeedlemanWunsch(a, b, scoring)
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
 }

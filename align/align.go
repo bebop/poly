@@ -1,22 +1,24 @@
 package align
 
-// Scoring matrix for match and mismatch.
-var match = 1
-var mismatch = -1
+// Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
+type Scoring struct {
+	Match      int
+	Mismatch   int
+	GapPenalty int
+}
 
-// Penalty for gap.
-var gapPenalty = -1
-
-func max(a, b int) int {
-	if a > b {
-		return a
+// NewScoring returns a new Scoring struct with default values.
+func NewScoring() Scoring {
+	return Scoring{
+		Match:      1,
+		Mismatch:   -1,
+		GapPenalty: -1,
 	}
-	return b
 }
 
 // NeedlemanWunsch performs global alignment between two strings using the Needleman-Wunsch algorithm.
 // It returns the final score and the optimal alignments of the two strings in O(nm) time and O(nm) space.
-func NeedlemanWunsch(stringA, stringB string) (int, string, string) {
+func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, string, string) {
 
 	// Get the M and N dimensions of the matrix. The M x N matrix is standard linear algebra notation.
 	// But I added columns and rows to the variable name to make it more clear what the dimensions are.
@@ -32,27 +34,27 @@ func NeedlemanWunsch(stringA, stringB string) (int, string, string) {
 
 	// Fill in the first column with gap penalties.
 	for columnM := 1; columnM <= columnLengthM; columnM++ {
-		matrix[columnM][0] = matrix[columnM-1][0] + gapPenalty
+		matrix[columnM][0] = matrix[columnM-1][0] + scoring.GapPenalty
 	}
 
 	// Fill in the first row with gap penalties.
 	for rowN := 1; rowN <= rowLengthN; rowN++ {
-		matrix[0][rowN] = matrix[0][rowN-1] + gapPenalty
+		matrix[0][rowN] = matrix[0][rowN-1] + scoring.GapPenalty
 	}
 
 	// Fill in the rest of the matrix.
 	for columnM := 1; columnM <= columnLengthM; columnM++ {
 		for rowN := 1; rowN <= rowLengthN; rowN++ {
-			// Calculate the scores for match/mismatch and gap.
+			// Calculate the scores for scoring.Match/mismatch and gap.
 			var score int
 			if stringA[columnM-1] == stringB[rowN-1] {
-				score = match
+				score = scoring.Match
 			} else {
-				score = mismatch
+				score = scoring.Mismatch
 			}
 			matrix[columnM][rowN] = max(
 				matrix[columnM-1][rowN-1]+score,
-				max(matrix[columnM-1][rowN]+gapPenalty, matrix[columnM][rowN-1]+gapPenalty),
+				max(matrix[columnM-1][rowN]+scoring.GapPenalty, matrix[columnM][rowN-1]+scoring.GapPenalty),
 			)
 		}
 	}
@@ -66,12 +68,12 @@ func NeedlemanWunsch(stringA, stringB string) (int, string, string) {
 			alignB = append(alignB, rune(stringB[rowN-1]))
 			columnM--
 			rowN--
-		} else if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+mismatch {
+		} else if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+scoring.Mismatch {
 			alignA = append(alignA, rune(stringA[columnM-1]))
 			alignB = append(alignB, rune(stringB[rowN-1]))
 			columnM--
 			rowN--
-		} else if matrix[columnM][rowN] == matrix[columnM-1][rowN]+gapPenalty {
+		} else if matrix[columnM][rowN] == matrix[columnM-1][rowN]+scoring.GapPenalty {
 			alignA = append(alignA, rune(stringA[columnM-1]))
 			alignB = append(alignB, '-')
 			columnM--
@@ -83,15 +85,23 @@ func NeedlemanWunsch(stringA, stringB string) (int, string, string) {
 	}
 
 	// Reverse the alignments to get the optimal alignment.
-	alignA = reverse(alignA)
-	alignB = reverse(alignB)
+	alignA = reverseRuneArray(alignA)
+	alignB = reverseRuneArray(alignB)
 	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB)
 }
 
-func reverse(r []rune) []rune {
-	for i := 0; i < len(r)/2; i++ {
-		j := len(r) - i - 1
-		r[i], r[j] = r[j], r[i]
+func reverseRuneArray(runes []rune) []rune { // wasn't able to find a built-in reverse function for runes
+	length := len(runes)
+	for index := 0; index < length/2; index++ {
+		reverseIndex := length - index - 1
+		runes[index], runes[reverseIndex] = runes[reverseIndex], runes[index]
 	}
-	return r
+	return runes
+}
+
+func max(a, b int) int { // funny enough Go's built-in max only handles floats?
+	if a > b {
+		return a
+	}
+	return b
 }
