@@ -18,6 +18,7 @@ func NewScoring() Scoring {
 
 // NeedlemanWunsch performs global alignment between two strings using the Needleman-Wunsch algorithm.
 // It returns the final score and the optimal alignments of the two strings in O(nm) time and O(nm) space.
+// https://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm
 func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, string, string) {
 
 	// Get the M and N dimensions of the matrix. The M x N matrix is standard linear algebra notation.
