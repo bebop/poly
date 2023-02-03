@@ -21,4 +21,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	if score != 7 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignC, alignD)
 	}
+
+	e := "GATTACA"
+	f := "GAT"
+
+	score, alignE, alignF := align.NeedlemanWunsch(e, f)
+	if score != -1 {
+		t.Errorf("score: %d, A: %s, B: %s", score, alignE, alignF)
+	}
 }

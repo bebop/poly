@@ -82,19 +82,6 @@ func NeedlemanWunsch(stringA, stringB string) (int, string, string) {
 		}
 	}
 
-	// Add remaining characters from A.
-	for columnM > 0 {
-		alignA = append(alignA, rune(stringA[columnM-1]))
-		alignB = append(alignB, '-')
-		columnM--
-	}
-	// Add remaining characters from B.
-	for rowN > 0 {
-		alignA = append(alignA, '-')
-		alignB = append(alignB, rune(stringB[rowN-1]))
-		rowN--
-	}
-
 	// Reverse the alignments to get the optimal alignment.
 	alignA = reverse(alignA)
 	alignB = reverse(alignB)
