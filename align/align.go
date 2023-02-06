@@ -2,19 +2,17 @@ package align
 
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
 type Scoring struct {
-	Match               int
-	Mismatch            int
-	GapPenalty          int
-	ExtensionGapPenalty int
+	Match      int
+	Mismatch   int
+	GapPenalty int
 }
 
 // NewScoring returns a new Scoring struct with default values.
 func NewScoring() Scoring {
 	return Scoring{
-		Match:               1,
-		Mismatch:            -1,
-		GapPenalty:          -1,
-		ExtensionGapPenalty: -1,
+		Match:      1,
+		Mismatch:   -1,
+		GapPenalty: -1,
 	}
 }
 
