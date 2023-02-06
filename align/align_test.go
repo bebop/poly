@@ -85,32 +85,33 @@ func TestSmithWaterman(t *testing.T) {
 	a := "GATTACA"
 	b := "AGCAT"
 
-	score := align.SmithWaterman(a, b, scoring)
-	if score != 2 {
-		t.Errorf("score: %d", score)
+	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
+	if score != 3 {
+		t.Errorf("score: %d, A: %s, B: %s", score, alignA, alignB)
 	}
 
 	c := "GATTACA"
 	d := ""
 
-	score = align.SmithWaterman(c, d, scoring)
+	score, alignC, alignD := align.SmithWaterman(c, d, scoring)
 	if score != 0 {
-		t.Errorf("score: %d", score)
+		t.Errorf("score: %d. A: %s, B: %s", score, alignC, alignD)
+
 	}
 
 	e := "GATTACA"
 	f := "GATTACA"
 
-	score = align.SmithWaterman(e, f, scoring)
+	score, alignE, alignF := align.SmithWaterman(e, f, scoring)
 	if score != 7 {
-		t.Errorf("score: %d", score)
+		t.Errorf("score: %d. A: %s, B: %s", score, alignE, alignF)
 	}
 
 	g := "GATTACA"
 	h := "G"
 
-	score = align.SmithWaterman(g, h, scoring)
+	score, alignG, alignH := align.SmithWaterman(g, h, scoring)
 	if score != 1 {
-		t.Errorf("score: %d", score)
+		t.Errorf("score: %d. A: %s, B: %s", score, alignG, alignH)
 	}
 }

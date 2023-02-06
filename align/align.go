@@ -109,16 +109,27 @@ func max(a, b int) int { // funny enough Go's built-in max only handles floats?
 	return b
 }
 
+type Traceback struct {
+	Pointer int
+	Value   int
+}
+
 // SmithWaterman performs local alignment between two strings using the Smith-Waterman algorithm.
 // When in doubt use this over Needleman-Wunsch.
 // https://en.wikipedia.org/wiki/Smith-Waterman_algorithm
-func SmithWaterman(stringA, stringB string, scoring Scoring) int {
+func SmithWaterman(stringA, stringB string, scoring Scoring) (int, string, string) {
 	// Create the scoring matrix
 	columnLengthM := len(stringA) + 1
 	rowLengthN := len(stringB) + 1
 	matrix := make([][]int, columnLengthM)
+
 	for columnM := range matrix {
 		matrix[columnM] = make([]int, rowLengthN)
+	}
+
+	pointer := make([][]Traceback, columnLengthM)
+	for columnM := range pointer {
+		pointer[columnM] = make([]Traceback, rowLengthN)
 	}
 
 	// Initialize the scoring matrix
@@ -126,10 +137,22 @@ func SmithWaterman(stringA, stringB string, scoring Scoring) int {
 		for rowN := 1; rowN < rowLengthN; rowN++ {
 			if stringA[columnM-1] == stringB[rowN-1] {
 				matrix[columnM][rowN] = matrix[columnM-1][rowN-1] + scoring.Match
+				pointer[columnM][rowN].Pointer = 1
 			} else {
 				matrix[columnM][rowN] = matrix[columnM-1][rowN-1] + scoring.Mismatch
+				pointer[columnM][rowN].Pointer = 2
 			}
-			matrix[columnM][rowN] = maxSmithWaterman(matrix[columnM][rowN], matrix[columnM-1][rowN]+scoring.GapPenalty+scoring.ExtensionGapPenalty, matrix[columnM][rowN-1]+scoring.GapPenalty+scoring.ExtensionGapPenalty)
+			value1 := matrix[columnM-1][rowN] + scoring.GapPenalty + scoring.ExtensionGapPenalty
+			value2 := matrix[columnM][rowN-1] + scoring.GapPenalty + scoring.ExtensionGapPenalty
+			if value1 > matrix[columnM][rowN] {
+				matrix[columnM][rowN] = value1
+				pointer[columnM][rowN].Pointer = 3
+			}
+			if value2 > matrix[columnM][rowN] {
+				matrix[columnM][rowN] = value2
+				pointer[columnM][rowN].Pointer = 4
+			}
+			pointer[columnM][rowN].Value = matrix[columnM][rowN]
 		}
 	}
 
@@ -143,16 +166,32 @@ func SmithWaterman(stringA, stringB string, scoring Scoring) int {
 		}
 	}
 
-	return maxScore
-}
+	var alignmentA string
+	var alignmentB string
 
-func maxSmithWaterman(a, b, c int) int {
-	if a < 0 && b < 0 && c < 0 {
-		return 0
-	} else if a > b && a > c {
-		return a
-	} else if b > c {
-		return b
+	// Traceback
+	columnM, rowN := columnLengthM-1, rowLengthN-1
+	for columnM > 0 && rowN > 0 {
+		switch pointer[columnM][rowN].Pointer {
+		case 1:
+			alignmentA = string(stringA[columnM-1]) + alignmentA
+			alignmentB = string(stringB[rowN-1]) + alignmentB
+			columnM--
+			rowN--
+		case 2:
+			alignmentA = string(stringA[columnM-1]) + alignmentA
+			alignmentB = string(stringB[rowN-1]) + alignmentB
+			columnM--
+			rowN--
+		case 3:
+			alignmentA = string(stringA[columnM-1]) + alignmentA
+			alignmentB = "-" + alignmentB
+			columnM--
+		case 4:
+			alignmentA = "-" + alignmentA
+			alignmentB = string(stringB[rowN-1]) + alignmentB
+			rowN--
+		}
 	}
-	return c
+	return maxScore, alignmentA, alignmentB
 }
