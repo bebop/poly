@@ -91,6 +91,80 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB)
 }
 
+
+func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string) {
+
+	columnLengthM, rowLengthN := len(stringA), len(stringB)
+
+	// Initialize the alignment matrix
+	algnMatrix := make([][]int, columnLengthM+1)
+	for i := 0; i <= columnLengthM; i++ {
+		algnMatrix[i] = make([]int, rowLengthN+1)
+	}
+
+	// Initialize variables to keep track of the maximum score and its position
+	maxScore := 0
+	maxScoreRow := 0
+	maxScoreCol := 0
+
+	// Fill the alignment matrix
+	for i := 1; i <= columnLengthM; i++ {
+		for j := 1; j <= rowLengthN; j++ {
+			diagScore := algnMatrix[i-1][j-1] + score(stringA[i-1], stringB[j-1], scoring)
+			upScore := algnMatrix[i-1][j] + scoring.GapPenalty
+			leftScore := algnMatrix[i][j-1] + scoring.GapPenalty
+			algnMatrix[i][j] = max(0, max(diagScore, max(upScore, leftScore)))
+
+			if algnMatrix[i][j] > maxScore {
+				maxScore = algnMatrix[i][j]
+				maxScoreRow = i
+				maxScoreCol = j
+			}
+		}
+	}
+
+	// Traceback to construct the aligned strings
+	alignA := ""
+	alignB := ""
+	i := maxScoreRow
+	j := maxScoreCol
+	for algnMatrix[i][j] > 0 {
+		if algnMatrix[i][j] == algnMatrix[i-1][j-1]+score(stringA[i-1], stringB[j-1], scoring) {
+			alignA = string(stringA[i-1]) + alignA
+			alignB = string(stringB[j-1]) + alignB
+			i--
+			j--
+		} else if algnMatrix[i][j] == algnMatrix[i-1][j]+scoring.GapPenalty {
+			alignA = string(stringA[i-1]) + alignA
+			alignB = "-" + alignB
+			i--
+		} else if algnMatrix[i][j] == algnMatrix[i][j-1]+scoring.GapPenalty {
+			alignA = "-" + alignA
+			alignB = string(stringB[j-1]) + alignB
+			j--
+		} else {
+			// Should not happen
+			panic("Unexpected case in traceback")
+		}
+	}
+
+	return maxScore, alignA, alignB
+}
+
+
+
+
+func score(a, b byte, scoring Scoring) int {
+	if a == b {
+		return scoring.Match
+	} else {
+		return scoring.Mismatch
+	}
+}
+
+
+
+
 func reverseRuneArray(runes []rune) []rune { // wasn't able to find a built-in reverse function for runes
 	length := len(runes)
 	for index := 0; index < length/2; index++ {
