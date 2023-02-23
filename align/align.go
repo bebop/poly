@@ -91,7 +91,6 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB)
 }
 
-
 func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string) {
 
 	columnLengthM, rowLengthN := len(stringA), len(stringB)
@@ -151,9 +150,6 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 	return maxScore, alignA, alignB
 }
 
-
-
-
 func score(a, b byte, scoring Scoring) int {
 	if a == b {
 		return scoring.Match
@@ -161,9 +157,6 @@ func score(a, b byte, scoring Scoring) int {
 		return scoring.Mismatch
 	}
 }
-
-
-
 
 func reverseRuneArray(runes []rune) []rune { // wasn't able to find a built-in reverse function for runes
 	length := len(runes)
