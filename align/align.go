@@ -47,12 +47,8 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	for columnM := 1; columnM <= columnLengthM; columnM++ {
 		for rowN := 1; rowN <= rowLengthN; rowN++ {
 			// Calculate the scores for scoring.Match/mismatch and gap.
-			var score int
-			if stringA[columnM-1] == stringB[rowN-1] {
-				score = scoring.Match
-			} else {
-				score = scoring.Mismatch
-			}
+			var score int = score(stringA[columnM-1], stringB[rowN-1], scoring)
+			
 			matrix[columnM][rowN] = max(
 				matrix[columnM-1][rowN-1]+score,
 				max(matrix[columnM-1][rowN]+scoring.GapPenalty, matrix[columnM][rowN-1]+scoring.GapPenalty),
@@ -64,12 +60,7 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	var alignA, alignB []rune
 	columnM, rowN := columnLengthM, rowLengthN
 	for columnM > 0 && rowN > 0 {
-		if stringA[columnM-1] == stringB[rowN-1] {
-			alignA = append(alignA, rune(stringA[columnM-1]))
-			alignB = append(alignB, rune(stringB[rowN-1]))
-			columnM--
-			rowN--
-		} else if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+scoring.Mismatch {
+		if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+score(stringA[columnM-1], stringB[rowN-1], scoring) {
 			alignA = append(alignA, rune(stringA[columnM-1]))
 			alignB = append(alignB, rune(stringB[rowN-1]))
 			columnM--
