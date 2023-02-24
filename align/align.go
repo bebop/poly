@@ -48,7 +48,7 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 		for rowN := 1; rowN <= rowLengthN; rowN++ {
 			// Calculate the scores for scoring.Match/mismatch and gap.
 			var score int = score(stringA[columnM-1], stringB[rowN-1], scoring)
-			
+
 			matrix[columnM][rowN] = max(
 				matrix[columnM-1][rowN-1]+score,
 				max(matrix[columnM-1][rowN]+scoring.GapPenalty, matrix[columnM][rowN-1]+scoring.GapPenalty),
@@ -82,14 +82,15 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB)
 }
 
+// SmithWaterman
 func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string) {
 
 	columnLengthM, rowLengthN := len(stringA), len(stringB)
 
 	// Initialize the alignment matrix
-	algnMatrix := make([][]int, columnLengthM+1)
+	matrix := make([][]int, columnLengthM+1)
 	for i := 0; i <= columnLengthM; i++ {
-		algnMatrix[i] = make([]int, rowLengthN+1)
+		matrix[i] = make([]int, rowLengthN+1)
 	}
 
 	// Initialize variables to keep track of the maximum score and its position
@@ -100,13 +101,13 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 	// Fill the alignment matrix
 	for i := 1; i <= columnLengthM; i++ {
 		for j := 1; j <= rowLengthN; j++ {
-			diagScore := algnMatrix[i-1][j-1] + score(stringA[i-1], stringB[j-1], scoring)
-			upScore := algnMatrix[i-1][j] + scoring.GapPenalty
-			leftScore := algnMatrix[i][j-1] + scoring.GapPenalty
-			algnMatrix[i][j] = max(0, max(diagScore, max(upScore, leftScore)))
+			diagScore := matrix[i-1][j-1] + score(stringA[i-1], stringB[j-1], scoring)
+			upScore := matrix[i-1][j] + scoring.GapPenalty
+			leftScore := matrix[i][j-1] + scoring.GapPenalty
+			matrix[i][j] = max(0, max(diagScore, max(upScore, leftScore)))
 
-			if algnMatrix[i][j] > maxScore {
-				maxScore = algnMatrix[i][j]
+			if matrix[i][j] > maxScore {
+				maxScore = matrix[i][j]
 				maxScoreRow = i
 				maxScoreCol = j
 			}
@@ -118,17 +119,17 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 	alignB := ""
 	i := maxScoreRow
 	j := maxScoreCol
-	for algnMatrix[i][j] > 0 {
-		if algnMatrix[i][j] == algnMatrix[i-1][j-1]+score(stringA[i-1], stringB[j-1], scoring) {
+	for matrix[i][j] > 0 {
+		if matrix[i][j] == matrix[i-1][j-1]+score(stringA[i-1], stringB[j-1], scoring) {
 			alignA = string(stringA[i-1]) + alignA
 			alignB = string(stringB[j-1]) + alignB
 			i--
 			j--
-		} else if algnMatrix[i][j] == algnMatrix[i-1][j]+scoring.GapPenalty {
+		} else if matrix[i][j] == matrix[i-1][j]+scoring.GapPenalty {
 			alignA = string(stringA[i-1]) + alignA
 			alignB = "-" + alignB
 			i--
-		} else if algnMatrix[i][j] == algnMatrix[i][j-1]+scoring.GapPenalty {
+		} else if matrix[i][j] == matrix[i][j-1]+scoring.GapPenalty {
 			alignA = "-" + alignA
 			alignB = string(stringB[j-1]) + alignB
 			j--
