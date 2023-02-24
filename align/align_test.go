@@ -87,7 +87,7 @@ func TestSmithWaterman(t *testing.T) {
 		GapPenalty: -2,
 	}
 
-	// Wikipedia example: https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm#Example
+	// Wikipedia example: https://en.wikipedia.org/wiki/Smith-Waterman_algorithm#Example
 	a := "TGTTACGG"
 	b := "GGTTGACTA"
 
