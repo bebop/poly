@@ -79,7 +79,6 @@ func TestNeedlemanWunsch(t *testing.T) {
 	}
 }
 
-
 func TestSmithWaterman(t *testing.T) {
 
 	scoring := align.Scoring{
@@ -103,19 +102,19 @@ func TestSmithWaterman(t *testing.T) {
 		t.Errorf("Alignment is %s, expected GTTGAC", alignA)
 	}
 
-	c := "GATTACA"
-	d := "GCATGCU"
+	c := "ACACACTA"
+	d := "AGCACACA"
 
 	score, alignC, alignD := align.SmithWaterman(c, d, scoring)
 
-	if score != 7 {
+	if score != 17 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignC, alignD)
 	}
-	if alignC != "G-AT" {
-		t.Errorf("Alignment is %s, expected G-AT", alignC)
+	if alignC != "A-CACACTA" {
+		t.Errorf("Alignment is %s, expected A-CACACTA", alignC)
 	}
-	if alignD != "GCAT" {
-		t.Errorf("Alignment is %s, expected GCAT", alignD)
+	if alignD != "AGCACAC-A" {
+		t.Errorf("Alignment is %s, expected AGCACAC-A", alignD)
 	}
 
 	// Test edge cases
