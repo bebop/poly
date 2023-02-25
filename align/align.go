@@ -40,7 +40,7 @@ Needleman-Wunsch and Smith-Waterman.
 Both are "dynamic programming algorithms" which is a fancy 1980's term for they use
 matrices. If you're familiar with kernel operations, linear filters, or whatever term
 ML researchers are using nowadays for, "slide a window over a matrix and determine that
-entry's values using its neighbor's values", then this should be pretty easy to grock.
+entry's values using its neighbor's values", then this should be pretty easy to grok.
 
 If not these algorithms essentially compare every character in one sequence with another
 sequence and create an edit distance along with human readable string to show gaps like the
