@@ -4,11 +4,26 @@ import (
 	"testing"
 
 	"github.com/TimothyStiles/poly/align"
+	"github.com/TimothyStiles/poly/align/matrix"
+	"github.com/TimothyStiles/poly/alphabet"
 )
 
 func TestNeedlemanWunsch(t *testing.T) {
 
-	scoring := align.NewScoring()
+	mat := [][]int{
+		/*       A C G T */
+		/* A */ {1, -1, -1, -1},
+		/* C */ {-1, 1, -1, -1},
+		/* G */ {-1, -1, 1, -1},
+		/* T */ {-1, -1, -1, 1},
+	}
+
+	alphabet := alphabet.NewAlphabet([]string{"A", "C", "G", "T"})
+	subMatrix, err := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	scoring := align.NewScoring(subMatrix, -1)
 
 	a := "GATTACA"
 	b := "GCATGCU"
@@ -81,11 +96,18 @@ func TestNeedlemanWunsch(t *testing.T) {
 
 func TestSmithWaterman(t *testing.T) {
 
-	scoring := align.Scoring{
-		Match:      3,
-		Mismatch:   -3,
-		GapPenalty: -2,
+	mat := [][]int{
+		/*       - A C G T */
+		/* - */ {0, 0, 0, 0, 0},
+		/* A */ {0, 3, -3, -3, -3},
+		/* C */ {0, -3, 3, -3, -3},
+		/* G */ {0, -3, -3, 3, -3},
+		/* T */ {0, -3, -3, -3, 3},
 	}
+
+	alphabet := alphabet.NewAlphabet([]string{"-", "A", "C", "G", "T"})
+	subMatrix, _ := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
+	scoring := align.NewScoring(subMatrix, -2)
 
 	// Wikipedia example: https://en.wikipedia.org/wiki/Smith-Waterman_algorithm#Example
 	a := "TGTTACGG"

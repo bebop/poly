@@ -59,19 +59,18 @@ Tim
 */
 package align
 
+import "github.com/TimothyStiles/poly/align/matrix"
+
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
 type Scoring struct {
-	Match      int
-	Mismatch   int
-	GapPenalty int
+	SubstitutionMatrix *matrix.SubstitutionMatrix
+	GapPenalty         int
 }
 
-// NewScoring returns a new Scoring struct with default values.
-func NewScoring() Scoring {
+func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) Scoring {
 	return Scoring{
-		Match:      1,
-		Mismatch:   -1,
-		GapPenalty: -1,
+		SubstitutionMatrix: substitutionMatrix,
+		GapPenalty:         gapPenalty,
 	}
 }
 
@@ -201,11 +200,10 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 }
 
 func score(a, b byte, scoring Scoring) int {
-	if a == b {
-		return scoring.Match
-	} else {
-		return scoring.Mismatch
-	}
+	currentScore, _ := scoring.SubstitutionMatrix.Score(string(a), string(b))
+
+	return currentScore
+
 }
 
 func reverseRuneArray(runes []rune) []rune { // wasn't able to find a built-in reverse function for runes
