@@ -11,14 +11,15 @@ import (
 func TestNeedlemanWunsch(t *testing.T) {
 
 	mat := [][]int{
-		/*       A C G T */
-		/* A */ {1, -1, -1, -1},
-		/* C */ {-1, 1, -1, -1},
-		/* G */ {-1, -1, 1, -1},
-		/* T */ {-1, -1, -1, 1},
+		/*       A C G T U */
+		/* A */ {1, -1, -1, -1, -1},
+		/* C */ {-1, 1, -1, -1, -1},
+		/* G */ {-1, -1, 1, -1, -1},
+		/* T */ {-1, -1, -1, 1, -1},
+		/* U */ {-1, -1, -1, -1, 1},
 	}
 
-	alphabet := alphabet.NewAlphabet([]string{"A", "C", "G", "T"})
+	alphabet := alphabet.NewAlphabet([]string{"A", "C", "G", "T", "U"})
 	subMatrix, err := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
 	if err != nil {
 		t.Errorf("error: %s", err)

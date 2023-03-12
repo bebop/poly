@@ -200,8 +200,10 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 }
 
 func score(a, b byte, scoring Scoring) int {
-	currentScore, _ := scoring.SubstitutionMatrix.Score(string(a), string(b))
-
+	currentScore, err := scoring.SubstitutionMatrix.Score(string(a), string(b))
+	if err != nil {
+		panic(err)
+	}
 	return currentScore
 
 }
