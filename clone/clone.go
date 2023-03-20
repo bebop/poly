@@ -18,7 +18,7 @@ While simulation is simple for simple cases, there are a lot of edge cases to ha
   - Which input sequences are circular? How do we handle their rotations?
   - Is the enzyme that is cutting directional? How do we handle that directionality?
   - Are there multiple possible outputs of our ligation reaction? For example, ligations may be
-    to create a "library" of plasmids, in which there are millions of valid combinations.
+    able to create a "library" of plasmids, in which there are millions of valid combinations.
   - How do we handle sequences that get ligated in multiple orientations?
 
 These cloning functions handle all those problems so that they appear simple to the end user.

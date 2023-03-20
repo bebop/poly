@@ -4,7 +4,7 @@ Package align is a package for aligning (comparing) DNA, RNA, and protein sequen
 Biology is fickle and full of quirks that make it hard to do even the most basic of tasks
 which we would normally take for granted when working with other kinds of data.
 
-Comparing two biogical sequences to see if they're roughly equivalent is one of those tasks.
+Comparing two biological sequences to see if they're roughly equivalent is one of those tasks.
 
 Essentially two almost identical sequences with almost identical functionality can contain
 small insertions or deletions that shift the entire string such that a meaningful comparison via
