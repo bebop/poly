@@ -214,14 +214,14 @@ func Parse(file io.Reader) (map[string]Enzyme, error) {
 				// the line
 				commercialName := trimmedString[9:]
 
-				// Add both to commercialSuppliermap
+				// Add both to commercialSupplierMap
 				commercialSupplierMap[singleLetterCommercialCode] = commercialName
 			}
 		}
 
 		// If we are parsing references, continue appending to the current enzyme's references
 		if startReferenceParsing && line != "" {
-			// Break reference parsing if we encounter a new enzyime
+			// Break reference parsing if we encounter a new enzyme
 			if strings.Contains(line, "<1>") {
 				enzymeMap[enzyme.Name] = enzyme
 				enzyme = Enzyme{}

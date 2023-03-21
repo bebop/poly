@@ -24,7 +24,7 @@ a human operator can quickly identify problems with hashing.
 
 If the sequence is DNA or RNA, the Seqhash algorithm needs to know whether or not the nucleic
 acid is circular and/or double stranded. If circular, the sequence is rotated to a deterministic
-point. If double stranded, the sequence is compared to its reverse complement, and the lexiographically
+point. If double stranded, the sequence is compared to its reverse complement, and the lexicographically
 minimal sequence is taken (whether or not the min or max is used doesn't matter, just needs to
 be consistent).
 
@@ -52,7 +52,6 @@ hash of the sequence (once rotated and complemented, as stated above).
 
 Seqhash is a simple algorithm that allows for much better indexing of genetic sequences than what is
 currently available.
-
 */
 package seqhash
 
@@ -70,8 +69,8 @@ import (
 type SequenceType string
 
 const (
-	DNA SequenceType = "DNA"
-	RNA SequenceType = "RNA"
+	DNA     SequenceType = "DNA"
+	RNA     SequenceType = "RNA"
 	PROTEIN SequenceType = "PROTEIN"
 )
 
@@ -81,7 +80,7 @@ func boothLeastRotation(sequence string) int {
 	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
 	// this is generally over commented but I'm keeping it this way for now. - Tim
 
-	// first concatenate the sequence to itself to avoid modular arithmateic
+	// first concatenate the sequence to itself to avoid modular arithmetic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
 	leastRotationIndex := 0
 
@@ -110,16 +109,16 @@ func boothLeastRotation(sequence string) int {
 		// if character does not equal whatever character is at leastRotationIndex plus failure.
 		if character != sequence[leastRotationIndex+failure+1] {
 
-			// if character is lexically less then what is rotated least leastRotatationIndex gets value of character index.
+			// if character is lexically less then what is rotated least leastRotationIndex gets value of character index.
 			if character < sequence[leastRotationIndex] {
 				leastRotationIndex = characterIndex
 			}
-			// assign -1 to whatever is at the index of difference between character and rotation indeces.
+			// assign -1 to whatever is at the index of difference between character and rotation indices.
 			failureSlice[characterIndex-leastRotationIndex] = -1
 
 			// if character does equal whatever character is at leastRotationIndex plus failure.
 		} else {
-			// assign failure + 1 at the index of difference between character and rotation indeces.
+			// assign failure + 1 at the index of difference between character and rotation indices.
 			failureSlice[characterIndex-leastRotationIndex] = failure + 1
 		}
 	} // end loop
