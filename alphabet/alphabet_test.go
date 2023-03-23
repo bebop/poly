@@ -1,6 +1,7 @@
 package alphabet_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/TimothyStiles/poly/alphabet"
@@ -59,5 +60,15 @@ func TestAlphabet(t *testing.T) {
 		if code != i+len(symbols) {
 			t.Errorf("Incorrect encoding of symbol %s: expected %d, got %d", symbol, i+len(symbols), code)
 		}
+	}
+}
+
+func TestAlphabet_Symbols(t *testing.T) {
+
+	// Test Symbols
+	symbols := []string{"A", "C", "G", "T"}
+	a := alphabet.NewAlphabet(symbols)
+	if !reflect.DeepEqual(a.Symbols(), symbols) {
+		t.Errorf("Symbols() = %v, want %v", a.Symbols(), symbols)
 	}
 }
