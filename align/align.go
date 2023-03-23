@@ -67,6 +67,7 @@ type Scoring struct {
 	GapPenalty         int
 }
 
+// NewScoring returns a new Scoring struct with default values.
 func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) Scoring {
 	return Scoring{
 		SubstitutionMatrix: substitutionMatrix,
