@@ -170,15 +170,18 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 	if handleErr(err) != nil {
 		return Fastq{}, totalRead, handleErr(err)
 	}
+
 	line = line[:len(line)-1] // Exclude newline delimiter.
 	if string(line)[0] == '@' {
 		lookingForIdentifier = false
 	}
-	seqIdentifier = strings.Split(string(line), " ")[0][1:]
+	lineSplits := strings.Split(string(line), " ")
+	seqIdentifier = lineSplits[0][1:]
 	optionals = make(map[string]string)
-	for _, optionalDatum := range strings.Split(string(line), " ")[1:] {
-		optionalKey := strings.Split(optionalDatum, "=")[0]
-		optionalValue := strings.Split(optionalDatum, "=")[1]
+	for _, optionalDatum := range lineSplits[1:] {
+		optionalSplits := strings.Split(optionalDatum, "=")
+		optionalKey := optionalSplits[0]
+		optionalValue := optionalSplits[1]
 		optionals[optionalKey] = optionalValue
 	}
 
