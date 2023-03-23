@@ -1,0 +1,34 @@
+{
+ "meta": {
+  "name": "Cat DNA",
+  "hash": "v1_DLD_f4a683c223881923883ae38de9792375fdb088cbb78508374d6937f1e2a810e2",
+  "description": "Synthetic Cat DNA for testing purposes.",
+  "url": "www.allyourbasepair.com/catz",
+  "created_by": "Catz (all you basepair are belong to us)",
+  "created_with": "Poly - The world's most modern, open source software library for engineering organisms.",
+  "created_on": "2022-02-09T10:36:28.067245-08:00",
+  "schema": ""
+ },
+ "features": [
+  {
+   "name": "Cat coding region.",
+   "hash": "",
+   "type": "CDS",
+   "description": "a cat coding region at the beginning of our sequence.",
+   "location": {
+    "start": 0,
+    "end": 8,
+    "complement": false,
+    "join": false,
+    "five_prime_partial": false,
+    "three_prime_partial": false,
+    "sub_locations": null
+   },
+   "tags": {
+    "product": "cat protein"
+   },
+   "sequence": ""
+  }
+ ],
+ "sequence": "CATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCATCAT"
+}

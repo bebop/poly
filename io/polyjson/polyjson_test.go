@@ -1,19 +1,13 @@
-package polyjson_test
+package polyjson
 
 import (
-	"fmt"
-	"io/ioutil"
+	"errors"
 	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/poly"
-	"github.com/TimothyStiles/poly/io/polyjson"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/TimothyStiles/poly/transform"
+	"github.com/stretchr/testify/assert"
 )
 
 /******************************************************************************
@@ -22,80 +16,92 @@ JSON related tests begin here.
 
 ******************************************************************************/
 
-func ExampleRead() {
-	sequence := polyjson.Read("../../data/sample.json")
+func TestFeature_GetSequence(t *testing.T) {
+	// This test is a little too complex and contrived for an example function.
+	// Essentially, it's testing GetSequence()'s ability to parse and retrieve sequences from complex location structures.
+	// This was originally covered in the old package system  it was not covered in the new package system so I decided to include it here.
 
-	fmt.Println(sequence.Meta.Source)
-	//output: Saccharomyces cerevisiae (baker's yeast)
-}
+	// Sequence for greenflourescent protein (GFP) that we're using as test data for this example.
+	gfpSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
-func ExampleParse() {
-	file, _ := ioutil.ReadFile("../../data/sample.json")
-	sequence := polyjson.Parse(file)
+	sequenceLength := len(gfpSequence)
 
-	fmt.Println(sequence.Meta.Source)
-	//output: Saccharomyces cerevisiae (baker's yeast)
-}
+	// Splitting the sequence into two parts to make a multi-location feature.
+	sequenceFirstHalf := gfpSequence[:sequenceLength/2]
+	sequenceSecondHalf := transform.ReverseComplement(gfpSequence[sequenceLength/2:]) // This feature is reverse complemented.
 
-func ExampleWrite() {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	defer os.RemoveAll(tmpDataDir)
+	// rejoining the two halves into a single string where the second half of the sequence is reverse complemented.
+	gfpSequenceModified := sequenceFirstHalf + sequenceSecondHalf
 
-	sequence := polyjson.Read("../../data/sample.json")
+	// initialize sequence and feature structs.
+	var sequence Poly
+	var feature Feature
 
-	tmpJSONFilePath := filepath.Join(tmpDataDir, "sample.json")
-	polyjson.Write(sequence, tmpJSONFilePath)
+	// set the initialized sequence struct's sequence.
+	sequence.Sequence = gfpSequenceModified
+	// initialize sublocations to be usedin the feature.
 
-	testSequence := polyjson.Read(tmpJSONFilePath)
+	var subLocation Location
+	var subLocationReverseComplemented Location
 
-	fmt.Println(testSequence.Meta.Source)
-	//output: Saccharomyces cerevisiae (baker's yeast)
-}
+	subLocation.Start = 0
+	subLocation.End = sequenceLength / 2
 
-func TestGbkToJSON(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(tmpDataDir)
+	subLocationReverseComplemented.Start = sequenceLength / 2
+	subLocationReverseComplemented.End = sequenceLength
+	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
-	testSequence := genbank.Read("../../data/puc19.gbk")
+	feature.Description = "Green Flourescent Protein"
+	feature.Location.SubLocations = []Location{subLocation, subLocationReverseComplemented}
 
-	tmpJSONFilePath := filepath.Join(tmpDataDir, "puc19.json")
-	polyjson.Write(testSequence, tmpJSONFilePath)
+	// Add the GFP feature to the sequence struct.
+	_ = sequence.AddFeature(&feature)
 
-	readTestSequence := polyjson.Read(tmpJSONFilePath)
+	// get the GFP feature sequence string from the sequence struct.
+	featureSequence, _ := feature.GetSequence()
 
-	if diff := cmp.Diff(testSequence, readTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestGffToJSON(t *testing.T) {
-	tmpDataDir, err := ioutil.TempDir("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(tmpDataDir)
-
-	gffTestSequence := gff.Read("../../data/ecoli-mg1655-short.gff")
-
-	tmpJSONFilePath := filepath.Join(tmpDataDir, "ecoli-mg1655-short.json")
-	polyjson.Write(gffTestSequence, tmpJSONFilePath)
-
-	gffReadTestSequence := polyjson.Read(tmpJSONFilePath)
-
-	if diff := cmp.Diff(gffTestSequence, gffReadTestSequence, cmpopts.IgnoreFields(poly.Feature{}, "ParentSequence")); diff != "" {
-		t.Errorf(" mismatch (-want +got):\n%s", diff)
+	// check to see if the feature was inserted properly into the sequence.
+	if gfpSequence != featureSequence {
+		t.Error("Feature sequence was not properly retrieved.")
 	}
 
 }
 
-/******************************************************************************
+func TestParse_error(t *testing.T) {
+	unmarshalErr := errors.New("unmarshal error")
+	oldUnmarshalFn := unmarshalFn
+	unmarshalFn = func(data []byte, v interface{}) error {
+		return unmarshalErr
+	}
+	defer func() {
+		unmarshalFn = oldUnmarshalFn
+	}()
+	_, err := Parse(strings.NewReader(""))
+	assert.EqualError(t, err, unmarshalErr.Error())
+}
 
-JSON related tests end here.
+func TestRead_error(t *testing.T) {
+	readErr := errors.New("read error")
+	oldReadFileFn := readFileFn
+	readFileFn = func(filename string) (*os.File, error) {
+		return nil, readErr
+	}
+	defer func() {
+		readFileFn = oldReadFileFn
+	}()
+	_, err := Read("/tmp/file")
+	assert.EqualError(t, err, readErr.Error())
+}
 
-******************************************************************************/
+func TestWrite_error(t *testing.T) {
+	marshalIndentErr := errors.New("marshal indent error")
+	oldMarshalIndentFn := marshalIndentFn
+	marshalIndentFn = func(v interface{}, prefix, indent string) ([]byte, error) {
+		return nil, marshalIndentErr
+	}
+	defer func() {
+		marshalIndentFn = oldMarshalIndentFn
+	}()
+	err := Write(Poly{}, "/tmp/file")
+	assert.EqualError(t, err, marshalIndentErr.Error())
+}

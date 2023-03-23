@@ -1,83 +1,241 @@
 package fasta
 
 import (
-	"bytes"
-	"fmt"
+	"compress/gzip"
+	"errors"
+	"io"
 	"os"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// ExampleRead shows basic usage for Read.
-func ExampleRead() {
-	fastas := Read("data/base.fasta")
-	fmt.Println(fastas[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
+const (
+	// This fasta stream contains no Fasta.
+	emptyFasta = "testing\natagtagtagtagtagatgatgatgatgagatg\n\n\n\n\n\n\n\n\n\n\n"
+)
 
-// ExampleParse shows basic usage for Parse.
-func ExampleParse() {
-	file, _ := os.Open("data/base.fasta")
-	fastas := Parse(file)
+// Initialized at TestMain.
+var uniprotFasta string
 
-	fmt.Println(fastas[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
+func TestMain(m *testing.M) {
+	const uniprotFastaGzFilePath = "data/uniprot_1mb_test.fasta.gz"
+	// unzip uniprot data and create uniprotFasta string for benchmarks and testing.
+	uniprotFastaGzFile, err := os.Open(uniprotFastaGzFilePath)
+	if err != nil {
+		panic(uniprotFastaGzFilePath + " required for tests!")
+	}
+	defer uniprotFastaGzFile.Close()
 
-// ExampleBuild shows basic usage for Build
-func ExampleBuild() {
-	fastas := Read("data/base.fasta") // get example data
-	fasta := Build(fastas)            // build a fasta byte array
-	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
+	uniprotFastaGzReader, _ := gzip.NewReader(uniprotFastaGzFile)
+	defer uniprotFastaGzReader.Close()
 
-	fmt.Println(firstLine)
-	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleWrite shows basic usage of the  writer.
-func ExampleWrite() {
-	fastas := Read("data/base.fasta")       // get example data
-	Write(fastas, "data/test.fasta")        // write it out again
-	testSequence := Read("data/test.fasta") // read it in again
-
-	os.Remove("data/test.fasta") // getting rid of test file
-
-	fmt.Println(testSequence[0].Name)
-	// Output: gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-}
-
-// ExampleReadGz shows basic usage for ReadGz on a gzip'd file.
-func ExampleReadGz() {
-	fastas := ReadGz("data/uniprot_1mb_test.fasta.gz")
-	var name string
-	for _, fasta := range fastas {
-		name = fasta.Name
+	uniprotFastaBytes, err := io.ReadAll(uniprotFastaGzReader)
+	if err != nil {
+		panic(err)
 	}
 
-	fmt.Println(name)
-	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
+	uniprotFasta = string(uniprotFastaBytes)
+	m.Run()
 }
 
-// ExampleReadGzConcurrent shows how to use the concurrent  parser for larger files.
-func ExampleReadGzConcurrent() {
-	fastas := make(chan Fasta, 1000)
-	go ReadGzConcurrent("data/uniprot_1mb_test.fasta.gz", fastas)
-	var name string
-	for fasta := range fastas {
-		name = fasta.Name
+func BenchmarkFastaLegacy(b *testing.B) {
+	var fastas []Fasta
+	var err error
+	for i := 0; i < b.N; i++ {
+		fastas, err = Parse(strings.NewReader(uniprotFasta))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
-
-	fmt.Println(name)
-	// Output: sp|P86857|AGP_MYTCA Alanine and glycine-rich protein (Fragment) OS=Mytilus californianus OX=6549 PE=1 SV=1
+	_ = fastas
 }
 
-// ExampleReadConcurrent shows how to use the concurrent  parser for decompressed fasta files.
-func ExampleReadConcurrent() {
-	fastas := make(chan Fasta, 100)
-	go ReadConcurrent("data/base.fasta", fastas)
-	var name string
-	for fasta := range fastas {
-		name = fasta.Name
+func BenchmarkParser(b *testing.B) {
+	var fastaRecords []Fasta
+	for i := 0; i < b.N; i++ {
+		parser := NewParser(strings.NewReader(uniprotFasta), 256)
+		for {
+			fasta, _, err := parser.ParseNext()
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					b.Fatal(err)
+				}
+				break
+			}
+			fastaRecords = append(fastaRecords, fasta)
+		}
+		fastaRecords = nil // Reset memory
+	}
+	_ = fastaRecords
+}
+
+func TestRead_error(t *testing.T) {
+	t.Run("Read errors opening the file", func(t *testing.T) {
+		openErr := errors.New("open error")
+		oldOpenFn := openFn
+		openFn = func(name string) (*os.File, error) {
+			return nil, openErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+		}()
+		_, err := Read("/tmp/file")
+		assert.EqualError(t, err, openErr.Error())
+	})
+
+	t.Run("ReadGz errors opening the file", func(t *testing.T) {
+		openErr := errors.New("open error")
+		oldOpenFn := openFn
+		openFn = func(name string) (*os.File, error) {
+			return nil, openErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+		}()
+		_, err := ReadGz("/tmp/file")
+		assert.EqualError(t, err, openErr.Error())
+	})
+
+	t.Run("ReadGz errors reading the file", func(t *testing.T) {
+		readErr := errors.New("read error")
+		oldOpenFn := openFn
+		oldGzipReaderFn := gzipReaderFn
+		openFn = func(name string) (*os.File, error) {
+			return &os.File{}, nil
+		}
+		gzipReaderFn = func(r io.Reader) (*gzip.Reader, error) {
+			return nil, readErr
+		}
+		defer func() {
+			openFn = oldOpenFn
+			gzipReaderFn = oldGzipReaderFn
+		}()
+		_, err := ReadGz("/tmp/file")
+		assert.EqualError(t, err, readErr.Error())
+	})
+}
+
+func TestWrite_error(t *testing.T) {
+	buildErr := errors.New("build error")
+	oldBuildFn := buildFn
+	buildFn = func(fastas []Fasta) ([]byte, error) {
+		return nil, buildErr
+	}
+	defer func() {
+		buildFn = oldBuildFn
+	}()
+	err := Write([]Fasta{}, "/tmp/file")
+	assert.EqualError(t, err, buildErr.Error())
+}
+
+func TestParser(t *testing.T) {
+	parser := NewParser(nil, 256)
+	for testIndex, test := range []struct {
+		content  string
+		expected []Fasta
+	}{
+		{
+			content:  ">humen\nGATTACA\nCATGAT", // EOF-ended Fasta not valid
+			expected: []Fasta{},
+		},
+		{
+			content:  ">humen\nGATTACA\nCATGAT\n",
+			expected: []Fasta{{Name: "humen", Sequence: "GATTACACATGAT"}},
+		},
+		{
+			content: ">doggy or something\nGATTACA\n\nCATGAT\n" +
+				">homunculus\nAAAA\n",
+			expected: []Fasta{
+				{Name: "doggy or something", Sequence: "GATTACACATGAT"},
+				{Name: "homunculus", Sequence: "AAAA"},
+			},
+		},
+	} {
+		parser.Reset(strings.NewReader(test.content))
+		fastas, err := parser.ParseAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(fastas) != len(test.expected) {
+			t.Errorf("case index %d: got %d fastas, expected %d", testIndex, len(fastas), len(test.expected))
+			continue
+		}
+		for index, gotFasta := range fastas {
+			expected := test.expected[index]
+			if expected != gotFasta {
+				t.Errorf("got!=expected: %+v != %+v", gotFasta, expected)
+			}
+		}
+	}
+}
+
+func TestParseBytes(t *testing.T) {
+	// Partial read test.
+	const testFasta = ">0\nGAT\n>1\nCAC\n"
+	p := NewParser(strings.NewReader(testFasta), 256)
+	result1, bytesRead, err := p.ParseByteLimited(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result1) != 1 {
+		t.Error("expected result of length 1 (partial read)")
+	}
+	expectBytesRead := 1 + strings.Index(testFasta[1:], ">")
+	if int(bytesRead) != expectBytesRead {
+		t.Errorf("expected %d bytes read, got %d bytes read", expectBytesRead, bytesRead)
 	}
 
-	fmt.Println(name)
-	// Output: MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+	// Full read test.
+	p.Reset(strings.NewReader(testFasta))
+	result1, bytesRead, err = p.ParseByteLimited(100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result1) != 2 {
+		t.Error("expected result of length 2 (full read)")
+	}
+	expectBytesRead = len(testFasta)
+	if int(bytesRead) != expectBytesRead {
+		t.Errorf("expected %d bytes read, got %d bytes read", expectBytesRead, bytesRead)
+	}
+}
+
+// TestReadEmptyFasta tests that an empty fasta file is parsed correctly.
+func TestReadEmptyFasta(t *testing.T) {
+	fastas, err := Parse(strings.NewReader(emptyFasta))
+	if err == nil {
+		t.Errorf("expected error reading empty fasta stream")
+	}
+	if len(fastas) != 0 {
+		t.Errorf("expected 1 fastas, got %d", len(fastas))
+	}
+}
+
+// TestParseBufferFail tests that the parser fails when the buffer is too small.
+func TestParseBufferFail(t *testing.T) {
+	// Error only triggered when there is a line greater than 16 bytes in length.
+	// This is because the underlying implementation uses bufio.Reader, which auto-sets
+	// the buffer to 16, the minimum length permissible for the implementation.
+	// We should not test for this anyways because we may change from using
+	// bufio.Reader.ReadSlice to bufio.Reader.ReadLine, which allows for incomplete
+	// line parsing, though this makes parsing more difficult.
+	const testFasta = ">0\n0123456789ABCDEF\n>1\nCAC\n"
+	parser := NewParser(strings.NewReader(testFasta), 2)
+	fasta, err := parser.ParseAll()
+	_ = fasta
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+}
+
+func TestParseEOFAfterName(t *testing.T) {
+	const testFasta = ">OK Fasta\nABGABA\n>NotOKFasta\n"
+	parser := NewParser(strings.NewReader(testFasta), 2)
+	fasta, err := parser.ParseAll()
+	_ = fasta
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
 }

@@ -18,18 +18,15 @@ Tim
 package codon
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/TimothyStiles/poly/io/poly"
 	weightedRand "github.com/mroth/weightedrand"
-
-	"encoding/json"
-	"io/ioutil"
 )
 
 /******************************************************************************
@@ -37,9 +34,12 @@ Oct, 15, 2020
 
 File is structured as so:
 
+	Interfaces:
+		Table - specifies the functions that all table types must implement
+
 	Structs:
-		Table - holds all information mapping codons <-> aminoacids during transformations.
-		AnimoAcid - holds amino acide related info for Table struct
+		codonTable - holds all information mapping codons <-> amino acids during transformations.
+		AminoAcid - holds amino acid related info for codonTable struct
 		Codon - holds codon related info for AminoAcid struct
 
 	Big functions that everything else is related to:
@@ -50,14 +50,26 @@ File is structured as so:
 		Optimize - given an amino acid sequence string and codon table it translates
 							 sequences to UPPERCASE nucleic acid sequences.
 
-Anywho, most of this file and Table's struct methods are meant to help overcome
-this codon bias. There's a default Table generator near the bottom of this file
+Anywho, most of this file and codonTable's struct methods are meant to help overcome
+this codon bias. There's a default codonTable generator near the bottom of this file
 with a whole section on how it works and why it's gotta be that way.
 ******************************************************************************/
 
-var errEmtpyCodonTable error = errors.New("empty codon table")
-var errEmtpyAminoAcidString error = errors.New("empty amino acid string")
-var errEmtpySequenceString error = errors.New("empty sequence string")
+var (
+	errEmptyCodonTable      = errors.New("empty codon table")
+	errEmptyAminoAcidString = errors.New("empty amino acid string")
+	errEmptySequenceString  = errors.New("empty sequence string")
+	newChooserFn            = weightedRand.NewChooser
+)
+
+// invalidAminoAcidError is returned when an input protein sequence contains an invalid amino acid.
+type invalidAminoAcidError struct {
+	AminoAcid rune
+}
+
+func (e invalidAminoAcidError) Error() string {
+	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
+}
 
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
@@ -71,8 +83,19 @@ type AminoAcid struct {
 	Codons []Codon `json:"codons"`
 }
 
-// Table holds information for a codon table.
-type Table struct {
+// Table is an interface that specifies the functions that all table types must implement
+type Table interface {
+	Chooser() (map[string]weightedRand.Chooser, error)
+	GenerateTranslationTable() map[string]string
+	GetAminoAcids() []AminoAcid
+	GetStartCodons() []string
+	GetStopCodons() []string
+	IsEmpty() bool
+	OptimizeTable(string) Table
+}
+
+// codonTable holds information for a codon table.
+type codonTable struct {
 	StartCodons []string    `json:"start_codons"`
 	StopCodons  []string    `json:"stop_codons"`
 	AminoAcids  []AminoAcid `json:"amino_acids"`
@@ -80,16 +103,16 @@ type Table struct {
 
 // Translate translates a codon sequence to an amino acid sequence
 func Translate(sequence string, codonTable Table) (string, error) {
-	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
-		return "", errEmtpyCodonTable
+	if codonTable.IsEmpty() {
+		return "", errEmptyCodonTable
 	}
 	if len(sequence) == 0 {
-		return "", errEmtpySequenceString
+		return "", errEmptySequenceString
 	}
 
 	var aminoAcids strings.Builder
 	var currentCodon strings.Builder
-	translationTable := codonTable.generateTranslationTable()
+	translationTable := codonTable.GenerateTranslationTable()
 
 	for _, letter := range sequence {
 
@@ -107,60 +130,53 @@ func Translate(sequence string, codonTable Table) (string, error) {
 	return aminoAcids.String(), nil
 }
 
-// Optimize takes an amino acid sequence and Table and returns an optimized codon sequence
-func Optimize(aminoAcids string, codonTable Table) (string, error) {
-	if len(codonTable.StartCodons) == 0 && len(codonTable.StopCodons) == 0 && len(codonTable.AminoAcids) == 0 {
-		return "", errEmtpyCodonTable
+// Optimize takes an amino acid sequence and codonTable and returns an optimized codon sequence. Takes an optional random seed as last argument.
+func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, error) {
+	if codonTable.IsEmpty() {
+		return "", errEmptyCodonTable
 	}
 	if len(aminoAcids) == 0 {
-		return "", errEmtpyAminoAcidString
+		return "", errEmptyAminoAcidString
 	}
 
 	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
-	rand.Seed(time.Now().UTC().UnixNano())
+	if len(randomState) > 0 {
+		rand.Seed(int64(randomState[0]))
+	} else {
+		rand.Seed(time.Now().UTC().UnixNano())
+	}
 
 	var codons strings.Builder
-	codonChooser, err := codonTable.chooser()
+	codonChooser, err := codonTable.Chooser()
 	if err != nil {
 		return "", err
 	}
 
 	for _, aminoAcid := range aminoAcids {
-		aminoAcidString := string(aminoAcid)
-		codons.WriteString(codonChooser[aminoAcidString].Pick().(string))
+		chooser, ok := codonChooser[string(aminoAcid)]
+		if !ok {
+			return "", invalidAminoAcidError{aminoAcid}
+		}
+		codons.WriteString(chooser.Pick().(string))
 	}
 	return codons.String(), nil
 }
 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
-// This function actually mutates the Table struct itself.
-func (codonTable Table) OptimizeTable(sequence string) Table {
+// This function actually mutates the codonTable struct itself.
+func (table codonTable) OptimizeTable(sequence string) Table {
 
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
 
-	for aminoAcidIndex, aminoAcid := range codonTable.AminoAcids {
+	for aminoAcidIndex, aminoAcid := range table.AminoAcids {
 		// apply weights to codonTable
 		for codonIndex, codon := range aminoAcid.Codons {
-			codonTable.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
+			table.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
 
 	}
-	return codonTable
-}
-
-// GetCodingRegions is a helper function to pull coding regions out of an Sequence as input for optimizing codon tables.
-func GetCodingRegions(sequence poly.Sequence) string {
-	// pick out the each coding region in the Sequence and add it to the sequence Builder
-	var sequenceBuilder strings.Builder
-
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequenceBuilder.WriteString(feature.GetSequence())
-		}
-	}
-
-	return sequenceBuilder.String()
+	return table
 }
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
@@ -192,27 +208,31 @@ func getCodonFrequency(sequence string) map[string]int {
 	return codonFrequencyHashMap
 }
 
-// chooser is a Table method to convert a codon table to a chooser
-func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
+func (table codonTable) IsEmpty() bool {
+	return len(table.StartCodons) == 0 && len(table.StopCodons) == 0 && len(table.AminoAcids) == 0
+}
+
+// Chooser is a codonTable method to convert a codon table to a chooser
+func (table codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
 
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
 
 	// iterate over every amino acid in the codonTable
-	for _, aminoAcid := range codonTable.AminoAcids {
+	for _, aminoAcid := range table.AminoAcids {
 
 		// create a list of codon choices for this specific amino acid
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
 
-		// Get sum of codon occurences for particular amino acid
-		codonOccurenceSum := 0
+		// Get sum of codon occurrences for particular amino acid
+		codonOccurrenceSum := 0
 		for _, codon := range aminoAcid.Codons {
-			codonOccurenceSum += codon.Weight
+			codonOccurrenceSum += codon.Weight
 		}
 
 		// Threshold codons that occur less than 10% for coding a particular amino acid
 		for _, codon := range aminoAcid.Codons {
-			codonPercentage := float64(codon.Weight) / float64(codonOccurenceSum)
+			codonPercentage := float64(codon.Weight) / float64(codonOccurrenceSum)
 
 			if codonPercentage > 0.10 {
 				// for every codon related to current amino acid append its Triplet and Weight to codonChoices after thresholding
@@ -221,7 +241,7 @@ func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
 		}
 
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
-		chooser, err := weightedRand.NewChooser(codonChoices...)
+		chooser, err := newChooserFn(codonChoices...)
 		if err != nil {
 			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
 		}
@@ -231,15 +251,27 @@ func (codonTable Table) chooser() (map[string]weightedRand.Chooser, error) {
 	return codonChooser, nil
 }
 
-// Generate map of codons -> amino acid
-func (codonTable Table) generateTranslationTable() map[string]string {
+// GenerateTranslationTable generates a map of codons -> amino acid
+func (table codonTable) GenerateTranslationTable() map[string]string {
 	var translationMap = make(map[string]string)
-	for _, aminoAcid := range codonTable.AminoAcids {
+	for _, aminoAcid := range table.AminoAcids {
 		for _, codon := range aminoAcid.Codons {
 			translationMap[codon.Triplet] = aminoAcid.Letter
 		}
 	}
 	return translationMap
+}
+
+func (table codonTable) GetStartCodons() []string {
+	return table.StartCodons
+}
+
+func (table codonTable) GetStopCodons() []string {
+	return table.StopCodons
+}
+
+func (table codonTable) GetAminoAcids() []AminoAcid {
+	return table.AminoAcids
 }
 
 /******************************************************************************
@@ -256,9 +288,9 @@ different things.
 The NCBI publishes this weird data format for developers to use for generating
 codon tables and mapping codons to amino acids for different organisms.
 
-All this stuff is experimentally derived and I'm not sure how it's done really.
+All this stuff is experimentally derived, and I'm not sure how it's done really.
 I won't really have a chance to find out for a while but there's some future
-work where I may want to do experiments like this and you'll see more about it.
+work where I may want to do experiments like this, and you'll see more about it.
 
 There are two tables. I got annoyed since the original only went by number so
 I made one that went by name too. Looking back on it this was useless so I removed
@@ -270,7 +302,7 @@ Tim
 ******************************************************************************/
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-func generateCodonTable(aminoAcids, starts string) Table {
+func generateCodonTable(aminoAcids, starts string) codonTable {
 	base1 := "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
 	base2 := "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
 	base3 := "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
@@ -296,7 +328,7 @@ func generateCodonTable(aminoAcids, starts string) Table {
 	for k, v := range aminoAcidMap {
 		aminoAcidSlice = append(aminoAcidSlice, AminoAcid{string(k), v})
 	}
-	return Table{startCodons, stopCodons, aminoAcidSlice}
+	return codonTable{startCodons, stopCodons, aminoAcidSlice}
 }
 
 // GetCodonTable takes the index of desired NCBI codon table and returns it.
@@ -305,7 +337,7 @@ func GetCodonTable(index int) Table {
 }
 
 // defaultCodonTablesByNumber stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using numbered indeces.
-var defaultCodonTablesByNumber = map[int]Table{
+var defaultCodonTablesByNumber = map[int]codonTable{
 	1:  generateCodonTable("FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------"),
 	2:  generateCodonTable("FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------"),
 	3:  generateCodonTable("FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------"),
@@ -388,24 +420,24 @@ Keoni
 
 ******************************************************************************/
 
-// ParseCodonJSON parses a Table JSON file.
+// ParseCodonJSON parses a codonTable JSON file.
 func ParseCodonJSON(file []byte) Table {
-	var codontable Table
-	_ = json.Unmarshal([]byte(file), &codontable)
-	return codontable
+	var codonTable codonTable
+	_ = json.Unmarshal(file, &codonTable)
+	return codonTable
 }
 
-// ReadCodonJSON reads a Table JSON file.
+// ReadCodonJSON reads a codonTable JSON file.
 func ReadCodonJSON(path string) Table {
-	file, _ := ioutil.ReadFile(path)
-	codontable := ParseCodonJSON(file)
-	return codontable
+	file, _ := os.ReadFile(path)
+	codonTable := ParseCodonJSON(file)
+	return codonTable
 }
 
-// WriteCodonJSON writes a Table struct out to JSON.
-func WriteCodonJSON(codontable Table, path string) {
-	file, _ := json.MarshalIndent(codontable, "", " ")
-	_ = ioutil.WriteFile(path, file, 0644)
+// WriteCodonJSON writes a codonTable struct out to JSON.
+func WriteCodonJSON(codonTable Table, path string) {
+	file, _ := json.MarshalIndent(codonTable, "", " ")
+	_ = os.WriteFile(path, file, 0644)
 }
 
 /******************************************************************************
@@ -429,7 +461,7 @@ multiple organisms.
 
 == Add tables ==
 Some organisms have multiple chromosomes. We need to add em all up
-to get an accurate codon table (different than compromise tables,
+to get an accurate codon table (different from compromise tables,
 since these are all already balanced).
 
 Godspeed,
@@ -437,29 +469,29 @@ Godspeed,
 Keoni
 ******************************************************************************/
 
-// CompromiseCodonTable takes 2 CodonTables and makes a new Table
+// CompromiseCodonTable takes 2 CodonTables and makes a new codonTable
 // that is an equal compromise between the two tables.
-func CompromiseCodonTable(firstCodonTable Table, secondCodonTable Table, cutOff float64) (Table, error) {
-	// Initialize output Table, c
-	var c Table
+func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float64) (Table, error) {
+	// Initialize output codonTable, c
+	var c codonTable
 	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
-		return c, errors.New("Cut off too low. Cannot be less than 0 or greater than 1")
+		return c, errors.New("cut off too low, cannot be less than 0")
 	}
 	if cutOff > 1 {
-		return c, errors.New("Cut off too high. Cannot be greater than 1")
+		return c, errors.New("cut off too high, cannot be greater than 1")
 	}
 
 	// Take start and stop strings from first table
-	// and use them as start + stops in final Table
-	c.StartCodons = firstCodonTable.StartCodons
-	c.StopCodons = firstCodonTable.StopCodons
+	// and use them as start + stops in final codonTable
+	c.StartCodons = firstCodonTable.GetStartCodons()
+	c.StopCodons = firstCodonTable.GetStopCodons()
 
-	// Initialize the finalAminoAcid list for the output Table
+	// Initialize the finalAminoAcid list for the output codonTable
 	var finalAminoAcids []AminoAcid
 
-	// Loop over all AminoAcids represented in the first Table
-	for _, firstAa := range firstCodonTable.AminoAcids {
+	// Loop over all AminoAcids represented in the first codonTable
+	for _, firstAa := range firstCodonTable.GetAminoAcids() {
 		var firstTriplets []string
 		var firstWeights []int
 		var firstTotal int
@@ -472,7 +504,7 @@ func CompromiseCodonTable(firstCodonTable Table, secondCodonTable Table, cutOff 
 			firstTriplets = append(firstTriplets, firstCodon.Triplet)
 			firstWeights = append(firstWeights, firstCodon.Weight)
 			firstTotal = firstTotal + firstCodon.Weight
-			for _, secondAa := range secondCodonTable.AminoAcids {
+			for _, secondAa := range secondCodonTable.GetAminoAcids() {
 				if secondAa.Letter == firstAa.Letter {
 					for _, secondCodon := range secondAa.Codons {
 						// For each codon from firstCodonTable, get the
@@ -520,20 +552,14 @@ func CompromiseCodonTable(firstCodonTable Table, secondCodonTable Table, cutOff 
 }
 
 // AddCodonTable takes 2 CodonTables and adds them together to create
-// a new Table.
-func AddCodonTable(firstCodonTable Table, secondCodonTable Table) Table {
-	var c Table
-
-	// Take start and stop strings from first table
-	c.StartCodons = firstCodonTable.StartCodons
-	c.StopCodons = firstCodonTable.StopCodons
-
+// a new codonTable.
+func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
 	// Add up codons
 	var finalAminoAcids []AminoAcid
-	for _, firstAa := range firstCodonTable.AminoAcids {
+	for _, firstAa := range firstCodonTable.GetAminoAcids() {
 		var finalCodons []Codon
 		for _, firstCodon := range firstAa.Codons {
-			for _, secondAa := range secondCodonTable.AminoAcids {
+			for _, secondAa := range secondCodonTable.GetAminoAcids() {
 				for _, secondCodon := range secondAa.Codons {
 					if firstCodon.Triplet == secondCodon.Triplet {
 						finalCodons = append(finalCodons, Codon{firstCodon.Triplet, firstCodon.Weight + secondCodon.Weight})
@@ -543,6 +569,10 @@ func AddCodonTable(firstCodonTable Table, secondCodonTable Table) Table {
 		}
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
-	c.AminoAcids = finalAminoAcids
-	return c
+
+	return codonTable{
+		StartCodons: firstCodonTable.GetStartCodons(),
+		StopCodons:  firstCodonTable.GetStopCodons(),
+		AminoAcids:  finalAminoAcids,
+	}
 }

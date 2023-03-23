@@ -24,7 +24,7 @@ a human operator can quickly identify problems with hashing.
 
 If the sequence is DNA or RNA, the Seqhash algorithm needs to know whether or not the nucleic
 acid is circular and/or double stranded. If circular, the sequence is rotated to a deterministic
-point. If double stranded, the sequence is compared to its reverse complement, and the lexiographically
+point. If double stranded, the sequence is compared to its reverse complement, and the lexicographically
 minimal sequence is taken (whether or not the min or max is used doesn't matter, just needs to
 be consistent).
 
@@ -52,7 +52,6 @@ hash of the sequence (once rotated and complemented, as stated above).
 
 Seqhash is a simple algorithm that allows for much better indexing of genetic sequences than what is
 currently available.
-
 */
 package seqhash
 
@@ -66,13 +65,22 @@ import (
 	"lukechampine.com/blake3"
 )
 
+// Seqhash is a struct that contains the Seqhash algorithm sequence types.
+type SequenceType string
+
+const (
+	DNA     SequenceType = "DNA"
+	RNA     SequenceType = "RNA"
+	PROTEIN SequenceType = "PROTEIN"
+)
+
 // boothLeastRotation gets the least rotation of a circular string.
 func boothLeastRotation(sequence string) int {
 
 	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
 	// this is generally over commented but I'm keeping it this way for now. - Tim
 
-	// first concatenate the sequence to itself to avoid modular arithmateic
+	// first concatenate the sequence to itself to avoid modular arithmetic
 	sequence += sequence // maybe do this as a buffer just for speed? May get annoying with larger sequences.
 	leastRotationIndex := 0
 
@@ -101,16 +109,16 @@ func boothLeastRotation(sequence string) int {
 		// if character does not equal whatever character is at leastRotationIndex plus failure.
 		if character != sequence[leastRotationIndex+failure+1] {
 
-			// if character is lexically less then what is rotated least leastRotatationIndex gets value of character index.
+			// if character is lexically less then what is rotated least leastRotationIndex gets value of character index.
 			if character < sequence[leastRotationIndex] {
 				leastRotationIndex = characterIndex
 			}
-			// assign -1 to whatever is at the index of difference between character and rotation indeces.
+			// assign -1 to whatever is at the index of difference between character and rotation indices.
 			failureSlice[characterIndex-leastRotationIndex] = -1
 
 			// if character does equal whatever character is at leastRotationIndex plus failure.
 		} else {
-			// assign failure + 1 at the index of difference between character and rotation indeces.
+			// assign failure + 1 at the index of difference between character and rotation indices.
 			failureSlice[characterIndex-leastRotationIndex] = failure + 1
 		}
 	} // end loop
@@ -133,27 +141,27 @@ func RotateSequence(sequence string) string {
 }
 
 // Hash is a function to create Seqhashes, a specific kind of identifier.
-func Hash(sequence string, sequenceType string, circular bool, doubleStranded bool) (string, error) {
+func Hash(sequence string, sequenceType SequenceType, circular bool, doubleStranded bool) (string, error) {
 	// By definition, Seqhashes are of uppercase sequences
 	sequence = strings.ToUpper(sequence)
 	// If RNA, convert to a DNA sequence. The hash itself between a DNA and RNA sequence will not
 	// be different, but their Seqhash will have a different metadata string (R vs D)
-	if sequenceType == "RNA" {
+	if sequenceType == SequenceType("RNA") {
 		sequence = strings.ReplaceAll(sequence, "U", "T")
 	}
 
 	// Run checks on the input
-	if sequenceType != "DNA" && sequenceType != "RNA" && sequenceType != "PROTEIN" {
-		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + sequenceType)
+	if sequenceType != DNA && sequenceType != RNA && sequenceType != PROTEIN {
+		return "", errors.New("Only sequenceTypes of DNA, RNA, or PROTEIN allowed. Got sequenceType: " + string(sequenceType))
 	}
-	if sequenceType == "DNA" || sequenceType == "RNA" {
+	if sequenceType == DNA || sequenceType == RNA {
 		for _, char := range sequence {
 			if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
 				return "", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
 			}
 		}
 	}
-	if sequenceType == "PROTEIN" {
+	if sequenceType == PROTEIN {
 		for _, char := range sequence {
 			// Selenocysteine (Sec; U) and pyrrolysine (Pyl; O) are added
 			// in accordance with https://www.uniprot.org/help/sequences
@@ -166,7 +174,7 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 		}
 	}
 	// There is no check for circular proteins since proteins can be circular
-	if sequenceType == "PROTEIN" && doubleStranded {
+	if sequenceType == PROTEIN && doubleStranded {
 		return "", errors.New("Proteins cannot be double stranded")
 	}
 
@@ -193,11 +201,11 @@ func Hash(sequence string, sequenceType string, circular bool, doubleStranded bo
 	var doubleStrandedLetter string
 	// Get first letter. D for DNA, R for RNA, and P for Protein
 	switch sequenceType {
-	case "DNA":
+	case DNA:
 		sequenceTypeLetter = "D"
-	case "RNA":
+	case RNA:
 		sequenceTypeLetter = "R"
-	case "PROTEIN":
+	case PROTEIN:
 		sequenceTypeLetter = "P"
 	}
 	// Get 2nd letter. C for circular, L for Linear

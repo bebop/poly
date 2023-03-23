@@ -24,6 +24,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -172,7 +173,7 @@ In our perfect case, we would only need 8 base pair barcodes to represent 65536
 different samples. Reality is a little different, however.
 
 1. Failure of DNA sequencers to accurately sequence the barcode, leading for
-   one barcoed to be mistaken for a different barcode
+   one barcode to be mistaken for a different barcode
 2. Misalignment of the barcode to the sequence. We cannot guarantee that the
    DNA sequencer will begin sequencing our fragment at an exact base pair.
 3. Misreading of sequence as barcode. If our barcode is only 8 base pairs, on
@@ -303,4 +304,16 @@ func CreateBarcodesWithBannedSequences(length int, maxSubSequence int, bannedSeq
 // CreateBarcodes is a simplified version of CreateBarcodesWithBannedSequences with sane defaults.
 func CreateBarcodes(length int, maxSubSequence int) []string {
 	return CreateBarcodesWithBannedSequences(length, maxSubSequence, []string{}, []func(string) bool{})
+}
+
+// CreateBarcodesGcRange creates a list of barcodes within a given GC range.
+func CreateBarcodesGcRange(length int, maxSubSequence int, minGcContent float64, maxGcContent float64) []string {
+	gcBarcodeFunc := func(barcodeToCheck string) bool {
+		gcContent := checks.GcContent(barcodeToCheck)
+		if gcContent < minGcContent || gcContent > maxGcContent {
+			return false
+		}
+		return true
+	}
+	return CreateBarcodesWithBannedSequences(length, maxSubSequence, []string{}, []func(string) bool{gcBarcodeFunc})
 }

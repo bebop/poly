@@ -1,9 +1,9 @@
 # (Poly)merase <img align="right" src="https://cdn.discordapp.com/attachments/766785755305213953/777596834734145546/ProfileFrameArtboard_1.png" width="100">
 
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/prime/LICENSE) 
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/main/LICENSE) 
 ![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/43dc1fb3572b7812865e/test_coverage)](https://codeclimate.com/github/TimothyStiles/poly/test_coverage)
+![Test Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/TimothyStiles/e58f265655ac0acacdd1a38376ccd32a/raw/coverage.json)
 
 Poly is a Go package for engineering organisms.
 
@@ -15,12 +15,16 @@ Poly is a Go package for engineering organisms.
 
 * **Ambitious:** Poly's goal is to be the most complete, open, and well used collection of computational synthetic biology tools ever assembled. If you like our dream and want to support us please star this repo, request a feature, open a pull request, or [sponsor the project](https://github.com/sponsors/TimothyStiles).
 
-## Documentation
 
-* **[Installation](https://github.com/TimothyStiles/poly/blob/prime/docs/installation.md)**
+## Install
+
+`go get github.com/TimothyStiles/poly@latest`
+
+## Documentation
+* **[Tutorials](https://gitpod.io/#tutorial=true/https://github.com/TimothyStiles/poly)**
+
 * **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
-* **[CLI](https://pkg.go.dev/github.com/TimothyStiles/poly/poly)**
-* **[Roadmap](https://github.com/TimothyStiles/poly/blob/prime/docs/ROADMAP.md)**
+
 * **[Learning Synbio](https://github.com/TimothyStiles/how-to-synbio)**
 
 ## Community
@@ -41,4 +45,4 @@ Poly is a Go package for engineering organisms.
 
 * [MIT](LICENSE)
 
-* Copyright (c) 2021 Timothy Stiles
+* Copyright (c) 2023 Timothy Stiles

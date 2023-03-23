@@ -1,0 +1,23 @@
+name: notify social media
+
+on:
+  release: 
+  issues:
+  issue_comment:
+  discussion: 
+  discussion_comment:
+  push:
+    branches:
+      - notify # for testing purposes
+      - dev
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Actions for Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2

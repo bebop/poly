@@ -1,0 +1,31 @@
+name: Build Coverage Badge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage-badge:
+    name: Create Answer Badge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Generate coverage report
+        run: go test -v  -coverprofile=profile.cov ./...
+      - name: Parse overall coverage
+        run: coverage=$(go tool cover -func profile.cov | tail -1 | rev | cut -f 1 | rev) && echo "COVERAGE=$coverage" >> $GITHUB_ENV 
+      - name: Create the Badge
+        uses: schneegans/dynamic-badges-action@master
+        with:
+          auth: ${{ secrets.COVERAGE_GIST}}
+          gistID: e58f265655ac0acacdd1a38376ccd32a
+          filename: coverage.json
+          label: Coverage
+          message: ${{ env.COVERAGE }}
+          color: green

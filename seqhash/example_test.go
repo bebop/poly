@@ -10,7 +10,7 @@ import (
 // This example shows how to seqhash a sequence.
 func Example_basic() {
 	sequence := "ATGC"
-	sequenceType := "DNA"
+	sequenceType := seqhash.DNA
 	circular := false
 	doubleStranded := true
 
@@ -21,7 +21,7 @@ func Example_basic() {
 
 func ExampleHash() {
 	sequence := "ATGC"
-	sequenceType := "DNA"
+	sequenceType := seqhash.DNA
 	circular := false
 	doubleStranded := true
 
@@ -31,7 +31,7 @@ func ExampleHash() {
 }
 
 func ExampleRotateSequence() {
-	sequence := genbank.Read("../data/puc19.gbk")
+	sequence, _ := genbank.Read("../data/puc19.gbk")
 	sequenceLength := len(sequence.Sequence)
 	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
 

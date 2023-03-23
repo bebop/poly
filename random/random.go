@@ -1,5 +1,5 @@
 /*
-Package random provides functions to generate randon DNA and protein sequences.
+Package random provides functions to generate random DNA and protein sequences.
 */
 package random
 

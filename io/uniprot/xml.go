@@ -468,7 +468,6 @@ type StatusType struct {
 	Status Status `xml:"status,attr,omitempty"`
 }
 
-
 type Strain struct {
 	Value    string      `xml:",chardata"`
 	Evidence IntListType `xml:"evidence,attr,omitempty"`
