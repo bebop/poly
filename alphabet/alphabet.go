@@ -8,13 +8,13 @@ type Alphabet struct {
 	encoding map[interface{}]int
 }
 
-// AlphabetError is an error type that is returned when a symbol is not in the alphabet.
-type AlphabetError struct {
+// Error is an error type that is returned when a symbol is not in the alphabet.
+type Error struct {
 	message string
 }
 
 // Error returns the error message for AlphabetError.
-func (e *AlphabetError) Error() string {
+func (e *Error) Error() string {
 	return e.message
 }
 
@@ -32,7 +32,7 @@ func NewAlphabet(symbols []string) *Alphabet {
 func (alphabet *Alphabet) Encode(symbol interface{}) (int, error) {
 	code, ok := alphabet.encoding[symbol]
 	if !ok {
-		return 0, &AlphabetError{fmt.Sprintf("Symbol %v not in alphabet", symbol)}
+		return 0, &Error{fmt.Sprintf("Symbol %v not in alphabet", symbol)}
 	}
 	return code, nil
 }
@@ -41,7 +41,7 @@ func (alphabet *Alphabet) Encode(symbol interface{}) (int, error) {
 func (alphabet *Alphabet) Decode(code interface{}) (string, error) {
 	c, ok := code.(int)
 	if !ok || c < 0 || c >= len(alphabet.symbols) {
-		return "", &AlphabetError{fmt.Sprintf("Code %v not in alphabet", code)}
+		return "", &Error{fmt.Sprintf("Code %v not in alphabet", code)}
 	}
 	return alphabet.symbols[c], nil
 }
