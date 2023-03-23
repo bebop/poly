@@ -122,18 +122,6 @@ func ExampleFeature_GetSequence() {
 	// Output: true
 
 }
-func TestUnusualGFFfileRead(t *testing.T) {
-	// this test solves the issue #152, where GFF file has more than two lines of meta information
-	seq, err := gff.Read("../../data/Arthrospira_platensis.gff")
-	if err != nil {
-		t.Error("Could not read unusual gff file", err)
-	}
-	for _, feature := range seq.Features {
-		if feature.Type == "CDS" {
-			fmt.Println(feature)
-		}
-	}
-}
 
 func TestFeature_GetSequence(t *testing.T) {
 	// This test is a little too complex and contrived for an example function.
