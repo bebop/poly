@@ -116,18 +116,18 @@ func ParseHeader(r io.Reader) ([]Header, error) {
 					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupId: id, Attributes: emptyMap})
 				}
 			}
-		} else {
-			// Terminate if we hit the beginning of the raw read headers
-			if values[0] == "#char*" || values[0] == "#read_id" {
-				return headers, nil
-			}
-			// Check to make sure we have the right amount of information for the num_read_groups
-			if len(values) != int(numReadGroups+1) {
-				return []Header{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
-			}
-			for id := 0; id < int(numReadGroups); id++ {
-				headers[id].Attributes[values[0]] = values[id+1]
-			}
+			continue
+		}
+		// Terminate if we hit the beginning of the raw read headers
+		if values[0] == "#char*" || values[0] == "#read_id" {
+			return headers, nil
+		}
+		// Check to make sure we have the right amount of information for the num_read_groups
+		if len(values) != int(numReadGroups+1) {
+			return []Header{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
+		}
+		for id := 0; id < int(numReadGroups); id++ {
+			headers[id].Attributes[values[0]] = values[id+1]
 		}
 		lineNum++
 	}
@@ -179,109 +179,108 @@ func ParseReads(r io.Reader, reads chan<- Read, errorsChan chan<- error) {
 					headerMap[headerNum] = values[headerNum]
 				}
 				start = true
-				continue
 			}
+			continue
 		}
 
 		// Once we have the read headers, start to parse the actual reads
-		if start {
-			var newRead Read
-			for valueIndex := 0; valueIndex < len(values); valueIndex++ {
-				fieldValue := headerMap[valueIndex]
-				if values[valueIndex] == "." {
-					continue
-				}
-				switch fieldValue {
-				case "read_id":
-					newRead.ReadId = values[valueIndex]
-				case "read_group":
-					readGroupId, err := strconv.ParseUint(values[valueIndex], 10, 32)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed convert read_group '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.ReadGroupId = uint32(readGroupId)
-				case "digitisation":
-					digitisation, err := strconv.ParseFloat(values[valueIndex], 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert digitisation '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.Digitisation = digitisation
-				case "offset":
-					offset, err := strconv.ParseFloat(values[valueIndex], 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert offset '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.Offset = offset
-				case "range":
-					nanoporeRange, err := strconv.ParseFloat(values[valueIndex], 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert range '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.Range = nanoporeRange
-				case "sampling_rate":
-					samplingRate, err := strconv.ParseFloat(values[valueIndex], 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert sampling_rate '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.SamplingRate = samplingRate
-				case "len_raw_signal":
-					lenRawSignal, err := strconv.ParseUint(values[valueIndex], 10, 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert len_raw_signal '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.LenRawSignal = lenRawSignal
-				case "raw_signal":
-					var rawSignals []int16
-					for rawSignalIndex, rawSignalString := range strings.Split(values[valueIndex], ",") {
-						rawSignal, err := strconv.ParseInt(rawSignalString, 10, 16)
-						if err != nil {
-							errorsChan <- fmt.Errorf("Failed to convert raw signal '%s' to int on line %d, signal index %d. Got error: %s", rawSignalString, lineNum, rawSignalIndex, err)
-						}
-						rawSignals = append(rawSignals, int16(rawSignal))
-					}
-					newRead.RawSignal = rawSignals
-				case "start_time":
-					startTime, err := strconv.ParseUint(values[valueIndex], 10, 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert start_time '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.StartTime = startTime
-				case "read_number":
-					readNumber, err := strconv.ParseInt(values[valueIndex], 10, 32)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert read_number '%s' to int on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.ReadNumber = int32(readNumber)
-				case "start_mux":
-					startMux, err := strconv.ParseUint(values[valueIndex], 10, 8)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert start_mux '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.StartMux = uint8(startMux)
-				case "median_before":
-					medianBefore, err := strconv.ParseFloat(values[valueIndex], 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert median_before '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					newRead.MedianBefore = medianBefore
-				case "end_reason":
-					endReasonIndex, err := strconv.ParseInt(values[valueIndex], 10, 64)
-					if err != nil {
-						errorsChan <- fmt.Errorf("Failed to convert end_reason '%s' to int on line %d. Got error: %s", values[valueIndex], lineNum, err)
-					}
-					if _, ok := endReasonMap[int(endReasonIndex)]; !ok {
-						errorsChan <- fmt.Errorf("End reason out of range. Got '%d' on line %d. Cannot find valid enum reason", int(endReasonIndex), lineNum)
-					}
-					newRead.EndReason = endReasonMap[int(endReasonIndex)]
-				case "channel_number":
-					// For whatever reason, this is a string.
-					newRead.ChannelNumber = values[valueIndex]
-				default:
-					errorsChan <- fmt.Errorf("Unknown field to parser '%s' found on line %d. Please report to github.com/TimothyStiles/poly", fieldValue, lineNum)
-				}
+		var newRead Read
+		for valueIndex := 0; valueIndex < len(values); valueIndex++ {
+			fieldValue := headerMap[valueIndex]
+			if values[valueIndex] == "." {
+				continue
 			}
-			reads <- newRead
+			switch fieldValue {
+			case "read_id":
+				newRead.ReadId = values[valueIndex]
+			case "read_group":
+				readGroupId, err := strconv.ParseUint(values[valueIndex], 10, 32)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed convert read_group '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.ReadGroupId = uint32(readGroupId)
+			case "digitisation":
+				digitisation, err := strconv.ParseFloat(values[valueIndex], 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert digitisation '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.Digitisation = digitisation
+			case "offset":
+				offset, err := strconv.ParseFloat(values[valueIndex], 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert offset '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.Offset = offset
+			case "range":
+				nanoporeRange, err := strconv.ParseFloat(values[valueIndex], 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert range '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.Range = nanoporeRange
+			case "sampling_rate":
+				samplingRate, err := strconv.ParseFloat(values[valueIndex], 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert sampling_rate '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.SamplingRate = samplingRate
+			case "len_raw_signal":
+				lenRawSignal, err := strconv.ParseUint(values[valueIndex], 10, 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert len_raw_signal '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.LenRawSignal = lenRawSignal
+			case "raw_signal":
+				var rawSignals []int16
+				for rawSignalIndex, rawSignalString := range strings.Split(values[valueIndex], ",") {
+					rawSignal, err := strconv.ParseInt(rawSignalString, 10, 16)
+					if err != nil {
+						errorsChan <- fmt.Errorf("Failed to convert raw signal '%s' to int on line %d, signal index %d. Got error: %s", rawSignalString, lineNum, rawSignalIndex, err)
+					}
+					rawSignals = append(rawSignals, int16(rawSignal))
+				}
+				newRead.RawSignal = rawSignals
+			case "start_time":
+				startTime, err := strconv.ParseUint(values[valueIndex], 10, 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert start_time '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.StartTime = startTime
+			case "read_number":
+				readNumber, err := strconv.ParseInt(values[valueIndex], 10, 32)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert read_number '%s' to int on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.ReadNumber = int32(readNumber)
+			case "start_mux":
+				startMux, err := strconv.ParseUint(values[valueIndex], 10, 8)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert start_mux '%s' to uint on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.StartMux = uint8(startMux)
+			case "median_before":
+				medianBefore, err := strconv.ParseFloat(values[valueIndex], 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert median_before '%s' to float on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				newRead.MedianBefore = medianBefore
+			case "end_reason":
+				endReasonIndex, err := strconv.ParseInt(values[valueIndex], 10, 64)
+				if err != nil {
+					errorsChan <- fmt.Errorf("Failed to convert end_reason '%s' to int on line %d. Got error: %s", values[valueIndex], lineNum, err)
+				}
+				if _, ok := endReasonMap[int(endReasonIndex)]; !ok {
+					errorsChan <- fmt.Errorf("End reason out of range. Got '%d' on line %d. Cannot find valid enum reason", int(endReasonIndex), lineNum)
+				}
+				newRead.EndReason = endReasonMap[int(endReasonIndex)]
+			case "channel_number":
+				// For whatever reason, this is a string.
+				newRead.ChannelNumber = values[valueIndex]
+			default:
+				errorsChan <- fmt.Errorf("Unknown field to parser '%s' found on line %d. Please report to github.com/TimothyStiles/poly", fieldValue, lineNum)
+			}
 		}
+		reads <- newRead
+
 		lineNum++
 	}
 	close(reads)
