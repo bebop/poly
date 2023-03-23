@@ -2,49 +2,57 @@ package alphabet
 
 import "fmt"
 
+// Alphabet is a struct that holds a list of symbols and a map of symbols to their index in the list.
 type Alphabet struct {
 	symbols  []string
 	encoding map[interface{}]int
 }
 
+// AlphabetError is an error type that is returned when a symbol is not in the alphabet.
 type AlphabetError struct {
 	message string
 }
 
+// Error returns the error message for AlphabetError.
 func (e *AlphabetError) Error() string {
 	return e.message
 }
 
+// NewAlphabet creates a new alphabet from a list of symbols.
 func NewAlphabet(symbols []string) *Alphabet {
 	encoding := make(map[interface{}]int)
-	for i, symbol := range symbols {
-		encoding[symbol] = i
-		encoding[i] = i
+	for index, symbol := range symbols {
+		encoding[symbol] = index
+		encoding[index] = index
 	}
 	return &Alphabet{symbols, encoding}
 }
 
-func (a *Alphabet) Encode(symbol interface{}) (int, error) {
-	code, ok := a.encoding[symbol]
+// Encode returns the index of a symbol in the alphabet.
+func (alphabet *Alphabet) Encode(symbol interface{}) (int, error) {
+	code, ok := alphabet.encoding[symbol]
 	if !ok {
 		return 0, &AlphabetError{fmt.Sprintf("Symbol %v not in alphabet", symbol)}
 	}
 	return code, nil
 }
 
-func (a *Alphabet) Decode(code interface{}) (string, error) {
+// Decode returns the symbol at a given index in the alphabet.
+func (alphabet *Alphabet) Decode(code interface{}) (string, error) {
 	c, ok := code.(int)
-	if !ok || c < 0 || c >= len(a.symbols) {
+	if !ok || c < 0 || c >= len(alphabet.symbols) {
 		return "", &AlphabetError{fmt.Sprintf("Code %v not in alphabet", code)}
 	}
-	return a.symbols[c], nil
+	return alphabet.symbols[c], nil
 }
 
-func (a *Alphabet) Extend(symbols []string) *Alphabet {
-	extended := append(a.symbols, symbols...)
+// Extend returns a new alphabet that is the original alphabet extended with a list of symbols.
+func (alphabet *Alphabet) Extend(symbols []string) *Alphabet {
+	extended := append(alphabet.symbols, symbols...)
 	return NewAlphabet(extended)
 }
 
-func (a *Alphabet) Symbols() []string {
-	return a.symbols
+// Symbols returns the list of symbols in the alphabet.
+func (alphabet *Alphabet) Symbols() []string {
+	return alphabet.symbols
 }
