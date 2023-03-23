@@ -209,25 +209,27 @@ func Parse(file io.Reader) (Gff, error) {
 	return gff, err
 }
 
-// regionString takes in the metaString string array, and returns the region containing ##sequence-region if found
+// regionString takes in the lines array,fieldName that is needed in gff file, and
+// returns the region containing fieldName if found
 // throws error if not found
-func extractInfoFromField(metaString []string, fieldName string) ([]string, int, error) {
+func extractInfoFromField(lines []string, fieldName string) ([]string, int, error) {
 	index := 0
 	endOfMetaInfo := 0
-	for i, line := range metaString {
+	for i, line := range lines {
 		if strings.Contains(line, "#") {
 			if strings.Contains(line, fieldName) {
 				index = i
 			}
-		} else {
-			endOfMetaInfo = i
-			break
+			continue
 		}
+		endOfMetaInfo = i
+		break
+
 	}
-	if index == 0 {
-		return nil, 0, errors.New("wrong meta string array")
+	if index == 0 && fieldName != "gff-version" {
+		return nil, 0, errors.New("the given file does not have any meta information")
 	}
-	return strings.Split(metaString[index], " "), endOfMetaInfo, nil
+	return strings.Split(lines[index], " "), endOfMetaInfo, nil
 }
 
 // Build takes an Annotated sequence and returns a byte array representing a gff to be written out.
