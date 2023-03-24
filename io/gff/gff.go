@@ -13,6 +13,7 @@ package gff
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"sort"
@@ -127,10 +128,12 @@ func Parse(file io.Reader) (Gff, error) {
 	gff.Meta.CheckSum = blake3.Sum256(fileBytes)
 
 	lines := strings.Split(gffString, "\n")
-	metaString := lines[0:2]
+	regionStringArray, endOfMetaInfo, err := extractInfoFromField(lines, "##sequence-region")
+	metaString := lines[0:endOfMetaInfo]
 	versionString := metaString[0]
-	regionStringArray := strings.Split(metaString[1], " ")
-
+	if err != nil {
+		return Gff{}, err
+	}
 	// get name for general meta
 	meta := Meta{}
 	meta.Name = regionStringArray[1] // Formally region name, but changed to name here for generality/interoperability.
@@ -154,7 +157,7 @@ func Parse(file io.Reader) (Gff, error) {
 			fastaFlag = true
 		} else if len(line) == 0 {
 			continue
-		} else if line[0:2] == "##" {
+		} else if line[0:2] == "##" || line[0:2] == "#!" {
 			continue
 		} else if fastaFlag && line[0:1] != ">" {
 			// sequence.Sequence = sequence.Sequence + line
@@ -204,6 +207,29 @@ func Parse(file io.Reader) (Gff, error) {
 	gff.Meta = meta
 
 	return gff, err
+}
+
+// regionString takes in the lines array,fieldName that is needed in gff file, and
+// returns the region containing fieldName if found
+// throws error if not found
+func extractInfoFromField(lines []string, fieldName string) ([]string, int, error) {
+	index := 0
+	endOfMetaInfo := 0
+	for lineIndex, line := range lines {
+		if strings.Contains(line, "#") {
+			if strings.Contains(line, fieldName) {
+				index = lineIndex
+			}
+			continue
+		}
+		endOfMetaInfo = lineIndex
+		break
+
+	}
+	if index == 0 && fieldName != "gff-version" {
+		return nil, 0, errors.New("the given file does not have any meta information")
+	}
+	return strings.Split(lines[index], " "), endOfMetaInfo, nil
 }
 
 // Build takes an Annotated sequence and returns a byte array representing a gff to be written out.
