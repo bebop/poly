@@ -59,7 +59,9 @@ Tim
 */
 package align
 
-import "github.com/TimothyStiles/poly/align/matrix"
+import (
+	"github.com/TimothyStiles/poly/align/matrix"
+)
 
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
 type Scoring struct {
