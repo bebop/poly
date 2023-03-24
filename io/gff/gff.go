@@ -215,14 +215,14 @@ func Parse(file io.Reader) (Gff, error) {
 func extractInfoFromField(lines []string, fieldName string) ([]string, int, error) {
 	index := 0
 	endOfMetaInfo := 0
-	for i, line := range lines {
+	for lineIndex, line := range lines {
 		if strings.Contains(line, "#") {
 			if strings.Contains(line, fieldName) {
-				index = i
+				index = lineIndex
 			}
 			continue
 		}
-		endOfMetaInfo = i
+		endOfMetaInfo = lineIndex
 		break
 
 	}
