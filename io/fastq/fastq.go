@@ -243,7 +243,7 @@ Start of  Read functions
 
 ******************************************************************************/
 
-// ReadGz reads a gzipped  file into an array of Fastq structs.
+// ReadGz reads a gzipped file into an array of Fastq structs.
 func ReadGz(path string) ([]Fastq, error) {
 	file, err := openFn(path)
 	if err != nil {
