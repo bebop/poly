@@ -28,7 +28,11 @@ func ExampleNeedlemanWunsch() {
 		return
 	}
 
-	scoring := align.NewScoring(subMatrix, -1)
+	scoring, err := align.NewScoring(subMatrix, -1)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	score, alignA, alignB := align.NeedlemanWunsch(a, b, scoring)
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
@@ -55,7 +59,11 @@ func ExampleSmithWaterman() {
 		fmt.Println(err)
 		return
 	}
-	scoring := align.NewScoring(subMatrix, -1)
+	scoring, err := align.NewScoring(subMatrix, -1)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
@@ -73,7 +81,12 @@ func ExampleSmithWaterman_matrix_nuc_4() {
 		fmt.Println(err)
 		return
 	}
-	scoring := align.NewScoring(subMatrix, -1)
+	scoring, err := align.NewScoring(subMatrix, -1)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)

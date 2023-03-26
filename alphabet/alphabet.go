@@ -56,3 +56,9 @@ func (alphabet *Alphabet) Extend(symbols []string) *Alphabet {
 func (alphabet *Alphabet) Symbols() []string {
 	return alphabet.symbols
 }
+
+var (
+	DNA     = NewAlphabet([]string{"A", "C", "G", "T"})
+	RNA     = NewAlphabet([]string{"A", "C", "G", "U"})
+	Protein = NewAlphabet([]string{"A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"})
+)

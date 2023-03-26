@@ -61,6 +61,7 @@ package align
 
 import (
 	"github.com/TimothyStiles/poly/align/matrix"
+	"github.com/TimothyStiles/poly/alphabet"
 )
 
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
@@ -69,12 +70,28 @@ type Scoring struct {
 	GapPenalty         int
 }
 
-// NewScoring returns a new Scoring struct with default values.
-func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) Scoring {
+// NewScoring returns a new Scoring struct with default values for DNA.
+func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) (Scoring, error) {
+
+	if substitutionMatrix == nil {
+		mat := [][]int{
+			{1, -1, -1, -1},
+			{-1, 1, -1, -1},
+			{-1, -1, 1, -1},
+			{-1, -1, -1, 1},
+		}
+
+		alphabet := alphabet.DNA
+		subMatrix, err := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
+		if err != nil {
+			return Scoring{}, err
+		}
+		substitutionMatrix = subMatrix
+	}
 	return Scoring{
 		SubstitutionMatrix: substitutionMatrix,
 		GapPenalty:         gapPenalty,
-	}
+	}, nil
 }
 
 // NeedlemanWunsch performs global alignment between two strings using the Needleman-Wunsch algorithm.

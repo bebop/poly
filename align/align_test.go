@@ -24,7 +24,10 @@ func TestNeedlemanWunsch(t *testing.T) {
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
-	scoring := align.NewScoring(subMatrix, -1)
+	scoring, err := align.NewScoring(subMatrix, -1)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 
 	a := "GATTACA"
 	b := "GCATGCU"
@@ -108,7 +111,11 @@ func TestSmithWaterman(t *testing.T) {
 
 	alphabet := alphabet.NewAlphabet([]string{"-", "A", "C", "G", "T"})
 	subMatrix, _ := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
-	scoring := align.NewScoring(subMatrix, -2)
+	scoring, err := align.NewScoring(subMatrix, -2)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 
 	// Wikipedia example: https://en.wikipedia.org/wiki/Smith-Waterman_algorithm#Example
 	a := "TGTTACGG"
