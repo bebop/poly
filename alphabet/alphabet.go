@@ -30,11 +30,11 @@ func NewAlphabet(symbols []string) *Alphabet {
 
 // Encode returns the index of a symbol in the alphabet.
 func (alphabet *Alphabet) Encode(symbol interface{}) (int, error) {
-	code, ok := alphabet.encoding[symbol]
+	c, ok := alphabet.encoding[symbol]
 	if !ok {
 		return 0, &Error{fmt.Sprintf("Symbol %v not in alphabet", symbol)}
 	}
-	return code, nil
+	return c, nil
 }
 
 // Decode returns the symbol at a given index in the alphabet.
