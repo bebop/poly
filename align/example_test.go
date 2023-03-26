@@ -33,7 +33,12 @@ func ExampleNeedlemanWunsch() {
 		fmt.Println(err)
 		return
 	}
-	score, alignA, alignB := align.NeedlemanWunsch(a, b, scoring)
+	score, alignA, alignB, err := align.NeedlemanWunsch(a, b, scoring)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
 
@@ -64,7 +69,12 @@ func ExampleSmithWaterman() {
 		fmt.Println(err)
 		return
 	}
-	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
+	score, alignA, alignB, err := align.SmithWaterman(a, b, scoring)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
 
@@ -87,7 +97,12 @@ func ExampleSmithWaterman_matrix_nuc_4() {
 		fmt.Println(err)
 		return
 	}
-	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
+	score, alignA, alignB, err := align.SmithWaterman(a, b, scoring)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Printf("score: %d, A: %s, B: %s", score, alignA, alignB)
 

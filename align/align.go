@@ -97,7 +97,7 @@ func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) (
 // NeedlemanWunsch performs global alignment between two strings using the Needleman-Wunsch algorithm.
 // It returns the final score and the optimal alignments of the two strings in O(nm) time and O(nm) space.
 // https://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm
-func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, string, string) {
+func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, string, string, error) {
 
 	// Get the M and N dimensions of the matrix. The M x N matrix is standard linear algebra notation.
 	// But I added columns and rows to the variable name to make it more clear what the dimensions are.
@@ -125,8 +125,10 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	for columnM := 1; columnM <= columnLengthM; columnM++ {
 		for rowN := 1; rowN <= rowLengthN; rowN++ {
 			// Calculate the scores for scoring.Match/mismatch and gap.
-			var score int = score(stringA[columnM-1], stringB[rowN-1], scoring)
-
+			var score, err = score(stringA[columnM-1], stringB[rowN-1], scoring)
+			if err != nil {
+				return 0, "", "", err
+			}
 			matrix[columnM][rowN] = max(
 				matrix[columnM-1][rowN-1]+score,
 				max(matrix[columnM-1][rowN]+scoring.GapPenalty, matrix[columnM][rowN-1]+scoring.GapPenalty),
@@ -138,7 +140,11 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	var alignA, alignB []rune
 	columnM, rowN := columnLengthM, rowLengthN
 	for columnM > 0 && rowN > 0 {
-		if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+score(stringA[columnM-1], stringB[rowN-1], scoring) {
+		var currentScore, err = score(stringA[columnM-1], stringB[rowN-1], scoring)
+		if err != nil {
+			return 0, "", "", err
+		}
+		if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+currentScore {
 			alignA = append(alignA, rune(stringA[columnM-1]))
 			alignB = append(alignB, rune(stringB[rowN-1]))
 			columnM--
@@ -157,13 +163,13 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 	// Reverse the alignments to get the optimal alignment.
 	alignA = reverseRuneArray(alignA)
 	alignB = reverseRuneArray(alignB)
-	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB)
+	return matrix[columnLengthM][rowLengthN], string(alignA), string(alignB), nil
 }
 
 // SmithWaterman performs local alignment between two strings using the Smith-Waterman algorithm.
 // It returns the max score and optimal local alignments between two strings alignments of the two strings in O(nm) time and O(nm) space.
 // https://en.wikipedia.org/wiki/Smith-Waterman_algorithm
-func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string) {
+func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string, error) {
 
 	columnLengthM, rowLengthN := len(stringA), len(stringB)
 
@@ -181,7 +187,11 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 	// Fill the alignment matrix
 	for columnM := 1; columnM <= columnLengthM; columnM++ {
 		for rowN := 1; rowN <= rowLengthN; rowN++ {
-			diagScore := matrix[columnM-1][rowN-1] + score(stringA[columnM-1], stringB[rowN-1], scoring)
+			var currentScore, err = score(stringA[columnM-1], stringB[rowN-1], scoring)
+			if err != nil {
+				return 0, "", "", err
+			}
+			diagScore := matrix[columnM-1][rowN-1] + currentScore
 			upScore := matrix[columnM-1][rowN] + scoring.GapPenalty
 			leftScore := matrix[columnM][rowN-1] + scoring.GapPenalty
 			matrix[columnM][rowN] = max(0, max(diagScore, max(upScore, leftScore)))
@@ -200,7 +210,11 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 	columnM := maxScoreRow
 	rowN := maxScoreCol
 	for matrix[columnM][rowN] > 0 {
-		if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+score(stringA[columnM-1], stringB[rowN-1], scoring) {
+		var currentScore, err = score(stringA[columnM-1], stringB[rowN-1], scoring)
+		if err != nil {
+			return 0, "", "", err
+		}
+		if matrix[columnM][rowN] == matrix[columnM-1][rowN-1]+currentScore {
 			alignA = string(stringA[columnM-1]) + alignA
 			alignB = string(stringB[rowN-1]) + alignB
 			columnM--
@@ -216,16 +230,15 @@ func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string
 		}
 	}
 
-	return maxScore, alignA, alignB
+	return maxScore, alignA, alignB, nil
 }
 
-func score(a, b byte, scoring Scoring) int {
+func score(a, b byte, scoring Scoring) (int, error) {
 	currentScore, err := scoring.SubstitutionMatrix.Score(string(a), string(b))
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
-	return currentScore
-
+	return currentScore, nil
 }
 
 func reverseRuneArray(runes []rune) []rune { // wasn't able to find a built-in reverse function for runes
