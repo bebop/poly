@@ -39,7 +39,7 @@ header with metadata and a list of reads. However, unlike many other file
 formats, a slow5 file should almost never be read into a common struct, since
 most runs are large, and will take a ton of memory. Instead, the default way
 to parse slow5 files is to produce a list of headers and a channel of raw
-reads. In order to connect the two (if needed), use ReadGroupId.
+reads. In order to connect the two (if needed), use ReadGroupID.
 
 Nanopore changes the attributes found in the header quite often, so we store
 most of these attributes in a map for future proofing. Even the binary file
@@ -57,7 +57,7 @@ Keoni
 
 // Header contains metadata about the sequencing run in general.
 type Header struct {
-	ReadGroupId        uint32
+	ReadGroupID        uint32
 	Slow5Version       string
 	Attributes         map[string]string
 	EndReasonHeaderMap map[string]int
@@ -65,8 +65,8 @@ type Header struct {
 
 // Read contains metadata and raw signal strengths for a single nanopore read.
 type Read struct {
-	ReadId       string
-	ReadGroupId  uint32
+	ReadID       string
+	ReadGroupID  uint32
 	Digitisation float64
 	Offset       float64
 	Range        float64
@@ -144,7 +144,7 @@ func NewParser(r io.Reader) (*Parser, []Header, error) {
 				}
 				numReadGroups = uint32(numReadGroupsUint)
 				for id := uint32(0); id < numReadGroups; id++ {
-					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupId: id, Attributes: make(map[string]string)})
+					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupID: id, Attributes: make(map[string]string)})
 				}
 			}
 			continue
@@ -160,7 +160,7 @@ func NewParser(r io.Reader) (*Parser, []Header, error) {
 
 					for endReasonIndex, endReason := range endReasons {
 						if _, ok := knownEndReasons[endReason]; !ok {
-							return parser, headers, fmt.Errorf("Unknown end reason '%s' found in end_reason enum. Please report.", endReason)
+							return parser, headers, fmt.Errorf("unknown end reason '%s' found in end_reason enum. Please report", endReason)
 						}
 						endReasonMap[endReasonIndex] = endReason
 						endReasonHeaderMap[endReason] = endReasonIndex
@@ -216,13 +216,13 @@ func (parser *Parser) ParseNext() (Read, error) {
 		}
 		switch fieldValue {
 		case "read_id":
-			newRead.ReadId = values[valueIndex]
+			newRead.ReadID = values[valueIndex]
 		case "read_group":
-			readGroupId, err := strconv.ParseUint(values[valueIndex], 10, 32)
+			readGroupID, err := strconv.ParseUint(values[valueIndex], 10, 32)
 			if err != nil {
 				newRead.Error = fmt.Errorf("Failed convert read_group '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
-			newRead.ReadGroupId = uint32(readGroupId)
+			newRead.ReadGroupID = uint32(readGroupID)
 		case "digitisation":
 			digitisation, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
@@ -431,7 +431,7 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 			}
 		}
 		// Look at above output.Write("#read_id ... for the values here.
-		_, err = fmt.Fprintf(output, "%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadId, read.ReadGroupId, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalStringBuilder.String(), read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, endReasonHeaderMap[read.EndReason], read.ChannelNumber)
+		_, err = fmt.Fprintf(output, "%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadID, read.ReadGroupID, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalStringBuilder.String(), read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, endReasonHeaderMap[read.EndReason], read.ChannelNumber)
 		if err != nil {
 			return err
 		}

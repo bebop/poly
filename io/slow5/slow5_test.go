@@ -147,8 +147,8 @@ func TestParseReads(t *testing.T) {
 		}
 		outputReads = append(outputReads, read)
 	}
-	if outputReads[0].ReadId != "0026631e-33a3-49ab-aa22-3ab157d71f8b" {
-		t.Errorf("First read id should be 0026631e-33a3-49ab-aa22-3ab157d71f8b. Got: %s", outputReads[0].ReadId)
+	if outputReads[0].ReadID != "0026631e-33a3-49ab-aa22-3ab157d71f8b" {
+		t.Errorf("First read id should be 0026631e-33a3-49ab-aa22-3ab157d71f8b. Got: %s", outputReads[0].ReadID)
 	}
 
 	// Test improper files
