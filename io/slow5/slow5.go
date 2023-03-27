@@ -334,14 +334,14 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 	// Next, we need a map of what attribute values are available
 	possibleAttributeKeys := make(map[string]bool)
 	for _, header := range headers {
-		for key, _ := range header.Attributes {
+		for key := range header.Attributes {
 			possibleAttributeKeys[key] = true
 		}
 	}
 	// Now that we know what attribute values are possible, lets build a map
 	// with those values with "." placeholders (as defined in slow5 spec)
 	headerAttributes := make(map[string][]string)
-	for key, _ := range possibleAttributeKeys {
+	for key := range possibleAttributeKeys {
 		newBlankAttributes := make([]string, len(headers))
 		for blankAttributeIndex := range newBlankAttributes {
 			newBlankAttributes[blankAttributeIndex] = "."

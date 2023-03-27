@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 	}
 }
 
-func ExampleParse() {
+func ExampleNewParser() {
 	file, _ := os.Open("data/example.slow5")
 	parser, _, _ := NewParser(file)
 
@@ -168,14 +168,6 @@ func TestParseReads(t *testing.T) {
 	testParseReadsHelper(t, "data/read_tests/end_reason.slow5", "Test should have failed with if end reason can't be converted to int")
 	testParseReadsHelper(t, "data/read_tests/end_reason_unknown.slow5", "Test should have failed with end reason out of range")
 	testParseReadsHelper(t, "data/read_tests/unknown.slow5", "Test should have failed with unknown header")
-}
-
-func ExampleParseHeader() {
-	file, _ := os.Open("data/example.slow5")
-	_, headers, _ := NewParser(file)
-
-	fmt.Println(headers[0].Attributes["@asic_id"])
-	// Output: 4175987214
 }
 
 func TestWrite(t *testing.T) {
