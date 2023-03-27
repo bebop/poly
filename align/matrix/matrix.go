@@ -37,7 +37,7 @@ func (matrix *SubstitutionMatrix) Score(a, b string) (int, error) {
 	return matrix.scores[firstSymbolIndex][secondSymbolIndex], nil
 }
 
-// Default scoring matrix for ALL sequences. Diagnol values are 1, all other values are -1)
+// Default scoring matrix for ALL sequences. Diagonal values are 1, all other values are -1)
 var (
 	letters = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 

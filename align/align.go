@@ -61,7 +61,6 @@ package align
 
 import (
 	"github.com/TimothyStiles/poly/align/matrix"
-	"github.com/TimothyStiles/poly/alphabet"
 )
 
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
@@ -74,19 +73,7 @@ type Scoring struct {
 func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) (Scoring, error) {
 
 	if substitutionMatrix == nil {
-		mat := [][]int{
-			{1, -1, -1, -1},
-			{-1, 1, -1, -1},
-			{-1, -1, 1, -1},
-			{-1, -1, -1, 1},
-		}
-
-		alphabet := alphabet.DNA
-		subMatrix, err := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
-		if err != nil {
-			return Scoring{}, err
-		}
-		substitutionMatrix = subMatrix
+		substitutionMatrix = matrix.Default
 	}
 	return Scoring{
 		SubstitutionMatrix: substitutionMatrix,
