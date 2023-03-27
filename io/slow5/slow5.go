@@ -57,9 +57,10 @@ Keoni
 
 // Header contains metadata about the sequencing run in general.
 type Header struct {
-	ReadGroupId  uint32
-	Slow5Version string
-	Attributes   map[string]string
+	ReadGroupId        uint32
+	Slow5Version       string
+	Attributes         map[string]string
+	EndReasonHeaderMap map[string]int
 }
 
 // Read contains metadata and raw signal strengths for a single nanopore read.
@@ -116,6 +117,7 @@ func NewParser(r io.Reader) (*Parser, []Header, error) {
 	var numReadGroups uint32
 	headerMap := make(map[int]string)
 	endReasonMap := make(map[int]string)
+	endReasonHeaderMap := make(map[string]int)
 
 	for {
 		lineBytes, err := parser.reader.ReadSlice('\n')
@@ -162,8 +164,13 @@ func NewParser(r io.Reader) (*Parser, []Header, error) {
 							return parser, headers, fmt.Errorf("Unknown end reason '%s' found in end_reason enum. Please report.", endReason)
 						}
 						endReasonMap[endReasonIndex] = endReason
+						endReasonHeaderMap[endReason] = endReasonIndex
 					}
 				}
+			}
+			// Add endReasonMap to each output header. This helps the writer
+			for headerIndex := range headers {
+				headers[headerIndex].EndReasonHeaderMap = endReasonHeaderMap
 			}
 			continue
 		}
@@ -324,12 +331,13 @@ Keoni
 func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 	// First, write the slow5 version number
 	slow5Version := headers[0].Slow5Version
-	_, err := output.Write([]byte(fmt.Sprintf("#slow5_version\t%s\n", slow5Version)))
+	endReasonHeaderMap := headers[0].EndReasonHeaderMap
+	_, err := fmt.Fprintf(output, "#slow5_version\t%s\n", slow5Version)
 	if err != nil {
 		return err
 	}
 	// Then, write the number of read groups (ie, the number of headers)
-	_, err = output.Write([]byte(fmt.Sprintf("#num_read_groups\t%d\n", len(headers))))
+	_, err = fmt.Fprintf(output, "#num_read_groups\t%d\n", len(headers))
 	if err != nil {
 		return err
 	}
@@ -371,27 +379,39 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 
 	// Write the header attribute strings to the output
 	for _, headerAttributeString := range headerAttributeStrings {
-		_, err = output.Write([]byte(fmt.Sprintf("%s\n", headerAttributeString)))
+		_, err = fmt.Fprintf(output, "%s\n", headerAttributeString)
 		if err != nil {
 			return err
 		}
 	}
 
+	// Now we handle endReasons / failureReasons. In the slow5 spec, these are
+	// enums depending on what is present in the FAST5 files. This means the
+	// labels may not be consistent and there is no exhaustive list of enum
+	// labels. So, we have to create this from the endReasonMap each time we
+	// write the slow5 file (not a const!)
+	// Invert the endReasonMap
+	endReasonStringList := make([]string, len(endReasonHeaderMap))
+	for endReasonString, endReasonIndex := range endReasonHeaderMap {
+		endReasonStringList[endReasonIndex] = endReasonString
+	}
+	// Build endReasonString
+	var endReasonStringBuilder strings.Builder
+	for _, endReason := range endReasonStringList {
+		fmt.Fprintf(&endReasonStringBuilder, "%s,", endReason)
+	}
+	endReasonString := endReasonStringBuilder.String()
+	endReasonString = endReasonString[:len(endReasonString)-1] // Remove trailing comma
+
 	// Write the read headers
 	// These are according to the slow5 specifications
-	_, err = output.Write([]byte("#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}	char*\n"))
+	_, err = fmt.Fprintf(output, "#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{%s}	char*\n", endReasonString)
 	if err != nil {
 		return err
 	}
 	_, err = output.Write([]byte("#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number\n"))
 	if err != nil {
 		return err
-	}
-	// Parse failure reasons
-	failureReasonsString := "unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative"
-	failureReasons := make(map[string]int)
-	for failureIndex, failureReason := range strings.Split(failureReasonsString, ",") {
-		failureReasons[failureReason] = failureIndex
 	}
 
 	// Iterate over reads. This is reading from a channel, and will end
@@ -400,7 +420,7 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 		// converts []int16 to string
 		rawSignalString := strings.Trim(strings.Replace(fmt.Sprint(read.RawSignal), " ", ",", -1), "[]")
 		// Look at above output.Write("#read_id ... for the values here.
-		_, err = output.Write([]byte(fmt.Sprintf("%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadId, read.ReadGroupId, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalString, read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, failureReasons[read.EndReason], read.ChannelNumber)))
+		_, err = fmt.Fprintf(output, "%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadId, read.ReadGroupId, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalString, read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, endReasonHeaderMap[read.EndReason], read.ChannelNumber)
 		if err != nil {
 			return err
 		}
