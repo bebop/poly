@@ -190,6 +190,8 @@ func NewParser(r io.Reader) (*Parser, []Header, error) {
 	parser.endReasonMap = endReasonMap
 	return parser, headers, nil
 }
+
+// ParseNext parses the next read from a parser.
 func (parser *Parser) ParseNext() (Read, error) {
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {
