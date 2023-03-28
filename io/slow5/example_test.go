@@ -12,6 +12,8 @@ func ExampleNewParser() {
 	// run where I was testing using nanopore for doing COVID testing. It
 	// contains real nanopore data.
 	file, _ := os.Open("data/example.slow5")
+	// Set maxLineSize to 64kb. If you expect longer reads,
+	// make maxLineSize longer!
 	const maxLineSize = 2 * 32 * 1024
 	parser, _, _ := slow5.NewParser(file, maxLineSize)
 
