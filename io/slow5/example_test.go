@@ -8,6 +8,9 @@ import (
 )
 
 func ExampleNewParser() {
+	// example.slow5 is a file I generated using slow5tools from nanopore fast5
+	// run where I was testing using nanopore for doing COVID testing. It
+	// contains real nanopore data.
 	file, _ := os.Open("data/example.slow5")
 	parser, _, _ := slow5.NewParser(file)
 
