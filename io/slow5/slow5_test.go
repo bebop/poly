@@ -8,12 +8,14 @@ import (
 	"testing"
 )
 
+const maxLineSize = 2 * 32 * 1024
+
 func TestParse(t *testing.T) {
 	file, err := os.Open("data/example.slow5")
 	if err != nil {
 		t.Errorf("Failed to open example.slow5: %s", err)
 	}
-	parser, headers, err := NewParser(file)
+	parser, headers, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("Failed to parse headers of file: %s", err)
 	}
@@ -48,7 +50,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file)
+	_, _, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if header line doesn't have any tabs")
 	}
@@ -57,7 +59,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file)
+	_, _, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if numReadGroup can't be converted to an int")
 	}
@@ -66,7 +68,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file)
+	_, _, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if the header doesn't have enough attributes for numReadGroup")
 	}
@@ -75,7 +77,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file)
+	_, _, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if the file is empty")
 	}
@@ -86,7 +88,7 @@ func testParseReadsHelper(t *testing.T, fileTarget string, errorMessage string) 
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	parser, _, _ := NewParser(file)
+	parser, _, _ := NewParser(file, maxLineSize)
 	var targetErr []error
 	for {
 		read, err := parser.ParseNext()
@@ -111,7 +113,7 @@ func TestParseReads(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	parser, _, _ := NewParser(file)
+	parser, _, _ := NewParser(file, maxLineSize)
 
 	var outputReads []Read
 	for {
@@ -157,7 +159,7 @@ func TestWrite(t *testing.T) {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
 	// Parse headers
-	parser, headers, err := NewParser(file)
+	parser, headers, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("Failed to parse headers with error: %s", err)
 	}

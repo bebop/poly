@@ -106,8 +106,7 @@ type Parser struct {
 }
 
 // NewParser parsers a slow5 file.
-func NewParser(r io.Reader) (*Parser, []Header, error) {
-	const maxLineSize = 2 * 32 * 1024
+func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 	parser := &Parser{
 		reader: *bufio.NewReaderSize(r, maxLineSize),
 		line:   0,
