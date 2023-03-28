@@ -31,7 +31,7 @@ import (
 Oct 10, 2021
 
 slow5 parser begins here. Specification below:
-https://hasindu2008.github.io/slow5specs/slow5-v0.1.0.pdf
+https://hasindu2008.github.io/slow5specs/slow5-v1.0.0.pdf
 
 slow5 is able to combine multiple sequencing runs into a single file format,
 but we read each sequencing run separately. Each sequencing run contains a
