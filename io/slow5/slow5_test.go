@@ -2,7 +2,6 @@ package slow5
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -41,24 +40,6 @@ func TestParse(t *testing.T) {
 	if outputReads[0].RawSignal[0] != 430 {
 		t.Errorf("Expected first outputRead to have a raw_signal of 430. Got: %d", outputReads[0].RawSignal[0])
 	}
-}
-
-func ExampleNewParser() {
-	file, _ := os.Open("data/example.slow5")
-	parser, _, _ := NewParser(file)
-
-	var outputReads []Read
-	for {
-		read, err := parser.ParseNext()
-		if err != nil {
-			// Break at EOF
-			break
-		}
-		outputReads = append(outputReads, read)
-	}
-
-	fmt.Println(outputReads[0].RawSignal[0:10])
-	// Output: [430 472 463 467 454 465 463 450 450 449]
 }
 
 func TestParseImproperHeaders(t *testing.T) {
