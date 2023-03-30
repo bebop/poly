@@ -20,6 +20,14 @@ func ExampleRead() {
 	//e3cc70d5-90ef-49b6-bbe1-cfef99537d73
 }
 
+// ExampleReadGz shows basic usage for ReadGz.
+func ExampleReadGz() {
+	fastqs, _ := fastq.ReadGz("data/nanosavseq.fastq.gz")
+	fmt.Println(fastqs[0].Identifier)
+	//Output:
+	//e3cc70d5-90ef-49b6-bbe1-cfef99537d73
+}
+
 // ExampleWrite shows basic usage of the  writer.
 func ExampleWrite() {
 	fastqs, _ := fastq.Read("data/nanosavseq.fastq") // get example data

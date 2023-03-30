@@ -99,24 +99,6 @@ func (parser *Parser) ParseN(maxSequences int) (fastqs []Fastq, err error) {
 	return fastqs, nil
 }
 
-// ParseByteLimited parses fastqs until byte limit is reached.
-// This is NOT a hard limit. To set a hard limit on bytes read use a
-// io.LimitReader to wrap the reader passed to the Parser.
-func (parser *Parser) ParseByteLimited(byteLimit int64) (fastqs []Fastq, bytesRead int64, err error) {
-	for bytesRead < byteLimit {
-		fastq, n, err := parser.ParseNext()
-		bytesRead += n
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				err = nil // EOF not treated as parsing error.
-			}
-			return fastqs, bytesRead, err
-		}
-		fastqs = append(fastqs, fastq)
-	}
-	return fastqs, bytesRead, nil
-}
-
 // ParseNext reads next fastq genome in underlying reader and returns the result
 // and the amount of bytes read during the call.
 // ParseNext only returns an error if it:
@@ -145,10 +127,10 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 		if errors.Is(err, bufio.ErrBufferFull) {
 			// Buffer size too small to read fastq line.
 			return fmt.Errorf("line %d too large for buffer, use larger maxLineSize: %w", parser.line+1, err)
-		} else if !isEOF {
-			return err // Unexpected error.
+		} else if isEOF {
+			return fmt.Errorf("line %d failed: unexepcted EOF encountered", parser.line+1)
 		}
-		return nil
+		return err
 	}
 
 	// Initialization of parser state variables.
@@ -192,6 +174,9 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 	if handleErr(err) != nil {
 		return Fastq{}, totalRead, handleErr(err)
 	}
+	if len(line) <= 1 { // newline delimiter - actually checking for empty line
+		return Fastq{}, totalRead, fmt.Errorf("empty fastq sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
+	}
 	sequence = line[:len(line)-1] // Exclude newline delimiter.
 
 	// skip +
@@ -209,15 +194,14 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 	if handleErr(err) != nil {
 		return Fastq{}, totalRead, handleErr(err)
 	}
+	if len(line) <= 1 { // newline delimiter - actually checking for empty line
+		return Fastq{}, totalRead, fmt.Errorf("empty quality sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
+	}
 	quality = string(line[:len(line)-1])
 
 	// Parsing ended. Check for inconsistencies.
 	if lookingForIdentifier {
 		return Fastq{}, totalRead, fmt.Errorf("did not find fastq start '@', got to line %d: %w", parser.line, err)
-	}
-	if !lookingForIdentifier && len(sequence) == 0 {
-		// We found a fastq identifier but no sequence to go with it.
-		return Fastq{}, totalRead, fmt.Errorf("empty fastq sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
 	}
 	fastq := Fastq{
 		Identifier: seqIdentifier,
@@ -295,9 +279,6 @@ func Build(fastqs []Fastq) ([]byte, error) {
 
 // Write writes a fastq array to a file.
 func Write(fastqs []Fastq, path string) error {
-	fastqBytes, err := buildFn(fastqs) //  fastq.Build returns only nil errors.
-	if err != nil {
-		return err
-	}
+	fastqBytes, _ := buildFn(fastqs) //  fastq.Build returns only nil errors.
 	return os.WriteFile(path, fastqBytes, 0644)
 }
