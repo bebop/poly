@@ -43,31 +43,31 @@ func Fold(seq string, temp float64) ([]NucleicAcidStructure, error) {
 //
 // Returns: the minimum free energy of the folded sequence
 func MinimumFreeEnergy(seq string, temp float64) (float64, error) {
-	structs, err := Fold(seq, temp)
+	NucleicAcidStructures, err := Fold(seq, temp)
 	if err != nil {
 		return 0, fmt.Errorf("error folding: %w", err)
 	}
-	sumE := 0.0
-	for _, s := range structs {
-		sumE += s.E
+	summedEnergy := 0.0
+	for _, structure := range NucleicAcidStructures {
+		summedEnergy += structure.E
 	}
-	return RoundFloat(sumE, 2), nil
+	return RoundFloat(summedEnergy, 2), nil
 }
 
 // Get the dot bracket notation for a secondary structure.
 // Args:
 //
-//	structs: A list of NucleicAcidStructure, usually from the fold function
+//	NucleicAcidStructures: A list of NucleicAcidStructure, usually from the fold function
 //
 // # Returns the dot-bracket notation of the secondary structure
 //
 // Dot-bracket notation, consisting in a balanced parentheses string composed
 // by a three-character alphabet {.,(,)}, that can be unambiguously converted
 // in the RNA secondary structure. See example_test.go for a small example.
-func DotBracket(structs []NucleicAcidStructure) string {
+func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 	maxj := 0
-	for _, s := range structs {
-		for _, ij := range s.Inner {
+	for _, structure := range NucleicAcidStructures {
+		for _, ij := range structure.Inner {
 			if ij.End > maxj {
 				maxj = ij.End
 			}
@@ -78,9 +78,9 @@ func DotBracket(structs []NucleicAcidStructure) string {
 	for i := range result {
 		result[i] = '.'
 	}
-	for _, s := range structs {
-		if len(s.Inner) == 1 {
-			ij := s.Inner[0]
+	for _, structure := range NucleicAcidStructures {
+		if len(structure.Inner) == 1 {
+			ij := structure.Inner[0]
 			result[ij.Start] = '('
 			result[ij.End] = ')'
 		}
@@ -337,15 +337,15 @@ func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	return dG, nil
 }
 
-func addBranch(s NucleicAcidStructure, branches *[]Subsequence, fc FoldContext) error {
-	if !s.Valid() || len(s.Inner) == 0 {
+func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldContext) error {
+	if !structure.Valid() || len(structure.Inner) == 0 {
 		return nil
 	}
-	if len(s.Inner) == 1 {
-		*branches = append(*branches, s.Inner[0])
+	if len(structure.Inner) == 1 {
+		*branches = append(*branches, structure.Inner[0])
 		return nil
 	}
-	for _, subsq := range s.Inner {
+	for _, subsq := range structure.Inner {
 		str, err := W(subsq.Start, subsq.End, fc)
 		if err != nil {
 			return err
@@ -824,16 +824,16 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 		}
 	}
 
-	structs := []NucleicAcidStructure{}
+	NucleicAcidStructures := []NucleicAcidStructure{}
 	for {
 		s = fc.V[i][j]
 
-		structs = append(structs, NucleicAcidStructure{E: s.E, Desc: s.Desc, Inner: []Subsequence{{Start: i, End: j}}})
+		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{E: s.E, Desc: s.Desc, Inner: []Subsequence{{Start: i, End: j}}})
 
 		// it's a hairpin, end of structure
 		if len(s.Inner) == 0 {
 			// set the energy of everything relative to the hairpin
-			return trackbackEnergy(structs)
+			return trackbackEnergy(NucleicAcidStructures)
 		}
 
 		// it's a stack, bulge, etc
@@ -846,7 +846,7 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 
 		// it's a multibranch
 		e_sum := 0.0
-		structs = trackbackEnergy(structs)
+		NucleicAcidStructures = trackbackEnergy(NucleicAcidStructures)
 		branches := []NucleicAcidStructure{}
 		for _, ij1 := range s.Inner {
 			i1, j1 := ij1.Start, ij1.End
@@ -859,37 +859,37 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 			}
 		}
 
-		structs[len(structs)-1].E -= e_sum
-		return append(structs, branches...)
+		NucleicAcidStructures[len(NucleicAcidStructures)-1].E -= e_sum
+		return append(NucleicAcidStructures, branches...)
 	}
 }
 
 // Return the struct with the lowest free energy that isn't -inf
 // Args:
 //
-//	structs: NucleicAcidStructure being compared
+//	structures: NucleicAcidStructure being compared
 //
 // Returns the min free energy structure
-func minStruct(structs ...NucleicAcidStructure) NucleicAcidStructure {
-	s := STRUCT_NULL
-	for _, str := range structs {
-		if str.E != math.Inf(-1) && str.E < s.E {
-			s = str
+func minStruct(structures ...NucleicAcidStructure) NucleicAcidStructure {
+	minimumStructure := STRUCT_NULL
+	for _, str := range structures {
+		if str.E != math.Inf(-1) && str.E < minimumStructure.E {
+			minimumStructure = str
 		}
 	}
-	return s
+	return minimumStructure
 }
 
 // trackbackEnergy add energy to each structure, based on how it's
 // W(i,j) differs from the one after
 // Args:
 //
-//	structs: The NucleicAcidStructure for whom energy is being calculated
+//	structures: The NucleicAcidStructure for whom energy is being calculated
 //
 // Returns a slice of NucleicAcidStructure in the folded DNA with energy
-func trackbackEnergy(structs []NucleicAcidStructure) []NucleicAcidStructure {
-	for i := 0; i < len(structs)-1; i++ {
-		structs[i].E -= structs[i+1].E
+func trackbackEnergy(structures []NucleicAcidStructure) []NucleicAcidStructure {
+	for i := 0; i < len(structures)-1; i++ {
+		structures[i].E -= structures[i+1].E
 	}
-	return structs
+	return structures
 }
