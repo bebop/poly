@@ -21,10 +21,10 @@ type MultibranchEnergies struct {
 // Energy holds two energies, enthaply and entropy
 // SantaLucia & Hicks (2004), Annu. Rev. Biophys. Biomol. Struct 33: 415-440
 type Energy struct {
-	// enthaply
-	H float64
+	// enthalpy
+	EnthalpyH float64
 	// entropy
-	S float64
+	EntropyS float64
 }
 
 // BPEnergy is the energy of matching base pairs
@@ -62,55 +62,55 @@ type NucleicAcidStructure struct {
 	// Inner is list of inner structure represented as intervals in the
 	// sequence
 	Inner []Subsequence
-	// E is the energy of the NucleicAcidStructure
-	E float64
+	// Energy is the energy of the NucleicAcidStructure
+	Energy float64
 }
 
-func (s NucleicAcidStructure) Equal(other NucleicAcidStructure) bool {
-	if len(s.Inner) != len(other.Inner) {
+func (structure NucleicAcidStructure) Equal(other NucleicAcidStructure) bool {
+	if len(structure.Inner) != len(other.Inner) {
 		return false
 	}
-	for i, val := range s.Inner {
+	for i, val := range structure.Inner {
 		if val != other.Inner[i] {
 			return false
 		}
 	}
-	return s.E == other.E
+	return structure.Energy == other.Energy
 }
 
-func (s NucleicAcidStructure) Valid() bool {
-	return s.E != math.Inf(1) && s.E != math.Inf(-1)
+func (structure NucleicAcidStructure) Valid() bool {
+	return structure.Energy != math.Inf(1) && structure.Energy != math.Inf(-1)
 }
 
-func (s NucleicAcidStructure) String() string {
+func (structure NucleicAcidStructure) String() string {
 	i, j := "", ""
-	if len(s.Inner) > 0 {
-		i, j = fmt.Sprint(s.Inner[0].Start), fmt.Sprint(s.Inner[0].End)
+	if len(structure.Inner) > 0 {
+		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
 	}
-	return fmt.Sprintf("%4s %4s % 6.2f  %-15s", i, j, s.E, s.Desc)
+	return fmt.Sprintf("%4s %4s % 6.2f  %-15s", i, j, structure.Energy, structure.Desc)
 }
 
 // MultiString returns all the fields as strings, this is useful to output the
 // result in a tabular fashion using the same format string.
-func (s NucleicAcidStructure) MultiString() (string, string, string, string) {
+func (structure NucleicAcidStructure) MultiString() (string, string, string, string) {
 	i, j := "", ""
-	if len(s.Inner) > 0 {
-		i, j = fmt.Sprint(s.Inner[0].Start), fmt.Sprint(s.Inner[0].End)
+	if len(structure.Inner) > 0 {
+		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
 	}
-	return i, j, fmt.Sprintf("%6.2f", s.E), s.Desc
+	return i, j, fmt.Sprintf("%6.2f", structure.Energy), structure.Desc
 }
 
-// STRUCT_DEFAULT is the default (zero value) nucleic acid structure, it used
+// StructDefault is the default (zero value) nucleic acid structure, it used
 // mostly to initialize the caches, see FoldingContext
-var STRUCT_DEFAULT = NucleicAcidStructure{
-	Desc: "",
-	E:    math.Inf(-1),
+var StructDefault = NucleicAcidStructure{
+	Desc:   "",
+	Energy: math.Inf(-1),
 }
 
-// STRUCT_NULL represent an invalid nucleic acid structure
-var STRUCT_NULL = NucleicAcidStructure{
-	Desc: "",
-	E:    math.Inf(1),
+// StructInvalid represent an invalid nucleic acid structure
+var StructInvalid = NucleicAcidStructure{
+	Desc:   "",
+	Energy: math.Inf(1),
 }
 
 // FoldContext holds the energy caches, energy maps, sequence, and temperature
@@ -140,31 +140,31 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 	}
 
 	var (
-		n       = len(seq)
-		v_cache = make([][]NucleicAcidStructure, n)
-		w_cache = make([][]NucleicAcidStructure, n)
-		row     = make([]NucleicAcidStructure, n)
+		sequenceLength = len(seq)
+		vCache         = make([][]NucleicAcidStructure, sequenceLength)
+		wCache         = make([][]NucleicAcidStructure, sequenceLength)
+		row            = make([]NucleicAcidStructure, sequenceLength)
 	)
-	for i := 0; i < n; i++ {
-		row[i] = STRUCT_DEFAULT
+	for nucleicAcidIndex := 0; nucleicAcidIndex < sequenceLength; nucleicAcidIndex++ {
+		row[nucleicAcidIndex] = StructDefault
 	}
-	for j := 0; j < n; j++ {
-		v_cache[j] = make([]NucleicAcidStructure, n)
-		copy(v_cache[j], row)
+	for j := 0; j < sequenceLength; j++ {
+		vCache[j] = make([]NucleicAcidStructure, sequenceLength)
+		copy(vCache[j], row)
 
-		w_cache[j] = make([]NucleicAcidStructure, n)
-		copy(w_cache[j], row)
+		wCache[j] = make([]NucleicAcidStructure, sequenceLength)
+		copy(wCache[j], row)
 	}
 	ret := FoldContext{
 		Energies: emap,
 		Seq:      seq,
-		V:        v_cache,
-		W:        w_cache,
+		V:        vCache,
+		W:        wCache,
 		T:        temp + 273.15, // kelvin
 	}
 
 	// fill the cache
-	_, err := W(0, n-1, ret)
+	_, err := W(0, sequenceLength-1, ret)
 	if err != nil {
 		return FoldContext{}, fmt.Errorf("error filling the caches for the FoldingContext: %w", err)
 	}
