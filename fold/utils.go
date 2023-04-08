@@ -1,4 +1,4 @@
-package seqfold
+package fold
 
 import (
 	"math"

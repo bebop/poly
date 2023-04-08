@@ -1,4 +1,4 @@
-package seqfold
+package fold
 
 var DNA_COMPLEMENT = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
@@ -240,9 +240,9 @@ var DNA_TERMINAL_MM = BPEnergy{
 	"TT/TA": {H: -2.4, S: -6.5},
 }
 
-//DNA dangling ends
+// DNA dangling ends
 //
-//Bommarito et al. (2000), Nucl Acids Res 28: 1929-1934
+// Bommarito et al. (2000), Nucl Acids Res 28: 1929-1934
 var DNA_DE = BPEnergy{
 	"AA/.T": {H: 0.2, S: 2.3},
 	"AA/T.": {H: -0.5, S: -1.1},
@@ -310,15 +310,15 @@ var DNA_DE = BPEnergy{
 	".T/TA": {H: -3.8, S: -12.6},
 }
 
-//Experimental delta H and delta S for tri/tetra loops
+// Experimental delta H and delta S for tri/tetra loops
 //
-//Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
-//doi: 10.1146/annurev.biophys.32.110601.141800
-//The Thermodynamics of DNA Structural Motifs
-//SantaLucia and Hicks, 2004
+// Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
+// doi: 10.1146/annurev.biophys.32.110601.141800
+// The Thermodynamics of DNA Structural Motifs
+// SantaLucia and Hicks, 2004
 //
-//delta S was computed using delta G and delta H and is in cal / (K x mol)
-//(versus delta H in kcal / mol)
+// delta S was computed using delta G and delta H and is in cal / (K x mol)
+// (versus delta H in kcal / mol)
 var DNA_TRI_TETRA_LOOPS = BPEnergy{
 	"AGAAT":  {-1.5, 0.0},
 	"AGCAT":  {-1.5, 0.0},
@@ -453,22 +453,22 @@ var DNA_TRI_TETRA_LOOPS = BPEnergy{
 	"TTTTTG": {-0.5, -1.6},
 }
 
-//Enthalpy and entropy increments for length dependence of internal loops
+// Enthalpy and entropy increments for length dependence of internal loops
 //
-//Were calculated from delta G Table 4 of SantaLucia, 2004:
+// Were calculated from delta G Table 4 of SantaLucia, 2004:
 //
-//Annu.Rev.Biophs.Biomol.Struct.33:415-40
-//doi: 10.1146/annurev.biophys.32.110601.141800
-//The Thermodynamics of DNA Structural Motifs
-//SantaLucia and Hicks, 2004
+// Annu.Rev.Biophs.Biomol.Struct.33:415-40
+// doi: 10.1146/annurev.biophys.32.110601.141800
+// The Thermodynamics of DNA Structural Motifs
+// SantaLucia and Hicks, 2004
 //
-//Additional loop sizes are accounted for with the Jacobson-Stockmayer
-//entry extrapolation formula in paper:
-//delta G (loop-n) = delta G (loop-x) + 2.44 x R x 310.15 x ln(n / x)
+// Additional loop sizes are accounted for with the Jacobson-Stockmayer
+// entry extrapolation formula in paper:
+// delta G (loop-n) = delta G (loop-x) + 2.44 x R x 310.15 x ln(n / x)
 //
-//Additional correction is applied for asymmetric loops in paper:
-//delta G (asymmetry) = |length A - length B| x 0.3 (kcal / mol)
-//where A and B are lengths of both sides of loop
+// Additional correction is applied for asymmetric loops in paper:
+// delta G (asymmetry) = |length A - length B| x 0.3 (kcal / mol)
+// where A and B are lengths of both sides of loop
 var DNA_INTERNAL_LOOPS = LoopEnergy{
 	30: {0, -21.3},
 	29: {0, -21.0},
@@ -502,17 +502,17 @@ var DNA_INTERNAL_LOOPS = LoopEnergy{
 	1:  {0, 0},
 }
 
-//Enthalpy and entropy increments for length depedence of bulge loops
+// Enthalpy and entropy increments for length depedence of bulge loops
 //
-//Were calculated from delta G Table 4 of SantaLucia, 2004:
+// Were calculated from delta G Table 4 of SantaLucia, 2004:
 //
-//Annu.Rev.Biophs.Biomol.Struct.33:415-40
-//doi: 10.1146/annurev.biophys.32.110601.141800
-//The Thermodynamics of DNA Structural Motifs
-//SantaLucia and Hicks, 2004
+// Annu.Rev.Biophs.Biomol.Struct.33:415-40
+// doi: 10.1146/annurev.biophys.32.110601.141800
+// The Thermodynamics of DNA Structural Motifs
+// SantaLucia and Hicks, 2004
 //
-//For bulge loops of size 1, the intervening NN energy is used.
-//Closing AT penalty is applied on both sides
+// For bulge loops of size 1, the intervening NN energy is used.
+// Closing AT penalty is applied on both sides
 var DNA_BULGE_LOOPS = LoopEnergy{
 	1:  {0, -12.9},
 	2:  {0, -9.4},
@@ -546,20 +546,20 @@ var DNA_BULGE_LOOPS = LoopEnergy{
 	30: {0, -19.0},
 }
 
-//Enthalpy and entropy increments for length depedence of hairpin loops
+// Enthalpy and entropy increments for length depedence of hairpin loops
 //
-//Were calculated from delta G Table 4 of SantaLucia, 2004:
+// Were calculated from delta G Table 4 of SantaLucia, 2004:
 //
-//Annu.Rev.Biophs.Biomol.Struct.33:415-40
-//doi: 10.1146/annurev.biophys.32.110601.141800
-//The Thermodynamics of DNA Structural Motifs
-//SantaLucia and Hicks, 2004
+// Annu.Rev.Biophs.Biomol.Struct.33:415-40
+// doi: 10.1146/annurev.biophys.32.110601.141800
+// The Thermodynamics of DNA Structural Motifs
+// SantaLucia and Hicks, 2004
 //
-//For hairpins of length 3 and 4, the entropy values are looked up
-//in the DNA_TRI_TETRA_LOOPS Dict
+// For hairpins of length 3 and 4, the entropy values are looked up
+// in the DNA_TRI_TETRA_LOOPS Dict
 //
-//From formula 8-9 of the paper:
-//An additional 1.6 delta entropy penalty if the hairpin is closed by AT
+// From formula 8-9 of the paper:
+// An additional 1.6 delta entropy penalty if the hairpin is closed by AT
 var DNA_HAIRPIN_LOOPS = LoopEnergy{
 	1:  {0, 0.0},
 	2:  {0, 0.0},

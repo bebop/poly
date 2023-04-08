@@ -1,4 +1,4 @@
-package seqfold
+package fold
 
 import (
 	"fmt"
@@ -19,8 +19,10 @@ import (
 // Mathews, Sabina, Zuker and Turner, 1999
 // https://www.ncbi.nlm.nih.gov/pubmed/10329189
 // Args:
+//
 //	seq: The sequence to Fold
 //	temp: The temperature the Fold takes place in, in Celsius
+//
 // Returns a slice of NucleicAcidStructure with the energy and description,
 // i.e. stacks, bulges, hairpins, etc.
 func Fold(seq string, temp float64) ([]NucleicAcidStructure, error) {
@@ -35,8 +37,10 @@ func Fold(seq string, temp float64) ([]NucleicAcidStructure, error) {
 
 // Fold the sequence and return just the delta G of the structure
 // Args:
+//
 //	seq: The sequence to fold
 //	temp: The temperature to fold at
+//
 // Returns: the minimum free energy of the folded sequence
 func FoldEnergy(seq string, temp float64) (float64, error) {
 	structs, err := Fold(seq, temp)
@@ -52,8 +56,10 @@ func FoldEnergy(seq string, temp float64) (float64, error) {
 
 // Get the dot bracket notation for a secondary structure.
 // Args:
+//
 //	structs: A list of NucleicAcidStructure, usually from the fold function
-// Returns the dot-bracket notation of the secondary structure
+//
+// # Returns the dot-bracket notation of the secondary structure
 //
 // Dot-bracket notation, consisting in a balanced parentheses string composed
 // by a three-character alphabet {.,(,)}, that can be unambiguously converted
@@ -87,10 +93,12 @@ func DotBracket(structs []NucleicAcidStructure) string {
 //
 // Figure 2B in Zuker and Stiegler, 1981
 // Args:
-//	seq: The sequence being folded
-//	i: The start index
-//	j: The end index (inclusive)
-//  fc: The FoldingContext for this sequence
+//
+//		seq: The sequence being folded
+//		i: The start index
+//		j: The end index (inclusive)
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the free energy for the subsequence from i to j
 func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	if !fc.W[i][j].Equal(STRUCT_DEFAULT) {
@@ -138,9 +146,11 @@ func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 // If i and j don't bp, store and return INF.
 // See: Figure 2B of Zuker, 1981
 // Args:
-//	i: The start index
-//	j: The end index (inclusive)
-//  fc: The FoldingContext for this sequence
+//
+//		i: The start index
+//		j: The end index (inclusive)
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the minimum energy folding structure possible between i and j on seq
 func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	if !fc.V[i][j].Equal(STRUCT_DEFAULT) {
@@ -280,11 +290,13 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 // Bulge calculates the free energy associated with a bulge.
 //
 // Args:
-//	i: The start index of the bulge
-//	i1: The index to the right of i
-//	j: The end index of the bulge
-//	j1: The index to the left of j
-//  fc: The FoldingContext for this sequence
+//
+//		i: The start index of the bulge
+//		i1: The index to the right of i
+//		j: The end index of the bulge
+//		j1: The index to the left of j
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the increment in free energy from the bulge
 func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	loop_len := max(i1-i-1, j-j1-1)
@@ -351,12 +363,13 @@ func addBranch(s NucleicAcidStructure, branches *[]Subsequence, fc FoldContext) 
 // From Jaeger, Turner, and Zuker, 1989.
 // Found to be better than logarithmic in Ward, et al. 2017
 // Args:
-//	i: The left starting index
-//	k: The mid-point in the search
-//	j: The right ending index
-//  fc: The FoldingContext for this sequence
-//	helix: Whether this multibranch is enclosed by a helix
-//	helix: Whether V(i, j) bond with one another in a helix
+//
+//		i: The left starting index
+//		k: The mid-point in the search
+//		j: The right ending index
+//	 fc: The FoldingContext for this sequence
+//		helix: Whether this multibranch is enclosed by a helix
+//		helix: Whether V(i, j) bond with one another in a helix
 //
 // Returns a multi-branch structure
 func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure, error) {
@@ -520,11 +533,13 @@ func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 // Note that both left and right sequences are in 5' to 3' direction
 // This is adapted from the "Internal Loops" section of SantaLucia/Hicks, 2004
 // Args:
-//	i:  The index of the start of structure on left side
-//	i1: The index to the right of i
-//	j:  The index of the end of structure on right side
-//	j1: The index to the left of j
-//  fc: The FoldingContext for this sequence
+//
+//		i:  The index of the start of structure on left side
+//		i1: The index to the right of i
+//		j:  The index of the end of structure on right side
+//		j1: The index to the left of j
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the free energy associated with the internal loop
 func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	loop_left := i1 - i - 1
@@ -585,11 +600,13 @@ func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 // The energy of a dangling end is added to the energy of a pair
 // where i XOR j is at the sequence's end.
 // Args:
-//	i: The start index on left side of the pair/stack
-//	i1: The index to the right of i
-//	j: The end index on right side of the pair/stack
-//	j1: The index to the left of j
-//  fc: The FoldingContext for this sequence
+//
+//		i: The start index on left side of the pair/stack
+//		i1: The index to the right of i
+//		j: The end index on right side of the pair/stack
+//		j1: The index to the left of j
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the free energy of the NN pairing
 func Stack(i, i1, j, j1 int, fc FoldContext) float64 {
 	// if any(x >= len(seq) for x in [i, i1, j, j1]):
@@ -668,9 +685,11 @@ func Stack(i, i1, j, j1 int, fc FoldContext) float64 {
 
 // Hairpin calculates the free energy of a hairpin.
 // Args:
-//	i:  The index of start of hairpin
-//	j:  The index of end of hairpin
-//  fc: The FoldingContext for this sequence
+//
+//		i:  The index of start of hairpin
+//		j:  The index of end of hairpin
+//	 fc: The FoldingContext for this sequence
+//
 // Returns the free energy increment from the hairpin structure
 func Hairpin(i, j int, fc FoldContext) (float64, error) {
 	if j-i < 4 {
@@ -724,9 +743,11 @@ func Hairpin(i, j int, fc FoldContext) (float64, error) {
 
 // Find the free energy given delta h, s and temp
 // Args:
+//
 //	d_h: The enthalpy increment in kcal / mol
 //	d_s: The entropy increment in cal / mol
 //	temp: The temperature in Kelvin
+//
 // Returns the free energy increment in kcal / (mol x K)
 func DeltaG(d_h, d_s, temp float64) float64 {
 	return d_h - temp*(d_s/1000.0)
@@ -738,10 +759,12 @@ func DeltaG(d_h, d_s, temp float64) float64 {
 // for bulges, hairpins, etc that fall outside the 30nt upper limit
 // for pre-calculated free-energies. See SantaLucia and Hicks (2004).
 // Args:
+//
 //	query_len: Length of element without known free energy value
 //	known_len: Length of element with known free energy value (d_g_x)
 //	d_g_x: The free energy of the element known_len
 //	temp: Temperature in Kelvin
+//
 // Returns the free energy for a structure of length query_len
 func JacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
 	gas_constant := 1.9872e-3
@@ -750,11 +773,13 @@ func JacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
 
 // Pair Returns a stack representation, a key for the NN maps
 // Args:
+//
 //	s: Sequence being folded
 //	i: leftmost index
 //	i1: index to right of i
 //	j: rightmost index
 //	j1: index to left of j
+//
 // Returns string representation of the Pair
 func Pair(s string, i, i1, j, j1 int) string {
 	ss := []rune(s)
@@ -781,9 +806,11 @@ func Pair(s string, i, i1, j, j1 int) string {
 // If the next structure is viable according to V(i,j), store as well
 // Repeat
 // Args:
-//	i: The leftmost index to start searching in
-//	j: The rightmost index to start searching in
-//  fc: The FoldingContext for this sequence
+//
+//		i: The leftmost index to start searching in
+//		j: The rightmost index to start searching in
+//	 fc: The FoldingContext for this sequence
+//
 // Returns a list of NucleicAcidStructure in the final secondary structure
 func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 	// move i,j down-left to start coordinates
@@ -839,7 +866,9 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 
 // Return the struct with the lowest free energy that isn't -inf
 // Args:
+//
 //	structs: NucleicAcidStructure being compared
+//
 // Returns the min free energy structure
 func minStruct(structs ...NucleicAcidStructure) NucleicAcidStructure {
 	s := STRUCT_NULL
@@ -854,7 +883,9 @@ func minStruct(structs ...NucleicAcidStructure) NucleicAcidStructure {
 // trackbackEnergy add energy to each structure, based on how it's
 // W(i,j) differs from the one after
 // Args:
+//
 //	structs: The NucleicAcidStructure for whom energy is being calculated
+//
 // Returns a slice of NucleicAcidStructure in the folded DNA with energy
 func trackbackEnergy(structs []NucleicAcidStructure) []NucleicAcidStructure {
 	for i := 0; i < len(structs)-1; i++ {

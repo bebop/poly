@@ -1,4 +1,4 @@
-package seqfold
+package fold
 
 var RNA_COMPLEMENT = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
