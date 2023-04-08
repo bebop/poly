@@ -8,13 +8,13 @@ import (
 	"github.com/TimothyStiles/poly/checks"
 )
 
-// MultiBranchEnergies holds the a, b, c, d in a linear multi-branch energy
+// MultibranchEnergies holds the a, b, c, d in a linear multi-branch energy
 // change function.
 // Inferred from:
 // Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
 // doi: 10.1146/annurev.biophys.32.110601.141800
 // The Thermodynamics of DNA Structural Motifs, SantaLucia and Hicks, 2004
-type MultiBranchEnergies struct {
+type MultibranchEnergies struct {
 	A, B, C, D float64
 }
 
@@ -37,16 +37,16 @@ type LoopEnergy map[int]Energy
 // the folding, it also holds the complement map for the kind of sequence, RNA
 // or DNA
 type Energies struct {
-	BULGE_LOOPS     LoopEnergy
-	COMPLEMENT      map[byte]byte
-	DE              BPEnergy
-	HAIRPIN_LOOPS   LoopEnergy
-	MULTIBRANCH     MultiBranchEnergies
-	INTERNAL_LOOPS  LoopEnergy
-	INTERNAL_MM     BPEnergy
-	NN              BPEnergy
-	TERMINAL_MM     BPEnergy
-	TRI_TETRA_LOOPS BPEnergy
+	BulgeLoops    LoopEnergy
+	Complement    map[byte]byte
+	DE            BPEnergy
+	HairpinLoops  LoopEnergy
+	Multibranch   MultibranchEnergies
+	InternalLoops LoopEnergy
+	INTERNAL_MM   BPEnergy
+	NN            BPEnergy
+	TERMINAL_MM   BPEnergy
+	TriTetraLoops BPEnergy
 }
 
 // Subsequence represent an interval of bases in the sequence that can contain
@@ -132,9 +132,9 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 	var emap Energies
 	switch {
 	case checks.IsDNA(seq):
-		emap = DNA_ENERGIES
+		emap = DNAEnergies
 	case checks.IsRNA(seq):
-		emap = RNA_ENERGIES
+		emap = RNAEnergies
 	default:
 		return FoldContext{}, fmt.Errorf("the sequence %s is not RNA or DNA", seq)
 	}

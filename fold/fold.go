@@ -125,7 +125,7 @@ func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 
 	w4 := STRUCT_NULL
 	for k := i + 1; k < j-1; k++ {
-		w4_test, err := MultiBranch(i, k, j, fc, false)
+		w4_test, err := Multibranch(i, k, j, fc, false)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("w: subsequence (%d, %d): %w", i, j, err)
 		}
@@ -158,7 +158,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	}
 
 	// the ends must basepair for V(i,j)
-	if fc.Energies.COMPLEMENT[fc.Seq[i]] != fc.Seq[j] {
+	if fc.Energies.Complement[fc.Seq[i]] != fc.Seq[j] {
 		fc.V[i][j] = STRUCT_NULL
 		return fc.V[i][j], nil
 	}
@@ -167,9 +167,9 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	// from https://www.ncbi.nlm.nih.gov/pubmed/10329189
 	isolated_outer := true
 	if i > 0 && j < len(fc.Seq)-1 {
-		isolated_outer = fc.Energies.COMPLEMENT[fc.Seq[i-1]] != fc.Seq[j+1]
+		isolated_outer = fc.Energies.Complement[fc.Seq[i-1]] != fc.Seq[j+1]
 	}
-	isolated_inner := fc.Energies.COMPLEMENT[fc.Seq[i+1]] != fc.Seq[j-1]
+	isolated_inner := fc.Energies.Complement[fc.Seq[i+1]] != fc.Seq[j-1]
 
 	if isolated_outer && isolated_inner {
 		fc.V[i][j] = NucleicAcidStructure{E: 1600}
@@ -193,7 +193,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	for i1 := i + 1; i1 < j-4; i1++ {
 		for j1 := i1 + 4; j1 < j; j1++ {
 			// i1 and j1 must match
-			if fc.Energies.COMPLEMENT[fc.Seq[i1]] != fc.Seq[j1] {
+			if fc.Energies.Complement[fc.Seq[i1]] != fc.Seq[j1] {
 				continue
 			}
 
@@ -272,7 +272,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	e3 := STRUCT_NULL
 	if !isolated_outer || i == 0 || j == len(fc.Seq)-1 {
 		for k := i + 1; k < j-1; k++ {
-			e3_test, err := MultiBranch(i, k, j, fc, true)
+			e3_test, err := Multibranch(i, k, j, fc, true)
 			if err != nil {
 				return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 			}
@@ -307,12 +307,12 @@ func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	var dG float64
 
 	// add penalty based on size
-	if en, ok := fc.Energies.BULGE_LOOPS[loop_len]; ok {
+	if en, ok := fc.Energies.BulgeLoops[loop_len]; ok {
 		d_h, d_s := en.H, en.S
 		dG = DeltaG(d_h, d_s, fc.T)
 	} else {
 		// it's too large for pre-calculated list, extrapolate
-		en := fc.Energies.BULGE_LOOPS[30]
+		en := fc.Energies.BulgeLoops[30]
 		d_h, d_s := en.H, en.S
 		dG = DeltaG(d_h, d_s, fc.T)
 		dG = JacobsonStockmayer(loop_len, 30, dG, fc.T)
@@ -358,7 +358,7 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldC
 	return nil
 }
 
-// MultiBranch calculats a multi-branch energy penalty using a linear formula.
+// Multibranch calculats a multi-branch energy penalty using a linear formula.
 //
 // From Jaeger, Turner, and Zuker, 1989.
 // Found to be better than logarithmic in Ward, et al. 2017
@@ -368,11 +368,11 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldC
 //		k: The mid-point in the search
 //		j: The right ending index
 //	 fc: The FoldingContext for this sequence
-//		helix: Whether this multibranch is enclosed by a helix
+//		helix: Whether this Multibranch is enclosed by a helix
 //		helix: Whether V(i, j) bond with one another in a helix
 //
 // Returns a multi-branch structure
-func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure, error) {
+func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure, error) {
 	var (
 		left, right NucleicAcidStructure
 		err         error
@@ -380,20 +380,20 @@ func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 	if helix {
 		left, err = W(i+1, k, fc)
 		if err != nil {
-			return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
 		right, err = W(k+1, j-1, fc)
 		if err != nil {
-			return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
 	} else {
 		left, err = W(i, k, fc)
 		if err != nil {
-			return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
 		right, err = W(k+1, j, fc)
 		if err != nil {
-			return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
 	}
 
@@ -408,11 +408,11 @@ func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 	// we pull it out and pass all the parameters
 	err = addBranch(left, &branches, fc)
 	if err != nil {
-		return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+		return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 	}
 	err = addBranch(right, &branches, fc)
 	if err != nil {
-		return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+		return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 	}
 
 	// this isn't multi-branched
@@ -486,13 +486,13 @@ func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 		e_sum += de
 		unpaired += unpaired_right
 		if unpaired_right < 0 {
-			return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): unpaired_right < 0", i, j, k)
+			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired_right < 0", i, j, k)
 		}
 
 		if ij2 != ij { // add energy
 			w, err := W(i2, j2, fc)
 			if err != nil {
-				return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
+				return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 			}
 			e_sum += w.E
 		}
@@ -500,19 +500,19 @@ func MultiBranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 	}
 
 	if unpaired < 0 {
-		return STRUCT_DEFAULT, fmt.Errorf("multibranch: subsequence (%d, %d, %d): unpaired < 0", i, j, k)
+		return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired < 0", i, j, k)
 	}
 
 	// penalty for unmatched bp and multi-branch
-	a, b, c, d := fc.Energies.MULTIBRANCH.A, fc.Energies.MULTIBRANCH.B, fc.Energies.MULTIBRANCH.C, fc.Energies.MULTIBRANCH.D
-	e_multibranch := a + b*float64(len(branches)) + c*float64(unpaired)
+	a, b, c, d := fc.Energies.Multibranch.A, fc.Energies.Multibranch.B, fc.Energies.Multibranch.C, fc.Energies.Multibranch.D
+	e_Multibranch := a + b*float64(len(branches)) + c*float64(unpaired)
 
 	if unpaired == 0 {
-		e_multibranch = a + d
+		e_Multibranch = a + d
 	}
 
 	// energy of min-energy neighbors
-	e := e_multibranch + e_sum
+	e := e_Multibranch + e_sum
 
 	// pointer to next structures
 	if helix {
@@ -562,12 +562,12 @@ func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	}
 	var d_h, d_s, dG float64
 	// apply a penalty based on loop size
-	if en, ok := fc.Energies.INTERNAL_LOOPS[loop_len]; ok {
+	if en, ok := fc.Energies.InternalLoops[loop_len]; ok {
 		d_h, d_s = en.H, en.S
 		dG = DeltaG(d_h, d_s, fc.T)
 	} else {
 		// it's too large an internal loop, extrapolate
-		en := fc.Energies.INTERNAL_LOOPS[30]
+		en := fc.Energies.InternalLoops[30]
 		d_h, d_s = en.H, en.S
 		dG = DeltaG(d_h, d_s, fc.T)
 		dG = JacobsonStockmayer(loop_len, 30, dG, fc.T)
@@ -700,14 +700,14 @@ func Hairpin(i, j int, fc FoldContext) (float64, error) {
 	hairpin_len := len(hairpinSeq) - 2
 	pair := Pair(fc.Seq, i, i+1, j, j-1)
 
-	if fc.Energies.COMPLEMENT[hairpinSeq[0]] != hairpinSeq[len(hairpinSeq)-1] {
+	if fc.Energies.Complement[hairpinSeq[0]] != hairpinSeq[len(hairpinSeq)-1] {
 		// not known terminal pair, nothing to close "hairpin"
 		return 0, fmt.Errorf("hairpin: subsequence (%d, %d): unknown hairpin terminal pairing %c - %c", i, j, hairpinSeq[0], hairpinSeq[len(hairpinSeq)-1])
 	}
 
 	dG := 0.0
-	if fc.Energies.TRI_TETRA_LOOPS != nil {
-		if en, ok := fc.Energies.TRI_TETRA_LOOPS[hairpinSeq]; ok {
+	if fc.Energies.TriTetraLoops != nil {
+		if en, ok := fc.Energies.TriTetraLoops[hairpinSeq]; ok {
 			// it's a pre-known hairpin with known value
 			d_h, d_s := en.H, en.S
 			dG = DeltaG(d_h, d_s, fc.T)
@@ -715,12 +715,12 @@ func Hairpin(i, j int, fc FoldContext) (float64, error) {
 	}
 
 	// add penalty based on size
-	if en, ok := fc.Energies.HAIRPIN_LOOPS[hairpin_len]; ok {
+	if en, ok := fc.Energies.HairpinLoops[hairpin_len]; ok {
 		d_h, d_s := en.H, en.S
 		dG += DeltaG(d_h, d_s, fc.T)
 	} else {
 		// it's too large, extrapolate
-		en := fc.Energies.HAIRPIN_LOOPS[30]
+		en := fc.Energies.HairpinLoops[30]
 		d_h, d_s := en.H, en.S
 		d_g_inc := DeltaG(d_h, d_s, fc.T)
 		dG += JacobsonStockmayer(hairpin_len, 30, d_g_inc, fc.T)
@@ -844,7 +844,7 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 			continue
 		}
 
-		// it's a multibranch
+		// it's a Multibranch
 		e_sum := 0.0
 		NucleicAcidStructures = trackbackEnergy(NucleicAcidStructures)
 		branches := []NucleicAcidStructure{}

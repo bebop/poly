@@ -1,8 +1,8 @@
 package fold
 
-var DNA_COMPLEMENT = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+var DNAComplement = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
-var DNA_MULTIBRANCH = MultiBranchEnergies{A: 2.6, B: 0.2, C: 0.2, D: 2.0}
+var DNAMultibranch = MultibranchEnergies{A: 2.6, B: 0.2, C: 0.2, D: 2.0}
 
 // The Thermodynamics of DNA Structural Motifs
 // SantaLucia and Hicks, 2004
@@ -319,7 +319,7 @@ var DNA_DE = BPEnergy{
 //
 // delta S was computed using delta G and delta H and is in cal / (K x mol)
 // (versus delta H in kcal / mol)
-var DNA_TRI_TETRA_LOOPS = BPEnergy{
+var DNATriTetraLoops = BPEnergy{
 	"AGAAT":  {-1.5, 0.0},
 	"AGCAT":  {-1.5, 0.0},
 	"AGGAT":  {-1.5, 0.0},
@@ -469,7 +469,7 @@ var DNA_TRI_TETRA_LOOPS = BPEnergy{
 // Additional correction is applied for asymmetric loops in paper:
 // delta G (asymmetry) = |length A - length B| x 0.3 (kcal / mol)
 // where A and B are lengths of both sides of loop
-var DNA_INTERNAL_LOOPS = LoopEnergy{
+var DNAInternalLoops = LoopEnergy{
 	30: {0, -21.3},
 	29: {0, -21.0},
 	28: {0, -21.0},
@@ -513,7 +513,7 @@ var DNA_INTERNAL_LOOPS = LoopEnergy{
 //
 // For bulge loops of size 1, the intervening NN energy is used.
 // Closing AT penalty is applied on both sides
-var DNA_BULGE_LOOPS = LoopEnergy{
+var DNABulgeLoops = LoopEnergy{
 	1:  {0, -12.9},
 	2:  {0, -9.4},
 	3:  {0, -10.0},
@@ -556,11 +556,11 @@ var DNA_BULGE_LOOPS = LoopEnergy{
 // SantaLucia and Hicks, 2004
 //
 // For hairpins of length 3 and 4, the entropy values are looked up
-// in the DNA_TRI_TETRA_LOOPS Dict
+// in the DNATriTetraLoops Dict
 //
 // From formula 8-9 of the paper:
 // An additional 1.6 delta entropy penalty if the hairpin is closed by AT
-var DNA_HAIRPIN_LOOPS = LoopEnergy{
+var DNAHairpinLoops = LoopEnergy{
 	1:  {0, 0.0},
 	2:  {0, 0.0},
 	3:  {0, -11.3},
@@ -593,15 +593,15 @@ var DNA_HAIRPIN_LOOPS = LoopEnergy{
 	30: {0, -20.3},
 }
 
-var DNA_ENERGIES = Energies{
-	BULGE_LOOPS:     DNA_BULGE_LOOPS,
-	COMPLEMENT:      DNA_COMPLEMENT,
-	DE:              DNA_DE,
-	HAIRPIN_LOOPS:   DNA_HAIRPIN_LOOPS,
-	MULTIBRANCH:     DNA_MULTIBRANCH,
-	INTERNAL_LOOPS:  DNA_INTERNAL_LOOPS,
-	INTERNAL_MM:     DNA_INTERNAL_MM,
-	NN:              DNA_NN,
-	TERMINAL_MM:     DNA_TERMINAL_MM,
-	TRI_TETRA_LOOPS: DNA_TRI_TETRA_LOOPS,
+var DNAEnergies = Energies{
+	BulgeLoops:    DNABulgeLoops,
+	Complement:    DNAComplement,
+	DE:            DNA_DE,
+	HairpinLoops:  DNAHairpinLoops,
+	Multibranch:   DNAMultibranch,
+	InternalLoops: DNAInternalLoops,
+	INTERNAL_MM:   DNA_INTERNAL_MM,
+	NN:            DNA_NN,
+	TERMINAL_MM:   DNA_TERMINAL_MM,
+	TriTetraLoops: DNATriTetraLoops,
 }

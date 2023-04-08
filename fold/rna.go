@@ -1,8 +1,8 @@
 package fold
 
-var RNA_COMPLEMENT = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+var RNAComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
-var RNA_MULTIBRANCH = MultiBranchEnergies{2.5, 0.1, 0.4, 2.0}
+var RNAMultibranch = MultibranchEnergies{2.5, 0.1, 0.4, 2.0}
 
 var RNA_NN = BPEnergy{
 	"AA/UU": {H: -6.8, S: -19},
@@ -784,7 +784,7 @@ var RNA_DE = BPEnergy{
 	"UU/U.": {H: 0, S: 0},
 }
 
-var RNA_INTERNAL_LOOPS = LoopEnergy{
+var RNAInternalLoops = LoopEnergy{
 	1:  {0.0, 0.0},
 	2:  {0.0, 0.0},
 	3:  {0.0, 0.0},
@@ -817,7 +817,7 @@ var RNA_INTERNAL_LOOPS = LoopEnergy{
 	30: {-1.3, -16.1},
 }
 
-var RNA_BULGE_LOOPS = LoopEnergy{
+var RNABulgeLoops = LoopEnergy{
 	1:  {10.6, 21.9},
 	2:  {7.1, 13.9},
 	3:  {7.1, 12.6},
@@ -850,7 +850,7 @@ var RNA_BULGE_LOOPS = LoopEnergy{
 	30: {7.1, 3.2},
 }
 
-var RNA_HAIRPIN_LOOPS = LoopEnergy{
+var RNAHairpinLoops = LoopEnergy{
 	1:  {0.0, 0.0},
 	2:  {0.0, 0.0},
 	3:  {1.3, -13.2},
@@ -883,15 +883,15 @@ var RNA_HAIRPIN_LOOPS = LoopEnergy{
 	30: {5.0, -8.7},
 }
 
-var RNA_ENERGIES = Energies{
-	BULGE_LOOPS:     RNA_BULGE_LOOPS,
-	COMPLEMENT:      RNA_COMPLEMENT,
-	DE:              RNA_DE,
-	HAIRPIN_LOOPS:   RNA_HAIRPIN_LOOPS,
-	MULTIBRANCH:     RNA_MULTIBRANCH,
-	INTERNAL_LOOPS:  RNA_INTERNAL_LOOPS,
-	INTERNAL_MM:     RNA_INTERNAL_MM,
-	NN:              RNA_NN,
-	TERMINAL_MM:     RNA_TERMINAL_MM,
-	TRI_TETRA_LOOPS: nil,
+var RNAEnergies = Energies{
+	BulgeLoops:    RNABulgeLoops,
+	Complement:    RNAComplement,
+	DE:            RNA_DE,
+	HairpinLoops:  RNAHairpinLoops,
+	Multibranch:   RNAMultibranch,
+	InternalLoops: RNAInternalLoops,
+	INTERNAL_MM:   RNA_INTERNAL_MM,
+	NN:            RNA_NN,
+	TERMINAL_MM:   RNA_TERMINAL_MM,
+	TriTetraLoops: nil,
 }
