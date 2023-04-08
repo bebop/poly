@@ -4,15 +4,39 @@ import (
 	"testing"
 
 	"github.com/TimothyStiles/poly/align"
+	"github.com/TimothyStiles/poly/align/matrix"
+	"github.com/TimothyStiles/poly/alphabet"
 )
 
 func TestNeedlemanWunsch(t *testing.T) {
 
-	scoring := align.NewScoring()
+	mat := [][]int{
+		/*       A C G T U */
+		/* A */ {1, -1, -1, -1, -1},
+		/* C */ {-1, 1, -1, -1, -1},
+		/* G */ {-1, -1, 1, -1, -1},
+		/* T */ {-1, -1, -1, 1, -1},
+		/* U */ {-1, -1, -1, -1, 1},
+	}
+
+	alphabet := alphabet.NewAlphabet([]string{"A", "C", "G", "T", "U"})
+	subMatrix, err := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+	scoring, err := align.NewScoring(subMatrix, -1)
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 
 	a := "GATTACA"
 	b := "GCATGCU"
-	score, alignA, alignB := align.NeedlemanWunsch(a, b, scoring)
+	score, alignA, alignB, err := align.NeedlemanWunsch(a, b, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignA, alignB)
 	}
@@ -20,7 +44,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	c := "GATTACA"
 	d := "GATTACA"
 
-	score, alignC, alignD := align.NeedlemanWunsch(c, d, scoring)
+	score, alignC, alignD, err := align.NeedlemanWunsch(c, d, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != 7 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignC, alignD)
 	}
@@ -28,7 +57,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	e := "GATTACA"
 	f := "GAT"
 
-	score, alignE, alignF := align.NeedlemanWunsch(e, f, scoring)
+	score, alignE, alignF, err := align.NeedlemanWunsch(e, f, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != -1 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignE, alignF)
 	}
@@ -37,7 +71,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	g := ""
 	h := "GAT"
 
-	score, alignG, alignH := align.NeedlemanWunsch(g, h, scoring)
+	score, alignG, alignH, err := align.NeedlemanWunsch(g, h, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != -3 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignG, alignH)
 	}
@@ -46,7 +85,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	i := ""
 	j := ""
 
-	score, alignI, alignJ := align.NeedlemanWunsch(i, j, scoring)
+	score, alignI, alignJ, err := align.NeedlemanWunsch(i, j, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignI, alignJ)
 	}
@@ -55,7 +99,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	k := "G"
 	l := "A"
 
-	score, alignK, alignL := align.NeedlemanWunsch(k, l, scoring)
+	score, alignK, alignL, err := align.NeedlemanWunsch(k, l, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != -1 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignK, alignL)
 	}
@@ -64,7 +113,11 @@ func TestNeedlemanWunsch(t *testing.T) {
 	m := "G"
 	n := "G"
 
-	score, alignM, alignN := align.NeedlemanWunsch(m, n, scoring)
+	score, alignM, alignN, err := align.NeedlemanWunsch(m, n, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 1 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignM, alignN)
 	}
@@ -73,7 +126,12 @@ func TestNeedlemanWunsch(t *testing.T) {
 	o := "G"
 	p := "GATTACA"
 
-	score, alignO, alignP := align.NeedlemanWunsch(o, p, scoring)
+	score, alignO, alignP, err := align.NeedlemanWunsch(o, p, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != -5 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignO, alignP)
 	}
@@ -81,17 +139,33 @@ func TestNeedlemanWunsch(t *testing.T) {
 
 func TestSmithWaterman(t *testing.T) {
 
-	scoring := align.Scoring{
-		Match:      3,
-		Mismatch:   -3,
-		GapPenalty: -2,
+	mat := [][]int{
+		/*       - A C G T */
+		/* - */ {0, 0, 0, 0, 0},
+		/* A */ {0, 3, -3, -3, -3},
+		/* C */ {0, -3, 3, -3, -3},
+		/* G */ {0, -3, -3, 3, -3},
+		/* T */ {0, -3, -3, -3, 3},
+	}
+
+	alphabet := alphabet.NewAlphabet([]string{"-", "A", "C", "G", "T"})
+	subMatrix, _ := matrix.NewSubstitutionMatrix(alphabet, alphabet, mat)
+	scoring, err := align.NewScoring(subMatrix, -2)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
 	}
 
 	// Wikipedia example: https://en.wikipedia.org/wiki/Smith-Waterman_algorithm#Example
 	a := "TGTTACGG"
 	b := "GGTTGACTA"
 
-	score, alignA, alignB := align.SmithWaterman(a, b, scoring)
+	score, alignA, alignB, err := align.SmithWaterman(a, b, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
+
 	if score != 13 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignA, alignB)
 	}
@@ -105,7 +179,11 @@ func TestSmithWaterman(t *testing.T) {
 	c := "ACACACTA"
 	d := "AGCACACA"
 
-	score, alignC, alignD := align.SmithWaterman(c, d, scoring)
+	score, alignC, alignD, err := align.SmithWaterman(c, d, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 
 	if score != 17 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignC, alignD)
@@ -123,7 +201,11 @@ func TestSmithWaterman(t *testing.T) {
 	e := ""
 	f := "GAT"
 
-	score, alignE, alignF := align.SmithWaterman(e, f, scoring)
+	score, alignE, alignF, err := align.SmithWaterman(e, f, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignE, alignF)
 	}
@@ -138,7 +220,11 @@ func TestSmithWaterman(t *testing.T) {
 	g := ""
 	h := ""
 
-	score, alignG, alignH := align.SmithWaterman(g, h, scoring)
+	score, alignG, alignH, err := align.SmithWaterman(g, h, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignG, alignH)
 	}
@@ -153,7 +239,11 @@ func TestSmithWaterman(t *testing.T) {
 	i := "G"
 	j := "A"
 
-	score, alignI, alignJ := align.SmithWaterman(i, j, scoring)
+	score, alignI, alignJ, err := align.SmithWaterman(i, j, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 0 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignI, alignJ)
 	}
@@ -168,7 +258,11 @@ func TestSmithWaterman(t *testing.T) {
 	k := "G"
 	l := "G"
 
-	score, alignK, alignL := align.SmithWaterman(k, l, scoring)
+	score, alignK, alignL, err := align.SmithWaterman(k, l, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 3 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignK, alignL)
 	}
@@ -183,7 +277,11 @@ func TestSmithWaterman(t *testing.T) {
 	m := "G"
 	n := "GATTACA"
 
-	score, alignM, alignN := align.SmithWaterman(m, n, scoring)
+	score, alignM, alignN, err := align.SmithWaterman(m, n, scoring)
+
+	if err != nil {
+		t.Errorf("error: %s", err)
+	}
 	if score != 3 {
 		t.Errorf("score: %d, A: %s, B: %s", score, alignM, alignN)
 	}
