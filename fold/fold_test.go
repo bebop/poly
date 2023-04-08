@@ -15,7 +15,7 @@ func TestFold(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
 		fc, err := fold.NewFoldingContext(seq, 37.0)
 		require.NoError(t, err)
-		seq_dg, err := fold.FoldEnergy(seq, 37.0)
+		seq_dg, err := fold.MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
 		assert.InDelta(t, seq_dg, fc.W[0][len(seq)-1].E, 1)
@@ -33,7 +33,7 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafold_dgs {
-			d, err := fold.FoldEnergy(seq, 37.0)
+			d, err := fold.MinimumFreeEnergy(seq, 37.0)
 			require.NoError(t, err)
 			// accepting a 60% difference
 			delta := math.Abs(0.6 * math.Min(d, ufold))
@@ -55,7 +55,7 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafold_dgs {
-			d, err := fold.FoldEnergy(seq, 37.0)
+			d, err := fold.MinimumFreeEnergy(seq, 37.0)
 			require.NoError(t, err)
 
 			// accepting a 50% difference

@@ -35,14 +35,14 @@ func Fold(seq string, temp float64) ([]NucleicAcidStructure, error) {
 	return Traceback(0, len(seq)-1, fc), nil
 }
 
-// Fold the sequence and return just the delta G of the structure
+// MinimumFreeEnergy folds the sequence and return just the delta G of the structure
 // Args:
 //
 //	seq: The sequence to fold
 //	temp: The temperature to fold at
 //
 // Returns: the minimum free energy of the folded sequence
-func FoldEnergy(seq string, temp float64) (float64, error) {
+func MinimumFreeEnergy(seq string, temp float64) (float64, error) {
 	structs, err := Fold(seq, temp)
 	if err != nil {
 		return 0, fmt.Errorf("error folding: %w", err)
