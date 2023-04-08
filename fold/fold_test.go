@@ -13,12 +13,12 @@ import (
 func TestFold(t *testing.T) {
 	t.Run("FoldCache", func(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
-		fc, err := fold.NewFoldingContext(seq, 37.0)
+		foldContext, err := fold.NewFoldingContext(seq, 37.0)
 		require.NoError(t, err)
 		seq_dg, err := fold.MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.InDelta(t, seq_dg, fc.W[0][len(seq)-1].E, 1)
+		assert.InDelta(t, seq_dg, foldContext.W[0][len(seq)-1].E, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos
@@ -96,20 +96,20 @@ func TestFold(t *testing.T) {
 	t.Run("Stack", func(t *testing.T) {
 		seq := "GCUCAGCUGGGAGAGC"
 		temp := 37.0
-		fc, err := fold.NewFoldingContext(seq, temp)
+		foldContext, err := fold.NewFoldingContext(seq, temp)
 		require.NoError(t, err)
 
-		e := fold.Stack(1, 2, 14, 13, fc)
+		e := fold.Stack(1, 2, 14, 13, foldContext)
 		assert.InDelta(t, e, -2.1, 0.1)
 	})
 	t.Run("Bulge", func(t *testing.T) {
 		// mock bulge of CAT on one side and AG on other
 		// from pg 429 of SantaLucia, 2004
 		seq := "ACCCCCATCCTTCCTTGAGTCAAGGGGCTCAA"
-		fc, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		pair_dg, err := fold.Bulge(5, 7, 18, 17, fc)
+		pair_dg, err := fold.Bulge(5, 7, 18, 17, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, pair_dg, 3.22, 0.4)
 	})
@@ -119,10 +119,10 @@ func TestFold(t *testing.T) {
 		i := 11
 		j := 16
 
-		fc, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err := fold.Hairpin(i, j, fc)
+		hairpin_dg, err := fold.Hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		// this differs from Unafold
 		assert.InDelta(t, hairpin_dg, 4.3, 1.0)
@@ -133,10 +133,10 @@ func TestFold(t *testing.T) {
 		i = 3
 		j = 8
 
-		fc, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err = fold.Hairpin(i, j, fc)
+		hairpin_dg, err = fold.Hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, hairpin_dg, 0.67, 0.1)
 
@@ -144,10 +144,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 8
 
-		fc, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err = fold.Hairpin(i, j, fc)
+		hairpin_dg, err = fold.Hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, hairpin_dg, 4.5, 0.2)
 	})
@@ -156,10 +156,10 @@ func TestFold(t *testing.T) {
 		i := 6
 		j := 21
 
-		fc, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		dg, err := fold.InternalLoop(i, i+4, j, j-4, fc)
+		dg, err := fold.InternalLoop(i, i+4, j, j-4, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, dg, 3.5, 0.1)
 	})
@@ -168,10 +168,10 @@ func TestFold(t *testing.T) {
 		i := 0
 		j := 15
 
-		fc, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err := fold.W(i, j, fc)
+		struc, err := fold.W(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.E, -3.8, 0.2)
 
@@ -179,10 +179,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 16
 
-		fc, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.W(i, j, fc)
+		struc, err = fold.W(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.E, -6.4, 0.2)
 
@@ -190,10 +190,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 14
 
-		fc, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.W(i, j, fc)
+		struc, err = fold.W(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.E, -4.2, 0.2)
 	})

@@ -26,13 +26,13 @@ import (
 // Returns a slice of NucleicAcidStructure with the energy and description,
 // i.e. stacks, bulges, hairpins, etc.
 func Fold(seq string, temp float64) ([]NucleicAcidStructure, error) {
-	fc, err := NewFoldingContext(seq, temp)
+	foldContext, err := NewFoldingContext(seq, temp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating folding context: %w", err)
 	}
 
 	// get the minimum free energy structure out of the cache
-	return Traceback(0, len(seq)-1, fc), nil
+	return Traceback(0, len(seq)-1, foldContext), nil
 }
 
 // MinimumFreeEnergy folds the sequence and return just the delta G of the structure
@@ -97,35 +97,35 @@ func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 //		seq: The sequence being folded
 //		i: The start index
 //		j: The end index (inclusive)
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldContext for this sequence
 //
 // Returns the free energy for the subsequence from i to j
-func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
-	if !fc.W[i][j].Equal(STRUCT_DEFAULT) {
-		return fc.W[i][j], nil
+func W(i, j int, foldContext FoldContext) (NucleicAcidStructure, error) {
+	if !foldContext.W[i][j].Equal(STRUCT_DEFAULT) {
+		return foldContext.W[i][j], nil
 	}
 
 	if j-i < 4 {
-		fc.W[i][j] = STRUCT_NULL
-		return fc.W[i][j], nil
+		foldContext.W[i][j] = STRUCT_NULL
+		return foldContext.W[i][j], nil
 	}
 
-	w1, err := W(i+1, j, fc)
+	w1, err := W(i+1, j, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("w: subsequence (%d, %d): %w", i, j, err)
 	}
-	w2, err := W(i, j-1, fc)
+	w2, err := W(i, j-1, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("w: subsequence (%d, %d): %w", i, j, err)
 	}
-	w3, err := V(i, j, fc)
+	w3, err := V(i, j, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("w: subsequence (%d, %d): %w", i, j, err)
 	}
 
 	w4 := STRUCT_NULL
 	for k := i + 1; k < j-1; k++ {
-		w4_test, err := Multibranch(i, k, j, fc, false)
+		w4_test, err := Multibranch(i, k, j, foldContext, false)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("w: subsequence (%d, %d): %w", i, j, err)
 		}
@@ -136,7 +136,7 @@ func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	}
 
 	wret := minStruct(w1, w2, w3, w4)
-	fc.W[i][j] = wret
+	foldContext.W[i][j] = wret
 	return wret, nil
 }
 
@@ -149,59 +149,59 @@ func W(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 //
 //		i: The start index
 //		j: The end index (inclusive)
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns the minimum energy folding structure possible between i and j on seq
-func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
-	if !fc.V[i][j].Equal(STRUCT_DEFAULT) {
-		return fc.V[i][j], nil
+func V(i, j int, foldContext FoldContext) (NucleicAcidStructure, error) {
+	if !foldContext.V[i][j].Equal(STRUCT_DEFAULT) {
+		return foldContext.V[i][j], nil
 	}
 
 	// the ends must basepair for V(i,j)
-	if fc.Energies.Complement[fc.Seq[i]] != fc.Seq[j] {
-		fc.V[i][j] = STRUCT_NULL
-		return fc.V[i][j], nil
+	if foldContext.Energies.Complement[foldContext.Seq[i]] != foldContext.Seq[j] {
+		foldContext.V[i][j] = STRUCT_NULL
+		return foldContext.V[i][j], nil
 	}
 	// if the basepair is isolated, and the seq large, penalize at 1,600 kcal/mol
 	// heuristic for speeding this up
 	// from https://www.ncbi.nlm.nih.gov/pubmed/10329189
 	isolated_outer := true
-	if i > 0 && j < len(fc.Seq)-1 {
-		isolated_outer = fc.Energies.Complement[fc.Seq[i-1]] != fc.Seq[j+1]
+	if i > 0 && j < len(foldContext.Seq)-1 {
+		isolated_outer = foldContext.Energies.Complement[foldContext.Seq[i-1]] != foldContext.Seq[j+1]
 	}
-	isolated_inner := fc.Energies.Complement[fc.Seq[i+1]] != fc.Seq[j-1]
+	isolated_inner := foldContext.Energies.Complement[foldContext.Seq[i+1]] != foldContext.Seq[j-1]
 
 	if isolated_outer && isolated_inner {
-		fc.V[i][j] = NucleicAcidStructure{E: 1600}
-		return fc.V[i][j], nil
+		foldContext.V[i][j] = NucleicAcidStructure{E: 1600}
+		return foldContext.V[i][j], nil
 	}
 
-	p := Pair(fc.Seq, i, i+1, j, j-1)
-	hp, err := Hairpin(i, j, fc)
+	p := Pair(foldContext.Seq, i, i+1, j, j-1)
+	hp, err := Hairpin(i, j, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 	}
 	e1 := NucleicAcidStructure{E: hp, Desc: "HAIRPIN:" + p}
 	if j-i == 4 { // small hairpin; 4bp
-		fc.V[i][j] = e1
-		fc.W[i][j] = e1
-		return fc.V[i][j], nil
+		foldContext.V[i][j] = e1
+		foldContext.W[i][j] = e1
+		return foldContext.V[i][j], nil
 	}
 
-	n := len(fc.Seq)
+	n := len(foldContext.Seq)
 	e2 := NucleicAcidStructure{E: math.Inf(1)}
 	for i1 := i + 1; i1 < j-4; i1++ {
 		for j1 := i1 + 4; j1 < j; j1++ {
 			// i1 and j1 must match
-			if fc.Energies.Complement[fc.Seq[i1]] != fc.Seq[j1] {
+			if foldContext.Energies.Complement[foldContext.Seq[i1]] != foldContext.Seq[j1] {
 				continue
 			}
 
-			p := Pair(fc.Seq, i, i1, j, j1)
-			pair_left := Pair(fc.Seq, i, i+1, j, j-1)
-			pair_right := Pair(fc.Seq, i1-1, i1, j1+1, j1)
-			_, plin := fc.Energies.NN[pair_left]
-			_, prin := fc.Energies.NN[pair_right]
+			p := Pair(foldContext.Seq, i, i1, j, j1)
+			pair_left := Pair(foldContext.Seq, i, i+1, j, j-1)
+			pair_right := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
+			_, plin := foldContext.Energies.NN[pair_left]
+			_, prin := foldContext.Energies.NN[pair_right]
 			pair_inner := plin || prin
 
 			stck := i1 == i+1 && j1 == j-1
@@ -216,7 +216,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 			switch {
 			case stck:
 				// it's a neighboring/stacking pair in a helix
-				e2_test = Stack(i, i1, j, j1, fc)
+				e2_test = Stack(i, i1, j, j1, foldContext)
 				e2_test_type = fmt.Sprintf("STACK:%s", p)
 
 				if i > 0 && j == n-1 || i == 0 && j < n-1 {
@@ -225,7 +225,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 				}
 			case bulge_left && bulge_right && !pair_inner:
 				// it's an interior loop
-				il, err := InternalLoop(i, i1, j, j1, fc)
+				il, err := InternalLoop(i, i1, j, j1, foldContext)
 				if err != nil {
 					return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 				}
@@ -233,21 +233,21 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 				e2_test_type = fmt.Sprintf("INTERIOR_LOOP:%d/%d", i1-i, j-j1)
 
 				if i1-i == 2 && j-j1 == 2 {
-					loop_left := fc.Seq[i : i1+1]
-					loop_right := fc.Seq[j1 : j+1]
+					loop_left := foldContext.Seq[i : i1+1]
+					loop_right := foldContext.Seq[j1 : j+1]
 					// technically an interior loop of 1. really 1bp mismatch
 					e2_test_type = fmt.Sprintf("STACK:%s/%s", loop_left, transform.Reverse(loop_right))
 				}
 			case bulge_left && !bulge_right:
 				// it's a bulge on the left side
-				e2_test, err = Bulge(i, i1, j, j1, fc)
+				e2_test, err = Bulge(i, i1, j, j1, foldContext)
 				if err != nil {
 					return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 				}
 				e2_test_type = fmt.Sprintf("BULGE:%d", i1-i)
 			case !bulge_left && bulge_right:
 				// it's a bulge on the right side
-				e2_test, err = Bulge(i, i1, j, j1, fc)
+				e2_test, err = Bulge(i, i1, j, j1, foldContext)
 				if err != nil {
 					return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 				}
@@ -258,7 +258,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 			}
 
 			// add V(i', j')
-			tv, err := V(i1, j1, fc)
+			tv, err := V(i1, j1, foldContext)
 			if err != nil {
 				return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 			}
@@ -270,9 +270,9 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 	}
 
 	e3 := STRUCT_NULL
-	if !isolated_outer || i == 0 || j == len(fc.Seq)-1 {
+	if !isolated_outer || i == 0 || j == len(foldContext.Seq)-1 {
 		for k := i + 1; k < j-1; k++ {
-			e3_test, err := Multibranch(i, k, j, fc, true)
+			e3_test, err := Multibranch(i, k, j, foldContext, true)
 			if err != nil {
 				return STRUCT_DEFAULT, fmt.Errorf("v: subsequence (%d, %d): %w", i, j, err)
 			}
@@ -283,7 +283,7 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 		}
 	}
 	e := minStruct(e1, e2, e3)
-	fc.V[i][j] = e
+	foldContext.V[i][j] = e
 	return e, nil
 }
 
@@ -295,10 +295,10 @@ func V(i, j int, fc FoldContext) (NucleicAcidStructure, error) {
 //		i1: The index to the right of i
 //		j: The end index of the bulge
 //		j1: The index to the left of j
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns the increment in free energy from the bulge
-func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
+func Bulge(i, i1, j, j1 int, foldContext FoldContext) (float64, error) {
 	loop_len := max(i1-i-1, j-j1-1)
 	if loop_len <= 0 {
 		return 0, fmt.Errorf("bulge: the length of the bulge at (%d, %d) is %d", i, j, loop_len)
@@ -307,29 +307,29 @@ func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	var dG float64
 
 	// add penalty based on size
-	if en, ok := fc.Energies.BulgeLoops[loop_len]; ok {
+	if en, ok := foldContext.Energies.BulgeLoops[loop_len]; ok {
 		d_h, d_s := en.H, en.S
-		dG = DeltaG(d_h, d_s, fc.T)
+		dG = DeltaG(d_h, d_s, foldContext.T)
 	} else {
 		// it's too large for pre-calculated list, extrapolate
-		en := fc.Energies.BulgeLoops[30]
+		en := foldContext.Energies.BulgeLoops[30]
 		d_h, d_s := en.H, en.S
-		dG = DeltaG(d_h, d_s, fc.T)
-		dG = JacobsonStockmayer(loop_len, 30, dG, fc.T)
+		dG = DeltaG(d_h, d_s, foldContext.T)
+		dG = JacobsonStockmayer(loop_len, 30, dG, foldContext.T)
 	}
 
 	if loop_len == 1 {
 		// if len 1, include the delta G of intervening NN (SantaLucia 2004)
-		pair := Pair(fc.Seq, i, i1, j, j1)
-		if _, ok := fc.Energies.NN[pair]; !ok {
+		pair := Pair(foldContext.Seq, i, i1, j, j1)
+		if _, ok := foldContext.Energies.NN[pair]; !ok {
 			return 0, fmt.Errorf("bulge: pair %q not in the NN energies", pair)
 		}
-		dG += Stack(i, i1, j, j1, fc)
+		dG += Stack(i, i1, j, j1, foldContext)
 	}
 
 	// penalize AT terminal bonds
 	for _, k := range []int{i, i1, j, j1} {
-		if fc.Seq[k] == 'A' {
+		if foldContext.Seq[k] == 'A' {
 			dG += 0.5
 		}
 	}
@@ -337,7 +337,7 @@ func Bulge(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	return dG, nil
 }
 
-func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldContext) error {
+func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, foldContext FoldContext) error {
 	if !structure.Valid() || len(structure.Inner) == 0 {
 		return nil
 	}
@@ -346,11 +346,11 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldC
 		return nil
 	}
 	for _, subsq := range structure.Inner {
-		str, err := W(subsq.Start, subsq.End, fc)
+		str, err := W(subsq.Start, subsq.End, foldContext)
 		if err != nil {
 			return err
 		}
-		err = addBranch(str, branches, fc)
+		err = addBranch(str, branches, foldContext)
 		if err != nil {
 			return err
 		}
@@ -367,31 +367,31 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, fc FoldC
 //		i: The left starting index
 //		k: The mid-point in the search
 //		j: The right ending index
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //		helix: Whether this Multibranch is enclosed by a helix
 //		helix: Whether V(i, j) bond with one another in a helix
 //
 // Returns a multi-branch structure
-func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure, error) {
+func Multibranch(i, k, j int, foldContext FoldContext, helix bool) (NucleicAcidStructure, error) {
 	var (
 		left, right NucleicAcidStructure
 		err         error
 	)
 	if helix {
-		left, err = W(i+1, k, fc)
+		left, err = W(i+1, k, foldContext)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
-		right, err = W(k+1, j-1, fc)
+		right, err = W(k+1, j-1, foldContext)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
 	} else {
-		left, err = W(i, k, fc)
+		left, err = W(i, k, foldContext)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
-		right, err = W(k+1, j, fc)
+		right, err = W(k+1, j, foldContext)
 		if err != nil {
 			return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 		}
@@ -406,11 +406,11 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 
 	// in python this was a recursive closure, in Go this is not possible so
 	// we pull it out and pass all the parameters
-	err = addBranch(left, &branches, fc)
+	err = addBranch(left, &branches, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 	}
-	err = addBranch(right, &branches, fc)
+	err = addBranch(right, &branches, foldContext)
 	if err != nil {
 		return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 	}
@@ -451,11 +451,11 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 			unpaired_right = j3 - j2 - 1
 
 			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, fc)
+				de = Stack(i2-1, i2, j2+1, j2, foldContext)
 			} else if unpaired_right != 0 {
-				de = Stack(-1, i2, j2+1, j2, fc)
+				de = Stack(-1, i2, j2+1, j2, foldContext)
 				if unpaired_right == 1 {
-					de = min(Stack(i3, -1, j3, j3-1, fc), de)
+					de = min(Stack(i3, -1, j3, j3-1, foldContext), de)
 				}
 			}
 		} else if ij2 == ij {
@@ -463,11 +463,11 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 			unpaired_right = i3 - i2 - 1
 
 			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, fc)
+				de = Stack(i2-1, i2, j2+1, j2, foldContext)
 			} else if unpaired_right != 0 {
-				de = Stack(i2, i2+1, j2, -1, fc)
+				de = Stack(i2, i2+1, j2, -1, foldContext)
 				if unpaired_right == 1 {
-					de = min(Stack(i3-1, i3, -1, j3, fc), de)
+					de = min(Stack(i3-1, i3, -1, j3, foldContext), de)
 				}
 			}
 		} else {
@@ -475,11 +475,11 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 			unpaired_right = i3 - j2 - 1
 
 			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, fc)
+				de = Stack(i2-1, i2, j2+1, j2, foldContext)
 			} else if unpaired_right != 0 {
-				de = Stack(-1, i2, j2+1, j2, fc)
+				de = Stack(-1, i2, j2+1, j2, foldContext)
 				if unpaired_right == 1 {
-					de = min(Stack(i2-1, i2, j2+1, j2, fc), de)
+					de = min(Stack(i2-1, i2, j2+1, j2, foldContext), de)
 				}
 			}
 		}
@@ -490,7 +490,7 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 		}
 
 		if ij2 != ij { // add energy
-			w, err := W(i2, j2, fc)
+			w, err := W(i2, j2, foldContext)
 			if err != nil {
 				return STRUCT_DEFAULT, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", i, j, k, err)
 			}
@@ -504,7 +504,7 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 	}
 
 	// penalty for unmatched bp and multi-branch
-	a, b, c, d := fc.Energies.Multibranch.A, fc.Energies.Multibranch.B, fc.Energies.Multibranch.C, fc.Energies.Multibranch.D
+	a, b, c, d := foldContext.Energies.Multibranch.A, foldContext.Energies.Multibranch.B, foldContext.Energies.Multibranch.C, foldContext.Energies.Multibranch.D
 	e_Multibranch := a + b*float64(len(branches)) + c*float64(unpaired)
 
 	if unpaired == 0 {
@@ -538,10 +538,10 @@ func Multibranch(i, k, j int, fc FoldContext, helix bool) (NucleicAcidStructure,
 //		i1: The index to the right of i
 //		j:  The index of the end of structure on right side
 //		j1: The index to the left of j
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns the free energy associated with the internal loop
-func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
+func InternalLoop(i, i1, j, j1 int, foldContext FoldContext) (float64, error) {
 	loop_left := i1 - i - 1
 	loop_right := j - j1 - 1
 	loop_len := loop_left + loop_right
@@ -556,21 +556,21 @@ func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 
 	// single bp mismatch, sum up the two single mismatch pairs
 	if loop_left == 1 && loop_right == 1 {
-		mm_left := Stack(i, i1, j, j1, fc)
-		mm_right := Stack(i1-1, i1, j1+1, j1, fc)
+		mm_left := Stack(i, i1, j, j1, foldContext)
+		mm_right := Stack(i1-1, i1, j1+1, j1, foldContext)
 		return mm_left + mm_right, nil
 	}
 	var d_h, d_s, dG float64
 	// apply a penalty based on loop size
-	if en, ok := fc.Energies.InternalLoops[loop_len]; ok {
+	if en, ok := foldContext.Energies.InternalLoops[loop_len]; ok {
 		d_h, d_s = en.H, en.S
-		dG = DeltaG(d_h, d_s, fc.T)
+		dG = DeltaG(d_h, d_s, foldContext.T)
 	} else {
 		// it's too large an internal loop, extrapolate
-		en := fc.Energies.InternalLoops[30]
+		en := foldContext.Energies.InternalLoops[30]
 		d_h, d_s = en.H, en.S
-		dG = DeltaG(d_h, d_s, fc.T)
-		dG = JacobsonStockmayer(loop_len, 30, dG, fc.T)
+		dG = DeltaG(d_h, d_s, foldContext.T)
+		dG = JacobsonStockmayer(loop_len, 30, dG, foldContext.T)
 	}
 
 	// apply an asymmetry penalty
@@ -578,15 +578,15 @@ func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 	dG += 0.3 * loop_asymmetry
 
 	// apply penalty based on the mismatching pairs on either side of the loop
-	pair_left_mm := Pair(fc.Seq, i, i+1, j, j-1)
-	en := fc.Energies.TERMINAL_MM[pair_left_mm]
+	pair_left_mm := Pair(foldContext.Seq, i, i+1, j, j-1)
+	en := foldContext.Energies.TERMINAL_MM[pair_left_mm]
 	d_h, d_s = en.H, en.S
-	dG += DeltaG(d_h, d_s, fc.T)
+	dG += DeltaG(d_h, d_s, foldContext.T)
 
-	pair_right_mm := Pair(fc.Seq, i1-1, i1, j1+1, j1)
-	en = fc.Energies.TERMINAL_MM[pair_right_mm]
+	pair_right_mm := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
+	en = foldContext.Energies.TERMINAL_MM[pair_right_mm]
 	d_h, d_s = en.H, en.S
-	dG += DeltaG(d_h, d_s, fc.T)
+	dG += DeltaG(d_h, d_s, foldContext.T)
 
 	return dG, nil
 }
@@ -605,78 +605,78 @@ func InternalLoop(i, i1, j, j1 int, fc FoldContext) (float64, error) {
 //		i1: The index to the right of i
 //		j: The end index on right side of the pair/stack
 //		j1: The index to the left of j
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns the free energy of the NN pairing
-func Stack(i, i1, j, j1 int, fc FoldContext) float64 {
+func Stack(i, i1, j, j1 int, foldContext FoldContext) float64 {
 	// if any(x >= len(seq) for x in [i, i1, j, j1]):
 	//    return 0.0
 	for _, x := range []int{i, i1, j, j1} {
-		if x >= len(fc.Seq) {
+		if x >= len(foldContext.Seq) {
 			return 0
 		}
 	}
 
-	pair := Pair(fc.Seq, i, i1, j, j1)
+	pair := Pair(foldContext.Seq, i, i1, j, j1)
 	// if any(x == -1 for x in [i, i1, j, j1]):
 	for _, x := range []int{i, i1, j, j1} {
 		if x == -1 {
 			// it's a dangling end
-			en := fc.Energies.DE[pair]
+			en := foldContext.Energies.DE[pair]
 			d_h, d_s := en.H, en.S
-			return DeltaG(d_h, d_s, fc.T)
+			return DeltaG(d_h, d_s, foldContext.T)
 		}
 	}
 
-	if i > 0 && j < len(fc.Seq)-1 {
+	if i > 0 && j < len(foldContext.Seq)-1 {
 		// it's internal
-		en, ok := fc.Energies.NN[pair]
+		en, ok := foldContext.Energies.NN[pair]
 		if !ok {
-			en = fc.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.INTERNAL_MM[pair]
 		}
 		d_h, d_s := en.H, en.S
-		return DeltaG(d_h, d_s, fc.T)
+		return DeltaG(d_h, d_s, foldContext.T)
 	}
-	if i == 0 && j == len(fc.Seq)-1 {
+	if i == 0 && j == len(foldContext.Seq)-1 {
 		// it's terminal
-		en, ok := fc.Energies.NN[pair]
+		en, ok := foldContext.Energies.NN[pair]
 		if !ok {
-			en = fc.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.INTERNAL_MM[pair]
 		}
 		d_h, d_s := en.H, en.S
-		return DeltaG(d_h, d_s, fc.T)
+		return DeltaG(d_h, d_s, foldContext.T)
 	}
 
-	if i > 0 && j == len(fc.Seq)-1 {
+	if i > 0 && j == len(foldContext.Seq)-1 {
 		// it's dangling on left
-		en, ok := fc.Energies.NN[pair]
+		en, ok := foldContext.Energies.NN[pair]
 		if !ok {
-			en = fc.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.INTERNAL_MM[pair]
 		}
 		d_h, d_s := en.H, en.S
-		dG := DeltaG(d_h, d_s, fc.T)
+		dG := DeltaG(d_h, d_s, foldContext.T)
 
-		pair_de := fmt.Sprintf("%c%c/.%c", fc.Seq[i-1], fc.Seq[i], fc.Seq[j])
-		if en, ok := fc.Energies.DE[pair_de]; ok {
+		pair_de := fmt.Sprintf("%c%c/.%c", foldContext.Seq[i-1], foldContext.Seq[i], foldContext.Seq[j])
+		if en, ok := foldContext.Energies.DE[pair_de]; ok {
 			d_h, d_s := en.H, en.S
-			dG += DeltaG(d_h, d_s, fc.T)
+			dG += DeltaG(d_h, d_s, foldContext.T)
 		}
 		return dG
 	}
 
-	if i == 0 && j < len(fc.Seq)-1 {
+	if i == 0 && j < len(foldContext.Seq)-1 {
 		// it's dangling on right
-		en, ok := fc.Energies.NN[pair]
+		en, ok := foldContext.Energies.NN[pair]
 		if !ok {
-			en = fc.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.INTERNAL_MM[pair]
 		}
 		d_h, d_s := en.H, en.S
-		dG := DeltaG(d_h, d_s, fc.T)
+		dG := DeltaG(d_h, d_s, foldContext.T)
 
-		pair_de := fmt.Sprintf(".%c/%c%c", +fc.Seq[i], fc.Seq[j+1], fc.Seq[j])
-		if en, ok := fc.Energies.DE[pair_de]; ok {
+		pair_de := fmt.Sprintf(".%c/%c%c", +foldContext.Seq[i], foldContext.Seq[j+1], foldContext.Seq[j])
+		if en, ok := foldContext.Energies.DE[pair_de]; ok {
 			d_h, d_s := en.H, en.S
-			dG += DeltaG(d_h, d_s, fc.T)
+			dG += DeltaG(d_h, d_s, foldContext.T)
 			return dG
 		}
 	}
@@ -688,49 +688,49 @@ func Stack(i, i1, j, j1 int, fc FoldContext) float64 {
 //
 //		i:  The index of start of hairpin
 //		j:  The index of end of hairpin
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns the free energy increment from the hairpin structure
-func Hairpin(i, j int, fc FoldContext) (float64, error) {
+func Hairpin(i, j int, foldContext FoldContext) (float64, error) {
 	if j-i < 4 {
 		return math.Inf(1), nil
 	}
 
-	hairpinSeq := fc.Seq[i : j+1]
+	hairpinSeq := foldContext.Seq[i : j+1]
 	hairpin_len := len(hairpinSeq) - 2
-	pair := Pair(fc.Seq, i, i+1, j, j-1)
+	pair := Pair(foldContext.Seq, i, i+1, j, j-1)
 
-	if fc.Energies.Complement[hairpinSeq[0]] != hairpinSeq[len(hairpinSeq)-1] {
+	if foldContext.Energies.Complement[hairpinSeq[0]] != hairpinSeq[len(hairpinSeq)-1] {
 		// not known terminal pair, nothing to close "hairpin"
 		return 0, fmt.Errorf("hairpin: subsequence (%d, %d): unknown hairpin terminal pairing %c - %c", i, j, hairpinSeq[0], hairpinSeq[len(hairpinSeq)-1])
 	}
 
 	dG := 0.0
-	if fc.Energies.TriTetraLoops != nil {
-		if en, ok := fc.Energies.TriTetraLoops[hairpinSeq]; ok {
+	if foldContext.Energies.TriTetraLoops != nil {
+		if en, ok := foldContext.Energies.TriTetraLoops[hairpinSeq]; ok {
 			// it's a pre-known hairpin with known value
 			d_h, d_s := en.H, en.S
-			dG = DeltaG(d_h, d_s, fc.T)
+			dG = DeltaG(d_h, d_s, foldContext.T)
 		}
 	}
 
 	// add penalty based on size
-	if en, ok := fc.Energies.HairpinLoops[hairpin_len]; ok {
+	if en, ok := foldContext.Energies.HairpinLoops[hairpin_len]; ok {
 		d_h, d_s := en.H, en.S
-		dG += DeltaG(d_h, d_s, fc.T)
+		dG += DeltaG(d_h, d_s, foldContext.T)
 	} else {
 		// it's too large, extrapolate
-		en := fc.Energies.HairpinLoops[30]
+		en := foldContext.Energies.HairpinLoops[30]
 		d_h, d_s := en.H, en.S
-		d_g_inc := DeltaG(d_h, d_s, fc.T)
-		dG += JacobsonStockmayer(hairpin_len, 30, d_g_inc, fc.T)
+		d_g_inc := DeltaG(d_h, d_s, foldContext.T)
+		dG += JacobsonStockmayer(hairpin_len, 30, d_g_inc, foldContext.T)
 	}
 
 	// add penalty for a terminal mismatch
-	en, ok := fc.Energies.TERMINAL_MM[pair]
+	en, ok := foldContext.Energies.TERMINAL_MM[pair]
 	if hairpin_len > 3 && ok {
 		d_h, d_s := en.H, en.S
-		dG += DeltaG(d_h, d_s, fc.T)
+		dG += DeltaG(d_h, d_s, foldContext.T)
 	}
 
 	// add penalty if length 3 and AT closing, formula 8 from SantaLucia, 2004
@@ -809,24 +809,24 @@ func Pair(s string, i, i1, j, j1 int) string {
 //
 //		i: The leftmost index to start searching in
 //		j: The rightmost index to start searching in
-//	 fc: The FoldingContext for this sequence
+//	 foldContext: The FoldingContext for this sequence
 //
 // Returns a list of NucleicAcidStructure in the final secondary structure
-func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
+func Traceback(i, j int, foldContext FoldContext) []NucleicAcidStructure {
 	// move i,j down-left to start coordinates
-	s := fc.W[i][j]
+	s := foldContext.W[i][j]
 	if !strings.Contains(s.Desc, "HAIRPIN") {
-		for fc.W[i+1][j].Equal(s) {
+		for foldContext.W[i+1][j].Equal(s) {
 			i += 1
 		}
-		for fc.W[i][j-1].Equal(s) {
+		for foldContext.W[i][j-1].Equal(s) {
 			j -= 1
 		}
 	}
 
 	NucleicAcidStructures := []NucleicAcidStructure{}
 	for {
-		s = fc.V[i][j]
+		s = foldContext.V[i][j]
 
 		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{E: s.E, Desc: s.Desc, Inner: []Subsequence{{Start: i, End: j}}})
 
@@ -850,11 +850,11 @@ func Traceback(i, j int, fc FoldContext) []NucleicAcidStructure {
 		branches := []NucleicAcidStructure{}
 		for _, ij1 := range s.Inner {
 			i1, j1 := ij1.Start, ij1.End
-			tb := Traceback(i1, j1, fc)
+			tb := Traceback(i1, j1, foldContext)
 			if len(tb) > 0 && len(tb[0].Inner) > 0 {
 				ij2 := tb[0].Inner[0]
 				i2, j2 := ij2.Start, ij2.End
-				e_sum += fc.W[i2][j2].E
+				e_sum += foldContext.W[i2][j2].E
 				branches = append(branches, tb...)
 			}
 		}
