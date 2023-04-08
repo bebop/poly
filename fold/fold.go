@@ -200,8 +200,8 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 			p := Pair(foldContext.Seq, start, i1, end, j1)
 			pair_left := Pair(foldContext.Seq, start, start+1, end, end-1)
 			pair_right := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
-			_, plin := foldContext.Energies.NN[pair_left]
-			_, prin := foldContext.Energies.NN[pair_right]
+			_, plin := foldContext.Energies.NearestNeighbors[pair_left]
+			_, prin := foldContext.Energies.NearestNeighbors[pair_right]
 			pair_inner := plin || prin
 
 			stck := i1 == start+1 && j1 == end-1
@@ -221,7 +221,7 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 
 				if start > 0 && end == n-1 || start == 0 && end < n-1 {
 					// there's a dangling end
-					e2_test_type = fmt.Sprintf("STACK_DE:%s", p)
+					e2_test_type = fmt.Sprintf("STACKDanglingEnds:%s", p)
 				}
 			case bulge_left && bulge_right && !pair_inner:
 				// it's an interior loop
@@ -319,10 +319,10 @@ func Bulge(start, i1, end, j1 int, foldContext FoldContext) (float64, error) {
 	}
 
 	if loop_len == 1 {
-		// if len 1, include the delta G of intervening NN (SantaLucia 2004)
+		// if len 1, include the delta G of intervening NearestNeighbors (SantaLucia 2004)
 		pair := Pair(foldContext.Seq, start, i1, end, j1)
-		if _, ok := foldContext.Energies.NN[pair]; !ok {
-			return 0, fmt.Errorf("bulge: pair %q not in the NN energies", pair)
+		if _, ok := foldContext.Energies.NearestNeighbors[pair]; !ok {
+			return 0, fmt.Errorf("bulge: pair %q not in the NearestNeighbors energies", pair)
 		}
 		dG += Stack(start, i1, end, j1, foldContext)
 	}
@@ -579,12 +579,12 @@ func InternalLoop(start, i1, end, j1 int, foldContext FoldContext) (float64, err
 
 	// apply penalty based on the mismatching pairs on either side of the loop
 	pair_left_mm := Pair(foldContext.Seq, start, start+1, end, end-1)
-	en := foldContext.Energies.TERMINAL_MM[pair_left_mm]
+	en := foldContext.Energies.TerminalMismatches[pair_left_mm]
 	d_h, d_s = en.EnthalpyH, en.EntropyS
 	dG += DeltaG(d_h, d_s, foldContext.T)
 
 	pair_right_mm := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
-	en = foldContext.Energies.TERMINAL_MM[pair_right_mm]
+	en = foldContext.Energies.TerminalMismatches[pair_right_mm]
 	d_h, d_s = en.EnthalpyH, en.EntropyS
 	dG += DeltaG(d_h, d_s, foldContext.T)
 
@@ -607,7 +607,7 @@ func InternalLoop(start, i1, end, j1 int, foldContext FoldContext) (float64, err
 //		j1: The index to the left of end
 //	 foldContext: The FoldingContext for this sequence
 //
-// Returns the free energy of the NN pairing
+// Returns the free energy of the NearestNeighbors pairing
 func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 	// if any(x >= len(seq) for x in [start, i1, end, j1]):
 	//    return 0.0
@@ -622,7 +622,7 @@ func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 	for _, x := range []int{start, i1, end, j1} {
 		if x == -1 {
 			// it's a dangling end
-			en := foldContext.Energies.DE[pair]
+			en := foldContext.Energies.DanglingEnds[pair]
 			d_h, d_s := en.EnthalpyH, en.EntropyS
 			return DeltaG(d_h, d_s, foldContext.T)
 		}
@@ -630,18 +630,18 @@ func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 
 	if start > 0 && end < len(foldContext.Seq)-1 {
 		// it's internal
-		en, ok := foldContext.Energies.NN[pair]
+		en, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.InternalMismatches[pair]
 		}
 		d_h, d_s := en.EnthalpyH, en.EntropyS
 		return DeltaG(d_h, d_s, foldContext.T)
 	}
 	if start == 0 && end == len(foldContext.Seq)-1 {
 		// it's terminal
-		en, ok := foldContext.Energies.NN[pair]
+		en, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.InternalMismatches[pair]
 		}
 		d_h, d_s := en.EnthalpyH, en.EntropyS
 		return DeltaG(d_h, d_s, foldContext.T)
@@ -649,15 +649,15 @@ func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 
 	if start > 0 && end == len(foldContext.Seq)-1 {
 		// it's dangling on left
-		en, ok := foldContext.Energies.NN[pair]
+		en, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.InternalMismatches[pair]
 		}
 		d_h, d_s := en.EnthalpyH, en.EntropyS
 		dG := DeltaG(d_h, d_s, foldContext.T)
 
-		pair_de := fmt.Sprintf("%c%c/.%c", foldContext.Seq[start-1], foldContext.Seq[start], foldContext.Seq[end])
-		if en, ok := foldContext.Energies.DE[pair_de]; ok {
+		pairDanglingEnds := fmt.Sprintf("%c%c/.%c", foldContext.Seq[start-1], foldContext.Seq[start], foldContext.Seq[end])
+		if en, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
 			d_h, d_s := en.EnthalpyH, en.EntropyS
 			dG += DeltaG(d_h, d_s, foldContext.T)
 		}
@@ -666,15 +666,15 @@ func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 
 	if start == 0 && end < len(foldContext.Seq)-1 {
 		// it's dangling on right
-		en, ok := foldContext.Energies.NN[pair]
+		en, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.INTERNAL_MM[pair]
+			en = foldContext.Energies.InternalMismatches[pair]
 		}
 		d_h, d_s := en.EnthalpyH, en.EntropyS
 		dG := DeltaG(d_h, d_s, foldContext.T)
 
-		pair_de := fmt.Sprintf(".%c/%c%c", +foldContext.Seq[start], foldContext.Seq[end+1], foldContext.Seq[end])
-		if en, ok := foldContext.Energies.DE[pair_de]; ok {
+		pairDanglingEnds := fmt.Sprintf(".%c/%c%c", +foldContext.Seq[start], foldContext.Seq[end+1], foldContext.Seq[end])
+		if en, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
 			d_h, d_s := en.EnthalpyH, en.EntropyS
 			dG += DeltaG(d_h, d_s, foldContext.T)
 			return dG
@@ -727,7 +727,7 @@ func Hairpin(start, end int, foldContext FoldContext) (float64, error) {
 	}
 
 	// add penalty for a terminal mismatch
-	en, ok := foldContext.Energies.TERMINAL_MM[pair]
+	en, ok := foldContext.Energies.TerminalMismatches[pair]
 	if hairpin_len > 3 && ok {
 		d_h, d_s := en.EnthalpyH, en.EntropyS
 		dG += DeltaG(d_h, d_s, foldContext.T)
@@ -771,7 +771,7 @@ func JacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
 	return d_g_x + 2.44*gas_constant*temp*math.Log(float64(query_len)/float64(known_len))
 }
 
-// Pair Returns a stack representation, a key for the NN maps
+// Pair Returns a stack representation, a key for the NearestNeighbors maps
 // Args:
 //
 //	s: Sequence being folded

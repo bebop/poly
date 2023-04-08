@@ -4,7 +4,7 @@ var RNAComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': '
 
 var RNAMultibranch = MultibranchEnergies{2.5, 0.1, 0.4, 2.0}
 
-var RNA_NN = BPEnergy{
+var RNANearestNeighbors = BPEnergy{
 	"AA/UU": {EnthalpyH: -6.8, EntropyS: -19},
 	"AC/UG": {EnthalpyH: -11.4, EntropyS: -29.7},
 	"AG/UC": {EnthalpyH: -10.5, EntropyS: -27.1},
@@ -23,7 +23,7 @@ var RNA_NN = BPEnergy{
 	"UU/AA": {EnthalpyH: -6.8, EntropyS: -19},
 }
 
-var RNA_INTERNAL_MM = BPEnergy{
+var RNAInternalMismatches = BPEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -266,7 +266,7 @@ var RNA_INTERNAL_MM = BPEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNA_TERMINAL_MM = BPEnergy{
+var RNATerminalMismatches = BPEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -525,7 +525,7 @@ var RNA_TERMINAL_MM = BPEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNA_DE = BPEnergy{
+var RNADanglingEnds = BPEnergy{
 	".A/AA": {EnthalpyH: 0, EntropyS: 0},
 	".A/AC": {EnthalpyH: 0, EntropyS: 0},
 	".A/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -884,14 +884,14 @@ var RNAHairpinLoops = LoopEnergy{
 }
 
 var RNAEnergies = Energies{
-	BulgeLoops:    RNABulgeLoops,
-	Complement:    RNAComplement,
-	DE:            RNA_DE,
-	HairpinLoops:  RNAHairpinLoops,
-	Multibranch:   RNAMultibranch,
-	InternalLoops: RNAInternalLoops,
-	INTERNAL_MM:   RNA_INTERNAL_MM,
-	NN:            RNA_NN,
-	TERMINAL_MM:   RNA_TERMINAL_MM,
-	TriTetraLoops: nil,
+	BulgeLoops:         RNABulgeLoops,
+	Complement:         RNAComplement,
+	DanglingEnds:       RNADanglingEnds,
+	HairpinLoops:       RNAHairpinLoops,
+	Multibranch:        RNAMultibranch,
+	InternalLoops:      RNAInternalLoops,
+	InternalMismatches: RNAInternalMismatches,
+	NearestNeighbors:   RNANearestNeighbors,
+	TerminalMismatches: RNATerminalMismatches,
+	TriTetraLoops:      nil,
 }

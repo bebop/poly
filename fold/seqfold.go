@@ -37,16 +37,16 @@ type LoopEnergy map[int]Energy
 // the folding, it also holds the complement map for the kind of sequence, RNA
 // or DNA
 type Energies struct {
-	BulgeLoops    LoopEnergy
-	Complement    map[byte]byte
-	DE            BPEnergy
-	HairpinLoops  LoopEnergy
-	Multibranch   MultibranchEnergies
-	InternalLoops LoopEnergy
-	INTERNAL_MM   BPEnergy
-	NN            BPEnergy
-	TERMINAL_MM   BPEnergy
-	TriTetraLoops BPEnergy
+	BulgeLoops         LoopEnergy
+	Complement         map[byte]byte
+	DanglingEnds       BPEnergy
+	HairpinLoops       LoopEnergy
+	Multibranch        MultibranchEnergies
+	InternalLoops      LoopEnergy
+	InternalMismatches BPEnergy
+	NearestNeighbors   BPEnergy
+	TerminalMismatches BPEnergy
+	TriTetraLoops      BPEnergy
 }
 
 // Subsequence represent an interval of bases in the sequence that can contain
@@ -129,12 +129,12 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 	seq = strings.ToUpper(seq)
 
 	// figure out whether it's DNA or RNA, choose energy map
-	var emap Energies
+	var energyMap Energies
 	switch {
 	case checks.IsDNA(seq):
-		emap = DNAEnergies
+		energyMap = DNAEnergies
 	case checks.IsRNA(seq):
-		emap = RNAEnergies
+		energyMap = RNAEnergies
 	default:
 		return FoldContext{}, fmt.Errorf("the sequence %s is not RNA or DNA", seq)
 	}
@@ -156,7 +156,7 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 		copy(wCache[j], row)
 	}
 	ret := FoldContext{
-		Energies: emap,
+		Energies: energyMap,
 		Seq:      seq,
 		V:        vCache,
 		W:        wCache,
