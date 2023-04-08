@@ -101,33 +101,33 @@ func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 //
 // Returns the free energy for the subsequence from start to end
 func W(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContext.W[start][end].Equal(StructDefault) {
+	if !foldContext.W[start][end].Equal(DefaultStructure) {
 		return foldContext.W[start][end], nil
 	}
 
 	if end-start < 4 {
-		foldContext.W[start][end] = StructInvalid
+		foldContext.W[start][end] = InvalidStructure
 		return foldContext.W[start][end], nil
 	}
 
 	w1, err := W(start+1, end, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
+		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
 	w2, err := W(start, end-1, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
+		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
 	w3, err := V(start, end, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
+		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
 
-	w4 := StructInvalid
+	w4 := InvalidStructure
 	for k := start + 1; k < end-1; k++ {
 		w4_test, err := Multibranch(start, k, end, foldContext, false)
 		if err != nil {
-			return StructDefault, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
+			return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 		}
 
 		if w4_test.Valid() && w4_test.Energy < w4.Energy {
@@ -153,13 +153,13 @@ func W(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 //
 // Returns the minimum energy folding structure possible between start and end on seq
 func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContext.V[start][end].Equal(StructDefault) {
+	if !foldContext.V[start][end].Equal(DefaultStructure) {
 		return foldContext.V[start][end], nil
 	}
 
 	// the ends must basepair for V(start,end)
 	if foldContext.Energies.Complement[foldContext.Seq[start]] != foldContext.Seq[end] {
-		foldContext.V[start][end] = StructInvalid
+		foldContext.V[start][end] = InvalidStructure
 		return foldContext.V[start][end], nil
 	}
 	// if the basepair is isolated, and the seq large, penalize at 1,600 kcal/mol
@@ -179,9 +179,9 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 	p := Pair(foldContext.Seq, start, start+1, end, end-1)
 	hp, err := Hairpin(start, end, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+		return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 	}
-	e1 := NucleicAcidStructure{Energy: hp, Desc: "HAIRPIN:" + p}
+	e1 := NucleicAcidStructure{Energy: hp, Description: "HAIRPIN:" + p}
 	if end-start == 4 { // small hairpin; 4bp
 		foldContext.V[start][end] = e1
 		foldContext.W[start][end] = e1
@@ -227,7 +227,7 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				// it's an interior loop
 				il, err := InternalLoop(start, i1, end, j1, foldContext)
 				if err != nil {
-					return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+					return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
 				e2_test = il
 				e2_test_type = fmt.Sprintf("INTERIOR_LOOP:%d/%d", i1-start, end-j1)
@@ -242,14 +242,14 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				// it's a bulge on the left side
 				e2_test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
-					return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+					return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
 				e2_test_type = fmt.Sprintf("BULGE:%d", i1-start)
 			case !bulge_left && bulge_right:
 				// it's a bulge on the right side
 				e2_test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
-					return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+					return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
 				e2_test_type = fmt.Sprintf("BULGE:%d", end-j1)
 			default:
@@ -260,21 +260,21 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 			// add V(start', end')
 			tv, err := V(i1, j1, foldContext)
 			if err != nil {
-				return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+				return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 			}
 			e2_test += tv.Energy
 			if e2_test != math.Inf(-1) && e2_test < e2.Energy {
-				e2 = NucleicAcidStructure{Energy: e2_test, Desc: e2_test_type, Inner: []Subsequence{{i1, j1}}}
+				e2 = NucleicAcidStructure{Energy: e2_test, Description: e2_test_type, Inner: []Subsequence{{i1, j1}}}
 			}
 		}
 	}
 
-	e3 := StructInvalid
+	e3 := InvalidStructure
 	if !isolated_outer || start == 0 || end == len(foldContext.Seq)-1 {
 		for k := start + 1; k < end-1; k++ {
 			e3_test, err := Multibranch(start, k, end, foldContext, true)
 			if err != nil {
-				return StructDefault, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
+				return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 			}
 
 			if e3_test.Valid() && e3_test.Energy < e3.Energy {
@@ -380,25 +380,25 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 	if helix {
 		left, err = W(start+1, k, foldContext)
 		if err != nil {
-			return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
 		right, err = W(k+1, end-1, foldContext)
 		if err != nil {
-			return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
 	} else {
 		left, err = W(start, k, foldContext)
 		if err != nil {
-			return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
 		right, err = W(k+1, end, foldContext)
 		if err != nil {
-			return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
 	}
 
 	if !left.Valid() || !right.Valid() {
-		return StructInvalid, nil
+		return InvalidStructure, nil
 	}
 
 	// gather all branches of this multi-branch structure
@@ -408,16 +408,16 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 	// we pull it out and pass all the parameters
 	err = addBranch(left, &branches, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+		return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 	}
 	err = addBranch(right, &branches, foldContext)
 	if err != nil {
-		return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+		return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 	}
 
 	// this isn't multi-branched
 	if len(branches) < 2 {
-		return StructInvalid, nil
+		return InvalidStructure, nil
 	}
 
 	// if there's a helix, start,end counts as well
@@ -486,13 +486,13 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		e_sum += de
 		unpaired += unpaired_right
 		if unpaired_right < 0 {
-			return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired_right < 0", start, end, k)
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired_right < 0", start, end, k)
 		}
 
 		if ij2 != ij { // add energy
 			w, err := W(i2, j2, foldContext)
 			if err != nil {
-				return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
+				return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 			}
 			e_sum += w.Energy
 		}
@@ -500,7 +500,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 	}
 
 	if unpaired < 0 {
-		return StructDefault, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired < 0", start, end, k)
+		return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired < 0", start, end, k)
 	}
 
 	// penalty for unmatched bp and multi-branch
@@ -520,7 +520,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		branches = branches[:len(branches)-1]
 	}
 
-	return NucleicAcidStructure{Energy: e, Desc: fmt.Sprintf("BIFURCATION:%dn/%dh", unpaired, branches_count), Inner: branches}, nil
+	return NucleicAcidStructure{Energy: e, Description: fmt.Sprintf("BIFURCATION:%dn/%dh", unpaired, branches_count), Inner: branches}, nil
 }
 
 // InternalLoop calculates the free energy of an internal loop.
@@ -815,7 +815,7 @@ func Pair(s string, start, i1, end, j1 int) string {
 func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 	// move start,end down-left to start coordinates
 	s := foldContext.W[start][end]
-	if !strings.Contains(s.Desc, "HAIRPIN") {
+	if !strings.Contains(s.Description, "HAIRPIN") {
 		for foldContext.W[start+1][end].Equal(s) {
 			start += 1
 		}
@@ -828,7 +828,7 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 	for {
 		s = foldContext.V[start][end]
 
-		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: s.Energy, Desc: s.Desc, Inner: []Subsequence{{Start: start, End: end}}})
+		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: s.Energy, Description: s.Description, Inner: []Subsequence{{Start: start, End: end}}})
 
 		// it's a hairpin, end of structure
 		if len(s.Inner) == 0 {
@@ -871,7 +871,7 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 //
 // Returns the min free energy structure
 func minStruct(structures ...NucleicAcidStructure) NucleicAcidStructure {
-	minimumStructure := StructInvalid
+	minimumStructure := InvalidStructure
 	for _, str := range structures {
 		if str.Energy != math.Inf(-1) && str.Energy < minimumStructure.Energy {
 			minimumStructure = str

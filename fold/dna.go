@@ -6,7 +6,7 @@ var DNAMultibranch = MultibranchEnergies{A: 2.6, B: 0.2, C: 0.2, D: 2.0}
 
 // The Thermodynamics of DNA Structural Motifs
 // SantaLucia and Hicks, 2004
-var DNANearestNeighbors = BPEnergy{"AA/TT": Energy{EnthalpyH: -7.6, EntropyS: -21.3},
+var DNANearestNeighbors = MatchingBasepairEnergy{"AA/TT": Energy{EnthalpyH: -7.6, EntropyS: -21.3},
 	"AC/TG":    {EnthalpyH: -8.4, EntropyS: -22.4},
 	"AG/TC":    {EnthalpyH: -7.8, EntropyS: -21},
 	"AT/TA":    {EnthalpyH: -7.2, EntropyS: -20.4},
@@ -37,7 +37,7 @@ var DNANearestNeighbors = BPEnergy{"AA/TT": Energy{EnthalpyH: -7.6, EntropyS: -2
 // Allawi & SantaLucia (1998), Biochemistry 37: 2170-2179 *
 // Allawi & SantaLucia (1998), Nucl Acids Res 26: 2694-2701 *
 // Peyret et al. (1999), Biochemistry 38: 3468-3477 *
-var DNAInternalMismatches = BPEnergy{"AA/AT": Energy{EnthalpyH: 4.7, EntropyS: 12.9},
+var DNAInternalMismatches = MatchingBasepairEnergy{"AA/AT": Energy{EnthalpyH: 4.7, EntropyS: 12.9},
 	"AA/CT": {EnthalpyH: 7.6, EntropyS: 20.2},
 	"AA/GT": {EnthalpyH: 3, EntropyS: 7.4},
 	"AA/TA": {EnthalpyH: 1.2, EntropyS: 1.7},
@@ -141,7 +141,7 @@ var DNAInternalMismatches = BPEnergy{"AA/AT": Energy{EnthalpyH: 4.7, EntropyS: 1
 
 // Terminal mismatch table (DNA)
 // SantaLucia & Peyret (2001) Patent Application WO 01/94611
-var DNATerminalMismatches = BPEnergy{
+var DNATerminalMismatches = MatchingBasepairEnergy{
 	"AA/AT": Energy{EnthalpyH: -2.5, EntropyS: -6.3},
 	"AA/CT": {EnthalpyH: -2.7, EntropyS: -7},
 	"AA/GT": {EnthalpyH: -2.4, EntropyS: -5.8},
@@ -243,7 +243,7 @@ var DNATerminalMismatches = BPEnergy{
 // DNA dangling ends
 //
 // Bommarito et al. (2000), Nucl Acids Res 28: 1929-1934
-var DNADanglingEnds = BPEnergy{
+var DNADanglingEnds = MatchingBasepairEnergy{
 	"AA/.T": {EnthalpyH: 0.2, EntropyS: 2.3},
 	"AA/T.": {EnthalpyH: -0.5, EntropyS: -1.1},
 	".A/AT": {EnthalpyH: -0.7, EntropyS: -0.8},
@@ -319,7 +319,7 @@ var DNADanglingEnds = BPEnergy{
 //
 // delta EntropyS was computed using delta G and delta EnthalpyH and is in cal / (K x mol)
 // (versus delta EnthalpyH in kcal / mol)
-var DNATriTetraLoops = BPEnergy{
+var DNATriTetraLoops = MatchingBasepairEnergy{
 	"AGAAT":  {-1.5, 0.0},
 	"AGCAT":  {-1.5, 0.0},
 	"AGGAT":  {-1.5, 0.0},

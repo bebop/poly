@@ -79,7 +79,7 @@ func TestFold(t *testing.T) {
 		found := false
 		foundIJ := fold.Subsequence{7, 41}
 		for _, s := range structs {
-			if strings.Contains(s.Desc, "BIFURCATION") {
+			if strings.Contains(s.Description, "BIFURCATION") {
 				for _, ij := range s.Inner {
 					if ij == foundIJ {
 						found = true

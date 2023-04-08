@@ -8,12 +8,21 @@ import (
 	"github.com/TimothyStiles/poly/checks"
 )
 
-// MultibranchEnergies holds the a, b, c, d in a linear multi-branch energy
-// change function.
-// Inferred from:
-// Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
-// doi: 10.1146/annurev.biophys.32.110601.141800
-// The Thermodynamics of DNA Structural Motifs, SantaLucia and Hicks, 2004
+/*
+MultibranchEnergies holds the a, b, c, d in a linear multi-branch energy
+
+change function.
+
+A - number of helices in the loop
+B - number of unpaired nucleotides in the loop
+C - coxial stacking in the loop
+D - terminal mismatch contributions
+E - base composition of the unpaired nucleotides (probably neglible?)
+Inferred from:
+Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
+doi: 10.1146/annurev.biophys.32.110601.141800
+The Thermodynamics of DNA Structural Motifs, SantaLucia and Hicks, 2004
+*/
 type MultibranchEnergies struct {
 	A, B, C, D float64
 }
@@ -27,8 +36,8 @@ type Energy struct {
 	EntropyS float64
 }
 
-// BPEnergy is the energy of matching base pairs
-type BPEnergy map[string]Energy
+// MatchingBasepairEnergy is the energy of matching base pairs
+type MatchingBasepairEnergy map[string]Energy
 
 // LoopEnergy is a map[int]Energy where the int is the length of the loop
 type LoopEnergy map[int]Energy
@@ -39,14 +48,14 @@ type LoopEnergy map[int]Energy
 type Energies struct {
 	BulgeLoops         LoopEnergy
 	Complement         map[byte]byte
-	DanglingEnds       BPEnergy
+	DanglingEnds       MatchingBasepairEnergy
 	HairpinLoops       LoopEnergy
 	Multibranch        MultibranchEnergies
 	InternalLoops      LoopEnergy
-	InternalMismatches BPEnergy
-	NearestNeighbors   BPEnergy
-	TerminalMismatches BPEnergy
-	TriTetraLoops      BPEnergy
+	InternalMismatches MatchingBasepairEnergy
+	NearestNeighbors   MatchingBasepairEnergy
+	TerminalMismatches MatchingBasepairEnergy
+	TriTetraLoops      MatchingBasepairEnergy
 }
 
 // Subsequence represent an interval of bases in the sequence that can contain
@@ -57,8 +66,8 @@ type Subsequence struct {
 
 // A single structure with a free energy, description, and inward children
 type NucleicAcidStructure struct {
-	// Desc is the description of the NucleicAcidStructure
-	Desc string
+	// Description is the description of the NucleicAcidStructure
+	Description string
 	// Inner is list of inner structure represented as intervals in the
 	// sequence
 	Inner []Subsequence
@@ -87,7 +96,7 @@ func (structure NucleicAcidStructure) String() string {
 	if len(structure.Inner) > 0 {
 		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
 	}
-	return fmt.Sprintf("%4s %4s % 6.2f  %-15s", i, j, structure.Energy, structure.Desc)
+	return fmt.Sprintf("%4s %4s % 6.2f  %-15s", i, j, structure.Energy, structure.Description)
 }
 
 // MultiString returns all the fields as strings, this is useful to output the
@@ -97,20 +106,20 @@ func (structure NucleicAcidStructure) MultiString() (string, string, string, str
 	if len(structure.Inner) > 0 {
 		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
 	}
-	return i, j, fmt.Sprintf("%6.2f", structure.Energy), structure.Desc
+	return i, j, fmt.Sprintf("%6.2f", structure.Energy), structure.Description
 }
 
-// StructDefault is the default (zero value) nucleic acid structure, it used
+// DefaultStructure is the default (zero value) nucleic acid structure, it used
 // mostly to initialize the caches, see FoldingContext
-var StructDefault = NucleicAcidStructure{
-	Desc:   "",
-	Energy: math.Inf(-1),
+var DefaultStructure = NucleicAcidStructure{
+	Description: "",
+	Energy:      math.Inf(-1),
 }
 
-// StructInvalid represent an invalid nucleic acid structure
-var StructInvalid = NucleicAcidStructure{
-	Desc:   "",
-	Energy: math.Inf(1),
+// InvalidStructure represent an invalid nucleic acid structure
+var InvalidStructure = NucleicAcidStructure{
+	Description: "",
+	Energy:      math.Inf(1),
 }
 
 // FoldContext holds the energy caches, energy maps, sequence, and temperature
@@ -146,7 +155,7 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 		row            = make([]NucleicAcidStructure, sequenceLength)
 	)
 	for nucleicAcidIndex := 0; nucleicAcidIndex < sequenceLength; nucleicAcidIndex++ {
-		row[nucleicAcidIndex] = StructDefault
+		row[nucleicAcidIndex] = DefaultStructure
 	}
 	for j := 0; j < sequenceLength; j++ {
 		vCache[j] = make([]NucleicAcidStructure, sequenceLength)

@@ -4,7 +4,7 @@ var RNAComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': '
 
 var RNAMultibranch = MultibranchEnergies{2.5, 0.1, 0.4, 2.0}
 
-var RNANearestNeighbors = BPEnergy{
+var RNANearestNeighbors = MatchingBasepairEnergy{
 	"AA/UU": {EnthalpyH: -6.8, EntropyS: -19},
 	"AC/UG": {EnthalpyH: -11.4, EntropyS: -29.7},
 	"AG/UC": {EnthalpyH: -10.5, EntropyS: -27.1},
@@ -23,7 +23,7 @@ var RNANearestNeighbors = BPEnergy{
 	"UU/AA": {EnthalpyH: -6.8, EntropyS: -19},
 }
 
-var RNAInternalMismatches = BPEnergy{
+var RNAInternalMismatches = MatchingBasepairEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -266,7 +266,7 @@ var RNAInternalMismatches = BPEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNATerminalMismatches = BPEnergy{
+var RNATerminalMismatches = MatchingBasepairEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -525,7 +525,7 @@ var RNATerminalMismatches = BPEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNADanglingEnds = BPEnergy{
+var RNADanglingEnds = MatchingBasepairEnergy{
 	".A/AA": {EnthalpyH: 0, EntropyS: 0},
 	".A/AC": {EnthalpyH: 0, EntropyS: 0},
 	".A/AG": {EnthalpyH: 0, EntropyS: 0},
