@@ -67,9 +67,9 @@ func MinimumFreeEnergy(seq string, temp float64) (float64, error) {
 func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 	maxj := 0
 	for _, structure := range NucleicAcidStructures {
-		for _, ij := range structure.Inner {
-			if ij.End > maxj {
-				maxj = ij.End
+		for _, innerSubsequence := range structure.Inner {
+			if innerSubsequence.End > maxj {
+				maxj = innerSubsequence.End
 			}
 		}
 	}
@@ -80,9 +80,9 @@ func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 	}
 	for _, structure := range NucleicAcidStructures {
 		if len(structure.Inner) == 1 {
-			ij := structure.Inner[0]
-			result[ij.Start] = '('
-			result[ij.End] = ')'
+			innerSubsequence := structure.Inner[0]
+			result[innerSubsequence.Start] = '('
+			result[innerSubsequence.End] = ')'
 		}
 	}
 	return string(result)
@@ -429,7 +429,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 	branches_count := len(branches)
 	unpaired := 0
 	e_sum := 0.0
-	ij := Subsequence{start, end}
+	subsequence := Subsequence{start, end}
 	for index, ij2 := range branches {
 		i2, j2 := ij2.Start, ij2.End
 		ij1 := branches[abs((index-1)%len(branches))]
@@ -446,7 +446,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		de := 0.0
 		if index == len(branches)-1 && !helix {
 			// pass
-		} else if ij3 == ij {
+		} else if ij3 == subsequence {
 			unpaired_left = i2 - j1 - 1
 			unpaired_right = j3 - j2 - 1
 
@@ -458,7 +458,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 					de = min(Stack(i3, -1, j3, j3-1, foldContext), de)
 				}
 			}
-		} else if ij2 == ij {
+		} else if ij2 == subsequence {
 			unpaired_left = j2 - j1 - 1
 			unpaired_right = i3 - i2 - 1
 
@@ -489,7 +489,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired_right < 0", start, end, k)
 		}
 
-		if ij2 != ij { // add energy
+		if ij2 != subsequence { // add energy
 			w, err := W(i2, j2, foldContext)
 			if err != nil {
 				return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
@@ -814,33 +814,33 @@ func Pair(s string, start, i1, end, j1 int) string {
 // Returns a list of NucleicAcidStructure in the final secondary structure
 func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 	// move start,end down-left to start coordinates
-	s := foldContext.W[start][end]
-	if !strings.Contains(s.Description, "HAIRPIN") {
-		for foldContext.W[start+1][end].Equal(s) {
+	structure := foldContext.W[start][end]
+	if !strings.Contains(structure.Description, "HAIRPIN") {
+		for foldContext.W[start+1][end].Equal(structure) {
 			start += 1
 		}
-		for foldContext.W[start][end-1].Equal(s) {
+		for foldContext.W[start][end-1].Equal(structure) {
 			end -= 1
 		}
 	}
 
 	NucleicAcidStructures := []NucleicAcidStructure{}
 	for {
-		s = foldContext.V[start][end]
+		structure = foldContext.V[start][end]
 
-		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: s.Energy, Description: s.Description, Inner: []Subsequence{{Start: start, End: end}}})
+		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: structure.Energy, Description: structure.Description, Inner: []Subsequence{{Start: start, End: end}}})
 
 		// it's a hairpin, end of structure
-		if len(s.Inner) == 0 {
+		if len(structure.Inner) == 0 {
 			// set the energy of everything relative to the hairpin
 			return trackbackEnergy(NucleicAcidStructures)
 		}
 
 		// it's a stack, bulge, etc
 		// there's another single structure beyond this
-		if len(s.Inner) == 1 {
-			start, end = s.Inner[0].Start, s.Inner[0].End
-			// ij = s.IJs[0]
+		if len(structure.Inner) == 1 {
+			start, end = structure.Inner[0].Start, structure.Inner[0].End
+			// subsequence = structure.IJs[0]
 			continue
 		}
 
@@ -848,7 +848,7 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 		e_sum := 0.0
 		NucleicAcidStructures = trackbackEnergy(NucleicAcidStructures)
 		branches := []NucleicAcidStructure{}
-		for _, ij1 := range s.Inner {
+		for _, ij1 := range structure.Inner {
 			i1, j1 := ij1.Start, ij1.End
 			tb := Traceback(i1, j1, foldContext)
 			if len(tb) > 0 && len(tb[0].Inner) > 0 {
