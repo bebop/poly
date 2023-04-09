@@ -18,7 +18,7 @@ func TestFold(t *testing.T) {
 		seq_dg, err := fold.MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.InDelta(t, seq_dg, foldContext.W[0][len(seq)-1].Energy, 1)
+		assert.InDelta(t, seq_dg, foldContextUnpairedMinimumFreeEnergyW([0][len(seq)-1].Energy, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos
@@ -171,7 +171,7 @@ func TestFold(t *testing.T) {
 		foldContext, err := fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err := fold.W(i, j, foldContext)
+		struc, err := fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -3.8, 0.2)
 
@@ -182,7 +182,7 @@ func TestFold(t *testing.T) {
 		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.W(i, j, foldContext)
+		struc, err = fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -6.4, 0.2)
 
@@ -193,7 +193,7 @@ func TestFold(t *testing.T) {
 		foldContext, err = fold.NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.W(i, j, foldContext)
+		struc, err = fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -4.2, 0.2)
 	})

@@ -31,7 +31,7 @@ var DNANearestNeighbors = MatchingBasepairEnergy{"AA/TT": Energy{EnthalpyH: -7.6
 	"sym":      {EnthalpyH: 0, EntropyS: -1.4},
 	"tini":     {EnthalpyH: 0.2, EntropyS: -5.7}}
 
-// Internal mismatch table (DNA)
+// DNAInternalMismatches is an Internal mismatch table (DNA)
 // Allawi & SantaLucia (1997), Biochemistry 36: 10581-10594
 // Allawi & SantaLucia (1998), Biochemistry 37: 9435-9444
 // Allawi & SantaLucia (1998), Biochemistry 37: 2170-2179 *
@@ -139,7 +139,7 @@ var DNAInternalMismatches = MatchingBasepairEnergy{"AA/AT": Energy{EnthalpyH: 4.
 	"TT/TA": {EnthalpyH: -2.7, EntropyS: -10.8},
 }
 
-// Terminal mismatch table (DNA)
+// DNATerminalMismatches is a terminal mismatch table for DNA found at terminating ends of a structure
 // SantaLucia & Peyret (2001) Patent Application WO 01/94611
 var DNATerminalMismatches = MatchingBasepairEnergy{
 	"AA/AT": Energy{EnthalpyH: -2.5, EntropyS: -6.3},

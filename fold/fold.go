@@ -15,7 +15,7 @@ import (
 // https://www.ncbi.nlm.nih.gov/pmc/articles/PMC326673/pdf/nar00394-0137.pdf
 //
 // If the sequence is 50 or more bp long, "isolated" matching bp
-// are ignored in V(start,end). This is based on an approach described in:
+// are ignored in PairedMinimumFreeEnergyV(start,end). This is based on an approach described in:
 // Mathews, Sabina, Zuker and Turner, 1999
 // https://www.ncbi.nlm.nih.gov/pubmed/10329189
 // Args:
@@ -100,25 +100,25 @@ func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 //	 foldContext: The FoldContext for this sequence
 //
 // Returns the free energy for the subsequence from start to end
-func W(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContext.W[start][end].Equal(DefaultStructure) {
-		return foldContext.W[start][end], nil
+func UnpairedMinimumFreeEnergyW(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
+	if !foldContextUnpairedMinimumFreeEnergyW([start][end].Equal(DefaultStructure) {
+		return foldContextUnpairedMinimumFreeEnergyW([start][end], nil
 	}
 
 	if end-start < 4 {
-		foldContext.W[start][end] = InvalidStructure
-		return foldContext.W[start][end], nil
+		foldContextUnpairedMinimumFreeEnergyW([start][end] = InvalidStructure
+		return foldContextUnpairedMinimumFreeEnergyW([start][end], nil
 	}
 
-	w1, err := W(start+1, end, foldContext)
+	w1, err := UnpairedMinimumFreeEnergyW(start+1, end, foldContext)
 	if err != nil {
 		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
-	w2, err := W(start, end-1, foldContext)
+	w2, err := UnpairedMinimumFreeEnergyW(start, end-1, foldContext)
 	if err != nil {
 		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
-	w3, err := V(start, end, foldContext)
+	w3, err := PairedMinimumFreeEnergyV(start, end, foldContext)
 	if err != nil {
 		return DefaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
@@ -135,8 +135,8 @@ func W(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 		}
 	}
 
-	wret := minStruct(w1, w2, w3, w4)
-	foldContext.W[start][end] = wret
+	wret := minimumStructure(w1, w2, w3, w4)
+	foldContextUnpairedMinimumFreeEnergyW([start][end] = wret
 	return wret, nil
 }
 
@@ -152,40 +152,40 @@ func W(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 //	 foldContext: The FoldingContext for this sequence
 //
 // Returns the minimum energy folding structure possible between start and end on seq
-func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContext.V[start][end].Equal(DefaultStructure) {
-		return foldContext.V[start][end], nil
+func PairedMinimumFreeEnergyV(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
+	if !foldContextPairedMinimumFreeEnergyV[start][end].Equal(DefaultStructure) {
+		return foldContextPairedMinimumFreeEnergyV[start][end], nil
 	}
 
-	// the ends must basepair for V(start,end)
+	// the ends must basepair for PairedMinimumFreeEnergyV(start,end)
 	if foldContext.Energies.Complement[foldContext.Seq[start]] != foldContext.Seq[end] {
-		foldContext.V[start][end] = InvalidStructure
-		return foldContext.V[start][end], nil
+		foldContextPairedMinimumFreeEnergyV[start][end] = InvalidStructure
+		return foldContextPairedMinimumFreeEnergyV[start][end], nil
 	}
 	// if the basepair is isolated, and the seq large, penalize at 1,600 kcal/mol
 	// heuristic for speeding this up
 	// from https://www.ncbi.nlm.nih.gov/pubmed/10329189
-	isolated_outer := true
+	isolatedOuter := true
 	if start > 0 && end < len(foldContext.Seq)-1 {
-		isolated_outer = foldContext.Energies.Complement[foldContext.Seq[start-1]] != foldContext.Seq[end+1]
+		isolatedOuter = foldContext.Energies.Complement[foldContext.Seq[start-1]] != foldContext.Seq[end+1]
 	}
-	isolated_inner := foldContext.Energies.Complement[foldContext.Seq[start+1]] != foldContext.Seq[end-1]
+	isolatedInner := foldContext.Energies.Complement[foldContext.Seq[start+1]] != foldContext.Seq[end-1]
 
-	if isolated_outer && isolated_inner {
-		foldContext.V[start][end] = NucleicAcidStructure{Energy: 1600}
-		return foldContext.V[start][end], nil
+	if isolatedOuter && isolatedInner {
+		foldContextPairedMinimumFreeEnergyV[start][end] = NucleicAcidStructure{Energy: 1600}
+		return foldContextPairedMinimumFreeEnergyV[start][end], nil
 	}
 
-	p := Pair(foldContext.Seq, start, start+1, end, end-1)
-	hp, err := Hairpin(start, end, foldContext)
+	pair := Pair(foldContext.Seq, start, start+1, end, end-1)
+	hairpin, err := Hairpin(start, end, foldContext)
 	if err != nil {
 		return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 	}
-	e1 := NucleicAcidStructure{Energy: hp, Description: "HAIRPIN:" + p}
+	e1 := NucleicAcidStructure{Energy: hairpin, Description: "HAIRPIN:" + pair}
 	if end-start == 4 { // small hairpin; 4bp
-		foldContext.V[start][end] = e1
-		foldContext.W[start][end] = e1
-		return foldContext.V[start][end], nil
+		foldContextPairedMinimumFreeEnergyV[start][end] = e1
+		foldContextUnpairedMinimumFreeEnergyW([start][end] = e1
+		return foldContextPairedMinimumFreeEnergyV[start][end], nil
 	}
 
 	n := len(foldContext.Seq)
@@ -197,16 +197,16 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				continue
 			}
 
-			p := Pair(foldContext.Seq, start, i1, end, j1)
-			pair_left := Pair(foldContext.Seq, start, start+1, end, end-1)
-			pair_right := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
-			_, plin := foldContext.Energies.NearestNeighbors[pair_left]
-			_, prin := foldContext.Energies.NearestNeighbors[pair_right]
-			pair_inner := plin || prin
+			pair := Pair(foldContext.Seq, start, i1, end, j1)
+			pairLeft := Pair(foldContext.Seq, start, start+1, end, end-1)
+			pairRight := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
+			_, pairLeftInner := foldContext.Energies.NearestNeighbors[pairLeft]
+			_, pairRightInner := foldContext.Energies.NearestNeighbors[pairRight]
+			pairInner := pairLeftInner || pairRightInner
 
-			stck := i1 == start+1 && j1 == end-1
-			bulge_left := i1 > start+1
-			bulge_right := j1 < end-1
+			isStack := i1 == start+1 && j1 == end-1
+			bulgeLeft := i1 > start+1
+			bulgeRight := j1 < end-1
 
 			var (
 				e2_test      float64
@@ -214,16 +214,16 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				err          error
 			)
 			switch {
-			case stck:
+			case isStack:
 				// it's a neighboring/stacking pair in a helix
 				e2_test = Stack(start, i1, end, j1, foldContext)
-				e2_test_type = fmt.Sprintf("STACK:%s", p)
+				e2_test_type = fmt.Sprintf("STACK:%s", pair)
 
 				if start > 0 && end == n-1 || start == 0 && end < n-1 {
 					// there's a dangling end
-					e2_test_type = fmt.Sprintf("STACKDanglingEnds:%s", p)
+					e2_test_type = fmt.Sprintf("STACKDanglingEnds:%s", pair)
 				}
-			case bulge_left && bulge_right && !pair_inner:
+			case bulgeLeft && bulgeRight && !pairInner:
 				// it's an interior loop
 				il, err := InternalLoop(start, i1, end, j1, foldContext)
 				if err != nil {
@@ -233,19 +233,19 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				e2_test_type = fmt.Sprintf("INTERIOR_LOOP:%d/%d", i1-start, end-j1)
 
 				if i1-start == 2 && end-j1 == 2 {
-					loop_left := foldContext.Seq[start : i1+1]
-					loop_right := foldContext.Seq[j1 : end+1]
+					loopLeftIndex := foldContext.Seq[start : i1+1]
+					loopRightIndex := foldContext.Seq[j1 : end+1]
 					// technically an interior loop of 1. really 1bp mismatch
-					e2_test_type = fmt.Sprintf("STACK:%s/%s", loop_left, transform.Reverse(loop_right))
+					e2_test_type = fmt.Sprintf("STACK:%s/%s", loopLeftIndex, transform.Reverse(loopRightIndex))
 				}
-			case bulge_left && !bulge_right:
+			case bulgeLeft && !bulgeRight:
 				// it's a bulge on the left side
 				e2_test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
 					return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
 				e2_test_type = fmt.Sprintf("BULGE:%d", i1-start)
-			case !bulge_left && bulge_right:
+			case !bulgeLeft && bulgeRight:
 				// it's a bulge on the right side
 				e2_test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
@@ -257,8 +257,8 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 				continue
 			}
 
-			// add V(start', end')
-			tv, err := V(i1, j1, foldContext)
+			// add PairedMinimumFreeEnergyV(start', end')
+			tv, err := PairedMinimumFreeEnergyV(i1, j1, foldContext)
 			if err != nil {
 				return DefaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 			}
@@ -270,7 +270,7 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 	}
 
 	e3 := InvalidStructure
-	if !isolated_outer || start == 0 || end == len(foldContext.Seq)-1 {
+	if !isolatedOuter || start == 0 || end == len(foldContext.Seq)-1 {
 		for k := start + 1; k < end-1; k++ {
 			e3_test, err := Multibranch(start, k, end, foldContext, true)
 			if err != nil {
@@ -282,8 +282,8 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 			}
 		}
 	}
-	e := minStruct(e1, e2, e3)
-	foldContext.V[start][end] = e
+	e := minimumStructure(e1, e2, e3)
+	foldContextPairedMinimumFreeEnergyV[start][end] = e
 	return e, nil
 }
 
@@ -299,26 +299,26 @@ func V(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
 //
 // Returns the increment in free energy from the bulge
 func Bulge(start, i1, end, j1 int, foldContext FoldContext) (float64, error) {
-	loop_len := max(i1-start-1, end-j1-1)
-	if loop_len <= 0 {
-		return 0, fmt.Errorf("bulge: the length of the bulge at (%d, %d) is %d", start, end, loop_len)
+	loopLength := max(i1-start-1, end-j1-1)
+	if loopLength <= 0 {
+		return 0, fmt.Errorf("bulge: the length of the bulge at (%d, %d) is %d", start, end, loopLength)
 	}
 
 	var dG float64
 
 	// add penalty based on size
-	if en, ok := foldContext.Energies.BulgeLoops[loop_len]; ok {
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG = DeltaG(d_h, d_s, foldContext.T)
+	if energy, ok := foldContext.Energies.BulgeLoops[loopLength]; ok {
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG = DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	} else {
 		// it's too large for pre-calculated list, extrapolate
-		en := foldContext.Energies.BulgeLoops[30]
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG = DeltaG(d_h, d_s, foldContext.T)
-		dG = JacobsonStockmayer(loop_len, 30, dG, foldContext.T)
+		energy := foldContext.Energies.BulgeLoops[30]
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG = DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
+		dG = JacobsonStockmayer(loopLength, 30, dG, foldContext.T)
 	}
 
-	if loop_len == 1 {
+	if loopLength == 1 {
 		// if len 1, include the delta G of intervening NearestNeighbors (SantaLucia 2004)
 		pair := Pair(foldContext.Seq, start, i1, end, j1)
 		if _, ok := foldContext.Energies.NearestNeighbors[pair]; !ok {
@@ -345,12 +345,12 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, foldCont
 		*branches = append(*branches, structure.Inner[0])
 		return nil
 	}
-	for _, subsq := range structure.Inner {
-		str, err := W(subsq.Start, subsq.End, foldContext)
+	for _, inner := range structure.Inner {
+		structure, err := UnpairedMinimumFreeEnergyW(inner.Start, inner.End, foldContext)
 		if err != nil {
 			return err
 		}
-		err = addBranch(str, branches, foldContext)
+		err = addBranch(structure, branches, foldContext)
 		if err != nil {
 			return err
 		}
@@ -369,7 +369,7 @@ func addBranch(structure NucleicAcidStructure, branches *[]Subsequence, foldCont
 //		end: The right ending index
 //	 foldContext: The FoldingContext for this sequence
 //		helix: Whether this Multibranch is enclosed by a helix
-//		helix: Whether V(start, end) bond with one another in a helix
+//		helix: Whether PairedMinimumFreeEnergyV(start, end) bond with one another in a helix
 //
 // Returns a multi-branch structure
 func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (NucleicAcidStructure, error) {
@@ -378,20 +378,20 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		err         error
 	)
 	if helix {
-		left, err = W(start+1, k, foldContext)
+		left, err = UnpairedMinimumFreeEnergyW(start+1, k, foldContext)
 		if err != nil {
 			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
-		right, err = W(k+1, end-1, foldContext)
+		right, err = UnpairedMinimumFreeEnergyW(k+1, end-1, foldContext)
 		if err != nil {
 			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
 	} else {
-		left, err = W(start, k, foldContext)
+		left, err = UnpairedMinimumFreeEnergyW(start, k, foldContext)
 		if err != nil {
 			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
-		right, err = W(k+1, end, foldContext)
+		right, err = UnpairedMinimumFreeEnergyW(k+1, end, foldContext)
 		if err != nil {
 			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 		}
@@ -426,9 +426,9 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 	}
 
 	// count up unpaired bp and asymmetry
-	branches_count := len(branches)
+	branchCount := len(branches)
 	unpaired := 0
-	e_sum := 0.0
+	summedEnergy := 0.0
 	subsequence := Subsequence{start, end}
 	for index, ij2 := range branches {
 		i2, j2 := ij2.Start, ij2.End
@@ -441,60 +441,60 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		// of the helix as though it was a dangling end
 		// if there's only one bp, it goes to whichever
 		// helix (this or the next) has the more favorable energy
-		unpaired_left := 0
-		unpaired_right := 0
-		de := 0.0
+		unpairedLeft := 0
+		unpairedRight := 0
+		danglingEnergy := 0.0
 		if index == len(branches)-1 && !helix {
 			// pass
 		} else if ij3 == subsequence {
-			unpaired_left = i2 - j1 - 1
-			unpaired_right = j3 - j2 - 1
+			unpairedLeft = i2 - j1 - 1
+			unpairedRight = j3 - j2 - 1
 
-			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, foldContext)
-			} else if unpaired_right != 0 {
-				de = Stack(-1, i2, j2+1, j2, foldContext)
-				if unpaired_right == 1 {
-					de = min(Stack(i3, -1, j3, j3-1, foldContext), de)
+			if unpairedLeft != 0 && unpairedRight != 0 {
+				danglingEnergy = Stack(i2-1, i2, j2+1, j2, foldContext)
+			} else if unpairedRight != 0 {
+				danglingEnergy = Stack(-1, i2, j2+1, j2, foldContext)
+				if unpairedRight == 1 {
+					danglingEnergy = min(Stack(i3, -1, j3, j3-1, foldContext), danglingEnergy)
 				}
 			}
 		} else if ij2 == subsequence {
-			unpaired_left = j2 - j1 - 1
-			unpaired_right = i3 - i2 - 1
+			unpairedLeft = j2 - j1 - 1
+			unpairedRight = i3 - i2 - 1
 
-			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, foldContext)
-			} else if unpaired_right != 0 {
-				de = Stack(i2, i2+1, j2, -1, foldContext)
-				if unpaired_right == 1 {
-					de = min(Stack(i3-1, i3, -1, j3, foldContext), de)
+			if unpairedLeft != 0 && unpairedRight != 0 {
+				danglingEnergy = Stack(i2-1, i2, j2+1, j2, foldContext)
+			} else if unpairedRight != 0 {
+				danglingEnergy = Stack(i2, i2+1, j2, -1, foldContext)
+				if unpairedRight == 1 {
+					danglingEnergy = min(Stack(i3-1, i3, -1, j3, foldContext), danglingEnergy)
 				}
 			}
 		} else {
-			unpaired_left = i2 - j1 - 1
-			unpaired_right = i3 - j2 - 1
+			unpairedLeft = i2 - j1 - 1
+			unpairedRight = i3 - j2 - 1
 
-			if unpaired_left != 0 && unpaired_right != 0 {
-				de = Stack(i2-1, i2, j2+1, j2, foldContext)
-			} else if unpaired_right != 0 {
-				de = Stack(-1, i2, j2+1, j2, foldContext)
-				if unpaired_right == 1 {
-					de = min(Stack(i2-1, i2, j2+1, j2, foldContext), de)
+			if unpairedLeft != 0 && unpairedRight != 0 {
+				danglingEnergy = Stack(i2-1, i2, j2+1, j2, foldContext)
+			} else if unpairedRight != 0 {
+				danglingEnergy = Stack(-1, i2, j2+1, j2, foldContext)
+				if unpairedRight == 1 {
+					danglingEnergy = min(Stack(i2-1, i2, j2+1, j2, foldContext), danglingEnergy)
 				}
 			}
 		}
-		e_sum += de
-		unpaired += unpaired_right
-		if unpaired_right < 0 {
-			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpaired_right < 0", start, end, k)
+		summedEnergy += danglingEnergy
+		unpaired += unpairedRight
+		if unpairedRight < 0 {
+			return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): unpairedRight < 0", start, end, k)
 		}
 
 		if ij2 != subsequence { // add energy
-			w, err := W(i2, j2, foldContext)
+			w, err := UnpairedMinimumFreeEnergyW(i2, j2, foldContext)
 			if err != nil {
 				return DefaultStructure, fmt.Errorf("Multibranch: subsequence (%d, %d, %d): %w", start, end, k, err)
 			}
-			e_sum += w.Energy
+			summedEnergy += w.Energy
 		}
 
 	}
@@ -505,14 +505,14 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 
 	// penalty for unmatched bp and multi-branch
 	a, b, c, d := foldContext.Energies.Multibranch.A, foldContext.Energies.Multibranch.B, foldContext.Energies.Multibranch.C, foldContext.Energies.Multibranch.D
-	e_Multibranch := a + b*float64(len(branches)) + c*float64(unpaired)
+	multibranchEnergy := a + b*float64(len(branches)) + c*float64(unpaired)
 
 	if unpaired == 0 {
-		e_Multibranch = a + d
+		multibranchEnergy = a + d
 	}
 
 	// energy of min-energy neighbors
-	e := e_Multibranch + e_sum
+	e := multibranchEnergy + summedEnergy
 
 	// pointer to next structures
 	if helix {
@@ -520,7 +520,7 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 		branches = branches[:len(branches)-1]
 	}
 
-	return NucleicAcidStructure{Energy: e, Description: fmt.Sprintf("BIFURCATION:%dn/%dh", unpaired, branches_count), Inner: branches}, nil
+	return NucleicAcidStructure{Energy: e, Description: fmt.Sprintf("BIFURCATION:%dn/%dh", unpaired, branchCount), Inner: branches}, nil
 }
 
 // InternalLoop calculates the free energy of an internal loop.
@@ -542,51 +542,51 @@ func Multibranch(start, k, end int, foldContext FoldContext, helix bool) (Nuclei
 //
 // Returns the free energy associated with the internal loop
 func InternalLoop(start, i1, end, j1 int, foldContext FoldContext) (float64, error) {
-	loop_left := i1 - start - 1
-	loop_right := end - j1 - 1
-	loop_len := loop_left + loop_right
+	loopLeftIndex := i1 - start - 1
+	loopRightIndex := end - j1 - 1
+	loopLength := loopLeftIndex + loopRightIndex
 
-	if loop_left < 1 {
+	if loopLeftIndex < 1 {
 		return 0, fmt.Errorf("internal loop: subsequence (%d, %d, %d, %d): missing left part of the loop", start, i1, end, j1)
 
 	}
-	if loop_right < 1 {
+	if loopRightIndex < 1 {
 		return 0, fmt.Errorf("internal loop: subsequence (%d, %d, %d, %d): missing right part of the loop", start, i1, end, j1)
 	}
 
 	// single bp mismatch, sum up the two single mismatch pairs
-	if loop_left == 1 && loop_right == 1 {
-		mm_left := Stack(start, i1, end, j1, foldContext)
-		mm_right := Stack(i1-1, i1, j1+1, j1, foldContext)
-		return mm_left + mm_right, nil
+	if loopLeftIndex == 1 && loopRightIndex == 1 {
+		mismatchLeftEnergy := Stack(start, i1, end, j1, foldContext)
+		mismatchRightEnergy := Stack(i1-1, i1, j1+1, j1, foldContext)
+		return mismatchLeftEnergy + mismatchRightEnergy, nil
 	}
-	var d_h, d_s, dG float64
+	var enthalpyHDifference, entropySDifference, dG float64
 	// apply a penalty based on loop size
-	if en, ok := foldContext.Energies.InternalLoops[loop_len]; ok {
-		d_h, d_s = en.EnthalpyH, en.EntropyS
-		dG = DeltaG(d_h, d_s, foldContext.T)
+	if energy, ok := foldContext.Energies.InternalLoops[loopLength]; ok {
+		enthalpyHDifference, entropySDifference = energy.EnthalpyH, energy.EntropyS
+		dG = DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	} else {
 		// it's too large an internal loop, extrapolate
-		en := foldContext.Energies.InternalLoops[30]
-		d_h, d_s = en.EnthalpyH, en.EntropyS
-		dG = DeltaG(d_h, d_s, foldContext.T)
-		dG = JacobsonStockmayer(loop_len, 30, dG, foldContext.T)
+		energy := foldContext.Energies.InternalLoops[30]
+		enthalpyHDifference, entropySDifference = energy.EnthalpyH, energy.EntropyS
+		dG = DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
+		dG = JacobsonStockmayer(loopLength, 30, dG, foldContext.T)
 	}
 
 	// apply an asymmetry penalty
-	loop_asymmetry := math.Abs(float64(loop_left - loop_right))
-	dG += 0.3 * loop_asymmetry
+	loopAsymmetry := math.Abs(float64(loopLeftIndex - loopRightIndex))
+	dG += 0.3 * loopAsymmetry
 
 	// apply penalty based on the mismatching pairs on either side of the loop
-	pair_left_mm := Pair(foldContext.Seq, start, start+1, end, end-1)
-	en := foldContext.Energies.TerminalMismatches[pair_left_mm]
-	d_h, d_s = en.EnthalpyH, en.EntropyS
-	dG += DeltaG(d_h, d_s, foldContext.T)
+	pairedMismatchLeftEnergy := Pair(foldContext.Seq, start, start+1, end, end-1)
+	energy := foldContext.Energies.TerminalMismatches[pairedMismatchLeftEnergy]
+	enthalpyHDifference, entropySDifference = energy.EnthalpyH, energy.EntropyS
+	dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 
-	pair_right_mm := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
-	en = foldContext.Energies.TerminalMismatches[pair_right_mm]
-	d_h, d_s = en.EnthalpyH, en.EntropyS
-	dG += DeltaG(d_h, d_s, foldContext.T)
+	pairedMismatchRightEnergy := Pair(foldContext.Seq, i1-1, i1, j1+1, j1)
+	energy = foldContext.Energies.TerminalMismatches[pairedMismatchRightEnergy]
+	enthalpyHDifference, entropySDifference = energy.EnthalpyH, energy.EntropyS
+	dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 
 	return dG, nil
 }
@@ -622,61 +622,61 @@ func Stack(start, i1, end, j1 int, foldContext FoldContext) float64 {
 	for _, x := range []int{start, i1, end, j1} {
 		if x == -1 {
 			// it's a dangling end
-			en := foldContext.Energies.DanglingEnds[pair]
-			d_h, d_s := en.EnthalpyH, en.EntropyS
-			return DeltaG(d_h, d_s, foldContext.T)
+			energy := foldContext.Energies.DanglingEnds[pair]
+			enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+			return DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 		}
 	}
 
 	if start > 0 && end < len(foldContext.Seq)-1 {
 		// it's internal
-		en, ok := foldContext.Energies.NearestNeighbors[pair]
+		energy, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.InternalMismatches[pair]
+			energy = foldContext.Energies.InternalMismatches[pair]
 		}
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		return DeltaG(d_h, d_s, foldContext.T)
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		return DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	}
 	if start == 0 && end == len(foldContext.Seq)-1 {
 		// it's terminal
-		en, ok := foldContext.Energies.NearestNeighbors[pair]
+		energy, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.InternalMismatches[pair]
+			energy = foldContext.Energies.InternalMismatches[pair]
 		}
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		return DeltaG(d_h, d_s, foldContext.T)
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		return DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	}
 
 	if start > 0 && end == len(foldContext.Seq)-1 {
 		// it's dangling on left
-		en, ok := foldContext.Energies.NearestNeighbors[pair]
+		energy, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.InternalMismatches[pair]
+			energy = foldContext.Energies.InternalMismatches[pair]
 		}
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG := DeltaG(d_h, d_s, foldContext.T)
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG := DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 
 		pairDanglingEnds := fmt.Sprintf("%c%c/.%c", foldContext.Seq[start-1], foldContext.Seq[start], foldContext.Seq[end])
-		if en, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
-			d_h, d_s := en.EnthalpyH, en.EntropyS
-			dG += DeltaG(d_h, d_s, foldContext.T)
+		if energy, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
+			enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+			dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 		}
 		return dG
 	}
 
 	if start == 0 && end < len(foldContext.Seq)-1 {
 		// it's dangling on right
-		en, ok := foldContext.Energies.NearestNeighbors[pair]
+		energy, ok := foldContext.Energies.NearestNeighbors[pair]
 		if !ok {
-			en = foldContext.Energies.InternalMismatches[pair]
+			energy = foldContext.Energies.InternalMismatches[pair]
 		}
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG := DeltaG(d_h, d_s, foldContext.T)
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG := DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 
 		pairDanglingEnds := fmt.Sprintf(".%c/%c%c", +foldContext.Seq[start], foldContext.Seq[end+1], foldContext.Seq[end])
-		if en, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
-			d_h, d_s := en.EnthalpyH, en.EntropyS
-			dG += DeltaG(d_h, d_s, foldContext.T)
+		if energy, ok := foldContext.Energies.DanglingEnds[pairDanglingEnds]; ok {
+			enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+			dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 			return dG
 		}
 	}
@@ -707,30 +707,30 @@ func Hairpin(start, end int, foldContext FoldContext) (float64, error) {
 
 	dG := 0.0
 	if foldContext.Energies.TriTetraLoops != nil {
-		if en, ok := foldContext.Energies.TriTetraLoops[hairpinSeq]; ok {
+		if energy, ok := foldContext.Energies.TriTetraLoops[hairpinSeq]; ok {
 			// it's a pre-known hairpin with known value
-			d_h, d_s := en.EnthalpyH, en.EntropyS
-			dG = DeltaG(d_h, d_s, foldContext.T)
+			enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+			dG = DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 		}
 	}
 
 	// add penalty based on size
-	if en, ok := foldContext.Energies.HairpinLoops[hairpin_len]; ok {
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG += DeltaG(d_h, d_s, foldContext.T)
+	if energy, ok := foldContext.Energies.HairpinLoops[hairpin_len]; ok {
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	} else {
 		// it's too large, extrapolate
-		en := foldContext.Energies.HairpinLoops[30]
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		d_g_inc := DeltaG(d_h, d_s, foldContext.T)
+		energy := foldContext.Energies.HairpinLoops[30]
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		d_g_inc := DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 		dG += JacobsonStockmayer(hairpin_len, 30, d_g_inc, foldContext.T)
 	}
 
 	// add penalty for a terminal mismatch
-	en, ok := foldContext.Energies.TerminalMismatches[pair]
+	energy, ok := foldContext.Energies.TerminalMismatches[pair]
 	if hairpin_len > 3 && ok {
-		d_h, d_s := en.EnthalpyH, en.EntropyS
-		dG += DeltaG(d_h, d_s, foldContext.T)
+		enthalpyHDifference, entropySDifference := energy.EnthalpyH, energy.EntropyS
+		dG += DeltaG(enthalpyHDifference, entropySDifference, foldContext.T)
 	}
 
 	// add penalty if length 3 and AT closing, formula 8 from SantaLucia, 2004
@@ -744,13 +744,13 @@ func Hairpin(start, end int, foldContext FoldContext) (float64, error) {
 // Find the free energy given delta h, s and temp
 // Args:
 //
-//	d_h: The enthalpy increment in kcal / mol
-//	d_s: The entropy increment in cal / mol
+//	enthalpyHDifference: The enthalpy increment in kcal / mol
+//	entropySDifference: The entropy increment in cal / mol
 //	temp: The temperature in Kelvin
 //
 // Returns the free energy increment in kcal / (mol x K)
-func DeltaG(d_h, d_s, temp float64) float64 {
-	return d_h - temp*(d_s/1000.0)
+func DeltaG(enthalpyHDifference, entropySDifference, temp float64) float64 {
+	return enthalpyHDifference - temp*(entropySDifference/1000.0)
 }
 
 // Estimate the free energy of length query_len based on one of length known_len.
@@ -767,8 +767,8 @@ func DeltaG(d_h, d_s, temp float64) float64 {
 //
 // Returns the free energy for a structure of length query_len
 func JacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
-	gas_constant := 1.9872e-3
-	return d_g_x + 2.44*gas_constant*temp*math.Log(float64(query_len)/float64(known_len))
+	gasConstant := 1.9872e-3
+	return d_g_x + 2.44*gasConstant*temp*math.Log(float64(query_len)/float64(known_len))
 }
 
 // Pair Returns a stack representation, a key for the NearestNeighbors maps
@@ -799,11 +799,11 @@ func Pair(s string, start, i1, end, j1 int) string {
 	return string(ret)
 }
 
-// Traceback thru the V(start,end) and W(start,end) caches to find the structure
-// For each step, get to the lowest energy W(start,end) within that block
-// Store the structure in W(start,end)
+// Traceback thru the PairedMinimumFreeEnergyV(start,end) and UnpairedMinimumFreeEnergyW(start,end) caches to find the structure
+// For each step, get to the lowest energy UnpairedMinimumFreeEnergyW(start,end) within that block
+// Store the structure in UnpairedMinimumFreeEnergyW(start,end)
 // Inc start and end
-// If the next structure is viable according to V(start,end), store as well
+// If the next structure is viable according to PairedMinimumFreeEnergyV(start,end), store as well
 // Repeat
 // Args:
 //
@@ -814,19 +814,19 @@ func Pair(s string, start, i1, end, j1 int) string {
 // Returns a list of NucleicAcidStructure in the final secondary structure
 func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 	// move start,end down-left to start coordinates
-	structure := foldContext.W[start][end]
+	structure := foldContextUnpairedMinimumFreeEnergyW([start][end]
 	if !strings.Contains(structure.Description, "HAIRPIN") {
-		for foldContext.W[start+1][end].Equal(structure) {
+		for foldContextUnpairedMinimumFreeEnergyW([start+1][end].Equal(structure) {
 			start += 1
 		}
-		for foldContext.W[start][end-1].Equal(structure) {
+		for foldContextUnpairedMinimumFreeEnergyW([start][end-1].Equal(structure) {
 			end -= 1
 		}
 	}
 
 	NucleicAcidStructures := []NucleicAcidStructure{}
 	for {
-		structure = foldContext.V[start][end]
+		structure = foldContextPairedMinimumFreeEnergyV[start][end]
 
 		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: structure.Energy, Description: structure.Description, Inner: []Subsequence{{Start: start, End: end}}})
 
@@ -845,7 +845,7 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 		}
 
 		// it's a Multibranch
-		e_sum := 0.0
+		summedEnergy := 0.0
 		NucleicAcidStructures = trackbackEnergy(NucleicAcidStructures)
 		branches := []NucleicAcidStructure{}
 		for _, ij1 := range structure.Inner {
@@ -854,12 +854,12 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 			if len(tb) > 0 && len(tb[0].Inner) > 0 {
 				ij2 := tb[0].Inner[0]
 				i2, j2 := ij2.Start, ij2.End
-				e_sum += foldContext.W[i2][j2].Energy
+				summedEnergy += foldContextUnpairedMinimumFreeEnergyW([i2][j2].Energy
 				branches = append(branches, tb...)
 			}
 		}
 
-		NucleicAcidStructures[len(NucleicAcidStructures)-1].Energy -= e_sum
+		NucleicAcidStructures[len(NucleicAcidStructures)-1].Energy -= summedEnergy
 		return append(NucleicAcidStructures, branches...)
 	}
 }
@@ -870,18 +870,18 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 //	structures: NucleicAcidStructure being compared
 //
 // Returns the min free energy structure
-func minStruct(structures ...NucleicAcidStructure) NucleicAcidStructure {
+func minimumStructure(structures ...NucleicAcidStructure) NucleicAcidStructure {
 	minimumStructure := InvalidStructure
-	for _, str := range structures {
-		if str.Energy != math.Inf(-1) && str.Energy < minimumStructure.Energy {
-			minimumStructure = str
+	for _, structure := range structures {
+		if structure.Energy != math.Inf(-1) && structure.Energy < minimumStructure.Energy {
+			minimumStructure = structure
 		}
 	}
 	return minimumStructure
 }
 
 // trackbackEnergy add energy to each structure, based on how it's
-// W(start,end) differs from the one after
+// UnpairedMinimumFreeEnergyW(start,end) differs from the one after
 // Args:
 //
 //	structures: The NucleicAcidStructure for whom energy is being calculated

@@ -64,7 +64,7 @@ type Subsequence struct {
 	Start, End int
 }
 
-// A single structure with a free energy, description, and inward children
+// NucleicAcidStructure is single structure with a free energy, description, and inward children
 type NucleicAcidStructure struct {
 	// Description is the description of the NucleicAcidStructure
 	Description string
@@ -75,6 +75,7 @@ type NucleicAcidStructure struct {
 	Energy float64
 }
 
+// Equal returns true if two NucleicAcidStructures are equal
 func (structure NucleicAcidStructure) Equal(other NucleicAcidStructure) bool {
 	if len(structure.Inner) != len(other.Inner) {
 		return false
@@ -87,10 +88,12 @@ func (structure NucleicAcidStructure) Equal(other NucleicAcidStructure) bool {
 	return structure.Energy == other.Energy
 }
 
+// Valid returns true if the NucleicAcidStructure is valid
 func (structure NucleicAcidStructure) Valid() bool {
 	return structure.Energy != math.Inf(1) && structure.Energy != math.Inf(-1)
 }
 
+// String returns a string representation of the NucleicAcidStructure
 func (structure NucleicAcidStructure) String() string {
 	i, j := "", ""
 	if len(structure.Inner) > 0 {
@@ -125,11 +128,11 @@ var InvalidStructure = NucleicAcidStructure{
 // FoldContext holds the energy caches, energy maps, sequence, and temperature
 // needed in order to compute the folding energy and structures.
 type FoldContext struct {
-	Energies Energies
-	Seq      string
-	V        [][]NucleicAcidStructure
-	W        [][]NucleicAcidStructure
-	T        float64
+	Energies                   Energies
+	Seq                        string
+	PairedMinimumFreeEnergyV   [][]NucleicAcidStructure
+	UnpairedMinimumFreeEnergyW [][]NucleicAcidStructure
+	T                          float64
 }
 
 // NewFoldingContext returns a FoldContext ready to use, in case of error
@@ -173,7 +176,7 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 	}
 
 	// fill the cache
-	_, err := W(0, sequenceLength-1, ret)
+	_, err := UnpairedMinimumFreeEnergyW(0, sequenceLength-1, ret)
 	if err != nil {
 		return FoldContext{}, fmt.Errorf("error filling the caches for the FoldingContext: %w", err)
 	}
