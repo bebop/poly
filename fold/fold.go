@@ -101,13 +101,13 @@ func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
 //
 // Returns the free energy for the subsequence from start to end
 func UnpairedMinimumFreeEnergyW(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContextUnpairedMinimumFreeEnergyW([start][end].Equal(DefaultStructure) {
-		return foldContextUnpairedMinimumFreeEnergyW([start][end], nil
+	if !foldContext.UnpairedMinimumFreeEnergyW[start][end].Equal(DefaultStructure) {
+		return foldContext.UnpairedMinimumFreeEnergyW[start][end], nil
 	}
 
 	if end-start < 4 {
-		foldContextUnpairedMinimumFreeEnergyW([start][end] = InvalidStructure
-		return foldContextUnpairedMinimumFreeEnergyW([start][end], nil
+		foldContext.UnpairedMinimumFreeEnergyW[start][end] = InvalidStructure
+		return foldContext.UnpairedMinimumFreeEnergyW[start][end], nil
 	}
 
 	w1, err := UnpairedMinimumFreeEnergyW(start+1, end, foldContext)
@@ -136,7 +136,7 @@ func UnpairedMinimumFreeEnergyW(start, end int, foldContext FoldContext) (Nuclei
 	}
 
 	wret := minimumStructure(w1, w2, w3, w4)
-	foldContextUnpairedMinimumFreeEnergyW([start][end] = wret
+	foldContext.UnpairedMinimumFreeEnergyW[start][end] = wret
 	return wret, nil
 }
 
@@ -153,14 +153,14 @@ func UnpairedMinimumFreeEnergyW(start, end int, foldContext FoldContext) (Nuclei
 //
 // Returns the minimum energy folding structure possible between start and end on seq
 func PairedMinimumFreeEnergyV(start, end int, foldContext FoldContext) (NucleicAcidStructure, error) {
-	if !foldContextPairedMinimumFreeEnergyV[start][end].Equal(DefaultStructure) {
-		return foldContextPairedMinimumFreeEnergyV[start][end], nil
+	if !foldContext.PairedMinimumFreeEnergyV[start][end].Equal(DefaultStructure) {
+		return foldContext.PairedMinimumFreeEnergyV[start][end], nil
 	}
 
 	// the ends must basepair for PairedMinimumFreeEnergyV(start,end)
 	if foldContext.Energies.Complement[foldContext.Seq[start]] != foldContext.Seq[end] {
-		foldContextPairedMinimumFreeEnergyV[start][end] = InvalidStructure
-		return foldContextPairedMinimumFreeEnergyV[start][end], nil
+		foldContext.PairedMinimumFreeEnergyV[start][end] = InvalidStructure
+		return foldContext.PairedMinimumFreeEnergyV[start][end], nil
 	}
 	// if the basepair is isolated, and the seq large, penalize at 1,600 kcal/mol
 	// heuristic for speeding this up
@@ -172,8 +172,8 @@ func PairedMinimumFreeEnergyV(start, end int, foldContext FoldContext) (NucleicA
 	isolatedInner := foldContext.Energies.Complement[foldContext.Seq[start+1]] != foldContext.Seq[end-1]
 
 	if isolatedOuter && isolatedInner {
-		foldContextPairedMinimumFreeEnergyV[start][end] = NucleicAcidStructure{Energy: 1600}
-		return foldContextPairedMinimumFreeEnergyV[start][end], nil
+		foldContext.PairedMinimumFreeEnergyV[start][end] = NucleicAcidStructure{Energy: 1600}
+		return foldContext.PairedMinimumFreeEnergyV[start][end], nil
 	}
 
 	pair := Pair(foldContext.Seq, start, start+1, end, end-1)
@@ -183,9 +183,9 @@ func PairedMinimumFreeEnergyV(start, end int, foldContext FoldContext) (NucleicA
 	}
 	e1 := NucleicAcidStructure{Energy: hairpin, Description: "HAIRPIN:" + pair}
 	if end-start == 4 { // small hairpin; 4bp
-		foldContextPairedMinimumFreeEnergyV[start][end] = e1
-		foldContextUnpairedMinimumFreeEnergyW([start][end] = e1
-		return foldContextPairedMinimumFreeEnergyV[start][end], nil
+		foldContext.PairedMinimumFreeEnergyV[start][end] = e1
+		foldContext.UnpairedMinimumFreeEnergyW[start][end] = e1
+		return foldContext.PairedMinimumFreeEnergyV[start][end], nil
 	}
 
 	n := len(foldContext.Seq)
@@ -283,7 +283,7 @@ func PairedMinimumFreeEnergyV(start, end int, foldContext FoldContext) (NucleicA
 		}
 	}
 	e := minimumStructure(e1, e2, e3)
-	foldContextPairedMinimumFreeEnergyV[start][end] = e
+	foldContext.PairedMinimumFreeEnergyV[start][end] = e
 	return e, nil
 }
 
@@ -814,19 +814,19 @@ func Pair(s string, start, i1, end, j1 int) string {
 // Returns a list of NucleicAcidStructure in the final secondary structure
 func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 	// move start,end down-left to start coordinates
-	structure := foldContextUnpairedMinimumFreeEnergyW([start][end]
+	structure := foldContext.UnpairedMinimumFreeEnergyW[start][end]
 	if !strings.Contains(structure.Description, "HAIRPIN") {
-		for foldContextUnpairedMinimumFreeEnergyW([start+1][end].Equal(structure) {
+		for foldContext.UnpairedMinimumFreeEnergyW[start+1][end].Equal(structure) {
 			start += 1
 		}
-		for foldContextUnpairedMinimumFreeEnergyW([start][end-1].Equal(structure) {
+		for foldContext.UnpairedMinimumFreeEnergyW[start][end-1].Equal(structure) {
 			end -= 1
 		}
 	}
 
 	NucleicAcidStructures := []NucleicAcidStructure{}
 	for {
-		structure = foldContextPairedMinimumFreeEnergyV[start][end]
+		structure = foldContext.PairedMinimumFreeEnergyV[start][end]
 
 		NucleicAcidStructures = append(NucleicAcidStructures, NucleicAcidStructure{Energy: structure.Energy, Description: structure.Description, Inner: []Subsequence{{Start: start, End: end}}})
 
@@ -854,7 +854,7 @@ func Traceback(start, end int, foldContext FoldContext) []NucleicAcidStructure {
 			if len(tb) > 0 && len(tb[0].Inner) > 0 {
 				ij2 := tb[0].Inner[0]
 				i2, j2 := ij2.Start, ij2.End
-				summedEnergy += foldContextUnpairedMinimumFreeEnergyW([i2][j2].Energy
+				summedEnergy += foldContext.UnpairedMinimumFreeEnergyW[i2][j2].Energy
 				branches = append(branches, tb...)
 			}
 		}

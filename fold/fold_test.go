@@ -18,7 +18,7 @@ func TestFold(t *testing.T) {
 		seq_dg, err := fold.MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.InDelta(t, seq_dg, foldContextUnpairedMinimumFreeEnergyW([0][len(seq)-1].Energy, 1)
+		assert.InDelta(t, seq_dg, foldContext.UnpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos

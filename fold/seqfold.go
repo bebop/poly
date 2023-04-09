@@ -168,11 +168,11 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 		copy(wCache[j], row)
 	}
 	ret := FoldContext{
-		Energies: energyMap,
-		Seq:      seq,
-		V:        vCache,
-		W:        wCache,
-		T:        temp + 273.15, // kelvin
+		Energies:                   energyMap,
+		Seq:                        seq,
+		PairedMinimumFreeEnergyV:   vCache,
+		UnpairedMinimumFreeEnergyW: wCache,
+		T:                          temp + 273.15, // kelvin
 	}
 
 	// fill the cache
