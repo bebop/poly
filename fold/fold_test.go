@@ -1,11 +1,10 @@
-package fold_test
+package fold
 
 import (
 	"math"
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/fold"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,16 +12,16 @@ import (
 func TestFold(t *testing.T) {
 	t.Run("FoldCache", func(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
-		foldContext, err := fold.NewFoldingContext(seq, 37.0)
+		foldContext, err := NewFoldingContext(seq, 37.0)
 		require.NoError(t, err)
-		seq_dg, err := fold.MinimumFreeEnergy(seq, 37.0)
+		seqDg, err := MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.InDelta(t, seq_dg, foldContext.UnpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
+		assert.InDelta(t, seqDg, foldContext.UnpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos
-		unafold_dgs := map[string]float64{
+		unafoldDgs := map[string]float64{
 			"GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC":                         -10.94, // three branched structure
 			"GGGAGGTCGCTCCAGCTGGGAGGAGCGTTGGGGGTATATACCCCCAACACCGGTACTGATCCGGTGACCTCCC": -23.4,  // four branched structure
 			"CGCAGGGAUACCCGCG":                         -3.8,
@@ -32,8 +31,8 @@ func TestFold(t *testing.T) {
 			"ACCCCCTCCTTCCTTGGATCAAGGGGCTCAA":                                              -3.65,
 		}
 
-		for seq, ufold := range unafold_dgs {
-			d, err := fold.MinimumFreeEnergy(seq, 37.0)
+		for seq, ufold := range unafoldDgs {
+			d, err := MinimumFreeEnergy(seq, 37.0)
 			require.NoError(t, err)
 			// accepting a 60% difference
 			delta := math.Abs(0.6 * math.Min(d, ufold))
@@ -43,7 +42,7 @@ func TestFold(t *testing.T) {
 	t.Run("FoldRNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of RNA oligos
 		// most tests available at https://github.com/jaswindersingh2/SPOT-RNA/blob/master/sample_inputs/batch_seq.fasta
-		unafold_dgs := map[string]float64{
+		unafoldDgs := map[string]float64{
 			"ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA":        -9.5,
 			"AAGGGGUUGGUCGCCUCGACUAAGCGGCUUGGAAUUCC": -10.1,
 			"UUGGAGUACACAACCUGUACACUCUUUC":           -4.3,
@@ -54,8 +53,8 @@ func TestFold(t *testing.T) {
 			"GGGGGCAUAGCUCAGCUGGGAGAGCGCCUGCUUUGCACGCAGGAGGUCUGCGGUUCGAUCCCGCGCGCUCCCACCA": -31.4,
 		}
 
-		for seq, ufold := range unafold_dgs {
-			d, err := fold.MinimumFreeEnergy(seq, 37.0)
+		for seq, ufold := range unafoldDgs {
+			d, err := MinimumFreeEnergy(seq, 37.0)
 			require.NoError(t, err)
 
 			// accepting a 50% difference
@@ -65,19 +64,19 @@ func TestFold(t *testing.T) {
 	})
 	t.Run("DotBracket", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC"
-		structs, err := fold.Fold(seq, 37.0)
+		structs, err := Fold(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", fold.DotBracket(structs))
+		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", DotBracket(structs))
 	})
 	t.Run("Multibranch", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC" // three branch
 
-		structs, err := fold.Fold(seq, 37.0)
+		structs, err := Fold(seq, 37.0)
 		require.NoError(t, err)
 
 		found := false
-		foundIJ := fold.Subsequence{7, 41}
+		foundIJ := Subsequence{7, 41}
 		for _, s := range structs {
 			if strings.Contains(s.Description, "BIFURCATION") {
 				for _, ij := range s.Inner {
@@ -91,27 +90,27 @@ func TestFold(t *testing.T) {
 	})
 	t.Run("Pair", func(t *testing.T) {
 		seq := "ATGGAATAGTG"
-		assert.Equal(t, fold.Pair(seq, 0, 1, 9, 10), "AT/TG")
+		assert.Equal(t, Pair(seq, 0, 1, 9, 10), "AT/TG")
 	})
 	t.Run("Stack", func(t *testing.T) {
 		seq := "GCUCAGCUGGGAGAGC"
 		temp := 37.0
-		foldContext, err := fold.NewFoldingContext(seq, temp)
+		foldContext, err := NewFoldingContext(seq, temp)
 		require.NoError(t, err)
 
-		e := fold.Stack(1, 2, 14, 13, foldContext)
+		e := Stack(1, 2, 14, 13, foldContext)
 		assert.InDelta(t, e, -2.1, 0.1)
 	})
 	t.Run("Bulge", func(t *testing.T) {
 		// mock bulge of CAT on one side and AG on other
 		// from pg 429 of SantaLucia, 2004
 		seq := "ACCCCCATCCTTCCTTGAGTCAAGGGGCTCAA"
-		foldContext, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		pair_dg, err := fold.Bulge(5, 7, 18, 17, foldContext)
+		pairDg, err := Bulge(5, 7, 18, 17, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, pair_dg, 3.22, 0.4)
+		assert.InDelta(t, pairDg, 3.22, 0.4)
 	})
 	t.Run("Hairpin", func(t *testing.T) {
 		// hairpin = "CCTTGG"
@@ -119,13 +118,13 @@ func TestFold(t *testing.T) {
 		i := 11
 		j := 16
 
-		foldContext, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err := fold.Hairpin(i, j, foldContext)
+		hairpinDg, err := Hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		// this differs from Unafold
-		assert.InDelta(t, hairpin_dg, 4.3, 1.0)
+		assert.InDelta(t, hairpinDg, 4.3, 1.0)
 
 		// from page 428 of SantaLucia, 2004
 		// hairpin = "CGCAAG"
@@ -133,33 +132,33 @@ func TestFold(t *testing.T) {
 		i = 3
 		j = 8
 
-		foldContext, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err = fold.Hairpin(i, j, foldContext)
+		hairpinDg, err = Hairpin(i, j, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, hairpin_dg, 0.67, 0.1)
+		assert.InDelta(t, hairpinDg, 0.67, 0.1)
 
 		seq = "CUUUGCACG"
 		i = 0
 		j = 8
 
-		foldContext, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpin_dg, err = fold.Hairpin(i, j, foldContext)
+		hairpinDg, err = Hairpin(i, j, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, hairpin_dg, 4.5, 0.2)
+		assert.InDelta(t, hairpinDg, 4.5, 0.2)
 	})
 	t.Run("InternalLoop", func(t *testing.T) {
 		seq := "ACCCCCTCCTTCCTTGGATCAAGGGGCTCAA"
 		i := 6
 		j := 21
 
-		foldContext, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		dg, err := fold.InternalLoop(i, i+4, j, j-4, foldContext)
+		dg, err := InternalLoop(i, i+4, j, j-4, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, dg, 3.5, 0.1)
 	})
@@ -168,10 +167,10 @@ func TestFold(t *testing.T) {
 		i := 0
 		j := 15
 
-		foldContext, err := fold.NewFoldingContext(seq, 37)
+		foldContext, err := NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err := fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err := UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -3.8, 0.2)
 
@@ -179,10 +178,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 16
 
-		foldContext, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err = UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -6.4, 0.2)
 
@@ -190,15 +189,11 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 14
 
-		foldContext, err = fold.NewFoldingContext(seq, 37)
+		foldContext, err = NewFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = fold.UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err = UnpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -4.2, 0.2)
 	})
-}
-
-func NewFoldingContext(seq string, f float64) {
-	panic("unimplemented")
 }

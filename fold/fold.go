@@ -54,7 +54,7 @@ func MinimumFreeEnergy(seq string, temp float64) (float64, error) {
 	return RoundFloat(summedEnergy, 2), nil
 }
 
-// Get the dot bracket notation for a secondary structure.
+// DotBracket returns the dot-bracket notation of a secondary nucleic acid structure
 // Args:
 //
 //	NucleicAcidStructures: A list of NucleicAcidStructure, usually from the fold function
