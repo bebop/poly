@@ -124,7 +124,7 @@ REBASE codes for commercial sources of enzymes
 <5>Ascocalyx abietina
 <6>B.L. Stoddard
 <7>
-<8>Lambert, A.R., Hallinan, J.P., Shen, BUnpairedMinimumFreeEnergyW(., Chik, J.K., Bolduc, J.M., Kulshina, N., Robins, L.I., Kaiser, B.K., Jarjour, J., Havens, K., Scharenberg, A.M., Stoddard, B.L., (2016) Structure, vol. 24, pp. 862-873.
+<8>Lambert, A.R., Hallinan, J.P., Shen, B.W., Chik, J.K., Bolduc, J.M., Kulshina, N., Robins, L.I., Kaiser, B.K., Jarjour, J., Havens, K., Scharenberg, A.M., Stoddard, B.L., (2016) Structure, vol. 24, pp. 862-873.
 
 <1>AacLI
 <2>BamHI,AaeI,AcaII,AccEBI,AinII,AliI,Ali12257I,Ali12258I,ApaCI,AsiI,AspTII,Atu1II,BamFI,BamKI,BamNI,Bca1259I,Bce751I,Bco10278I,BnaI,BsaDI,Bsp30I,Bsp46I,Bsp90II,Bsp98I,Bsp130I,Bsp131I,Bsp144I,Bsp4009I,BspAAIII,BstI,Bst1126I,Bst2464I,Bst2902I,BstQI,Bsu90I,Bsu8565I,Bsu8646I,BsuB519I,BsuB763I,CelI,DdsI,GdoI,GinI,GoxI,GseIII,GstI,MleI,Mlu23I,NasBI,Nsp29132II,NspSAIV,OkrAI,Pac1110I,Pae177I,PboCI,Pfl8I,Psp56I,RhsI,Rlu4I,RspLKII,SolI,SpvI,SurI,Uba19I,Uba31I,Uba38I,Uba51I,Uba88I,Uba1098I,Uba1163I,Uba1167I,Uba1172I,Uba1173I,Uba1205I,Uba1224I,Uba1242I,Uba1250I,Uba1258I,Uba1297I,Uba1302I,Uba1324I,Uba1325I,Uba1334I,Uba1339I,Uba1346I,Uba1383I,Uba1398I,Uba1402I,Uba1414I,Uba4009I,UbaN3I,UbaN14I
@@ -452,7 +452,7 @@ Gao, F., Wang, Y., Liu, Y.J., Wu, X.M., Lv, X., Gan, Y.R., Song, S.D., Huang, H.
 <6>D. Rasko
 <7>
 <8>Borgaro, J.G., Zhu, Z., (2013) Nucleic Acids Res., vol. 41, pp. 4198-4206.
-Sahl, JUnpairedMinimumFreeEnergyW(., Johnson, J.K., Harris, A.D., Phillippy, A.M., Hsaio, WUnpairedMinimumFreeEnergyW(., Thom, K.A., Rasko, D.A., Unpublished observations.
+Sahl, J.W., Johnson, J.K., Harris, A.D., Phillippy, A.M., Hsaio, W.W., Thom, K.A., Rasko, D.A., Unpublished observations.
 
 <1>AbaUMB2I
 <2>
@@ -833,7 +833,7 @@ Dedkov, V.S., Gonchar, D.A., Abdurashitov, M.A., Udalyeva, S.G., Urumceva, L.A.,
 <5>Agrocybe chaxingu
 <6>A.M. Scharenberg
 <7>
-<8>Jacoby, K., Metzger, M., Shen, BUnpairedMinimumFreeEnergyW(., Certo, M.T., Jarjour, J., Stoddard, B.L., Scharenberg, A.M., (2012) Nucleic Acids Res., vol. 40, pp. 4954-4964.
+<8>Jacoby, K., Metzger, M., Shen, B.W., Certo, M.T., Jarjour, J., Stoddard, B.L., Scharenberg, A.M., (2012) Nucleic Acids Res., vol. 40, pp. 4954-4964.
 
 <1>AciI
 <2>BspACI,SsiI
