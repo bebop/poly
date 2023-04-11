@@ -1,10 +1,10 @@
 package fold
 
-var RNAComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+var rnaComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
-var RNAMultibranch = MultibranchEnergies{2.5, 0.1, 0.4, 2.0}
+var rnaMultibranch = multibranchEnergies{2.5, 0.1, 0.4, 2.0}
 
-var RNANearestNeighbors = MatchingBasepairEnergy{
+var rnaNearestNeighbors = matchingBasepairEnergy{
 	"AA/UU": {EnthalpyH: -6.8, EntropyS: -19},
 	"AC/UG": {EnthalpyH: -11.4, EntropyS: -29.7},
 	"AG/UC": {EnthalpyH: -10.5, EntropyS: -27.1},
@@ -23,7 +23,7 @@ var RNANearestNeighbors = MatchingBasepairEnergy{
 	"UU/AA": {EnthalpyH: -6.8, EntropyS: -19},
 }
 
-var RNAInternalMismatches = MatchingBasepairEnergy{
+var rnaInternalMismatches = matchingBasepairEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -266,7 +266,7 @@ var RNAInternalMismatches = MatchingBasepairEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNATerminalMismatches = MatchingBasepairEnergy{
+var rnaTerminalMismatches = matchingBasepairEnergy{
 	"AA/AA": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AC": {EnthalpyH: 0, EntropyS: 0},
 	"AA/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -525,7 +525,7 @@ var RNATerminalMismatches = MatchingBasepairEnergy{
 	"UU/UU": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNADanglingEnds = MatchingBasepairEnergy{
+var rnaDanglingEnds = matchingBasepairEnergy{
 	".A/AA": {EnthalpyH: 0, EntropyS: 0},
 	".A/AC": {EnthalpyH: 0, EntropyS: 0},
 	".A/AG": {EnthalpyH: 0, EntropyS: 0},
@@ -784,7 +784,7 @@ var RNADanglingEnds = MatchingBasepairEnergy{
 	"UU/U.": {EnthalpyH: 0, EntropyS: 0},
 }
 
-var RNAInternalLoops = LoopEnergy{
+var rnaInternalLoops = loopEnergy{
 	1:  {0.0, 0.0},
 	2:  {0.0, 0.0},
 	3:  {0.0, 0.0},
@@ -817,7 +817,7 @@ var RNAInternalLoops = LoopEnergy{
 	30: {-1.3, -16.1},
 }
 
-var RNABulgeLoops = LoopEnergy{
+var rnaBulgeLoops = loopEnergy{
 	1:  {10.6, 21.9},
 	2:  {7.1, 13.9},
 	3:  {7.1, 12.6},
@@ -850,7 +850,7 @@ var RNABulgeLoops = LoopEnergy{
 	30: {7.1, 3.2},
 }
 
-var RNAHairpinLoops = LoopEnergy{
+var rnaHairpinLoops = loopEnergy{
 	1:  {0.0, 0.0},
 	2:  {0.0, 0.0},
 	3:  {1.3, -13.2},
@@ -883,15 +883,15 @@ var RNAHairpinLoops = LoopEnergy{
 	30: {5.0, -8.7},
 }
 
-var RNAEnergies = Energies{
-	BulgeLoops:         RNABulgeLoops,
-	Complement:         RNAComplement,
-	DanglingEnds:       RNADanglingEnds,
-	HairpinLoops:       RNAHairpinLoops,
-	Multibranch:        RNAMultibranch,
-	InternalLoops:      RNAInternalLoops,
-	InternalMismatches: RNAInternalMismatches,
-	NearestNeighbors:   RNANearestNeighbors,
-	TerminalMismatches: RNATerminalMismatches,
-	TriTetraLoops:      nil,
+var rnaEnergies = energies{
+	bulgeLoops:         rnaBulgeLoops,
+	complement:         rnaComplement,
+	danglingEnds:       rnaDanglingEnds,
+	hairpinLoops:       rnaHairpinLoops,
+	multibranch:        rnaMultibranch,
+	internalLoops:      rnaInternalLoops,
+	internalMismatches: rnaInternalMismatches,
+	nearestNeighbors:   rnaNearestNeighbors,
+	terminalMismatches: rnaTerminalMismatches,
+	triTetraLoops:      nil,
 }

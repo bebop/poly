@@ -9,7 +9,7 @@ import (
 )
 
 /*
-MultibranchEnergies holds the a, b, c, d in a linear multi-branch energy
+multibranchEnergies holds the a, b, c, d in a linear multi-branch energy
 
 change function.
 
@@ -23,8 +23,8 @@ Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
 doi: 10.1146/annurev.biophys.32.110601.141800
 The Thermodynamics of DNA Structural Motifs, SantaLucia and Hicks, 2004
 */
-type MultibranchEnergies struct {
-	A, B, C, D float64
+type multibranchEnergies struct {
+	helicesCount, unpairedCount, coaxialStackCount, terminalMismatchCount float64
 }
 
 // Energy holds two energies, enthaply and entropy
@@ -36,26 +36,26 @@ type Energy struct {
 	EntropyS float64
 }
 
-// MatchingBasepairEnergy is the energy of matching base pairs
-type MatchingBasepairEnergy map[string]Energy
+// matchingBasepairEnergy is the energy of matching base pairs
+type matchingBasepairEnergy map[string]Energy
 
-// LoopEnergy is a map[int]Energy where the int is the length of the loop
-type LoopEnergy map[int]Energy
+// loopEnergy is a map[int]Energy where the int is the length of the loop
+type loopEnergy map[int]Energy
 
-// Energies holds the needed energy maps, BpEnergy and LoopEnergy, to compute
-// the folding, it also holds the complement map for the kind of sequence, RNA
+// energies holds the needed energy maps, BpEnergy and loopEnergy, to compute
+// the folding, it also holds the complement map for the kind of sequence, rna
 // or DNA
-type Energies struct {
-	BulgeLoops         LoopEnergy
-	Complement         map[byte]byte
-	DanglingEnds       MatchingBasepairEnergy
-	HairpinLoops       LoopEnergy
-	Multibranch        MultibranchEnergies
-	InternalLoops      LoopEnergy
-	InternalMismatches MatchingBasepairEnergy
-	NearestNeighbors   MatchingBasepairEnergy
-	TerminalMismatches MatchingBasepairEnergy
-	TriTetraLoops      MatchingBasepairEnergy
+type energies struct {
+	bulgeLoops         loopEnergy
+	complement         map[byte]byte
+	danglingEnds       matchingBasepairEnergy
+	hairpinLoops       loopEnergy
+	multibranch        multibranchEnergies
+	internalLoops      loopEnergy
+	internalMismatches matchingBasepairEnergy
+	nearestNeighbors   matchingBasepairEnergy
+	terminalMismatches matchingBasepairEnergy
+	triTetraLoops      matchingBasepairEnergy
 }
 
 // Subsequence represent an interval of bases in the sequence that can contain
@@ -93,34 +93,15 @@ func (structure NucleicAcidStructure) Valid() bool {
 	return structure.Energy != math.Inf(1) && structure.Energy != math.Inf(-1)
 }
 
-// String returns a string representation of the NucleicAcidStructure
-func (structure NucleicAcidStructure) String() string {
-	i, j := "", ""
-	if len(structure.Inner) > 0 {
-		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
-	}
-	return fmt.Sprintf("%4s %4s % 6.2f  %-15s", i, j, structure.Energy, structure.Description)
-}
-
-// MultiString returns all the fields as strings, this is useful to output the
-// result in a tabular fashion using the same format string.
-func (structure NucleicAcidStructure) MultiString() (string, string, string, string) {
-	i, j := "", ""
-	if len(structure.Inner) > 0 {
-		i, j = fmt.Sprint(structure.Inner[0].Start), fmt.Sprint(structure.Inner[0].End)
-	}
-	return i, j, fmt.Sprintf("%6.2f", structure.Energy), structure.Description
-}
-
-// DefaultStructure is the default (zero value) nucleic acid structure, it used
+// defaultStructure is the default (zero value) nucleic acid structure, it used
 // mostly to initialize the caches, see FoldingContext
-var DefaultStructure = NucleicAcidStructure{
+var defaultStructure = NucleicAcidStructure{
 	Description: "",
 	Energy:      math.Inf(-1),
 }
 
-// InvalidStructure represent an invalid nucleic acid structure
-var InvalidStructure = NucleicAcidStructure{
+// invalidStructure represent an invalid nucleic acid structure
+var invalidStructure = NucleicAcidStructure{
 	Description: "",
 	Energy:      math.Inf(1),
 }
@@ -128,7 +109,7 @@ var InvalidStructure = NucleicAcidStructure{
 // context holds the energy caches, energy maps, sequence, and temperature
 // needed in order to compute the folding energy and structures.
 type context struct {
-	Energies                   Energies
+	energies                   energies
 	Seq                        string
 	pairedMinimumFreeEnergyV   [][]NucleicAcidStructure
 	unpairedMinimumFreeEnergyW [][]NucleicAcidStructure
@@ -140,13 +121,13 @@ type context struct {
 func newFoldingContext(seq string, temp float64) (context, error) {
 	seq = strings.ToUpper(seq)
 
-	// figure out whether it's DNA or RNA, choose energy map
-	var energyMap Energies
+	// figure out whether it's DNA or rna, choose energy map
+	var energyMap energies
 	switch {
 	case checks.IsDNA(seq):
 		energyMap = dnaEnergies
 	case checks.IsRNA(seq):
-		energyMap = RNAEnergies
+		energyMap = rnaEnergies
 	default:
 		return context{}, fmt.Errorf("the sequence %s is not RNA or DNA", seq)
 	}
@@ -158,7 +139,7 @@ func newFoldingContext(seq string, temp float64) (context, error) {
 		row            = make([]NucleicAcidStructure, sequenceLength)
 	)
 	for nucleicAcidIndex := 0; nucleicAcidIndex < sequenceLength; nucleicAcidIndex++ {
-		row[nucleicAcidIndex] = DefaultStructure
+		row[nucleicAcidIndex] = defaultStructure
 	}
 	for j := 0; j < sequenceLength; j++ {
 		vCache[j] = make([]NucleicAcidStructure, sequenceLength)
@@ -168,7 +149,7 @@ func newFoldingContext(seq string, temp float64) (context, error) {
 		copy(wCache[j], row)
 	}
 	ret := context{
-		Energies:                   energyMap,
+		energies:                   energyMap,
 		Seq:                        seq,
 		pairedMinimumFreeEnergyV:   vCache,
 		unpairedMinimumFreeEnergyW: wCache,

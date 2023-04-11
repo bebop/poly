@@ -69,7 +69,7 @@ func TestFold(t *testing.T) {
 
 		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", DotBracket(structs))
 	})
-	t.Run("Multibranch", func(t *testing.T) {
+	t.Run("multibranch", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC" // three branch
 
 		structs, err := Fold(seq, 37.0)
