@@ -125,30 +125,30 @@ var InvalidStructure = NucleicAcidStructure{
 	Energy:      math.Inf(1),
 }
 
-// FoldContext holds the energy caches, energy maps, sequence, and temperature
+// context holds the energy caches, energy maps, sequence, and temperature
 // needed in order to compute the folding energy and structures.
-type FoldContext struct {
+type context struct {
 	Energies                   Energies
 	Seq                        string
-	PairedMinimumFreeEnergyV   [][]NucleicAcidStructure
-	UnpairedMinimumFreeEnergyW [][]NucleicAcidStructure
+	pairedMinimumFreeEnergyV   [][]NucleicAcidStructure
+	unpairedMinimumFreeEnergyW [][]NucleicAcidStructure
 	T                          float64
 }
 
-// NewFoldingContext returns a FoldContext ready to use, in case of error
+// newFoldingContext returns a context ready to use, in case of error
 // the returned FoldingContext is empty.
-func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
+func newFoldingContext(seq string, temp float64) (context, error) {
 	seq = strings.ToUpper(seq)
 
 	// figure out whether it's DNA or RNA, choose energy map
 	var energyMap Energies
 	switch {
 	case checks.IsDNA(seq):
-		energyMap = DNAEnergies
+		energyMap = dnaEnergies
 	case checks.IsRNA(seq):
 		energyMap = RNAEnergies
 	default:
-		return FoldContext{}, fmt.Errorf("the sequence %s is not RNA or DNA", seq)
+		return context{}, fmt.Errorf("the sequence %s is not RNA or DNA", seq)
 	}
 
 	var (
@@ -167,18 +167,18 @@ func NewFoldingContext(seq string, temp float64) (FoldContext, error) {
 		wCache[j] = make([]NucleicAcidStructure, sequenceLength)
 		copy(wCache[j], row)
 	}
-	ret := FoldContext{
+	ret := context{
 		Energies:                   energyMap,
 		Seq:                        seq,
-		PairedMinimumFreeEnergyV:   vCache,
-		UnpairedMinimumFreeEnergyW: wCache,
+		pairedMinimumFreeEnergyV:   vCache,
+		unpairedMinimumFreeEnergyW: wCache,
 		T:                          temp + 273.15, // kelvin
 	}
 
 	// fill the cache
-	_, err := UnpairedMinimumFreeEnergyW(0, sequenceLength-1, ret)
+	_, err := unpairedMinimumFreeEnergyW(0, sequenceLength-1, ret)
 	if err != nil {
-		return FoldContext{}, fmt.Errorf("error filling the caches for the FoldingContext: %w", err)
+		return context{}, fmt.Errorf("error filling the caches for the FoldingContext: %w", err)
 	}
 	return ret, nil
 

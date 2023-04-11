@@ -12,12 +12,12 @@ import (
 func TestFold(t *testing.T) {
 	t.Run("FoldCache", func(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
-		foldContext, err := NewFoldingContext(seq, 37.0)
+		foldContext, err := newFoldingContext(seq, 37.0)
 		require.NoError(t, err)
 		seqDg, err := MinimumFreeEnergy(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.InDelta(t, seqDg, foldContext.UnpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
+		assert.InDelta(t, seqDg, foldContext.unpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos
@@ -88,40 +88,40 @@ func TestFold(t *testing.T) {
 		}
 		assert.True(t, found, "not found a  BIFURCATION with (7, 41) in ij")
 	})
-	t.Run("Pair", func(t *testing.T) {
+	t.Run("pair", func(t *testing.T) {
 		seq := "ATGGAATAGTG"
-		assert.Equal(t, Pair(seq, 0, 1, 9, 10), "AT/TG")
+		assert.Equal(t, pair(seq, 0, 1, 9, 10), "AT/TG")
 	})
-	t.Run("Stack", func(t *testing.T) {
+	t.Run("stack", func(t *testing.T) {
 		seq := "GCUCAGCUGGGAGAGC"
 		temp := 37.0
-		foldContext, err := NewFoldingContext(seq, temp)
+		foldContext, err := newFoldingContext(seq, temp)
 		require.NoError(t, err)
 
-		e := Stack(1, 2, 14, 13, foldContext)
+		e := stack(1, 2, 14, 13, foldContext)
 		assert.InDelta(t, e, -2.1, 0.1)
 	})
 	t.Run("Bulge", func(t *testing.T) {
 		// mock bulge of CAT on one side and AG on other
 		// from pg 429 of SantaLucia, 2004
 		seq := "ACCCCCATCCTTCCTTGAGTCAAGGGGCTCAA"
-		foldContext, err := NewFoldingContext(seq, 37)
+		foldContext, err := newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
 		pairDg, err := Bulge(5, 7, 18, 17, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, pairDg, 3.22, 0.4)
 	})
-	t.Run("Hairpin", func(t *testing.T) {
+	t.Run("hairpin", func(t *testing.T) {
 		// hairpin = "CCTTGG"
 		seq := "ACCCCCTCCTTCCTTGGATCAAGGGGCTCAA"
 		i := 11
 		j := 16
 
-		foldContext, err := NewFoldingContext(seq, 37)
+		foldContext, err := newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpinDg, err := Hairpin(i, j, foldContext)
+		hairpinDg, err := hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		// this differs from Unafold
 		assert.InDelta(t, hairpinDg, 4.3, 1.0)
@@ -132,10 +132,10 @@ func TestFold(t *testing.T) {
 		i = 3
 		j = 8
 
-		foldContext, err = NewFoldingContext(seq, 37)
+		foldContext, err = newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpinDg, err = Hairpin(i, j, foldContext)
+		hairpinDg, err = hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, hairpinDg, 0.67, 0.1)
 
@@ -143,22 +143,22 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 8
 
-		foldContext, err = NewFoldingContext(seq, 37)
+		foldContext, err = newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		hairpinDg, err = Hairpin(i, j, foldContext)
+		hairpinDg, err = hairpin(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, hairpinDg, 4.5, 0.2)
 	})
-	t.Run("InternalLoop", func(t *testing.T) {
+	t.Run("internalLoop", func(t *testing.T) {
 		seq := "ACCCCCTCCTTCCTTGGATCAAGGGGCTCAA"
 		i := 6
 		j := 21
 
-		foldContext, err := NewFoldingContext(seq, 37)
+		foldContext, err := newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		dg, err := InternalLoop(i, i+4, j, j-4, foldContext)
+		dg, err := internalLoop(i, i+4, j, j-4, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, dg, 3.5, 0.1)
 	})
@@ -167,10 +167,10 @@ func TestFold(t *testing.T) {
 		i := 0
 		j := 15
 
-		foldContext, err := NewFoldingContext(seq, 37)
+		foldContext, err := newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err := UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err := unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -3.8, 0.2)
 
@@ -178,10 +178,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 16
 
-		foldContext, err = NewFoldingContext(seq, 37)
+		foldContext, err = newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err = unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -6.4, 0.2)
 
@@ -189,10 +189,10 @@ func TestFold(t *testing.T) {
 		i = 0
 		j = 14
 
-		foldContext, err = NewFoldingContext(seq, 37)
+		foldContext, err = newFoldingContext(seq, 37)
 		require.NoError(t, err)
 
-		struc, err = UnpairedMinimumFreeEnergyW(i, j, foldContext)
+		struc, err = unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
 		assert.InDelta(t, struc.Energy, -4.2, 0.2)
 	})

@@ -1,12 +1,12 @@
 package fold
 
-var DNAComplement = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+var dnaComplement = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
 
-var DNAMultibranch = MultibranchEnergies{A: 2.6, B: 0.2, C: 0.2, D: 2.0}
+var dnaMultibranch = MultibranchEnergies{A: 2.6, B: 0.2, C: 0.2, D: 2.0}
 
 // The Thermodynamics of DNA Structural Motifs
 // SantaLucia and Hicks, 2004
-var DNANearestNeighbors = MatchingBasepairEnergy{"AA/TT": Energy{EnthalpyH: -7.6, EntropyS: -21.3},
+var dnaNearestNeighbors = MatchingBasepairEnergy{"AA/TT": Energy{EnthalpyH: -7.6, EntropyS: -21.3},
 	"AC/TG":    {EnthalpyH: -8.4, EntropyS: -22.4},
 	"AG/TC":    {EnthalpyH: -7.8, EntropyS: -21},
 	"AT/TA":    {EnthalpyH: -7.2, EntropyS: -20.4},
@@ -37,7 +37,7 @@ var DNANearestNeighbors = MatchingBasepairEnergy{"AA/TT": Energy{EnthalpyH: -7.6
 // Allawi & SantaLucia (1998), Biochemistry 37: 2170-2179 *
 // Allawi & SantaLucia (1998), Nucl Acids Res 26: 2694-2701 *
 // Peyret et al. (1999), Biochemistry 38: 3468-3477 *
-var DNAInternalMismatches = MatchingBasepairEnergy{"AA/AT": Energy{EnthalpyH: 4.7, EntropyS: 12.9},
+var dnaInternalMismatches = MatchingBasepairEnergy{"AA/AT": Energy{EnthalpyH: 4.7, EntropyS: 12.9},
 	"AA/CT": {EnthalpyH: 7.6, EntropyS: 20.2},
 	"AA/GT": {EnthalpyH: 3, EntropyS: 7.4},
 	"AA/TA": {EnthalpyH: 1.2, EntropyS: 1.7},
@@ -141,7 +141,7 @@ var DNAInternalMismatches = MatchingBasepairEnergy{"AA/AT": Energy{EnthalpyH: 4.
 
 // DNATerminalMismatches is a terminal mismatch table for DNA found at terminating ends of a structure
 // SantaLucia & Peyret (2001) Patent Application WO 01/94611
-var DNATerminalMismatches = MatchingBasepairEnergy{
+var dnaTerminalMismatches = MatchingBasepairEnergy{
 	"AA/AT": Energy{EnthalpyH: -2.5, EntropyS: -6.3},
 	"AA/CT": {EnthalpyH: -2.7, EntropyS: -7},
 	"AA/GT": {EnthalpyH: -2.4, EntropyS: -5.8},
@@ -243,7 +243,7 @@ var DNATerminalMismatches = MatchingBasepairEnergy{
 // DNA dangling ends
 //
 // Bommarito et al. (2000), Nucl Acids Res 28: 1929-1934
-var DNADanglingEnds = MatchingBasepairEnergy{
+var dnaDanglingEnds = MatchingBasepairEnergy{
 	"AA/.T": {EnthalpyH: 0.2, EntropyS: 2.3},
 	"AA/T.": {EnthalpyH: -0.5, EntropyS: -1.1},
 	".A/AT": {EnthalpyH: -0.7, EntropyS: -0.8},
@@ -319,7 +319,7 @@ var DNADanglingEnds = MatchingBasepairEnergy{
 //
 // delta EntropyS was computed using delta G and delta EnthalpyH and is in cal / (K x mol)
 // (versus delta EnthalpyH in kcal / mol)
-var DNATriTetraLoops = MatchingBasepairEnergy{
+var dnaTriTetraLoops = MatchingBasepairEnergy{
 	"AGAAT":  {-1.5, 0.0},
 	"AGCAT":  {-1.5, 0.0},
 	"AGGAT":  {-1.5, 0.0},
@@ -469,7 +469,7 @@ var DNATriTetraLoops = MatchingBasepairEnergy{
 // Additional correction is applied for asymmetric loops in paper:
 // delta G (asymmetry) = |length A - length B| x 0.3 (kcal / mol)
 // where A and B are lengths of both sides of loop
-var DNAInternalLoops = LoopEnergy{
+var dnaInternalLoops = LoopEnergy{
 	30: {0, -21.3},
 	29: {0, -21.0},
 	28: {0, -21.0},
@@ -513,7 +513,7 @@ var DNAInternalLoops = LoopEnergy{
 //
 // For bulge loops of size 1, the intervening NearestNeighbors energy is used.
 // Closing AT penalty is applied on both sides
-var DNABulgeLoops = LoopEnergy{
+var dnaBulgeLoops = LoopEnergy{
 	1:  {0, -12.9},
 	2:  {0, -9.4},
 	3:  {0, -10.0},
@@ -560,7 +560,7 @@ var DNABulgeLoops = LoopEnergy{
 //
 // From formula 8-9 of the paper:
 // An additional 1.6 delta entropy penalty if the hairpin is closed by AT
-var DNAHairpinLoops = LoopEnergy{
+var dnaHairpinLoops = LoopEnergy{
 	1:  {0, 0.0},
 	2:  {0, 0.0},
 	3:  {0, -11.3},
@@ -593,15 +593,15 @@ var DNAHairpinLoops = LoopEnergy{
 	30: {0, -20.3},
 }
 
-var DNAEnergies = Energies{
-	BulgeLoops:         DNABulgeLoops,
-	Complement:         DNAComplement,
-	DanglingEnds:       DNADanglingEnds,
-	HairpinLoops:       DNAHairpinLoops,
-	Multibranch:        DNAMultibranch,
-	InternalLoops:      DNAInternalLoops,
-	InternalMismatches: DNAInternalMismatches,
-	NearestNeighbors:   DNANearestNeighbors,
-	TerminalMismatches: DNATerminalMismatches,
-	TriTetraLoops:      DNATriTetraLoops,
+var dnaEnergies = Energies{
+	BulgeLoops:         dnaBulgeLoops,
+	Complement:         dnaComplement,
+	DanglingEnds:       dnaDanglingEnds,
+	HairpinLoops:       dnaHairpinLoops,
+	Multibranch:        dnaMultibranch,
+	InternalLoops:      dnaInternalLoops,
+	InternalMismatches: dnaInternalMismatches,
+	NearestNeighbors:   dnaNearestNeighbors,
+	TerminalMismatches: dnaTerminalMismatches,
+	TriTetraLoops:      dnaTriTetraLoops,
 }
