@@ -1,3 +1,31 @@
+/*
+Package fold is a package for folding DNA and RNA sequences into secondary structures.
+
+This package provides everything you need to fold a DNA or RNA sequence into a secondary structure
+and get the minimum free energy of the structure. Most of the code was ported from the
+python SeqFold package by Lattice Automation and Joshua Timmons but we hope to have a
+linear fold algorithm in the near future.
+
+Biological context:
+
+DNA, RNA, and proteins all fold. Protein is a particularly tricky thing to predict
+partially because there are so many more amino acids than there are nucleotides.
+
+ACG(T/U) vs. ACDEFGHIKLMNPQRSTVWY (20 amino acids)
+
+These folding predictions help us understand how to design primers, guide RNAs, and
+other nucleic acid sequences that fold into a particular structure.
+
+Fortunately for us, DNA and RNA are much easier to predict because there are only 4 nucleotides
+and the rules for folding are much more well defined.
+
+Each function has citations to the original papers that describe the algorithms used.
+Most of the algorithms used in this package are based on the work of Zuker and Stiegler, 1981
+but we're hoping to add more algorithms in the near future such as linear fold.
+
+TTFN,
+Tim
+*/
 package fold
 
 import (
