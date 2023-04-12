@@ -1,3 +1,6 @@
+/*
+Package alphabet provides structs for defining biological sequence alphabets.
+*/
 package alphabet
 
 import "fmt"
