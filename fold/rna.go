@@ -1,6 +1,8 @@
 package fold
 
-var rnaComplement = map[byte]byte{'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+import "github.com/TimothyStiles/poly/transform"
+
+var rnaComplement = transform.ComplementBaseRNA
 
 var rnaMultibranch = multibranchEnergies{2.5, 0.1, 0.4, 2.0}
 

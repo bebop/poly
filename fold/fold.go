@@ -59,22 +59,22 @@ func MinimumFreeEnergy(seq string, temp float64) (float64, error) {
 //
 //	NucleicAcidStructures: A list of NucleicAcidStructure, usually from the fold function
 //
-// # Returns the dot-bracket notation of the secondary structure
+// Returns the dot-bracket notation of the secondary structure.
 //
 // Dot-bracket notation, consisting in a balanced parentheses string composed
 // by a three-character alphabet {.,(,)}, that can be unambiguously converted
 // in the RNA secondary structure. See example_test.go for a small example.
 func DotBracket(NucleicAcidStructures []NucleicAcidStructure) string {
-	maxj := 0
+	lastStructEnd := 0
 	for _, structure := range NucleicAcidStructures {
 		for _, innerSubsequence := range structure.Inner {
-			if innerSubsequence.End > maxj {
-				maxj = innerSubsequence.End
+			if innerSubsequence.End > lastStructEnd {
+				lastStructEnd = innerSubsequence.End
 			}
 		}
 	}
-	maxj += 1
-	result := make([]byte, maxj)
+	lastStructEnd += 1
+	result := make([]byte, lastStructEnd)
 	for i := range result {
 		result[i] = '.'
 	}
@@ -158,7 +158,7 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (NucleicAcidS
 	}
 
 	// the ends must basepair for pairedMinimumFreeEnergyV(start,end)
-	if foldContext.energies.complement[foldContext.Seq[start]] != foldContext.Seq[end] {
+	if foldContext.energies.complement(rune(foldContext.Seq[start])) != rune(foldContext.Seq[end]) {
 		foldContext.pairedMinimumFreeEnergyV[start][end] = invalidStructure
 		return foldContext.pairedMinimumFreeEnergyV[start][end], nil
 	}
@@ -167,9 +167,9 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (NucleicAcidS
 	// from https://www.ncbi.nlm.nih.gov/pubmed/10329189
 	isolatedOuter := true
 	if start > 0 && end < len(foldContext.Seq)-1 {
-		isolatedOuter = foldContext.energies.complement[foldContext.Seq[start-1]] != foldContext.Seq[end+1]
+		isolatedOuter = foldContext.energies.complement(rune(foldContext.Seq[start-1])) != rune(foldContext.Seq[end+1])
 	}
-	isolatedInner := foldContext.energies.complement[foldContext.Seq[start+1]] != foldContext.Seq[end-1]
+	isolatedInner := foldContext.energies.complement(rune(foldContext.Seq[start+1])) != rune(foldContext.Seq[end-1])
 
 	if isolatedOuter && isolatedInner {
 		foldContext.pairedMinimumFreeEnergyV[start][end] = NucleicAcidStructure{Energy: 1600}
@@ -193,7 +193,7 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (NucleicAcidS
 	for i1 := start + 1; i1 < end-4; i1++ {
 		for j1 := i1 + 4; j1 < end; j1++ {
 			// i1 and j1 must match
-			if foldContext.energies.complement[foldContext.Seq[i1]] != foldContext.Seq[j1] {
+			if foldContext.energies.complement(rune(foldContext.Seq[i1])) != rune(foldContext.Seq[j1]) {
 				continue
 			}
 
@@ -455,7 +455,7 @@ func multibranch(start, k, end int, foldContext context, helix bool) (NucleicAci
 			} else if unpairedRight != 0 {
 				danglingEnergy = stack(-1, i2, j2+1, j2, foldContext)
 				if unpairedRight == 1 {
-					danglingEnergy = min(stack(i3, -1, j3, j3-1, foldContext), danglingEnergy)
+					danglingEnergy = math.Min(stack(i3, -1, j3, j3-1, foldContext), danglingEnergy)
 				}
 			}
 		} else if ij2 == subsequence {
@@ -467,7 +467,7 @@ func multibranch(start, k, end int, foldContext context, helix bool) (NucleicAci
 			} else if unpairedRight != 0 {
 				danglingEnergy = stack(i2, i2+1, j2, -1, foldContext)
 				if unpairedRight == 1 {
-					danglingEnergy = min(stack(i3-1, i3, -1, j3, foldContext), danglingEnergy)
+					danglingEnergy = math.Min(stack(i3-1, i3, -1, j3, foldContext), danglingEnergy)
 				}
 			}
 		} else {
@@ -479,7 +479,7 @@ func multibranch(start, k, end int, foldContext context, helix bool) (NucleicAci
 			} else if unpairedRight != 0 {
 				danglingEnergy = stack(-1, i2, j2+1, j2, foldContext)
 				if unpairedRight == 1 {
-					danglingEnergy = min(stack(i2-1, i2, j2+1, j2, foldContext), danglingEnergy)
+					danglingEnergy = math.Min(stack(i2-1, i2, j2+1, j2, foldContext), danglingEnergy)
 				}
 			}
 		}
@@ -700,7 +700,7 @@ func hairpin(start, end int, foldContext context) (float64, error) {
 	hairpinLength := len(hairpinSeq) - 2
 	paired := pair(foldContext.Seq, start, start+1, end, end-1)
 
-	if foldContext.energies.complement[hairpinSeq[0]] != hairpinSeq[len(hairpinSeq)-1] {
+	if foldContext.energies.complement(rune(hairpinSeq[0])) != rune(hairpinSeq[len(hairpinSeq)-1]) {
 		// not known terminal pair, nothing to close "hairpin"
 		return 0, fmt.Errorf("hairpin: subsequence (%d, %d): unknown hairpin terminal pairing %c - %c", start, end, hairpinSeq[0], hairpinSeq[len(hairpinSeq)-1])
 	}

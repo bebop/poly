@@ -1,6 +1,8 @@
 package fold
 
-var dnaComplement = map[byte]byte{'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+import "github.com/TimothyStiles/poly/transform"
+
+var dnaComplement = transform.ComplementBase
 
 var dnaMultibranch = multibranchEnergies{helicesCount: 2.6, unpairedCount: 0.2, coaxialStackCount: 0.2, terminalMismatchCount: 2.0}
 

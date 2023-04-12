@@ -42,12 +42,15 @@ type matchingBasepairEnergy map[string]Energy
 // loopEnergy is a map[int]Energy where the int is the length of the loop
 type loopEnergy map[int]Energy
 
+// complementFunc is function to translate a base in its complement
+type complementFunc func(rune) rune
+
 // energies holds the needed energy maps, BpEnergy and loopEnergy, to compute
 // the folding, it also holds the complement map for the kind of sequence, rna
 // or DNA
 type energies struct {
 	bulgeLoops         loopEnergy
-	complement         map[byte]byte
+	complement         complementFunc
 	danglingEnds       matchingBasepairEnergy
 	hairpinLoops       loopEnergy
 	multibranch        multibranchEnergies
