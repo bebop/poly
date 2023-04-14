@@ -17,6 +17,10 @@ const (
 	// for structures, outside of that range the Jacobson-Stockmayer formula
 	// is used see the jacobsonStockmayer() function.
 	maxLenPreCalulated = 30
+
+	// minLenForStruct is the minimum length of a nucletide sequence that can
+	// create a structure, pentanucleotide sequences form no stable structure
+	minLenForStruct = 4
 )
 
 /*

@@ -86,7 +86,8 @@ func unpairedMinimumFreeEnergyW(start, end int, foldContext context) (nucleicAci
 		return foldContext.unpairedMinimumFreeEnergyW[start][end], nil
 	}
 
-	if end-start < 4 {
+	// pentanucleotide sequences form no stable structure
+	if end-start < minLenForStruct {
 		foldContext.unpairedMinimumFreeEnergyW[start][end] = invalidStructure
 		return foldContext.unpairedMinimumFreeEnergyW[start][end], nil
 	}
@@ -676,7 +677,7 @@ func stack(start, i1, end, j1 int, foldContext context) float64 {
 //
 // Returns the free energy increment from the hairpin structure
 func hairpin(start, end int, foldContext context) (float64, error) {
-	if end-start < 4 {
+	if end-start < minLenForStruct {
 		return math.Inf(1), nil
 	}
 
