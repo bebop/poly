@@ -69,6 +69,9 @@ func Fold(seq string, temp float64) (Result, error) {
 // unpairedMinimumFreeEnergyW returns the minimum free energy of a subsequence
 // at start and terminating at end.
 //
+// From Zuker and Stiegler, 1981: let W(i,j) be the minimum free energy of all
+// possible admissible structures formed from the subsequence Sij.
+//
 // Figure 2B in Zuker and Stiegler, 1981
 // Args:
 //
@@ -88,38 +91,41 @@ func unpairedMinimumFreeEnergyW(start, end int, foldContext context) (nucleicAci
 		return foldContext.unpairedMinimumFreeEnergyW[start][end], nil
 	}
 
-	w1, err := unpairedMinimumFreeEnergyW(start+1, end, foldContext)
+	endDanglingLeft, err := unpairedMinimumFreeEnergyW(start+1, end, foldContext)
 	if err != nil {
 		return defaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
-	w2, err := unpairedMinimumFreeEnergyW(start, end-1, foldContext)
+	endDanglingRight, err := unpairedMinimumFreeEnergyW(start, end-1, foldContext)
 	if err != nil {
 		return defaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
-	w3, err := pairedMinimumFreeEnergyV(start, end, foldContext)
+	endsPaired, err := pairedMinimumFreeEnergyV(start, end, foldContext)
 	if err != nil {
 		return defaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 	}
 
-	w4 := invalidStructure
+	endBifurcation := invalidStructure
 	for k := start + 1; k < end-1; k++ {
-		w4_test, err := multibranch(start, k, end, foldContext, false)
+		testBranch, err := multibranch(start, k, end, foldContext, false)
 		if err != nil {
 			return defaultStructure, fmt.Errorf("w: subsequence (%d, %d): %w", start, end, err)
 		}
 
-		if w4_test.Valid() && w4_test.energy < w4.energy {
-			w4 = w4_test
+		if testBranch.Valid() && testBranch.energy < endBifurcation.energy {
+			endBifurcation = testBranch
 		}
 	}
 
-	wret := minimumStructure(w1, w2, w3, w4)
-	foldContext.unpairedMinimumFreeEnergyW[start][end] = wret
-	return wret, nil
+	minStuctEnergy := minimumStructure(endDanglingLeft, endDanglingRight, endsPaired, endBifurcation)
+	foldContext.unpairedMinimumFreeEnergyW[start][end] = minStuctEnergy
+	return minStuctEnergy, nil
 }
 
-// pairedMinimumFreeEnergyV returns the minimum free energy of a subsequence of paired bases
-// and end.
+// pairedMinimumFreeEnergyV returns the minimum free energy of a subsequence of
+// paired bases and end.
+// From Figure 2B of Zuker, 1981: let V(i,j) be the minimum free energy of all
+// possible admissible structures formed from Sij in which Si and Sj base pair
+// with each other. If Si and Sj cannot base pair, then V(i,j) = infinity
 //
 // If start and end don't bp, store and return INF.
 // See: Figure 2B of Zuker, 1981
@@ -738,15 +744,15 @@ func deltaG(enthalpyHDifference, entropySDifference, temp float64) float64 {
 // for pre-calculated free-energies. See SantaLucia and Hicks (2004).
 // Args:
 //
-//	query_len: Length of element without known free energy value
-//	known_len: Length of element with known free energy value (d_g_x)
-//	d_g_x: The free energy of the element known_len
+//	queryLen: Length of element without known free energy value
+//	knownLen: Length of element with known free energy value (d_g_x)
+//	dGx: The free energy of the element known_len
 //	temp: Temperature in Kelvin
 //
 // Returns the free energy for a structure of length query_len
-func jacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
+func jacobsonStockmayer(queryLen, knownLen int, dGx, temp float64) float64 {
 	gasConstant := 1.9872e-3
-	return d_g_x + 2.44*gasConstant*temp*math.Log(float64(query_len)/float64(known_len))
+	return dGx + 2.44*gasConstant*temp*math.Log(float64(queryLen)/float64(knownLen))
 }
 
 // pair Returns a stack representation, a key for the nearestNeighbors maps
@@ -754,25 +760,25 @@ func jacobsonStockmayer(query_len, known_len int, d_g_x, temp float64) float64 {
 //
 //	s: Sequence being folded
 //	start: leftmost index
-//	i1: index to right of start
+//	startRigh: index to right of start
 //	end: rightmost index
-//	j1: index to left of end
+//	endLeft: index to left of end
 //
 // Returns string representation of the pair
-func pair(s string, start, i1, end, j1 int) string {
+func pair(s string, start, startRigh, end, endLeft int) string {
 	ss := []rune(s)
 	ret := []rune{'.', '.', '/', '.', '.'}
 	if start >= 0 {
 		ret[0] = ss[start]
 	}
-	if i1 >= 0 {
-		ret[1] = ss[i1]
+	if startRigh >= 0 {
+		ret[1] = ss[startRigh]
 	}
 	if end >= 0 {
 		ret[3] = ss[end]
 	}
-	if j1 >= 0 {
-		ret[4] = ss[j1]
+	if endLeft >= 0 {
+		ret[4] = ss[endLeft]
 	}
 	return string(ret)
 }
