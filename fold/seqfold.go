@@ -8,6 +8,11 @@ import (
 	"github.com/TimothyStiles/poly/checks"
 )
 
+// When calculating the paired minimum free energy if the basepair is isolated,
+// and the seq large, penalize at 1,600 kcal/mol heuristic for speeding this up
+// from https://www.ncbi.nlm.nih.gov/pubmed/10329189
+const isolatedBasePairPenalty = 1600
+
 /*
 multibranchEnergies holds the a, b, c, d in a linear multi-branch energy
 

@@ -150,7 +150,7 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 	isolatedInner := foldContext.energies.complement(rune(foldContext.seq[start+1])) != rune(foldContext.seq[end-1])
 
 	if isolatedOuter && isolatedInner {
-		foldContext.pairedMinimumFreeEnergyV[start][end] = nucleicAcidStructure{energy: 1600}
+		foldContext.pairedMinimumFreeEnergyV[start][end] = nucleicAcidStructure{energy: isolatedBasePairPenalty}
 		return foldContext.pairedMinimumFreeEnergyV[start][end], nil
 	}
 
