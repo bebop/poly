@@ -290,10 +290,10 @@ func Bulge(start, i1, end, j1 int, foldContext context) (float64, error) {
 		dG = deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
 	} else {
 		// it's too large for pre-calculated list, extrapolate
-		foldEnergy := foldContext.energies.bulgeLoops[30]
+		foldEnergy := foldContext.energies.bulgeLoops[maxLenPreCalulated]
 		enthalpyHDifference, entropySDifference := foldEnergy.enthalpyH, foldEnergy.entropyS
 		dG = deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
-		dG = jacobsonStockmayer(loopLength, 30, dG, foldContext.temp)
+		dG = jacobsonStockmayer(loopLength, maxLenPreCalulated, dG, foldContext.temp)
 	}
 
 	if loopLength == 1 {
@@ -545,10 +545,10 @@ func internalLoop(start, i1, end, j1 int, foldContext context) (float64, error) 
 		dG = deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
 	} else {
 		// it's too large an internal loop, extrapolate
-		foldEnergy := foldContext.energies.internalLoops[30]
+		foldEnergy := foldContext.energies.internalLoops[maxLenPreCalulated]
 		enthalpyHDifference, entropySDifference = foldEnergy.enthalpyH, foldEnergy.entropyS
 		dG = deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
-		dG = jacobsonStockmayer(loopLength, 30, dG, foldContext.temp)
+		dG = jacobsonStockmayer(loopLength, maxLenPreCalulated, dG, foldContext.temp)
 	}
 
 	// apply an asymmetry penalty
@@ -698,10 +698,10 @@ func hairpin(start, end int, foldContext context) (float64, error) {
 		dG += deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
 	} else {
 		// it's too large, extrapolate
-		energy := foldContext.energies.hairpinLoops[30]
+		energy := foldContext.energies.hairpinLoops[maxLenPreCalulated]
 		enthalpyHDifference, entropySDifference := energy.enthalpyH, energy.entropyS
 		d_g_inc := deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
-		dG += jacobsonStockmayer(hairpinLength, 30, d_g_inc, foldContext.temp)
+		dG += jacobsonStockmayer(hairpinLength, maxLenPreCalulated, d_g_inc, foldContext.temp)
 	}
 
 	// add penalty for a terminal mismatch
