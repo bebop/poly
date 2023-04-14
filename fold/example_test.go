@@ -7,8 +7,8 @@ import (
 )
 
 func ExampleFold() {
-	structs, _ := fold.Fold("ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA", 37.0)
-	brackets := fold.DotBracket(structs)
+	result, _ := fold.Fold("ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA", 37.0)
+	brackets := result.DotBracket()
 	fmt.Println(brackets)
 	// Output: .((((.(((......)))....))))
 }

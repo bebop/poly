@@ -14,10 +14,12 @@ func TestFold(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
 		foldContext, err := newFoldingContext(seq, 37.0)
 		require.NoError(t, err)
-		seqDg, err := MinimumFreeEnergy(seq, 37.0)
+		res, err := Fold(seq, 37.0)
+		require.NoError(t, err)
+		seqDg := res.MinimumFreeEnergy()
 		require.NoError(t, err)
 
-		assert.InDelta(t, seqDg, foldContext.unpairedMinimumFreeEnergyW[0][len(seq)-1].Energy, 1)
+		assert.InDelta(t, seqDg, foldContext.unpairedMinimumFreeEnergyW[0][len(seq)-1].energy, 1)
 	})
 	t.Run("FoldDNA", func(t *testing.T) {
 		// unafold's estimates for free energy estimates of DNA oligos
@@ -32,8 +34,9 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafoldDgs {
-			d, err := MinimumFreeEnergy(seq, 37.0)
+			res, err := Fold(seq, 37.0)
 			require.NoError(t, err)
+			d := res.MinimumFreeEnergy()
 			// accepting a 60% difference
 			delta := math.Abs(0.6 * math.Min(d, ufold))
 			assert.InDeltaf(t, d, ufold, delta, seq)
@@ -54,8 +57,9 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafoldDgs {
-			d, err := MinimumFreeEnergy(seq, 37.0)
+			res, err := Fold(seq, 37.0)
 			require.NoError(t, err)
+			d := res.MinimumFreeEnergy()
 
 			// accepting a 50% difference
 			delta := math.Abs(0.5 * math.Min(d, ufold))
@@ -64,22 +68,22 @@ func TestFold(t *testing.T) {
 	})
 	t.Run("DotBracket", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC"
-		structs, err := Fold(seq, 37.0)
+		res, err := Fold(seq, 37.0)
 		require.NoError(t, err)
 
-		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", DotBracket(structs))
+		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", res.DotBracket())
 	})
 	t.Run("multibranch", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC" // three branch
 
-		structs, err := Fold(seq, 37.0)
+		res, err := Fold(seq, 37.0)
 		require.NoError(t, err)
 
 		found := false
-		foundIJ := Subsequence{7, 41}
-		for _, s := range structs {
-			if strings.Contains(s.Description, "BIFURCATION") {
-				for _, ij := range s.Inner {
+		foundIJ := subsequence{7, 41}
+		for _, s := range res.structs {
+			if strings.Contains(s.description, "BIFURCATION") {
+				for _, ij := range s.inner {
 					if ij == foundIJ {
 						found = true
 					}
@@ -172,7 +176,7 @@ func TestFold(t *testing.T) {
 
 		struc, err := unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, struc.Energy, -3.8, 0.2)
+		assert.InDelta(t, struc.energy, -3.8, 0.2)
 
 		seq = "CCUGCUUUGCACGCAGG"
 		i = 0
@@ -183,7 +187,7 @@ func TestFold(t *testing.T) {
 
 		struc, err = unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, struc.Energy, -6.4, 0.2)
+		assert.InDelta(t, struc.energy, -6.4, 0.2)
 
 		seq = "GCGGUUCGAUCCCGC"
 		i = 0
@@ -194,6 +198,6 @@ func TestFold(t *testing.T) {
 
 		struc, err = unpairedMinimumFreeEnergyW(i, j, foldContext)
 		require.NoError(t, err)
-		assert.InDelta(t, struc.Energy, -4.2, 0.2)
+		assert.InDelta(t, struc.energy, -4.2, 0.2)
 	})
 }
