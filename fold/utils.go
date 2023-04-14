@@ -1,8 +1,6 @@
 package fold
 
 import (
-	"math"
-
 	"golang.org/x/exp/constraints"
 )
 
@@ -18,13 +16,4 @@ func abs(x int) int {
 		return -x
 	}
 	return x
-}
-
-// RoundFloat runds at the given decimal place
-func RoundFloat(number float64, decimalPlace int) float64 {
-	// Calculate the 10 to the power of decimal place
-	temp := math.Pow(10, float64(decimalPlace))
-	// Multiply floating-point number with 10**decimalPlace and round it
-	// Divide the rounded number with 10**decimalPlace to get decimal place rounding
-	return math.Round(number*temp) / temp
 }

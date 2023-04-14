@@ -86,7 +86,6 @@ func unpairedMinimumFreeEnergyW(start, end int, foldContext context) (nucleicAci
 		return foldContext.unpairedMinimumFreeEnergyW[start][end], nil
 	}
 
-	// pentanucleotide sequences form no stable structure
 	if end-start < minLenForStruct {
 		foldContext.unpairedMinimumFreeEnergyW[start][end] = invalidStructure
 		return foldContext.unpairedMinimumFreeEnergyW[start][end], nil
@@ -194,19 +193,19 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 			bulgeRight := j1 < end-1
 
 			var (
-				e2_test      float64
-				e2_test_type string
-				err          error
+				e2Test     float64
+				e2TestType string
+				err        error
 			)
 			switch {
 			case isStack:
 				// it's a neighboring/stacking pair in a helix
-				e2_test = stack(start, i1, end, j1, foldContext)
-				e2_test_type = fmt.Sprintf("STACK:%s", paired)
+				e2Test = stack(start, i1, end, j1, foldContext)
+				e2TestType = fmt.Sprintf("STACK:%s", paired)
 
 				if start > 0 && end == n-1 || start == 0 && end < n-1 {
 					// there's a dangling end
-					e2_test_type = fmt.Sprintf("STACKDanglingEnds:%s", paired)
+					e2TestType = fmt.Sprintf("STACKDanglingEnds:%s", paired)
 				}
 			case bulgeLeft && bulgeRight && !pairInner:
 				// it's an interior loop
@@ -214,29 +213,29 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 				if err != nil {
 					return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
-				e2_test = il
-				e2_test_type = fmt.Sprintf("INTERIOR_LOOP:%d/%d", i1-start, end-j1)
+				e2Test = il
+				e2TestType = fmt.Sprintf("INTERIOR_LOOP:%d/%d", i1-start, end-j1)
 
 				if i1-start == 2 && end-j1 == 2 {
 					loopLeftIndex := foldContext.seq[start : i1+1]
 					loopRightIndex := foldContext.seq[j1 : end+1]
 					// technically an interior loop of 1. really 1bp mismatch
-					e2_test_type = fmt.Sprintf("STACK:%s/%s", loopLeftIndex, transform.Reverse(loopRightIndex))
+					e2TestType = fmt.Sprintf("STACK:%s/%s", loopLeftIndex, transform.Reverse(loopRightIndex))
 				}
 			case bulgeLeft && !bulgeRight:
 				// it's a bulge on the left side
-				e2_test, err = Bulge(start, i1, end, j1, foldContext)
+				e2Test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
 					return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
-				e2_test_type = fmt.Sprintf("BULGE:%d", i1-start)
+				e2TestType = fmt.Sprintf("BULGE:%d", i1-start)
 			case !bulgeLeft && bulgeRight:
 				// it's a bulge on the right side
-				e2_test, err = Bulge(start, i1, end, j1, foldContext)
+				e2Test, err = Bulge(start, i1, end, j1, foldContext)
 				if err != nil {
 					return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 				}
-				e2_test_type = fmt.Sprintf("BULGE:%d", end-j1)
+				e2TestType = fmt.Sprintf("BULGE:%d", end-j1)
 			default:
 				// it's basically a hairpin, only outside bp match
 				continue
@@ -247,9 +246,9 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 			if err != nil {
 				return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 			}
-			e2_test += tv.energy
-			if e2_test != math.Inf(-1) && e2_test < e2.energy {
-				e2 = nucleicAcidStructure{energy: e2_test, description: e2_test_type, inner: []subsequence{{i1, j1}}}
+			e2Test += tv.energy
+			if e2Test != math.Inf(-1) && e2Test < e2.energy {
+				e2 = nucleicAcidStructure{energy: e2Test, description: e2TestType, inner: []subsequence{{i1, j1}}}
 			}
 		}
 	}
@@ -257,13 +256,13 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 	e3 := invalidStructure
 	if !isolatedOuter || start == 0 || end == len(foldContext.seq)-1 {
 		for k := start + 1; k < end-1; k++ {
-			e3_test, err := multibranch(start, k, end, foldContext, true)
+			e3Test, err := multibranch(start, k, end, foldContext, true)
 			if err != nil {
 				return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 			}
 
-			if e3_test.Valid() && e3_test.energy < e3.energy {
-				e3 = e3_test
+			if e3Test.Valid() && e3Test.energy < e3.energy {
+				e3 = e3Test
 			}
 		}
 	}
@@ -707,8 +706,8 @@ func hairpin(start, end int, foldContext context) (float64, error) {
 		// it's too large, extrapolate
 		energy := foldContext.energies.hairpinLoops[maxLenPreCalulated]
 		enthalpyHDifference, entropySDifference := energy.enthalpyH, energy.entropyS
-		d_g_inc := deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
-		dG += jacobsonStockmayer(hairpinLength, maxLenPreCalulated, d_g_inc, foldContext.temp)
+		dGinc := deltaG(enthalpyHDifference, entropySDifference, foldContext.temp)
+		dG += jacobsonStockmayer(hairpinLength, maxLenPreCalulated, dGinc, foldContext.temp)
 	}
 
 	// add penalty for a terminal mismatch
@@ -738,7 +737,7 @@ func deltaG(enthalpyHDifference, entropySDifference, temp float64) float64 {
 	return enthalpyHDifference - temp*(entropySDifference/1000.0)
 }
 
-// Estimate the free energy of length query_len based on one of length known_len.
+// Estimate the free energy of length queryLen based on one of length knownLen.
 //
 // The Jacobson-Stockmayer entry extrapolation formula is used
 // for bulges, hairpins, etc that fall outside the 30nt upper limit
@@ -746,11 +745,11 @@ func deltaG(enthalpyHDifference, entropySDifference, temp float64) float64 {
 // Args:
 //
 //	queryLen: Length of element without known free energy value
-//	knownLen: Length of element with known free energy value (d_g_x)
-//	dGx: The free energy of the element known_len
+//	knownLen: Length of element with known free energy value (dGx)
+//	dGx: The free energy of the element knownLen
 //	temp: Temperature in Kelvin
 //
-// Returns the free energy for a structure of length query_len
+// Returns the free energy for a structure of length queryLen
 func jacobsonStockmayer(queryLen, knownLen int, dGx, temp float64) float64 {
 	gasConstant := 1.9872e-3
 	return dGx + 2.44*gasConstant*temp*math.Log(float64(queryLen)/float64(knownLen))
