@@ -21,6 +21,15 @@ const (
 	// minLenForStruct is the minimum length of a nucletide sequence that can
 	// create a structure, pentanucleotide sequences form no stable structure
 	minLenForStruct = 4
+
+	// loopsAsymmetryPenalty is an energy penalty added for interior loops if
+	// the left loop size differs from the right loop size
+	// Formula 12 from SantaLucia, 2004
+	loopsAsymmetryPenalty = 0.3
+	// hairpinLoopATClosingPenalty is the energy penalty applied to hairpin
+	// loops of length 3 and closed by an AT basepair.
+	// Formula 8 from SantaLucia, 2004
+	hairpinLoopATClosingPenalty = 0.5
 )
 
 /*

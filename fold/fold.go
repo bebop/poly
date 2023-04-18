@@ -487,12 +487,19 @@ func multibranch(start, k, end int, foldContext context, helix bool) (nucleicAci
 		return defaultStructure, fmt.Errorf("multibranch: subsequence (%d, %d, %d): unpaired < 0", start, end, k)
 	}
 
+	// this is just for readability of the formulas below
+	var (
+		helicesCount          = foldContext.energies.multibranch.helicesCount
+		unpairedCount         = foldContext.energies.multibranch.unpairedCount
+		coaxialStackCount     = foldContext.energies.multibranch.coaxialStackCount
+		terminalMismatchCount = foldContext.energies.multibranch.terminalMismatchCount
+	)
+
 	// penalty for unmatched bp and multi-branch
-	a, b, c, d := foldContext.energies.multibranch.helicesCount, foldContext.energies.multibranch.unpairedCount, foldContext.energies.multibranch.coaxialStackCount, foldContext.energies.multibranch.terminalMismatchCount
-	multibranchEnergy := a + b*float64(len(branches)) + c*float64(unpaired)
+	multibranchEnergy := helicesCount + unpairedCount*float64(len(branches)) + coaxialStackCount*float64(unpaired)
 
 	if unpaired == 0 {
-		multibranchEnergy = a + d
+		multibranchEnergy = helicesCount + terminalMismatchCount
 	}
 
 	// energy of min-energy neighbors
@@ -559,7 +566,7 @@ func internalLoop(start, i1, end, j1 int, foldContext context) (float64, error) 
 
 	// apply an asymmetry penalty
 	loopAsymmetry := math.Abs(float64(loopLeftIndex - loopRightIndex))
-	dG += 0.3 * loopAsymmetry
+	dG += loopsAsymmetryPenalty * loopAsymmetry
 
 	// apply penalty based on the mismatching pairs on either side of the loop
 	pairedMismatchLeftEnergy := pair(foldContext.seq, start, start+1, end, end-1)
@@ -575,7 +582,7 @@ func internalLoop(start, i1, end, j1 int, foldContext context) (float64, error) 
 	return dG, nil
 }
 
-// stack return the free energy of a stack
+// stack returns the free energy of a stack
 //
 // Using the indexes start and end, check whether it's at the end of
 // the sequence or internal. Then check whether it's a match
@@ -719,7 +726,7 @@ func hairpin(start, end int, foldContext context) (float64, error) {
 
 	// add penalty if length 3 and AT closing, formula 8 from SantaLucia, 2004
 	if hairpinLength == 3 && (hairpinSeq[0] == 'A' || hairpinSeq[len(hairpinSeq)-1] == 'A') {
-		dG += 0.5 // convert to entropy
+		dG += hairpinLoopATClosingPenalty // convert to entropy
 	}
 
 	return dG, nil
