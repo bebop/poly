@@ -26,10 +26,10 @@ const (
 	// the left loop size differs from the right loop size
 	// Formula 12 from SantaLucia, 2004
 	loopsAsymmetryPenalty = 0.3
-	// hairpinLoopATClosingPenalty is the energy penalty applied to hairpin
-	// loops of length 3 and closed by an AT basepair.
+	// closingATPenalty is the energy penalty applied to strucfures closed by
+	// an AT basepair.
 	// Formula 8 from SantaLucia, 2004
-	hairpinLoopATClosingPenalty = 0.5
+	closingATPenalty = 0.5
 )
 
 /*
