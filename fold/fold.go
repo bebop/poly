@@ -166,7 +166,7 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 		return defaultStructure, fmt.Errorf("v: subsequence (%d, %d): %w", start, end, err)
 	}
 	e1 := nucleicAcidStructure{energy: hairpin, description: "HAIRPIN:" + paired}
-	if end-start == 4 { // small hairpin; 4bp
+	if end-start == minLenForStruct { // small hairpin; 4bp
 		foldContext.pairedMinimumFreeEnergyV[start][end] = e1
 		foldContext.unpairedMinimumFreeEnergyW[start][end] = e1
 		return foldContext.pairedMinimumFreeEnergyV[start][end], nil
@@ -174,8 +174,8 @@ func pairedMinimumFreeEnergyV(start, end int, foldContext context) (nucleicAcidS
 
 	n := len(foldContext.seq)
 	e2 := nucleicAcidStructure{energy: math.Inf(1)}
-	for rightOfStart := start + 1; rightOfStart < end-4; rightOfStart++ {
-		for leftOfEnd := rightOfStart + 4; leftOfEnd < end; leftOfEnd++ {
+	for rightOfStart := start + 1; rightOfStart < end-minLenForStruct; rightOfStart++ {
+		for leftOfEnd := rightOfStart + minLenForStruct; leftOfEnd < end; leftOfEnd++ {
 			// rightOfStart and leftOfEnd must match
 			if foldContext.energies.complement(rune(foldContext.seq[rightOfStart])) != rune(foldContext.seq[leftOfEnd]) {
 				continue
