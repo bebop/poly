@@ -565,8 +565,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 
-			} else if !strings.Contains(parameters.currentLine, "/") { //|| parameters.currentLine[0] != '/' {
-				//} else if !(parameters.currentLine[0] != '/') { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
+			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
 
 				// if it's a continuation of the current feature, add it to the location
 				if !strings.Contains(parameters.currentLine, "\"") && (countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) || parameters.multiLineFeature) {
