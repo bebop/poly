@@ -766,5 +766,10 @@ func TestIssue303Regression(t *testing.T) {
 				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"], expectedAttribute)
 			}
 		}
+		if feature.Attributes["locus_tag"] == "JCVISYN3A_0051" && feature.Type == "CDS" {
+			if _, ok := feature.Attributes["pseudo"]; !ok {
+				t.Errorf("pseudo should be in attributes")
+			}
+		}
 	}
 }

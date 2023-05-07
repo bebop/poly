@@ -384,6 +384,7 @@ type parseLoopParameters struct {
 	quoteActive      bool
 	attribute        string
 	attributeValue   string
+	emptyAttribute   bool
 	sequenceBuilder  strings.Builder
 	parseStep        string
 	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
@@ -585,8 +586,9 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 					continue
 				}
 				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
+				if parameters.attributeValue != "" || parameters.emptyAttribute {
 					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.emptyAttribute = false
 				}
 				parameters.attributeValue = ""
 				splitAttribute := strings.Split(line, "=")
@@ -598,6 +600,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				var removeAttributeValueQuotes string
 				if len(splitAttribute) == 1 { // handle case of ` /pseudo `, which has no text
 					removeAttributeValueQuotes = ""
+					parameters.emptyAttribute = true
 				} else { // this is normally triggered
 					removeAttributeValueQuotes = strings.Replace(splitAttribute[1], "\"", "", -1)
 				}
