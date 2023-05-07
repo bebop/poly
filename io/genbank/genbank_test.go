@@ -758,5 +758,13 @@ func TestParseReferences_error(t *testing.T) {
 }
 
 func TestIssue303Regression(t *testing.T) {
-	_, _ = Read("../../data/jcvi_syn3a.gb")
+	seq, _ := Read("../../data/jcvi_syn3a.gb")
+	expectedAttribute := "16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"
+	for _, feature := range seq.Features {
+		if feature.Attributes["locus_tag"] == "JCVISYN3A_0004" && feature.Type == "CDS" {
+			if feature.Attributes["product"] != expectedAttribute {
+				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"], expectedAttribute)
+			}
+		}
+	}
 }

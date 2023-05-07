@@ -579,8 +579,9 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 
 			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
-				if strings.TrimSpace(parameters.currentLine)[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
-					parameters.feature.Attributes[parameters.attribute] = parameters.feature.Attributes[parameters.attribute] + line
+				trimmedCurrentLine := strings.TrimSpace(parameters.currentLine)
+				if trimmedCurrentLine[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
+					parameters.attributeValue = parameters.attributeValue + trimmedCurrentLine
 					continue
 				}
 				// save our completed attribute / qualifier string to the current feature
