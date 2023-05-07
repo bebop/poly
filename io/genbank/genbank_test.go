@@ -756,3 +756,7 @@ func TestParseReferences_error(t *testing.T) {
 	_, err := parseMultiNthFn(file, 1)
 	assert.EqualError(t, err, parseReferencesErr.Error())
 }
+
+func TestIssue303Regression(t *testing.T) {
+	_, _ = Read("../../data/jcvi_syn3a.gb")
+}

@@ -565,7 +565,8 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 
-			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
+			} else if !strings.Contains(parameters.currentLine, "/") { //|| parameters.currentLine[0] != '/' {
+				//} else if !(parameters.currentLine[0] != '/') { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
 
 				// if it's a continuation of the current feature, add it to the location
 				if !strings.Contains(parameters.currentLine, "\"") && (countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) || parameters.multiLineFeature) {
@@ -579,7 +580,10 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 
 			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
-
+				if strings.TrimSpace(parameters.currentLine)[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
+					parameters.feature.Attributes[parameters.attribute] = parameters.feature.Attributes[parameters.attribute] + line
+					continue
+				}
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" {
 					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
@@ -591,7 +595,12 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 				parameters.attribute = removedForwardSlashAttribute
 
-				removeAttributeValueQuotes := strings.Replace(splitAttribute[1], "\"", "", -1)
+				var removeAttributeValueQuotes string
+				if len(splitAttribute) == 1 { // handle case of ` /pseudo `, which has no text
+					removeAttributeValueQuotes = ""
+				} else { // this is normally triggered
+					removeAttributeValueQuotes = strings.Replace(splitAttribute[1], "\"", "", -1)
+				}
 				parameters.attributeValue = removeAttributeValueQuotes
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 			}
