@@ -64,9 +64,10 @@ type Part struct {
 
 // Overhang is a struct that represents the ends of a linearized sequence where Enzymes had cut.
 type Overhang struct {
-	Length   int
-	Position int
-	Forward  bool
+	Length                        int
+	Position                      int
+	Forward                       bool
+	RecognitionSitePlusSkipLength int
 }
 
 // Fragment is a struct that represents linear DNA sequences with sticky ends.
@@ -134,13 +135,13 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 	var reverseOverhangs []Overhang
 	forwardCuts := enzyme.RegexpFor.FindAllStringIndex(sequence, -1)
 	for _, forwardCut := range forwardCuts {
-		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.OverhangLen, Position: forwardCut[1] + enzyme.Skip, Forward: true})
+		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.OverhangLen, Position: forwardCut[1] + enzyme.Skip, Forward: true, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
 	}
 	// Palindromic enzymes won't need reverseCuts
 	if !palindromic {
 		reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
 		for _, reverseCut := range reverseCuts {
-			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.OverhangLen, Position: reverseCut[0] - enzyme.Skip, Forward: false})
+			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.OverhangLen, Position: reverseCut[0] - enzyme.Skip, Forward: false, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
 		}
 	}
 
@@ -206,12 +207,14 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 				if currentOverhang.Forward && !nextOverhang.Forward {
 					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
-				if nextOverhang.Position > len(seq.Sequence) {
+				// We have to subtract RecognitionSitePlusSkipLength in case we have a recognition site on
+				// one side of the origin of a circular sequence and the cut site on the other side of the origin
+				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(seq.Sequence) {
 					break
 				}
 			} else {
 				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
-				if nextOverhang.Position > len(seq.Sequence) {
+				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(seq.Sequence) {
 					break
 				}
 			}
