@@ -2,6 +2,7 @@ package codon
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -271,11 +272,13 @@ func TestWriteCodonJSON(t *testing.T) {
 
 }
 
-/******************************************************************************
+/*
+*****************************************************************************
 
 Codon Compromise + Add related tests begin here.
 
-******************************************************************************/
+*****************************************************************************
+*/
 func TestCompromiseCodonTable(t *testing.T) {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
@@ -339,4 +342,34 @@ func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
 
 func (t *mockTable) IsEmpty() bool {
 	return t.IsEmptyFn()
+}
+
+func TestRegression306(t *testing.T) {
+	sequence, _ := genbank.Read("../../data/jcvi_syn3a.gb")
+	codonTable := GetCodonTable(4)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	taa := 0
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			seq, _ := feature.GetSequence()
+			if seq[len(seq)-3:] == "taa" {
+				taa++
+			}
+			if len(seq)%3 != 0 {
+				fmt.Println(seq)
+			}
+			codingRegionsBuilder.WriteString(seq)
+		}
+	}
+	fmt.Println(taa)
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
+	_ = codonTable.OptimizeTable(codingRegions)
 }

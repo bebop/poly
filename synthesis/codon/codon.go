@@ -181,6 +181,7 @@ func (table codonTable) OptimizeTable(sequence string) Table {
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
 func getCodonFrequency(sequence string) map[string]int {
+	fmt.Println(len(sequence))
 
 	codonFrequencyHashMap := map[string]int{}
 	var currentCodon strings.Builder
@@ -205,6 +206,7 @@ func getCodonFrequency(sequence string) map[string]int {
 			currentCodon.Reset()
 		}
 	}
+	fmt.Println(codonFrequencyHashMap["TAA"])
 	return codonFrequencyHashMap
 }
 
