@@ -62,6 +62,8 @@ func TestLongFragment(t *testing.T) {
 }
 
 func TestCheckLongRegresssion(t *testing.T) {
+	// This makes sure that reverse complements are simply skipped when
+	// checking efficiency of overhangs
 	overhangs := []string{"AGAC"}
 	newOverhangs, _ := NextOverhangs(overhangs)
 	foundGTCT := false
@@ -77,6 +79,8 @@ func TestCheckLongRegresssion(t *testing.T) {
 }
 
 func TestRegressionTestMatching12(t *testing.T) {
+	// This ensures that overhangs approximately match the efficiency generated
+	// by NEB with their ligase fidelity viewer: https://ligasefidelity.neb.com/viewset/run.cgi
 	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "AGTC", "AGGA", "ACAA", "ACGC", "TAGA", "TACA", "TTAC", "TTCG", "TGAG", "TCGG", "GAAG", "GTGC", "GCCG", "CAGG", "TATC", "GGGG", "AGCA", "GTTG", "ATGA", "TAAA", "TCTC", "TGAC", "ACCA", "CACG", "TACC", "TTGC", "TCAG", "AGAA", "GAAC", "AACT", "TTTG", "ATAA", "AAGG", "AATA", "TAGC", "TGGA", "TGCG", "TAAG"}
 	efficiency := SetEfficiency(overhangs)
 	if efficiency < 0.12 || efficiency > 0.13 {
