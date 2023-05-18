@@ -28,8 +28,9 @@ func SetEfficiency(overhangs []string) float64 {
 		nTotal := 0
 		for _, overhang2 := range overhangs {
 			nTotal = nTotal + mismatches[key{overhang, overhang2}]
+			nTotal = nTotal + mismatches[key{overhang, transform.ReverseComplement(overhang2)}]
 		}
-		if nTotal > 0 {
+		if nTotal != nCorrect {
 			efficiency = efficiency * (float64(nCorrect) / float64(nTotal))
 		}
 	}
@@ -70,9 +71,9 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 
 	var efficiencies []float64
 	for _, overhang := range overhangsToTest {
-		strandEfficiency := SetEfficiency(append(currentOverhangs, overhang))
+		strandEffieciency := SetEfficiency(append(currentOverhangs, overhang))
 		complementEfficiency := SetEfficiency(append(currentOverhangs, transform.ReverseComplement(overhang)))
-		efficiencies = append(efficiencies, (strandEfficiency+complementEfficiency)/2)
+		efficiencies = append(efficiencies, (strandEffieciency+complementEfficiency)/2)
 	}
 	return overhangsToTest, efficiencies
 }

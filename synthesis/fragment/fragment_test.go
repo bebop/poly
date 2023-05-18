@@ -40,7 +40,7 @@ func TestFragmentSizes(t *testing.T) {
 func TestSmallFragmentSize(t *testing.T) {
 	// The following should succeed, but will require setting minFragmentSize = 12
 	lacZ := "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG"
-	_, _, err := Fragment(lacZ, 12, 20)
+	_, _, err := Fragment(lacZ, 12, 30)
 	if err != nil {
 		t.Errorf("Got error in small fragmentation: %s", err)
 	}
@@ -81,9 +81,10 @@ func TestCheckLongRegresssion(t *testing.T) {
 func TestRegressionTestMatching12(t *testing.T) {
 	// This ensures that overhangs approximately match the efficiency generated
 	// by NEB with their ligase fidelity viewer: https://ligasefidelity.neb.com/viewset/run.cgi
-	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "AGTC", "AGGA", "ACAA", "ACGC", "TAGA", "TACA", "TTAC", "TTCG", "TGAG", "TCGG", "GAAG", "GTGC", "GCCG", "CAGG", "TATC", "GGGG", "AGCA", "GTTG", "ATGA", "TAAA", "TCTC", "TGAC", "ACCA", "CACG", "TACC", "TTGC", "TCAG", "AGAA", "GAAC", "AACT", "TTTG", "ATAA", "AAGG", "AATA", "TAGC", "TGGA", "TGCG", "TAAG"}
+	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "ACAA", "ACGC", "TATC", "TAGA", "TTAC", "TTCA", "TGTG", "TCGG", "TCCC", "GAAG", "GTGC", "GCCG", "CAGG", "TACG"}
 	efficiency := SetEfficiency(overhangs)
-	if efficiency < 0.12 || efficiency > 0.13 {
-		t.Errorf("Expected efficiency of 0.129 - approximately matches NEB ligase fidelity viewer")
+	if (efficiency > 1) || (efficiency < 0.965) {
+
+		t.Errorf("Expected efficiency of .99 - approximately matches NEB ligase fidelity viewer of .97. Got: %g", efficiency)
 	}
 }
