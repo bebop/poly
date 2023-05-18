@@ -60,3 +60,18 @@ func TestLongFragment(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckLongRegresssion(t *testing.T) {
+	overhangs := []string{"AGAC"}
+	newOverhangs, _ := NextOverhangs(overhangs)
+	foundGTCT := false
+	for _, overhang := range newOverhangs {
+		if overhang == "GTCT" {
+			foundGTCT = true
+		}
+	}
+	if foundGTCT {
+		t.Errorf("Should not have found GTCT since it is the reverse complement of AGAC")
+	}
+
+}

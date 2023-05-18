@@ -13,9 +13,10 @@ package fragment
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
-	"strings"
 )
 
 // SetEfficiency gets the estimated fidelity rate of a given set of
@@ -56,7 +57,8 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 				for _, base4 := range bases {
 					newOverhang := string([]rune{base1, base2, base3, base4})
 					_, ok := currentOverhangMap[newOverhang]
-					if !ok {
+					_, okReverse := currentOverhangMap[transform.ReverseComplement(newOverhang)]
+					if !ok && !okReverse {
 						if !checks.IsPalindromic(newOverhang) {
 							overhangsToTest = append(overhangsToTest, newOverhang)
 						}
