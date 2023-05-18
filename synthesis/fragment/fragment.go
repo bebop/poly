@@ -70,7 +70,9 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 
 	var efficiencies []float64
 	for _, overhang := range overhangsToTest {
-		efficiencies = append(efficiencies, SetEfficiency(append(currentOverhangs, overhang)))
+		strandEfficiency := SetEfficiency(append(currentOverhangs, overhang))
+		complementEfficiency := SetEfficiency(append(currentOverhangs, transform.ReverseComplement(overhang)))
+		efficiencies = append(efficiencies, (strandEfficiency+complementEfficiency)/2)
 	}
 	return overhangsToTest, efficiencies
 }

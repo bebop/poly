@@ -75,3 +75,11 @@ func TestCheckLongRegresssion(t *testing.T) {
 	}
 
 }
+
+func TestRegressionTestMatching12(t *testing.T) {
+	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "AGTC", "AGGA", "ACAA", "ACGC", "TAGA", "TACA", "TTAC", "TTCG", "TGAG", "TCGG", "GAAG", "GTGC", "GCCG", "CAGG", "TATC", "GGGG", "AGCA", "GTTG", "ATGA", "TAAA", "TCTC", "TGAC", "ACCA", "CACG", "TACC", "TTGC", "TCAG", "AGAA", "GAAC", "AACT", "TTTG", "ATAA", "AAGG", "AATA", "TAGC", "TGGA", "TGCG", "TAAG"}
+	efficiency := SetEfficiency(overhangs)
+	if efficiency < 0.12 || efficiency > 0.13 {
+		t.Errorf("Expected efficiency of 0.129 - approximately matches NEB ligase fidelity viewer")
+	}
+}
