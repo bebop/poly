@@ -33,7 +33,12 @@ func ExampleOptimize() {
 	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
 			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
+			// Note: sometimes, genbank files will have annotated CDSs that are pseudo genes (not having triplet codons).
+			// This will shift the entire codon table, messing up the end results. To fix this, make sure to do a modulo
+			// check.
+			if len(sequence)%3 == 0 {
+				codingRegionsBuilder.WriteString(sequence)
+			}
 		}
 	}
 
