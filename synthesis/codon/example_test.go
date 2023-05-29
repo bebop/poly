@@ -29,6 +29,8 @@ func ExampleOptimize() {
 	// a string builder to build a single concatenated string of all coding regions
 	var codingRegionsBuilder strings.Builder
 
+	// initiate genes
+	genes := 0
 	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
 	for _, feature := range sequence.Features {
 		if feature.Type == "CDS" {
@@ -38,6 +40,9 @@ func ExampleOptimize() {
 			// check.
 			if len(sequence)%3 == 0 {
 				codingRegionsBuilder.WriteString(sequence)
+
+				// Another good double check is to count genes, then count stop codons.
+				genes++
 			}
 		}
 	}
@@ -47,6 +52,19 @@ func ExampleOptimize() {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
+
+	// Here, we double check if the number of genes is equal to the number of stop codons
+	stopCodonCount := 0
+	for _, aa := range optimizationTable.GetAminoAcids() {
+		if aa.Letter == "*" {
+			for _, codon := range aa.Codons {
+				stopCodonCount = stopCodonCount + codon.Weight
+			}
+		}
+	}
+	if stopCodonCount != genes {
+		fmt.Println("Stop codons don't equal number of genes!")
+	}
 
 	optimizedSequence, _ := codon.Optimize(gfpTranslation, optimizationTable)
 	optimizedSequenceTranslation, _ := codon.Translate(optimizedSequence, optimizationTable)
