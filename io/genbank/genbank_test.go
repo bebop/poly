@@ -756,3 +756,10 @@ func TestParseReferences_error(t *testing.T) {
 	_, err := parseMultiNthFn(file, 1)
 	assert.EqualError(t, err, parseReferencesErr.Error())
 }
+
+func TestConsortiumRegression(t *testing.T) {
+	_, err := Read("../../data/puc19_consrtm.gbk")
+	if err != nil {
+		t.Errorf("Failed to read consrtm. Got err: %s", err)
+	}
+}
