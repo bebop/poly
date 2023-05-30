@@ -6,7 +6,7 @@ import (
 	"github.com/TimothyStiles/poly/fold"
 )
 
-func ExampleFold() {
+func ExampleZuker() {
 	result, _ := fold.Zuker("ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA", 37.0)
 	brackets := result.DotBracket()
 	fmt.Println(brackets)
