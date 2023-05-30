@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleFold() {
-	result, _ := fold.Fold("ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA", 37.0)
+	result, _ := fold.Zuker("ACCCCCUCCUUCCUUGGAUCAAGGGGCUCAA", 37.0)
 	brackets := result.DotBracket()
 	fmt.Println(brackets)
 	// Output: .((((.(((......)))....))))

@@ -14,7 +14,7 @@ func TestFold(t *testing.T) {
 		seq := "ATGGATTTAGATAGAT"
 		foldContext, err := newFoldingContext(seq, 37.0)
 		require.NoError(t, err)
-		res, err := Fold(seq, 37.0)
+		res, err := Zuker(seq, 37.0)
 		require.NoError(t, err)
 		seqDg := res.MinimumFreeEnergy()
 		require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafoldDgs {
-			res, err := Fold(seq, 37.0)
+			res, err := Zuker(seq, 37.0)
 			require.NoError(t, err)
 			d := res.MinimumFreeEnergy()
 			// accepting a 60% difference
@@ -57,7 +57,7 @@ func TestFold(t *testing.T) {
 		}
 
 		for seq, ufold := range unafoldDgs {
-			res, err := Fold(seq, 37.0)
+			res, err := Zuker(seq, 37.0)
 			require.NoError(t, err)
 			d := res.MinimumFreeEnergy()
 
@@ -68,7 +68,7 @@ func TestFold(t *testing.T) {
 	})
 	t.Run("DotBracket", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC"
-		res, err := Fold(seq, 37.0)
+		res, err := Zuker(seq, 37.0)
 		require.NoError(t, err)
 
 		assert.Equal(t, "((((((((.((((......))))..((((.......)))).))))))))", res.DotBracket())
@@ -76,7 +76,7 @@ func TestFold(t *testing.T) {
 	t.Run("multibranch", func(t *testing.T) {
 		seq := "GGGAGGTCGTTACATCTGGGTAACACCGGTACTGATCCGGTGACCTCCC" // three branch
 
-		res, err := Fold(seq, 37.0)
+		res, err := Zuker(seq, 37.0)
 		require.NoError(t, err)
 
 		found := false

@@ -36,7 +36,7 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 )
 
-// Fold the DNA sequence and return the lowest free energy score.
+// Zuker folds the DNA sequence and return the lowest free energy score.
 //
 // Based on the approach described in:
 // Zuker and Stiegler, 1981
@@ -53,7 +53,7 @@ import (
 //
 // Returns a slice of NucleicAcidStructure with the energy and description,
 // i.e. stacks, bulges, hairpins, etc.
-func Fold(seq string, temp float64) (Result, error) {
+func Zuker(seq string, temp float64) (Result, error) {
 	foldContext, err := newFoldingContext(seq, temp)
 	if err != nil {
 		return Result{}, fmt.Errorf("error creating folding context: %w", err)
@@ -749,6 +749,7 @@ func deltaG(enthalpyHDifference, entropySDifference, temp float64) float64 {
 // pre-calculated free-energies. See SantaLucia and Hicks (2004)
 //
 // Args:
+//
 //	queryLen: Length of element without known free energy value
 //	knownLen: Length of element with known free energy value (dGx)
 //	dGx: The free energy of the element knownLen
