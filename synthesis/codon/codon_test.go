@@ -271,11 +271,13 @@ func TestWriteCodonJSON(t *testing.T) {
 
 }
 
-/******************************************************************************
+/*
+*****************************************************************************
 
 Codon Compromise + Add related tests begin here.
 
-******************************************************************************/
+*****************************************************************************
+*/
 func TestCompromiseCodonTable(t *testing.T) {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := GetCodonTable(11)
@@ -339,4 +341,36 @@ func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
 
 func (t *mockTable) IsEmpty() bool {
 	return t.IsEmptyFn()
+}
+
+func TestCapitalizationRegression(t *testing.T) {
+	// Tests to make sure that amino acids are capitalized
+	gfpTranslation := "MaSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	codonTable := GetCodonTable(11)
+
+	// a string builder to build a single concatenated string of all coding regions
+	var codingRegionsBuilder strings.Builder
+
+	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
+	for _, feature := range sequence.Features {
+		if feature.Type == "CDS" {
+			sequence, _ := feature.GetSequence()
+			codingRegionsBuilder.WriteString(sequence)
+		}
+	}
+
+	// get the concatenated sequence string of the coding regions
+	codingRegions := codingRegionsBuilder.String()
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
+	optimizationTable := codonTable.OptimizeTable(codingRegions)
+
+	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
+
+	if optimizedSequenceTranslation != strings.ToUpper(gfpTranslation) {
+		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
 }

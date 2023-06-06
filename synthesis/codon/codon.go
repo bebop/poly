@@ -132,6 +132,10 @@ func Translate(sequence string, codonTable Table) (string, error) {
 
 // Optimize takes an amino acid sequence and codonTable and returns an optimized codon sequence. Takes an optional random seed as last argument.
 func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, error) {
+	// Finding any given aminoAcid is dependent upon it being capitalized, so
+	// we do that here.
+	aminoAcids = strings.ToUpper(aminoAcids)
+
 	if codonTable.IsEmpty() {
 		return "", errEmptyCodonTable
 	}
