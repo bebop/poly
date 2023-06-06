@@ -60,7 +60,12 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		var sequencesToRemoveForReverse []string
 		for _, seq := range sequencesToRemove {
-			sequencesToRemoveForReverse = []string{seq, transform.ReverseComplement(seq)}
+			reverseComplementToRemove := transform.ReverseComplement(seq)
+			if reverseComplementToRemove == seq {
+				sequencesToRemoveForReverse = []string{seq}
+			} else {
+				sequencesToRemoveForReverse = []string{seq, reverseComplementToRemove}
+			}
 			for _, site := range sequencesToRemoveForReverse {
 				re := regexp.MustCompile(site)
 				locations := re.FindAllStringIndex(sequence, -1)
