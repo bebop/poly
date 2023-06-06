@@ -61,6 +61,8 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 		var sequencesToRemoveForReverse []string
 		for _, seq := range sequencesToRemove {
 			reverseComplementToRemove := transform.ReverseComplement(seq)
+			// Palindromes only have to be fixed once, so add a check here
+			// for palindromes.
 			if reverseComplementToRemove == seq {
 				sequencesToRemoveForReverse = []string{seq}
 			} else {
