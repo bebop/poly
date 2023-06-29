@@ -94,7 +94,6 @@ type Locus struct {
 	ModificationDate string `json:"modification_date"`
 	SequenceCoding   string `json:"sequence_coding"`
 	Circular         bool   `json:"circular"`
-	Linear           bool   `json:"linear"`
 }
 
 // Location is a struct that holds the location of a feature.
@@ -113,7 +112,6 @@ type Location struct {
 var (
 	basePairRegex         = regexp.MustCompile(` \d* \w{2} `)
 	circularRegex         = regexp.MustCompile(` circular `)
-	linearRegex           = regexp.MustCompile(` linear `)
 	modificationDateRegex = regexp.MustCompile(`\d{2}-[A-Z]{3}-\d{4}`)
 	partialRegex          = regexp.MustCompile("<|>")
 	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
@@ -234,7 +232,7 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 
 		if locus.Circular {
 			shape = "circular"
-		} else if locus.Linear {
+		} else {
 			shape = "linear"
 		}
 
@@ -767,10 +765,6 @@ func parseLocus(locusString string) Locus {
 	// circularity flag
 	if circularRegex.Match([]byte(locusString)) {
 		locus.Circular = true
-	}
-
-	if linearRegex.Match([]byte(locusString)) {
-		locus.Linear = true
 	}
 
 	// genbank division
