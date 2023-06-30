@@ -40,7 +40,7 @@ func TestFragmentSizes(t *testing.T) {
 func TestSmallFragmentSize(t *testing.T) {
 	// The following should succeed, but will require setting minFragmentSize = 12
 	lacZ := "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG"
-	_, _, err := Fragment(lacZ, 12, 20)
+	_, _, err := Fragment(lacZ, 12, 30)
 	if err != nil {
 		t.Errorf("Got error in small fragmentation: %s", err)
 	}
@@ -58,5 +58,33 @@ func TestLongFragment(t *testing.T) {
 		if len(frag) > 94 {
 			t.Errorf("Fragment too long. Expected <94, got %d", len(frag))
 		}
+	}
+}
+
+func TestCheckLongRegresssion(t *testing.T) {
+	// This makes sure that reverse complements are simply skipped when
+	// checking efficiency of overhangs
+	overhangs := []string{"AGAC"}
+	newOverhangs, _ := NextOverhangs(overhangs)
+	foundGTCT := false
+	for _, overhang := range newOverhangs {
+		if overhang == "GTCT" {
+			foundGTCT = true
+		}
+	}
+	if foundGTCT {
+		t.Errorf("Should not have found GTCT since it is the reverse complement of AGAC")
+	}
+
+}
+
+func TestRegressionTestMatching12(t *testing.T) {
+	// This ensures that overhangs approximately match the efficiency generated
+	// by NEB with their ligase fidelity viewer: https://ligasefidelity.neb.com/viewset/run.cgi
+	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "ACAA", "ACGC", "TATC", "TAGA", "TTAC", "TTCA", "TGTG", "TCGG", "TCCC", "GAAG", "GTGC", "GCCG", "CAGG", "TACG"}
+	efficiency := SetEfficiency(overhangs)
+	if (efficiency > 1) || (efficiency < 0.965) {
+
+		t.Errorf("Expected efficiency of .99 - approximately matches NEB ligase fidelity viewer of .97. Got: %g", efficiency)
 	}
 }
