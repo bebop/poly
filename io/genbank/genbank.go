@@ -77,12 +77,13 @@ type Feature struct {
 
 // Reference holds information for one reference in a Meta struct.
 type Reference struct {
-	Authors string `json:"authors"`
-	Title   string `json:"title"`
-	Journal string `json:"journal"`
-	PubMed  string `json:"pub_med"`
-	Remark  string `json:"remark"`
-	Range   string `json:"range"`
+	Authors    string `json:"authors"`
+	Title      string `json:"title"`
+	Journal    string `json:"journal"`
+	PubMed     string `json:"pub_med"`
+	Remark     string `json:"remark"`
+	Range      string `json:"range"`
+	Consortium string `json:"consortium"`
 }
 
 // Locus holds Locus information in a Meta struct.
@@ -300,6 +301,10 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 			if reference.PubMed != "" {
 				pubMedString := buildMetaString("  PUBMED", reference.PubMed)
 				gbkString.WriteString(pubMedString)
+			}
+			if reference.Consortium != "" {
+				consrtmString := buildMetaString("  CONSRTM", reference.Consortium)
+				gbkString.WriteString(consrtmString)
 			}
 
 		}
@@ -695,8 +700,10 @@ func (reference *Reference) addKey(referenceKey string, referenceValue string) e
 		reference.PubMed = referenceValue
 	case "REMARK":
 		reference.Remark = referenceValue
+	case "CONSRTM":
+		reference.Consortium = referenceValue
 	default:
-		return fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: %s", referenceKey)
+		return fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK, CONSRTM]. Got: %s", referenceKey)
 	}
 	return nil
 }

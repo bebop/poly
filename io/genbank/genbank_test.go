@@ -773,3 +773,10 @@ func TestIssue303Regression(t *testing.T) {
 		}
 	}
 }
+
+func TestConsortiumRegression(t *testing.T) {
+	_, err := Read("../../data/puc19_consrtm.gbk")
+	if err != nil {
+		t.Errorf("Failed to read consrtm. Got err: %s", err)
+	}
+}
