@@ -13,9 +13,10 @@ package fragment
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/transform"
-	"strings"
 )
 
 // SetEfficiency gets the estimated fidelity rate of a given set of
@@ -27,8 +28,9 @@ func SetEfficiency(overhangs []string) float64 {
 		nTotal := 0
 		for _, overhang2 := range overhangs {
 			nTotal = nTotal + mismatches[key{overhang, overhang2}]
+			nTotal = nTotal + mismatches[key{overhang, transform.ReverseComplement(overhang2)}]
 		}
-		if nTotal > 0 {
+		if nTotal != nCorrect {
 			efficiency = efficiency * (float64(nCorrect) / float64(nTotal))
 		}
 	}
@@ -56,7 +58,8 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 				for _, base4 := range bases {
 					newOverhang := string([]rune{base1, base2, base3, base4})
 					_, ok := currentOverhangMap[newOverhang]
-					if !ok {
+					_, okReverse := currentOverhangMap[transform.ReverseComplement(newOverhang)]
+					if !ok && !okReverse {
 						if !checks.IsPalindromic(newOverhang) {
 							overhangsToTest = append(overhangsToTest, newOverhang)
 						}
@@ -68,7 +71,9 @@ func NextOverhangs(currentOverhangs []string) ([]string, []float64) {
 
 	var efficiencies []float64
 	for _, overhang := range overhangsToTest {
-		efficiencies = append(efficiencies, SetEfficiency(append(currentOverhangs, overhang)))
+		strandEffieciency := SetEfficiency(append(currentOverhangs, overhang))
+		complementEfficiency := SetEfficiency(append(currentOverhangs, transform.ReverseComplement(overhang)))
+		efficiencies = append(efficiencies, (strandEffieciency+complementEfficiency)/2)
 	}
 	return overhangsToTest, efficiencies
 }
