@@ -756,3 +756,27 @@ func TestParseReferences_error(t *testing.T) {
 	_, err := parseMultiNthFn(file, 1)
 	assert.EqualError(t, err, parseReferencesErr.Error())
 }
+
+func TestIssue303Regression(t *testing.T) {
+	seq, _ := Read("../../data/puc19_303_regression.gbk")
+	expectedAttribute := "16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"
+	for _, feature := range seq.Features {
+		if feature.Attributes["locus_tag"] == "JCVISYN3A_0004" && feature.Type == "CDS" {
+			if feature.Attributes["product"] != expectedAttribute {
+				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"], expectedAttribute)
+			}
+		}
+		if feature.Attributes["locus_tag"] == "JCVISYN3A_0051" && feature.Type == "CDS" {
+			if _, ok := feature.Attributes["pseudo"]; !ok {
+				t.Errorf("pseudo should be in attributes")
+			}
+		}
+	}
+}
+
+func TestConsortiumRegression(t *testing.T) {
+	_, err := Read("../../data/puc19_consrtm.gbk")
+	if err != nil {
+		t.Errorf("Failed to read consrtm. Got err: %s", err)
+	}
+}

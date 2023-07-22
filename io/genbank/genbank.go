@@ -77,12 +77,13 @@ type Feature struct {
 
 // Reference holds information for one reference in a Meta struct.
 type Reference struct {
-	Authors string `json:"authors"`
-	Title   string `json:"title"`
-	Journal string `json:"journal"`
-	PubMed  string `json:"pub_med"`
-	Remark  string `json:"remark"`
-	Range   string `json:"range"`
+	Authors    string `json:"authors"`
+	Title      string `json:"title"`
+	Journal    string `json:"journal"`
+	PubMed     string `json:"pub_med"`
+	Remark     string `json:"remark"`
+	Range      string `json:"range"`
+	Consortium string `json:"consortium"`
 }
 
 // Locus holds Locus information in a Meta struct.
@@ -94,7 +95,6 @@ type Locus struct {
 	ModificationDate string `json:"modification_date"`
 	SequenceCoding   string `json:"sequence_coding"`
 	Circular         bool   `json:"circular"`
-	Linear           bool   `json:"linear"`
 }
 
 // Location is a struct that holds the location of a feature.
@@ -113,7 +113,6 @@ type Location struct {
 var (
 	basePairRegex         = regexp.MustCompile(` \d* \w{2} `)
 	circularRegex         = regexp.MustCompile(` circular `)
-	linearRegex           = regexp.MustCompile(` linear `)
 	modificationDateRegex = regexp.MustCompile(`\d{2}-[A-Z]{3}-\d{4}`)
 	partialRegex          = regexp.MustCompile("<|>")
 	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
@@ -234,7 +233,7 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 
 		if locus.Circular {
 			shape = "circular"
-		} else if locus.Linear {
+		} else {
 			shape = "linear"
 		}
 
@@ -302,6 +301,10 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 			if reference.PubMed != "" {
 				pubMedString := buildMetaString("  PUBMED", reference.PubMed)
 				gbkString.WriteString(pubMedString)
+			}
+			if reference.Consortium != "" {
+				consrtmString := buildMetaString("  CONSRTM", reference.Consortium)
+				gbkString.WriteString(consrtmString)
 			}
 
 		}
@@ -384,6 +387,7 @@ type parseLoopParameters struct {
 	quoteActive      bool
 	attribute        string
 	attributeValue   string
+	emptyAttribute   bool
 	sequenceBuilder  strings.Builder
 	parseStep        string
 	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
@@ -579,10 +583,15 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 
 			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
-
+				trimmedCurrentLine := strings.TrimSpace(parameters.currentLine)
+				if trimmedCurrentLine[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
+					parameters.attributeValue = parameters.attributeValue + trimmedCurrentLine
+					continue
+				}
 				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
+				if parameters.attributeValue != "" || parameters.emptyAttribute {
 					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.emptyAttribute = false
 				}
 				parameters.attributeValue = ""
 				splitAttribute := strings.Split(line, "=")
@@ -591,7 +600,13 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 				parameters.attribute = removedForwardSlashAttribute
 
-				removeAttributeValueQuotes := strings.Replace(splitAttribute[1], "\"", "", -1)
+				var removeAttributeValueQuotes string
+				if len(splitAttribute) == 1 { // handle case of ` /pseudo `, which has no text
+					removeAttributeValueQuotes = ""
+					parameters.emptyAttribute = true
+				} else { // this is normally triggered
+					removeAttributeValueQuotes = strings.Replace(splitAttribute[1], "\"", "", -1)
+				}
 				parameters.attributeValue = removeAttributeValueQuotes
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 			}
@@ -685,8 +700,10 @@ func (reference *Reference) addKey(referenceKey string, referenceValue string) e
 		reference.PubMed = referenceValue
 	case "REMARK":
 		reference.Remark = referenceValue
+	case "CONSRTM":
+		reference.Consortium = referenceValue
 	default:
-		return fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: %s", referenceKey)
+		return fmt.Errorf("ReferenceKey not in [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK, CONSRTM]. Got: %s", referenceKey)
 	}
 	return nil
 }
@@ -767,10 +784,6 @@ func parseLocus(locusString string) Locus {
 	// circularity flag
 	if circularRegex.Match([]byte(locusString)) {
 		locus.Circular = true
-	}
-
-	if linearRegex.Match([]byte(locusString)) {
-		locus.Linear = true
 	}
 
 	// genbank division

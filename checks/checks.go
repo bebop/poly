@@ -23,3 +23,27 @@ func GcContent(sequence string) float64 {
 	GuanineAndCytosinePercentage := float64(GuanineCount+CytosineCount) / float64(len(sequence))
 	return GuanineAndCytosinePercentage
 }
+
+func IsDNA(seq string) bool {
+	for _, base := range seq {
+		switch base {
+		case 'A', 'C', 'T', 'G':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func IsRNA(seq string) bool {
+	for _, base := range seq {
+		switch base {
+		case 'A', 'C', 'U', 'G':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
