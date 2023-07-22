@@ -1,5 +1,5 @@
 /*
-Package random provides functions to generate random DNA and protein sequences.
+Package random provides functions to generate random DNA, RNA, and protein sequences.
 */
 package random
 
@@ -42,15 +42,24 @@ func ProteinSequence(length int, seed int64) (string, error) {
 // DNASequence returns a random DNA sequence string of a given length and seed.
 func DNASequence(length int, seed int64) (string, error) {
 
-	var nucleicAcidsAlphabet = []rune("ACTG")
-	alphabetLength := len(nucleicAcidsAlphabet)
+	return randomNucelotideSequence(length, seed, []rune("ACTG")), nil
+}
+
+// RNASequence returns a random DNA sequence string of a given length and seed.
+func RNASequence(length int, seed int64) (string, error) {
+
+	return randomNucelotideSequence(length, seed, []rune("ACUG")), nil
+}
+
+func randomNucelotideSequence(length int, seed int64, alphabet []rune) string {
+	alphabetLength := len(alphabet)
 	rand.Seed(seed)
 
 	randomSequence := make([]rune, length)
 	for basepair := range randomSequence {
 		randomIndex := rand.Intn(alphabetLength)
-		randomSequence[basepair] = nucleicAcidsAlphabet[randomIndex]
+		randomSequence[basepair] = alphabet[randomIndex]
 	}
 
-	return string(randomSequence), nil
+	return string(randomSequence)
 }
