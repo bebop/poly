@@ -87,6 +87,7 @@ type AminoAcid struct {
 type Table interface {
 	Chooser() (map[string]weightedRand.Chooser, error)
 	GenerateTranslationTable() map[string]string
+	GenerateStartCodonTable() map[string]string
 	GetAminoAcids() []AminoAcid
 	GetStartCodons() []string
 	GetStopCodons() []string
@@ -113,15 +114,27 @@ func Translate(sequence string, codonTable Table) (string, error) {
 	var aminoAcids strings.Builder
 	var currentCodon strings.Builder
 	translationTable := codonTable.GenerateTranslationTable()
+	startCodonTable := codonTable.GenerateStartCodonTable()
 
+	startCodonReached := false
 	for _, letter := range sequence {
 
 		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
 
 		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
+		// use start codon table for the first codon only, erroring out if an invalid start codon is provided
 		if currentCodon.Len() == 3 {
-			aminoAcids.WriteString(translationTable[strings.ToUpper(currentCodon.String())])
+			if startCodonReached {
+				aminoAcids.WriteString(translationTable[strings.ToUpper(currentCodon.String())])
+			} else {
+				aminoAcid, ok := startCodonTable[strings.ToUpper(currentCodon.String())]
+				if !ok {
+					return "", fmt.Errorf("start codon %q is not in start codon table %v", currentCodon.String(), startCodonTable)
+				}
+				aminoAcids.WriteString(aminoAcid)
+				startCodonReached = true
+			}
 
 			// reset codon string builder for next codon.
 			currentCodon.Reset()
@@ -181,6 +194,17 @@ func (table codonTable) OptimizeTable(sequence string) Table {
 
 	}
 	return table
+}
+
+// GenerateStartCodonTable returns a mapping from the start codons of a Table to their associated amino acids.
+// For our codonTable implementation, assumes that we always map to Met.
+func (table codonTable) GenerateStartCodonTable() map[string]string {
+	result := make(map[string]string)
+	for _, codon := range table.StartCodons {
+		result[codon] = "M"
+	}
+
+	return result
 }
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
