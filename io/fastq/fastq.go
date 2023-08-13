@@ -21,7 +21,6 @@ import (
 	"math"
 	"os"
 	"strings"
-	"unsafe"
 )
 
 /******************************************************************************
@@ -207,7 +206,7 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 		Identifier: seqIdentifier,
 		Optionals:  optionals,
 		Quality:    quality,
-		Sequence:   *(*string)(unsafe.Pointer(&sequence)), // Stdlib strings.Builder.String() does this so it *should* be safe.
+		Sequence:   string(sequence), // Stdlib strings.Builder.String() does this so it *should* be safe.
 	}
 	// Gotten to this point err is non-nil only in EOF case.
 	// We report this error to note the fastq may be incomplete/corrupt
@@ -264,6 +263,12 @@ func Build(fastqs []Fastq) ([]byte, error) {
 	for _, fastq := range fastqs {
 		fastqString.WriteString("@")
 		fastqString.WriteString(fastq.Identifier)
+		for key, val := range fastq.Optionals {
+			fastqString.WriteString(" ")
+			fastqString.WriteString(key)
+			fastqString.WriteString("=")
+			fastqString.WriteString(val)
+		}
 		fastqString.WriteString("\n")
 
 		// fastq doesn't limit at 80 characters, since it is
