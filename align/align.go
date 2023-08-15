@@ -35,7 +35,13 @@ GAAAAAAT
 GAA----T
 
 As of writing this package includes the two most basic algorithms for alignment,
-Needleman-Wunsch and Smith-Waterman.
+Needleman-Wunsch and Smith-Waterman. Needleman-Wunsch is used when you are
+looking for global alignment between two full-length sequences, while
+Smith-Waterman is better at smaller sequences with local similarities and
+handling sequences with long non-homologous regions. BLAST, on the other hand,
+takes advantage of more heuristic techniques to speed up alignment, and is better
+at finding similar sequences in large database, sacrificing precision for faster
+results.
 
 Both are "dynamic programming algorithms" which is a fancy 1980's term for they use
 matrices. If you're familiar with kernel operations, linear filters, or whatever term
