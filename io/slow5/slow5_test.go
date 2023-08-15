@@ -12,6 +12,7 @@ const maxLineSize = 2 * 32 * 1024
 
 func TestParse(t *testing.T) {
 	file, err := os.Open("data/example.slow5")
+	defer file.Close()
 	if err != nil {
 		t.Errorf("Failed to open example.slow5: %s", err)
 	}
@@ -203,4 +204,32 @@ func TestWrite(t *testing.T) {
 	if string(example) != string(testWrite) {
 		t.Errorf("Example and test write are different")
 	}
+}
+
+func TestSvb(t *testing.T) {
+	file, _ := os.Open("data/example.slow5")
+	defer file.Close()
+	const maxLineSize = 2 * 32 * 1024
+	parser, _, _ := NewParser(file, maxLineSize)
+	var outputReads []Read
+	for {
+		read, err := parser.ParseNext()
+		if err != nil {
+			// Break at EOF
+			break
+		}
+		outputReads = append(outputReads, read)
+	}
+
+	for readNum, read := range outputReads {
+		rawSignal := read.RawSignal
+		mask, data := SvbCompressRawSignal(rawSignal)
+		rawSignalDecompressed := SvbDecompressRawSignal(len(rawSignal), mask, data)
+		for idx := range rawSignal {
+			if rawSignal[idx] != rawSignalDecompressed[idx] {
+				t.Errorf("Read signal at readNum %d idx %d didn't match decompressed signal %d", readNum, rawSignal[idx], rawSignalDecompressed[idx])
+			}
+		}
+	}
+
 }

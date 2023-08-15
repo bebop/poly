@@ -25,6 +25,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/koeng101/svb"
 )
 
 /******************************************************************************
@@ -196,7 +198,9 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 	return parser, headers, nil
 }
 
-// ParseNext parses the next read from a parser.
+// ParseNext parses the next read from a parser. Note: you should check
+// Read.Error for errors that happen within a read, while the overall error
+// for errors that happen in the parser.
 func (parser *Parser) ParseNext() (Read, error) {
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {
@@ -436,4 +440,51 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 		}
 	}
 	return nil
+}
+
+/******************************************************************************
+Aug 15, 2023
+
+StreamVByte (svb) compression of raw signal strength is used to decrease the
+overall size of records in blow5 files. In my tests using a SQLite database
+that contained both slow5 and fastq files, switching from raw signal TEXT to
+svb compressed BLOBs brought the total database size from 12GB to 7.1GB, a
+~40% reduction in size.
+
+This is the primary method that can be used to decrease the size of storing
+slow5 records in alternative datastores to blow5 (SQL databases, etc).
+
+svb is an integer compression algorithm, which are specialized in compressing
+integer arrays, which perfectly fits raw signal strength data. When converting
+from slow5 to blow5, files are additionally compressed with zstd or zlib on top
+of raw signal compression with svb. Still, svb compression is where most the
+data size saving comes from.
+
+Stream VByte paper: https://doi.org/10.48550/arXiv.1709.08990
+
+Keoni
+
+******************************************************************************/
+
+// SvbCompressRawSignal takes a read and converts its raw signal field to two
+// arrays: a mask array and a data array. Both are needed for decompression.
+func SvbCompressRawSignal(rawSignal []int16) (mask, data []byte) {
+	rawSignalUint32 := make([]uint32, len(rawSignal))
+	for idx := range rawSignal {
+		rawSignalUint32[idx] = uint32(rawSignal[idx])
+	}
+	return svb.Uint32Encode(rawSignalUint32)
+}
+
+// SvbDecompressRawSignal decompresses raw signal back to a []int16. It
+// requires not only the mask array and data array returned by
+// SvbCompressRawSignal, but also the length of the raw signals.
+func SvbDecompressRawSignal(lenRawSignal int, mask, data []byte) []int16 {
+	rawSignalUint32 := make([]uint32, lenRawSignal)
+	rawSignal := make([]int16, lenRawSignal)
+	svb.Uint32Decode32(mask, data, rawSignalUint32)
+	for idx := 0; idx < lenRawSignal; idx++ {
+		rawSignal[idx] = int16(rawSignalUint32[idx])
+	}
+	return rawSignal
 }
