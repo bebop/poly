@@ -12,10 +12,10 @@ const maxLineSize = 2 * 32 * 1024
 
 func TestParse(t *testing.T) {
 	file, err := os.Open("data/example.slow5")
-	defer file.Close()
 	if err != nil {
 		t.Errorf("Failed to open example.slow5: %s", err)
 	}
+	defer file.Close()
 	parser, headers, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("Failed to parse headers of file: %s", err)
