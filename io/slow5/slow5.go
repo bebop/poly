@@ -202,6 +202,7 @@ func (parser *Parser) ParseNext() (Read, error) {
 	if err != nil {
 		return Read{}, err
 	}
+	parser.line++
 	line := strings.TrimSpace(string(lineBytes))
 
 	values := strings.Split(string(line), "\t")
