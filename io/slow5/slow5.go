@@ -203,7 +203,6 @@ func (parser *Parser) ParseNext() (Read, error) {
 		return Read{}, err
 	}
 	line := strings.TrimSpace(string(lineBytes))
-	parser.line++
 
 	values := strings.Split(string(line), "\t")
 	// Reads have started.
@@ -303,6 +302,7 @@ func (parser *Parser) ParseNext() (Read, error) {
 			newRead.Error = fmt.Errorf("Unknown field to parser '%s' found on line %d. Please report to github.com/TimothyStiles/poly", fieldValue, parser.line)
 		}
 	}
+	parser.line++
 	return newRead, nil
 }
 
