@@ -13,7 +13,6 @@ package fastq
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -258,32 +257,70 @@ Start of  Write functions
 ******************************************************************************/
 
 // Build converts a Fastqs array into a byte array to be written to a file.
-func Build(fastqs []Fastq) ([]byte, error) {
-	var fastqString bytes.Buffer
+func Build(fastqs []Fastq, w io.Writer) error {
+	var err error
 	for _, fastq := range fastqs {
-		fastqString.WriteString("@")
-		fastqString.WriteString(fastq.Identifier)
-		for key, val := range fastq.Optionals {
-			fastqString.WriteString(" ")
-			fastqString.WriteString(key)
-			fastqString.WriteString("=")
-			fastqString.WriteString(val)
+		_, err = w.Write([]byte("@"))
+		if err != nil {
+			return err
 		}
-		fastqString.WriteString("\n")
+		_, err = w.Write([]byte(fastq.Identifier))
+		if err != nil {
+			return err
+		}
+		for key, val := range fastq.Optionals {
+			_, err = w.Write([]byte(" "))
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte(key))
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte("="))
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte(val))
+			if err != nil {
+				return err
+			}
+		}
+		_, err = w.Write([]byte("\n"))
+		if err != nil {
+			return err
+		}
 
 		// fastq doesn't limit at 80 characters, since it is
 		// mainly reading big ole' sequencing files without
 		// human input.
-		fastqString.WriteString(fastq.Sequence)
-		fastqString.WriteString("\n+\n")
-		fastqString.WriteString(fastq.Quality)
-		fastqString.WriteString("\n")
+		_, err = w.Write([]byte(fastq.Sequence))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte("\n+\n"))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte(fastq.Quality))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte("\n"))
+		if err != nil {
+			return err
+		}
 	}
-	return fastqString.Bytes(), nil
+	return nil
 }
 
 // Write writes a fastq array to a file.
 func Write(fastqs []Fastq, path string) error {
-	fastqBytes, _ := buildFn(fastqs) //  fastq.Build returns only nil errors.
-	return os.WriteFile(path, fastqBytes, 0644)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return buildFn(fastqs, file)
 }

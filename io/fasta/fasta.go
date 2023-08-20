@@ -13,7 +13,6 @@ package fasta
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -352,37 +351,57 @@ Start of  Write functions
 ******************************************************************************/
 
 // Build converts a Fastas array into a byte array to be written to a file.
-func Build(fastas []Fasta) ([]byte, error) {
-	var fastaString bytes.Buffer
+func Build(fastas []Fasta, w io.Writer) error {
+	var err error
 	fastaLength := len(fastas)
 	for fastaIndex, fasta := range fastas {
-		fastaString.WriteString(">")
-		fastaString.WriteString(fasta.Name)
-		fastaString.WriteString("\n")
+		_, err = w.Write([]byte(">"))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte(fasta.Name))
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte("\n"))
+		if err != nil {
+			return err
+		}
 
 		lineCount := 0
 		// write the fasta sequence 80 characters at a time
 		for _, character := range fasta.Sequence {
 
-			fastaString.WriteRune(character)
+			_, err = w.Write([]byte{byte(character)})
+			if err != nil {
+				return err
+			}
 			lineCount++
 			if lineCount == 80 {
-				fastaString.WriteString("\n")
+				_, err = w.Write([]byte("\n"))
+				if err != nil {
+					return err
+				}
 				lineCount = 0
 			}
 		}
 		if fastaIndex != fastaLength-1 {
-			fastaString.WriteString("\n\n")
+			_, err = w.Write([]byte("\n\n"))
+			if err != nil {
+				return err
+			}
 		}
 	}
-	return fastaString.Bytes(), nil
+	return nil
 }
 
 // Write writes a fasta array to a file.
 func Write(fastas []Fasta, path string) error {
-	fastaBytes, err := buildFn(fastas) //  fasta.Build returns only nil errors.
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, fastaBytes, 0644)
+	defer file.Close()
+
+	return buildFn(fastas, file)
 }

@@ -120,8 +120,8 @@ func TestRead_error(t *testing.T) {
 func TestWrite_error(t *testing.T) {
 	buildErr := errors.New("build error")
 	oldBuildFn := buildFn
-	buildFn = func(fastas []Fasta) ([]byte, error) {
-		return nil, buildErr
+	buildFn = func(fastas []Fasta, w io.Writer) error {
+		return buildErr
 	}
 	defer func() {
 		buildFn = oldBuildFn
