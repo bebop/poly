@@ -1,0 +1,21 @@
+
+; this is a totally bogus fasta create for testing of a parser
+; please do not use this data for real science
+
+
+>Header 1
+; this can happen
+SEQLINE
+SEQLINE
+*
+
+>Header 2
+SEQLINE
+; this can happen as well
+SEQLINE
+*
+>Header 3
+SEQLINE
+
+SEQLINE
+*
