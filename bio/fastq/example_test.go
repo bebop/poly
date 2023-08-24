@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TimothyStiles/poly/io/fastq"
+	"github.com/TimothyStiles/poly/bio/fastq"
 )
 
 //go:embed data/nanosavseq.fastq

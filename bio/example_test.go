@@ -1,10 +1,10 @@
-package io_test
+package bio_test
 
 import (
-	"github.com/TimothyStiles/poly/io/fasta"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/TimothyStiles/poly/bio/fasta"
+	"github.com/TimothyStiles/poly/bio/genbank"
+	"github.com/TimothyStiles/poly/bio/gff"
+	"github.com/TimothyStiles/poly/bio/polyjson"
 )
 
 // This is where the integration tests that make effed up cyclic dependencies go.
@@ -22,7 +22,7 @@ func Example() {
 	// Poly can also output these file formats. Every file format has a corresponding Write function.
 	_ = gff.Write(gffInput, "test.gff")
 	_ = genbank.Write(gbkInput, "test.gbk")
-	_ = fasta.Write(fastaInput, "test.fasta")
+	_ = fasta.WriteFile(fastaInput, "test.fasta")
 	_ = polyjson.Write(jsonInput, "test.json")
 
 	// Extra tips:

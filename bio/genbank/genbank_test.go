@@ -703,7 +703,7 @@ func Test_generateWhiteSpace(t *testing.T) {
 }
 
 func TestRead_error(t *testing.T) {
-	readErr := errors.New("open /tmp/file: no such file or directory")
+	readErr := errors.New("open /tmp/file12345: no such file or directory")
 	oldReadFileFn := readFileFn
 	readFileFn = func(filename string) ([]byte, error) {
 		return nil, readErr
@@ -711,7 +711,7 @@ func TestRead_error(t *testing.T) {
 	defer func() {
 		readFileFn = oldReadFileFn
 	}()
-	_, err := Read("/tmp/file")
+	_, err := Read("/tmp/file12345")
 	assert.EqualError(t, err, readErr.Error())
 }
 

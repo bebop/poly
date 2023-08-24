@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/gff"
+	"github.com/TimothyStiles/poly/bio/gff"
 	"github.com/TimothyStiles/poly/transform"
 )
 

@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TimothyStiles/poly/io/fasta"
+	"github.com/TimothyStiles/poly/bio/fasta"
 )
 
 //go:embed data/base.fasta
@@ -40,8 +40,12 @@ func ExampleParse() {
 // ExampleBuild shows basic usage for Build
 func ExampleBuild() {
 	fastas, _ := fasta.Read("data/base.fasta") // get example data
-	fasta, _ := fasta.Build(fastas)            // build a fasta byte array
-	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
+	var buffer bytes.Buffer                    // Initialize a buffer to write fastas into
+	for _, fasta := range fastas {
+		_ = fasta.Write(&buffer) // build a fasta byte array
+
+	}
+	firstLine := string(bytes.Split(buffer.Bytes(), []byte("\n"))[0])
 
 	fmt.Println(firstLine)
 	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
@@ -50,7 +54,7 @@ func ExampleBuild() {
 // ExampleWrite shows basic usage of the  writer.
 func ExampleWrite() {
 	fastas, _ := fasta.Read("data/base.fasta")       // get example data
-	_ = fasta.Write(fastas, "data/test.fasta")       // write it out again
+	_ = fasta.WriteFile(fastas, "data/test.fasta")   // write it out again
 	testSequence, _ := fasta.Read("data/test.fasta") // read it in again
 
 	os.Remove("data/test.fasta") // getting rid of test file

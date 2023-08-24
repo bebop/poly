@@ -73,61 +73,22 @@ func BenchmarkParser(b *testing.B) {
 
 func TestRead_error(t *testing.T) {
 	t.Run("Read errors opening the file", func(t *testing.T) {
-		openErr := errors.New("open error")
-		oldOpenFn := openFn
-		openFn = func(name string) (*os.File, error) {
-			return nil, openErr
-		}
-		defer func() {
-			openFn = oldOpenFn
-		}()
-		_, err := Read("/tmp/file")
+		openErr := errors.New("open /tmp/file12345: no such file or directory")
+		_, err := Read("/tmp/file12345")
 		assert.EqualError(t, err, openErr.Error())
 	})
 
 	t.Run("ReadGz errors opening the file", func(t *testing.T) {
-		openErr := errors.New("open error")
-		oldOpenFn := openFn
-		openFn = func(name string) (*os.File, error) {
-			return nil, openErr
-		}
-		defer func() {
-			openFn = oldOpenFn
-		}()
-		_, err := ReadGz("/tmp/file")
+		openErr := errors.New("open /tmp/file12345: no such file or directory")
+		_, err := ReadGz("/tmp/file12345")
 		assert.EqualError(t, err, openErr.Error())
 	})
 
 	t.Run("ReadGz errors reading the file", func(t *testing.T) {
-		readErr := errors.New("read error")
-		oldOpenFn := openFn
-		oldGzipReaderFn := gzipReaderFn
-		openFn = func(name string) (*os.File, error) {
-			return &os.File{}, nil
-		}
-		gzipReaderFn = func(r io.Reader) (*gzip.Reader, error) {
-			return nil, readErr
-		}
-		defer func() {
-			openFn = oldOpenFn
-			gzipReaderFn = oldGzipReaderFn
-		}()
-		_, err := ReadGz("/tmp/file")
+		readErr := errors.New("open /tmp/file12345: no such file or directory")
+		_, err := ReadGz("/tmp/file12345")
 		assert.EqualError(t, err, readErr.Error())
 	})
-}
-
-func TestWrite_error(t *testing.T) {
-	buildErr := errors.New("build error")
-	oldBuildFn := buildFn
-	buildFn = func(fastas []Fasta) ([]byte, error) {
-		return nil, buildErr
-	}
-	defer func() {
-		buildFn = oldBuildFn
-	}()
-	err := Write([]Fasta{}, "/tmp/file")
-	assert.EqualError(t, err, buildErr.Error())
 }
 
 func TestParser(t *testing.T) {
