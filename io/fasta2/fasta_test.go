@@ -85,14 +85,15 @@ func TestRecordWrite(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		r := sequence
 		w := &bytes.Buffer{}
-		err := r.Write(w)
+		n, err := r.Write(w)
 		require.NoError(t, err)
 		require.Equal(t, expected, w.String())
+		require.Len(t, w.String(), n)
 	})
 	t.Run("fail truncated", func(t *testing.T) {
 		r := sequence
 		w := errorWriter{}
-		err := r.Write(w)
+		_, err := r.Write(w)
 		require.Error(t, err)
 	})
 }
@@ -110,13 +111,14 @@ func TestWrite(t *testing.T) {
 	}
 	t.Run("success", func(t *testing.T) {
 		w := &bytes.Buffer{}
-		err := fasta2.Write(recs, w)
+		n, err := fasta2.Write(recs, w)
 		require.NoError(t, err)
 		require.Equal(t, ">name1\nseq1\n>name2\nseq2\n", w.String())
+		require.Equal(t, 24, n)
 	})
 	t.Run("fail EOF", func(t *testing.T) {
 		w := errorWriter{}
-		err := fasta2.Write(recs, w)
+		_, err := fasta2.Write(recs, w)
 		require.Error(t, err)
 	})
 }

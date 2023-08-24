@@ -14,8 +14,9 @@ type Record struct {
 }
 
 // buffer is a utility method to serialize the Record in a buffer.
-func (r Record) buffer() bytes.Buffer {
-	var b bytes.Buffer
+// The buffer is reset before any writing happens
+func (r Record) buffer(b *bytes.Buffer) {
+	b.Reset()
 	// grow the buffer to allocate just once, the numbers are in order:
 	// the header + > + \n, the sequence + one \n for each 80 char, the last \n
 	b.Grow(len(r.Header) + 2 + len(r.Sequence) + (len(r.Sequence) % 80) + 1)
@@ -30,41 +31,49 @@ func (r Record) buffer() bytes.Buffer {
 	}
 	b.WriteByte('\n')
 
-	return b
+	return
 }
 
 // returns the string representation of a Record.
 func (r Record) String() string {
-	b := r.buffer()
+	var b bytes.Buffer
+	r.buffer(&b)
 	return b.String()
 }
 
 // returns the representation of a Record as []byte.
 func (r Record) Bytes() []byte {
-	b := r.buffer()
+	var b bytes.Buffer
+	r.buffer(&b)
 	return b.Bytes()
 }
 
 // Writes the Record []byte representation to the passed io.Writer.
-func (r Record) Write(w io.Writer) error {
+func (r Record) Write(w io.Writer) (int, error) {
 	recBytes := r.Bytes()
-	_, err := w.Write(recBytes)
+	n, err := w.Write(recBytes)
 	if err != nil {
-		return fmt.Errorf("error writing record to io.Writer: %w", err)
+		return n, fmt.Errorf("error writing record to io.Writer: %w", err)
 	}
 
-	return nil
+	return n, nil
 }
 
 // Write writes a fasta array to an io.Writer
-func Write(recs []Record, w io.Writer) error {
+func Write(recs []Record, w io.Writer) (int, error) {
+	var (
+		b       bytes.Buffer
+		written int
+	)
 	for _, r := range recs {
-		err := r.Write(w)
+		r.buffer(&b)
+		n, err := w.Write(b.Bytes())
+		written += n
 		if err != nil {
-			return err
+			return written, err
 		}
 	}
-	return nil
+	return written, nil
 }
 
 // WriteFile writes all the passed records to the file at path.
@@ -75,7 +84,7 @@ func WriteFile(recs []Record, path string) error {
 	}
 	defer f.Close()
 	for _, r := range recs {
-		err := r.Write(f)
+		_, err := r.Write(f)
 		if err != nil {
 			return fmt.Errorf("error writing to file %q: %w", path, err)
 		}
