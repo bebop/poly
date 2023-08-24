@@ -40,8 +40,9 @@ func ExampleParse() {
 // ExampleBuild shows basic usage for Build
 func ExampleBuild() {
 	fastas, _ := fasta.Read("data/base.fasta") // get example data
-	fasta, _ := fasta.Build(fastas)            // build a fasta byte array
-	firstLine := string(bytes.Split(fasta, []byte("\n"))[0])
+	var buffer bytes.Buffer                    // Initialize a buffer to write fastas into
+	_ = fasta.Build(fastas, &buffer)           // build a fasta byte array
+	firstLine := string(bytes.Split(buffer.Bytes(), []byte("\n"))[0])
 
 	fmt.Println(firstLine)
 	// Output: >gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]

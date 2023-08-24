@@ -1,7 +1,10 @@
 package fastq
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -63,4 +66,22 @@ func TestParseExceptions(t *testing.T) {
 	testException(t, "data/nanosavseq_emptyseq.fastq", "empty seq")
 	testException(t, "data/nanosavseq_noplus.fastq", "no plus EOF")
 	testException(t, "data/nanosavseq_noquality2.fastq", "no quality EOF")
+}
+
+func TestGzpOpen(t *testing.T) {
+	fastqs, err := ReadGz("data/pOpen_v3.fastq.gz")
+	if err != nil {
+		t.Errorf("Failed to open pOpen_v3: %s", err)
+	}
+	for _, read := range fastqs {
+		id := read.Identifier
+		sequence := read.Sequence
+		quality := read.Quality
+		for _, char := range sequence {
+			if !strings.Contains("ATGCYRSWKMBDHVNZ", string(char)) {
+				fmt.Println(id, sequence, quality)
+				t.Fatalf("%s", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: "+string(char)))
+			}
+		}
+	}
 }
