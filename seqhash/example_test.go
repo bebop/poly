@@ -3,7 +3,7 @@ package seqhash_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/seqhash"
 )
 

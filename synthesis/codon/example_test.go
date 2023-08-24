@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/synthesis/codon"
 )
 
