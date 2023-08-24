@@ -48,18 +48,8 @@ func (r Record) Bytes() []byte {
 	return b.Bytes()
 }
 
-// Writes the Record []byte representation to the passed io.Writer.
-func (r Record) Write(w io.Writer) (int, error) {
-	recBytes := r.Bytes()
-	n, err := w.Write(recBytes)
-	if err != nil {
-		return n, fmt.Errorf("error writing record to io.Writer: %w", err)
-	}
-
-	return n, nil
-}
-
-// Write writes a fasta array to an io.Writer
+// Write writes a []Record to an io.Writer, it reuses the underlying buffer, so
+// it is more efficient for bulk writes.
 func Write(recs []Record, w io.Writer) (int, error) {
 	var (
 		b       bytes.Buffer
@@ -83,8 +73,10 @@ func WriteFile(recs []Record, path string) error {
 		return fmt.Errorf("error opening file %q: %w", path, err)
 	}
 	defer f.Close()
+	var b bytes.Buffer
 	for _, r := range recs {
-		_, err := r.Write(f)
+		r.buffer(&b)
+		_, err := f.Write(b.Bytes())
 		if err != nil {
 			return fmt.Errorf("error writing to file %q: %w", path, err)
 		}

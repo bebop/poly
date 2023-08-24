@@ -76,28 +76,6 @@ func TestRecord_Bytes(t *testing.T) {
 	}
 }
 
-func TestRecordWrite(t *testing.T) {
-	sequence := fasta2.Record{
-		Header:   "Cool Sequence",
-		Sequence: "MDSKGSSQKGSRLLLLLVVSNLLLCQGVVSTPVCPNGPGNCQVSLRDLFDRAVMVSHYIHDLSSEMFNEFDKRYAQGKGFITMALNSCHTSSLPTPEDKEQAQQTHHEVLMSLILGLLRSWNDPLYHL",
-	}
-	expected := ">Cool Sequence\nMDSKGSSQKGSRLLLLLVVSNLLLCQGVVSTPVCPNGPGNCQVSLRDLFDRAVMVSHYIHDLSSEMFNEFDKRYAQGKGF\nITMALNSCHTSSLPTPEDKEQAQQTHHEVLMSLILGLLRSWNDPLYHL\n"
-	t.Run("success", func(t *testing.T) {
-		r := sequence
-		w := &bytes.Buffer{}
-		n, err := r.Write(w)
-		require.NoError(t, err)
-		require.Equal(t, expected, w.String())
-		require.Len(t, w.String(), n)
-	})
-	t.Run("fail truncated", func(t *testing.T) {
-		r := sequence
-		w := errorWriter{}
-		_, err := r.Write(w)
-		require.Error(t, err)
-	})
-}
-
 func TestWrite(t *testing.T) {
 	recs := []fasta2.Record{
 		{
