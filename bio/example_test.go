@@ -1,7 +1,6 @@
 package bio_test
 
 import (
-	"github.com/TimothyStiles/poly/bio/fasta"
 	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/bio/gff"
 	"github.com/TimothyStiles/poly/bio/polyjson"
@@ -16,13 +15,13 @@ func Example() {
 
 	gffInput, _ := gff.Read("../data/ecoli-mg1655-short.gff")
 	gbkInput, _ := genbank.Read("../data/puc19.gbk")
-	fastaInput, _ := fasta.Read("fasta/data/base.fasta")
+	//fastaInput, _ := fasta.Read("fasta/data/base.fasta")
 	jsonInput, _ := polyjson.Read("../data/cat.json")
 
 	// Poly can also output these file formats. Every file format has a corresponding Write function.
 	_ = gff.Write(gffInput, "test.gff")
 	_ = genbank.Write(gbkInput, "test.gbk")
-	_ = fasta.WriteFile(fastaInput, "test.fasta")
+	//_ = fasta.WriteFile(fastaInput, "test.fasta")
 	_ = polyjson.Write(jsonInput, "test.json")
 
 	// Extra tips:

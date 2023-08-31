@@ -1,13 +1,13 @@
-package bio
+package bio_test
 
 import (
 	"testing"
 
+	"github.com/TimothyStiles/poly/bio"
 	"github.com/TimothyStiles/poly/bio/fasta"
-	"github.com/TimothyStiles/poly/bio/fastq"
 )
 
 func TestWriter(t *testing.T) {
-	var _ Writer = &fastq.Fastq{}
-	var _ Writer = &fasta.Fasta{}
+	var _ bio.LowLevelParser[fasta.Fasta, fasta.Header] = &fasta.Parser{}
+	var _ bio.Writer = &fasta.Fasta{}
 }
