@@ -5,7 +5,9 @@ package bio
 
 import (
 	"bufio"
+	"errors"
 	"io"
+	"math"
 	"os"
 
 	"github.com/TimothyStiles/poly/bio/fasta"
@@ -31,16 +33,16 @@ const (
 // longer. We use the default maxLineLength from bufio unless there is a
 // particular reason to use a different number.
 const defaultMaxLineLength int = bufio.MaxScanTokenSize // 64kB is a magic number often used by the Go stdlib for parsing.
-var (
-	Fasta_DefaultMaxLineLength   = defaultMaxLineLength
-	Fastq_DefaultMaxLineLength   = 8 * 1024 * 1024 // The longest single nanopore sequencing read so far is 4Mb. A 8mb buffer should be large enough for any sequencing.
-	Gff_DefaultMaxLineLength     = defaultMaxLineLength
-	Genbank_DefaultMaxLineLength = defaultMaxLineLength
-	Slow5_DefaultMaxLineLength   = 128 * 1024 * 1024 // 128mb is used because slow5 lines can be massive, since a single read can be many millions of base pairs.
-	Pileup_DefaultMaxLineLength  = defaultMaxLineLength
-	Uniprot_DefaultMaxLineLength = defaultMaxLineLength
-	Rebase_DefaultMaxLineLength  = defaultMaxLineLength
-)
+var DefaultMaxLengths = map[Format]int{
+	Fasta:   defaultMaxLineLength,
+	Fastq:   8 * 1024 * 1024, // The longest single nanopore sequencing read so far is 4Mb. A 8mb buffer should be large enough for any sequencing.
+	Gff:     defaultMaxLineLength,
+	Genbank: defaultMaxLineLength,
+	Slow5:   128 * 1024 * 1024, // 128mb is used because slow5 lines can be massive, since a single read can be many millions of base pairs.
+	Pileup:  defaultMaxLineLength,
+	Uniprot: defaultMaxLineLength,
+	Rebase:  defaultMaxLineLength,
+}
 
 /******************************************************************************
 Aug 30, 2023
@@ -70,7 +72,7 @@ func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header],
 	var maxLineLength int
 	switch format {
 	case Fasta:
-		maxLineLength = Fasta_DefaultMaxLineLength
+		maxLineLength = DefaultMaxLengths[format]
 	}
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
@@ -120,11 +122,22 @@ func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, int64, erro
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error) {
-	return nil, nil
+	var records []DataType
+	for counter := 0; counter < countN; counter++ {
+		record, _, err := p.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				err = nil // EOF not treated as parsing error.
+			}
+			return records, err
+		}
+		records = append(records, record)
+	}
+	return records, nil
 }
 
 func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
-	return nil, nil
+	return p.ParseN(math.MaxInt)
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseAll() ([]DataType, DataTypeHeader, error) {
@@ -140,7 +153,17 @@ func (p *Parser[DataType, DataTypeHeader]) ParseAll() ([]DataType, DataTypeHeade
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseConcurrent(channel chan<- DataType) error {
-	return nil
+	for {
+		record, _, err := p.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				err = nil // EOF not treated as parsing error.
+			}
+			close(channel)
+			return err
+		}
+		channel <- record
+	}
 }
 
 /******************************************************************************
