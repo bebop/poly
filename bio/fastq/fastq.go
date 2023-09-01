@@ -173,7 +173,7 @@ func (parser *Parser) ParseNext() (Fastq, int64, error) {
 	var newSequence []byte
 	for _, char := range sequence {
 		newSequence = append(newSequence, char)
-		if !strings.Contains("ATGCN", string(char)) {
+		if !strings.ContainsRune("ATGCN", rune(char)) {
 			return Fastq{}, totalRead, errors.New("Only letters ATGCN are allowed for DNA/RNA in fastq file. Got letter: " + string(char))
 		}
 	}
