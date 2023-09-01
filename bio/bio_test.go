@@ -1,6 +1,7 @@
 package bio_test
 
 import (
+	"io"
 	"testing"
 
 	"github.com/TimothyStiles/poly/bio"
@@ -8,6 +9,6 @@ import (
 )
 
 func TestWriter(t *testing.T) {
-	var _ bio.LowLevelParser[fasta.Fasta, fasta.Header] = &fasta.Parser{}
-	var _ bio.Writer = &fasta.Fasta{}
+	var _ bio.LowLevelParser[fasta.Record, fasta.Header] = &fasta.Parser{}
+	var _ io.WriterTo = &fasta.Record{}
 }

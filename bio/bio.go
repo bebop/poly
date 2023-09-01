@@ -49,13 +49,9 @@ Lower level interfaces
 
 ******************************************************************************/
 
-type LowLevelParser[DataType fasta.Fasta, DataTypeHeader fasta.Header] interface {
+type LowLevelParser[DataType fasta.Record, DataTypeHeader fasta.Header] interface {
 	Header() (DataTypeHeader, int64, error)
 	Next() (DataType, int64, error)
-}
-
-type Writer interface {
-	Write(io.Writer) (int, error)
 }
 
 /******************************************************************************
@@ -64,13 +60,13 @@ Higher level parse
 
 ******************************************************************************/
 
-type Parser[DataType fasta.Fasta, DataTypeHeader fasta.Header] struct {
+type Parser[DataType fasta.Record, DataTypeHeader fasta.Header] struct {
 	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
 }
 
-var emptyParser Parser[fasta.Fasta, fasta.Header] = Parser[fasta.Fasta, fasta.Header]{}
+var emptyParser Parser[fasta.Record, fasta.Header] = Parser[fasta.Record, fasta.Header]{}
 
-func NewParser(format Format, r io.Reader) (*Parser[fasta.Fasta, fasta.Header], error) {
+func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
 	var maxLineLength int
 	switch format {
 	case Fasta:
@@ -79,10 +75,10 @@ func NewParser(format Format, r io.Reader) (*Parser[fasta.Fasta, fasta.Header], 
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
 
-func NewParserWithMaxLine(format Format, r io.Reader, maxLineLength int) (*Parser[fasta.Fasta, fasta.Header], error) {
+func NewParserWithMaxLine(format Format, r io.Reader, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
 	switch format {
 	case Fasta:
-		return &Parser[fasta.Fasta, fasta.Header]{LowLevelParser: fasta.NewParser(r, maxLineLength)}, nil
+		return &Parser[fasta.Record, fasta.Header]{LowLevelParser: fasta.NewParser(r, maxLineLength)}, nil
 	}
 	return nil, nil
 }
@@ -93,7 +89,7 @@ Parser read functions
 
 ******************************************************************************/
 
-func ReadWithMaxLine(format Format, path string, maxLineLength int) (*Parser[fasta.Fasta, fasta.Header], error) {
+func ReadWithMaxLine(format Format, path string, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return &emptyParser, err
@@ -101,7 +97,7 @@ func ReadWithMaxLine(format Format, path string, maxLineLength int) (*Parser[fas
 	return NewParserWithMaxLine(format, file, maxLineLength)
 }
 
-func Read(format Format, path string) (*Parser[fasta.Fasta, fasta.Header], error) {
+func Read(format Format, path string) (*Parser[fasta.Record, fasta.Header], error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return &emptyParser, err
@@ -153,13 +149,13 @@ Writer functions
 
 ******************************************************************************/
 
-func WriteAll(data []Writer, header Writer, w io.Writer) error {
-	_, err := header.Write(w)
+func WriteAll(data []io.WriterTo, header io.WriterTo, w io.Writer) error {
+	_, err := header.WriteTo(w)
 	if err != nil {
 		return err
 	}
 	for _, datum := range data {
-		_, err = datum.Write(w)
+		_, err = datum.WriteTo(w)
 		if err != nil {
 			return err
 		}
@@ -167,7 +163,7 @@ func WriteAll(data []Writer, header Writer, w io.Writer) error {
 	return nil
 }
 
-func WriteFile(data []Writer, header Writer, path string) error {
+func WriteFile(data []io.WriterTo, header io.WriterTo, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
