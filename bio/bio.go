@@ -72,7 +72,7 @@ var emptyParser Parser[fasta.Record, fasta.Header] = Parser[fasta.Record, fasta.
 func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
 	maxLineLength, ok := DefaultMaxLengths[format]
 	if !ok {
-		return fmt.Errorf("did not find format in default lengths")
+		return &Parser[fasta.Record, fasta.Header]{}, fmt.Errorf("did not find format in default lengths")
 	}
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
@@ -140,7 +140,7 @@ func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
 	return p.ParseN(math.MaxInt)
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseAll() ([]DataType, DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
 	header, _, err := p.Header()
 	if err != nil {
 		return []DataType{}, DataTypeHeader{}, err
