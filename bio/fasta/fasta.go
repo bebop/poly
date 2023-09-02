@@ -63,8 +63,8 @@ type Header struct{}
 // control over reading fasta-formatted sequences.
 // It is initialized with NewParser.
 type Parser struct {
-	// reader keeps state of current reader.
-	reader     bufio.Scanner
+	// scanner keeps state of current reader.
+	scanner    bufio.Scanner
 	buff       bytes.Buffer
 	identifier string
 	start      bool
@@ -85,9 +85,9 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 	buf := make([]byte, maxLineSize)
 	scanner.Buffer(buf, maxLineSize)
 	return &Parser{
-		reader: *scanner,
-		start:  true,
-		more:   true,
+		scanner: *scanner,
+		start:   true,
+		more:    true,
 	}
 }
 
@@ -106,10 +106,10 @@ func (p *Parser) Next() (Record, int64, error) {
 	if p.more == false {
 		return Record{}, 0, io.EOF
 	}
-	for p.reader.Scan() {
-		line := p.reader.Bytes()
+	for p.scanner.Scan() {
+		line := p.scanner.Bytes()
 		p.position += int64(len(line))
-		if p.reader.Err() != nil {
+		if p.scanner.Err() != nil {
 			break
 		}
 		p.line++
@@ -146,7 +146,7 @@ func (p *Parser) Next() (Record, int64, error) {
 	if err != nil {
 		return record, p.position, err
 	}
-	return record, p.position, p.reader.Err()
+	return record, p.position, p.scanner.Err()
 }
 
 func (p *Parser) newRecord() (Record, error) {

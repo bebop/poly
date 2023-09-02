@@ -6,6 +6,7 @@ package bio
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -69,10 +70,9 @@ type Parser[DataType fasta.Record, DataTypeHeader fasta.Header] struct {
 var emptyParser Parser[fasta.Record, fasta.Header] = Parser[fasta.Record, fasta.Header]{}
 
 func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
-	var maxLineLength int
-	switch format {
-	case Fasta:
-		maxLineLength = DefaultMaxLengths[format]
+	maxLineLength, ok := DefaultMaxLengths[format]
+	if !ok {
+		return fmt.Errorf("did not find format in default lengths")
 	}
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
@@ -152,14 +152,14 @@ func (p *Parser[DataType, DataTypeHeader]) ParseAll() ([]DataType, DataTypeHeade
 	return data, header, nil
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseConcurrent(channel chan<- DataType) error {
+// Parse to channel parses a
+func (p *Parser[DataType, DataTypeHeader]) ParseToChannel(channel chan<- DataType) error {
 	for {
 		record, _, err := p.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
 			}
-			close(channel)
 			return err
 		}
 		channel <- record
