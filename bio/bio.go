@@ -5,6 +5,7 @@ package bio
 
 import (
 	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -67,12 +68,10 @@ type Parser[DataType fasta.Record, DataTypeHeader fasta.Header] struct {
 	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
 }
 
-var emptyParser Parser[fasta.Record, fasta.Header] = Parser[fasta.Record, fasta.Header]{}
-
 func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
 	maxLineLength, ok := DefaultMaxLengths[format]
 	if !ok {
-		return &Parser[fasta.Record, fasta.Header]{}, fmt.Errorf("did not find format in default lengths")
+		return nil, fmt.Errorf("did not find format in default lengths")
 	}
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
@@ -85,26 +84,42 @@ func NewParserWithMaxLine(format Format, r io.Reader, maxLineLength int) (*Parse
 	return nil, nil
 }
 
+func NewParserGz(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
+	return NewParserCompressed(format, r, func(r io.Reader) (io.Reader, error) { return gzip.NewReader(r) })
+}
+
+func NewParserCompressed(format Format, r io.Reader, decoderFunc func(io.Reader) (io.Reader, error)) (*Parser[fasta.Record, fasta.Header], error) {
+	decodedReader, err := decoderFunc(r)
+	if err != nil {
+		return nil, err
+	}
+	return NewParser(format, decodedReader)
+}
+
 /******************************************************************************
 
 Parser read functions
 
 ******************************************************************************/
 
-func ReadWithMaxLine(format Format, path string, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return &emptyParser, err
-	}
-	return NewParserWithMaxLine(format, file, maxLineLength)
-}
-
 func Read(format Format, path string) (*Parser[fasta.Record, fasta.Header], error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return &emptyParser, err
+		return nil, err
 	}
 	return NewParser(format, file)
+}
+
+func ReadGz(format Format, path string) (*Parser[fasta.Record, fasta.Header], error) {
+	return ReadCompressed(format, path, func(r io.Reader) (io.Reader, error) { return gzip.NewReader(r) })
+}
+
+func ReadCompressed(format Format, path string, decoderFunc func(io.Reader) (io.Reader, error)) (*Parser[fasta.Record, fasta.Header], error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return NewParserCompressed(format, file, decoderFunc)
 }
 
 /******************************************************************************
