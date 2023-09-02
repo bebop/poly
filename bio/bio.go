@@ -53,8 +53,8 @@ Lower level interfaces
 ******************************************************************************/
 
 type LowLevelParser[DataType fasta.Record, DataTypeHeader fasta.Header] interface {
-	Header() (DataTypeHeader, int64, error)
-	Next() (DataType, int64, error)
+	Header() (DataTypeHeader, error)
+	Next() (DataType, error)
 }
 
 /******************************************************************************
@@ -113,18 +113,18 @@ Parser higher-level functions
 
 ******************************************************************************/
 
-func (p *Parser[DataType, DataTypeHeader]) Next() (DataType, int64, error) {
+func (p *Parser[DataType, DataTypeHeader]) Next() (DataType, error) {
 	return p.LowLevelParser.Next()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, int64, error) {
+func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, error) {
 	return p.LowLevelParser.Header()
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error) {
 	var records []DataType
 	for counter := 0; counter < countN; counter++ {
-		record, _, err := p.Next()
+		record, err := p.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -141,7 +141,7 @@ func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
-	header, _, err := p.Header()
+	header, err := p.Header()
 	if err != nil {
 		return []DataType{}, DataTypeHeader{}, err
 	}
@@ -155,7 +155,7 @@ func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTy
 // Parse to channel parses a
 func (p *Parser[DataType, DataTypeHeader]) ParseToChannel(channel chan<- DataType) error {
 	for {
-		record, _, err := p.Next()
+		record, err := p.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.

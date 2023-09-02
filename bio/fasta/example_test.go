@@ -22,7 +22,7 @@ func Example_basic() {
 	parser := fasta.NewParser(file, 32*1024) // Initialize a parser for this file
 	var records []fasta.Record
 	for {
-		record, _, err := parser.Next()
+		record, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -41,7 +41,7 @@ func ExampleWrite() {
 	fastaString := ">testing\nATGC\n"
 	fakeFile := strings.NewReader(fastaString)
 	parser := fasta.NewParser(fakeFile, 32*1024)
-	record, _, _ := parser.Next()
+	record, _ := parser.Next()
 
 	// Write it to a file
 	file, _ := os.Create("data/test.fasta")
@@ -51,7 +51,7 @@ func ExampleWrite() {
 	// Read that file
 	file2, _ := os.Open("data/test.fasta")
 	parser = fasta.NewParser(file2, 32*1024)
-	newRecord, _, _ := parser.Next()
+	newRecord, _ := parser.Next()
 	file2.Close()
 
 	// Remove the test file

@@ -73,9 +73,9 @@ type Parser struct {
 	position   int64
 }
 
-// Header returns a identifier with nothing, 0, and nil.
-func (p *Parser) Header() (Header, int64, error) {
-	return Header{}, 0, nil
+// Header returns a identifier with nothing and nil.
+func (p *Parser) Header() (Header, error) {
+	return Header{}, nil
 }
 
 // NewParser returns a Parser that uses r as the source
@@ -102,13 +102,12 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // It is worth noting the amount of bytes read are always right up to before
 // the next fasta starts which means this function can effectively be used
 // to index where fastas start in a file or string.
-func (p *Parser) Next() (Record, int64, error) {
+func (p *Parser) Next() (Record, error) {
 	if p.more == false {
-		return Record{}, 0, io.EOF
+		return Record{}, io.EOF
 	}
 	for p.scanner.Scan() {
 		line := p.scanner.Bytes()
-		p.position += int64(len(line))
 		if p.scanner.Err() != nil {
 			break
 		}
@@ -124,7 +123,7 @@ func (p *Parser) Next() (Record, int64, error) {
 		case line[0] != '>' && p.start:
 			err := fmt.Errorf("invalid input: missing sequence identifier for sequence starting at line %d", p.line)
 			record, _ := p.newRecord()
-			return record, p.position, err
+			return record, err
 		// start of a fasta line
 		case line[0] != '>':
 			p.buff.Write(line)
@@ -133,7 +132,7 @@ func (p *Parser) Next() (Record, int64, error) {
 			record, err := p.newRecord()
 			// New name
 			p.identifier = string(line[1:])
-			return record, p.position, err
+			return record, err
 		// Process first line of file
 		case line[0] == '>' && p.start:
 			p.identifier = string(line[1:])
@@ -144,9 +143,9 @@ func (p *Parser) Next() (Record, int64, error) {
 	// Add final sequence in file
 	record, err := p.newRecord()
 	if err != nil {
-		return record, p.position, err
+		return record, err
 	}
-	return record, p.position, p.scanner.Err()
+	return record, p.scanner.Err()
 }
 
 func (p *Parser) newRecord() (Record, error) {

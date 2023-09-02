@@ -14,7 +14,7 @@ const (
 )
 
 func TestHeader(t *testing.T) {
-	_, _, err := NewParser(nil, 256).Header()
+	_, err := NewParser(nil, 256).Header()
 	if err != nil {
 		t.Errorf("Header should never be nil")
 	}
@@ -45,7 +45,7 @@ func TestParser(t *testing.T) {
 		var fastas []Record
 		parser := NewParser(strings.NewReader(test.content), 256)
 		for {
-			fa, _, err := parser.Next()
+			fa, err := parser.Next()
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					err = nil // EOF not treated as parsing error.
@@ -76,7 +76,7 @@ func TestReadEmptyFasta(t *testing.T) {
 	emptyFasta := "testing\natagtagtagtagtagatgatgatgatgagatg\n\n\n\n\n\n\n\n\n\n\n"
 	parser := NewParser(strings.NewReader(emptyFasta), 256)
 	for {
-		fa, _, err := parser.Next()
+		fa, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -100,7 +100,7 @@ func TestReadEmptySequence(t *testing.T) {
 	emptyFasta := ">testing\natagtagtagtagtagatgatgatgatgagatg\n>testing2\n\n\n\n\n\n\n\n\n\n"
 	parser := NewParser(strings.NewReader(emptyFasta), 256)
 	for {
-		fa, _, err := parser.Next()
+		fa, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -121,7 +121,7 @@ func TestBufferSmall(t *testing.T) {
 	emptyFasta := ">test\natagtagtagtagtagatgatgatgatgagatg\n>test\n\n\n\n\n\n\n\n\n\n"
 	parser := NewParser(strings.NewReader(emptyFasta), 8)
 	for {
-		fa, _, err := parser.Next()
+		fa, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -166,7 +166,7 @@ func TestWrite(t *testing.T) {
 	// 81 polyA
 	s := ">test\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
 	parser := NewParser(strings.NewReader(s), 1024)
-	fa, _, err := parser.Next()
+	fa, err := parser.Next()
 	if err != nil {
 		t.Errorf("Failed to read polyA: %s", err)
 	}
