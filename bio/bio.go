@@ -56,8 +56,8 @@ Lower level interfaces
 ******************************************************************************/
 
 type LowLevelParser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] interface {
-	Header() (*DataTypeHeader, error)
-	Next() (*DataType, error)
+	Header() (DataTypeHeader, error)
+	Next() (DataType, error)
 }
 
 /******************************************************************************
@@ -133,16 +133,16 @@ Parser higher-level functions
 
 ******************************************************************************/
 
-func (p *Parser[DataType, DataTypeHeader]) Next() (*DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Next() (DataType, error) {
 	return p.LowLevelParser.Next()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Header() (*DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, error) {
 	return p.LowLevelParser.Header()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]*DataType, error) {
-	var records []*DataType
+func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error) {
+	var records []DataType
 	for counter := 0; counter < countN; counter++ {
 		record, err := p.Next()
 		if err != nil {
@@ -156,11 +156,11 @@ func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]*DataType, erro
 	return records, nil
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Parse() ([]*DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
 	return p.ParseN(math.MaxInt)
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]*DataType, *DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
 	header, headerErr := p.Header()
 	data, err := p.Parse()
 	if headerErr != nil {
@@ -183,6 +183,6 @@ func (p *Parser[DataType, DataTypeHeader]) ParseToChannel(channel chan<- DataTyp
 			close(channel)
 			return err
 		}
-		channel <- *record
+		channel <- record
 	}
 }

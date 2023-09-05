@@ -24,7 +24,7 @@ func ExampleNewParser() {
 			// Break at EOF
 			break
 		}
-		outputReads = append(outputReads, *read)
+		outputReads = append(outputReads, read)
 	}
 
 	fmt.Println(outputReads[0].RawSignal[0:10])

@@ -29,7 +29,7 @@ func Example_basic() {
 			}
 			break
 		}
-		records = append(records, *record)
+		records = append(records, record)
 	}
 	fmt.Println(records[0].Sequence)
 	// Output: ATGC

@@ -54,7 +54,7 @@ func TestParser(t *testing.T) {
 				}
 				break
 			}
-			fastas = append(fastas, *fa)
+			fastas = append(fastas, fa)
 		}
 		if len(fastas) != len(test.expected) {
 			t.Errorf("case index %d: got %d fastas, expected %d", testIndex, len(fastas), len(test.expected))
@@ -84,7 +84,7 @@ func TestReadEmptyFasta(t *testing.T) {
 			targetError = err
 			break
 		}
-		fastas = append(fastas, *fa)
+		fastas = append(fastas, fa)
 	}
 	if targetError == nil {
 		t.Errorf("expected error reading empty fasta stream")
@@ -108,7 +108,7 @@ func TestReadEmptySequence(t *testing.T) {
 			targetError = err
 			break
 		}
-		fastas = append(fastas, *fa)
+		fastas = append(fastas, fa)
 	}
 	if targetError == nil {
 		t.Errorf("expected error reading empty fasta sequence stream: %s", targetError)
@@ -129,7 +129,7 @@ func TestBufferSmall(t *testing.T) {
 			targetError = err
 			break
 		}
-		fastas = append(fastas, *fa)
+		fastas = append(fastas, fa)
 	}
 	if targetError == nil {
 		t.Errorf("expected error with too small of a buffer")

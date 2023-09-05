@@ -113,8 +113,8 @@ type Parser struct {
 }
 
 // Header returns the header
-func (p *Parser) Header() (*Header, error) {
-	return &p.header, nil
+func (p *Parser) Header() (Header, error) {
+	return p.header, nil
 }
 
 // NewParser parsers a slow5 file.
@@ -212,9 +212,9 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, error) {
 }
 
 // Next parses the next read from a parser.
-func (parser *Parser) Next() (*Read, error) {
+func (parser *Parser) Next() (Read, error) {
 	if parser.hitEOF {
-		return &Read{}, io.EOF
+		return Read{}, io.EOF
 	}
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {
@@ -222,10 +222,10 @@ func (parser *Parser) Next() (*Read, error) {
 			parser.hitEOF = true
 			if strings.TrimSpace(string(lineBytes)) == "" {
 				// If EOF line is empty, return. If not, continue!
-				return &Read{}, io.EOF
+				return Read{}, io.EOF
 			}
 		} else {
-			return &Read{}, err
+			return Read{}, err
 		}
 	}
 	parser.line++
@@ -247,37 +247,37 @@ func (parser *Parser) Next() (*Read, error) {
 		case "read_group":
 			readGroupID, err := strconv.ParseUint(values[valueIndex], 10, 32)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed convert read_group '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed convert read_group '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.ReadGroupID = uint32(readGroupID)
 		case "digitisation":
 			digitisation, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert digitisation '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert digitisation '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.Digitisation = digitisation
 		case "offset":
 			offset, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert offset '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert offset '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.Offset = offset
 		case "range":
 			nanoporeRange, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert range '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert range '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.Range = nanoporeRange
 		case "sampling_rate":
 			samplingRate, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert sampling_rate '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert sampling_rate '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.SamplingRate = samplingRate
 		case "len_raw_signal":
 			lenRawSignal, err := strconv.ParseUint(values[valueIndex], 10, 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert len_raw_signal '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert len_raw_signal '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.LenRawSignal = lenRawSignal
 		case "raw_signal":
@@ -285,7 +285,7 @@ func (parser *Parser) Next() (*Read, error) {
 			for rawSignalIndex, rawSignalString := range strings.Split(values[valueIndex], ",") {
 				rawSignal, err := strconv.ParseInt(rawSignalString, 10, 16)
 				if err != nil {
-					return &Read{}, fmt.Errorf("Failed to convert raw signal '%s' to int on line %d, signal index %d. Got Error: %w", rawSignalString, parser.line, rawSignalIndex, err)
+					return Read{}, fmt.Errorf("Failed to convert raw signal '%s' to int on line %d, signal index %d. Got Error: %w", rawSignalString, parser.line, rawSignalIndex, err)
 				}
 				rawSignals = append(rawSignals, int16(rawSignal))
 			}
@@ -293,44 +293,44 @@ func (parser *Parser) Next() (*Read, error) {
 		case "start_time":
 			startTime, err := strconv.ParseUint(values[valueIndex], 10, 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert start_time '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert start_time '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.StartTime = startTime
 		case "read_number":
 			readNumber, err := strconv.ParseInt(values[valueIndex], 10, 32)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert read_number '%s' to int on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert read_number '%s' to int on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.ReadNumber = int32(readNumber)
 		case "start_mux":
 			startMux, err := strconv.ParseUint(values[valueIndex], 10, 8)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert start_mux '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert start_mux '%s' to uint on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.StartMux = uint8(startMux)
 		case "median_before":
 			medianBefore, err := strconv.ParseFloat(values[valueIndex], 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert median_before '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert median_before '%s' to float on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			newRead.MedianBefore = medianBefore
 		case "end_reason":
 			endReasonIndex, err := strconv.ParseInt(values[valueIndex], 10, 64)
 			if err != nil {
-				return &Read{}, fmt.Errorf("Failed to convert end_reason '%s' to int on line %d. Got Error: %w", values[valueIndex], parser.line, err)
+				return Read{}, fmt.Errorf("Failed to convert end_reason '%s' to int on line %d. Got Error: %w", values[valueIndex], parser.line, err)
 			}
 			if _, ok := parser.endReasonMap[int(endReasonIndex)]; !ok {
-				return &Read{}, fmt.Errorf("End reason out of range. Got '%d' on line %d. Cannot find valid enum reason", int(endReasonIndex), parser.line)
+				return Read{}, fmt.Errorf("End reason out of range. Got '%d' on line %d. Cannot find valid enum reason", int(endReasonIndex), parser.line)
 			}
 			newRead.EndReason = parser.endReasonMap[int(endReasonIndex)]
 		case "channel_number":
 			// For whatever reason, this is a string.
 			newRead.ChannelNumber = values[valueIndex]
 		default:
-			return &Read{}, fmt.Errorf("Unknown field to parser '%s' found on line %d. Please report to github.com/TimothyStiles/poly", fieldValue, parser.line)
+			return Read{}, fmt.Errorf("Unknown field to parser '%s' found on line %d. Please report to github.com/TimothyStiles/poly", fieldValue, parser.line)
 		}
 	}
-	return &newRead, nil
+	return newRead, nil
 }
 
 /******************************************************************************
