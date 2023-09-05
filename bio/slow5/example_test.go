@@ -15,11 +15,11 @@ func ExampleNewParser() {
 	// Set maxLineSize to 64kb. If you expect longer reads,
 	// make maxLineSize longer!
 	const maxLineSize = 2 * 32 * 1024
-	parser, _, _ := slow5.NewParser(file, maxLineSize)
+	parser, _ := slow5.NewParser(file, maxLineSize)
 
 	var outputReads []slow5.Read
 	for {
-		read, err := parser.ParseNext()
+		read, err := parser.Next()
 		if err != nil {
 			// Break at EOF
 			break

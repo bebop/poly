@@ -59,6 +59,11 @@ type Record struct {
 // Header is a blank struct, needed for compatibility with bio parsers. It contains nothing.
 type Header struct{}
 
+// WriteTo is a blank function, needed for compatibility with bio parsers. It doesn't do anything.
+func (header *Header) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil
+}
+
 // Parser is a flexible parser that provides ample
 // control over reading fasta-formatted sequences.
 // It is initialized with NewParser.

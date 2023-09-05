@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,22 +16,23 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open example.slow5: %s", err)
 	}
-	parser, headers, err := NewParser(file, maxLineSize)
+	parser, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("Failed to parse headers of file: %s", err)
 	}
 	// Test headers
-	if len(headers) != 1 {
-		t.Errorf("There should only be 1 read group. Got: %d", len(headers))
+	headers, _ := parser.Header()
+	if len(headers.HeaderValues) != 1 {
+		t.Errorf("There should only be 1 read group. Got: %d", len(headers.HeaderValues))
 	}
-	if headers[0].Attributes["@asic_id"] != "4175987214" {
-		t.Errorf("Expected AsicId 4175987214. Got: %s", headers[0].Attributes["asic_id"])
+	if headers.HeaderValues[0].Attributes["@asic_id"] != "4175987214" {
+		t.Errorf("Expected AsicId 4175987214. Got: %s", headers.HeaderValues[0].Attributes["asic_id"])
 	}
 
 	// Test reads
 	var outputReads []Read
 	for {
-		read, err := parser.ParseNext()
+		read, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				t.Errorf("Got unknown error: %s", err)
@@ -50,7 +52,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file, maxLineSize)
+	_, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if header line doesn't have any tabs")
 	}
@@ -59,7 +61,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file, maxLineSize)
+	_, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if numReadGroup can't be converted to an int")
 	}
@@ -68,7 +70,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file, maxLineSize)
+	_, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if the header doesn't have enough attributes for numReadGroup")
 	}
@@ -77,7 +79,7 @@ func TestParseImproperHeaders(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	_, _, err = NewParser(file, maxLineSize)
+	_, err = NewParser(file, maxLineSize)
 	if err == nil {
 		t.Errorf("Test should have failed if the file is empty")
 	}
@@ -88,10 +90,10 @@ func testParseReadsHelper(t *testing.T, fileTarget string, errorMessage string) 
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	parser, _, _ := NewParser(file, maxLineSize)
+	parser, _ := NewParser(file, maxLineSize)
 	var targetErr []error
 	for {
-		read, err := parser.ParseNext()
+		read, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				t.Errorf("Got unknown error: %s", err)
@@ -113,11 +115,11 @@ func TestParseReads(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
-	parser, _, _ := NewParser(file, maxLineSize)
+	parser, _ := NewParser(file, maxLineSize)
 
 	var outputReads []Read
 	for {
-		read, err := parser.ParseNext()
+		read, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				t.Errorf("Got unknown error: %s", err)
@@ -159,7 +161,7 @@ func TestWrite(t *testing.T) {
 		t.Errorf("Failed to open file with error: %s", err)
 	}
 	// Parse headers
-	parser, headers, err := NewParser(file, maxLineSize)
+	parser, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("Failed to parse headers with error: %s", err)
 	}
@@ -173,7 +175,7 @@ func TestWrite(t *testing.T) {
 	reads := make(chan Read)
 	go func() {
 		for {
-			read, err := parser.ParseNext()
+			read, err := parser.Next()
 			if err != nil {
 				// Break at EOF
 				break
@@ -183,10 +185,18 @@ func TestWrite(t *testing.T) {
 		close(reads)
 	}()
 
-	// Write
-	err = Write(headers, reads, testFile)
+	// Write header
+	headers, _ := parser.Header()
+	_, err = headers.WriteTo(testFile)
 	if err != nil {
-		t.Errorf("Failed to write slow5 file. Got error: %s", err)
+		t.Errorf("Failed to write slow5 header. Got error: %s", err)
+	}
+	for read := range reads {
+		_, err = read.WriteTo(testFile)
+		if err != nil {
+
+			t.Errorf("Failed to write slow5 read. Got error: %s", err)
+		}
 	}
 
 	// Compare both files
@@ -203,4 +213,23 @@ func TestWrite(t *testing.T) {
 	if string(example) != string(testWrite) {
 		t.Errorf("Example and test write are different")
 	}
+}
+
+func TestSimpleExample(t *testing.T) {
+	file := strings.NewReader(`#slow5_version	0.2.0
+#num_read_groups	1
+@asic_id	4175987214
+#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}	char*
+#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
+0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10`)
+	parser, err := NewParser(file, maxLineSize)
+	if err != nil {
+		t.Errorf("failed: %s", err)
+
+	}
+	read, _ := parser.Next()
+	if read.RawSignal[0] != 430 {
+		t.Errorf("Should have gotten 430. Got: %d", read.RawSignal[0])
+	}
+
 }

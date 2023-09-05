@@ -57,6 +57,10 @@ Keoni
 
 // Header contains metadata about the sequencing run in general.
 type Header struct {
+	HeaderValues []HeaderValue
+}
+
+type HeaderValue struct {
 	ReadGroupID        uint32
 	Slow5Version       string
 	Attributes         map[string]string
@@ -82,7 +86,8 @@ type Read struct {
 	StartTime     uint64
 	EndReason     string // enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}
 
-	Error error // in case there is an error while parsing!
+	Error        error          // in case there is an error while parsing!
+	EndReasonMap map[string]int // Used for writing
 }
 
 var knownEndReasons = map[string]bool{"unknown": true,
@@ -99,19 +104,27 @@ var knownEndReasons = map[string]bool{"unknown": true,
 // It is initialized with NewParser.
 type Parser struct {
 	// reader keeps state of current reader.
-	reader       bufio.Reader
-	line         uint
-	headerMap    map[int]string
-	endReasonMap map[int]string
+	reader             bufio.Reader
+	line               uint
+	headerMap          map[int]string
+	endReasonMap       map[int]string
+	endReasonHeaderMap map[string]int
+	header             Header
+	hitEOF             bool
+}
+
+// Header returns the header
+func (p *Parser) Header() (Header, error) {
+	return p.header, nil
 }
 
 // NewParser parsers a slow5 file.
-func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
+func NewParser(r io.Reader, maxLineSize int) (*Parser, error) {
 	parser := &Parser{
 		reader: *bufio.NewReaderSize(r, maxLineSize),
 		line:   0,
 	}
-	var headers []Header
+	var headers []HeaderValue
 	var slow5Version string
 	var numReadGroups uint32
 	headerMap := make(map[int]string)
@@ -121,13 +134,14 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 	for {
 		lineBytes, err := parser.reader.ReadSlice('\n')
 		if err != nil {
-			return parser, []Header{}, err
+			return parser, err
 		}
 		line := strings.TrimSpace(string(lineBytes))
 		parser.line++
 		values := strings.Split(line, "\t")
 		if len(values) < 2 {
-			return parser, []Header{}, fmt.Errorf("Got following line without tabs: %s", line)
+
+			return parser, fmt.Errorf("Got following line without tabs: %s", line)
 		}
 
 		// First, we need to identify the number of read groups. This number will be the length of our
@@ -139,11 +153,11 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 			case "#num_read_groups":
 				numReadGroupsUint, err := strconv.ParseUint(values[1], 10, 32)
 				if err != nil {
-					return parser, []Header{}, err
+					return parser, err
 				}
 				numReadGroups = uint32(numReadGroupsUint)
 				for id := uint32(0); id < numReadGroups; id++ {
-					headers = append(headers, Header{Slow5Version: slow5Version, ReadGroupID: id, Attributes: make(map[string]string)})
+					headers = append(headers, HeaderValue{Slow5Version: slow5Version, ReadGroupID: id, Attributes: make(map[string]string)})
 				}
 			}
 			continue
@@ -159,7 +173,7 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 
 					for endReasonIndex, endReason := range endReasons {
 						if _, ok := knownEndReasons[endReason]; !ok {
-							return parser, headers, fmt.Errorf("unknown end reason '%s' found in end_reason enum. Please report", endReason)
+							return parser, fmt.Errorf("unknown end reason '%s' found in end_reason enum. Please report", endReason)
 						}
 						endReasonMap[endReasonIndex] = endReason
 						endReasonHeaderMap[endReason] = endReasonIndex
@@ -184,7 +198,7 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 
 		// Check to make sure we have the right amount of information for the num_read_groups
 		if len(values) != int(numReadGroups+1) {
-			return parser, []Header{}, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
+			return parser, fmt.Errorf("Improper amount of information for read groups. Needed %d, got %d, in line: %s", numReadGroups+1, len(values), line)
 		}
 		for id := 0; id < int(numReadGroups); id++ {
 			headers[id].Attributes[values[0]] = values[id+1]
@@ -193,14 +207,27 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, []Header, error) {
 	}
 	parser.headerMap = headerMap
 	parser.endReasonMap = endReasonMap
-	return parser, headers, nil
+	parser.endReasonHeaderMap = endReasonHeaderMap
+	parser.header = Header{HeaderValues: headers}
+	return parser, nil
 }
 
-// ParseNext parses the next read from a parser.
-func (parser *Parser) ParseNext() (Read, error) {
+// Next parses the next read from a parser.
+func (parser *Parser) Next() (Read, error) {
+	if parser.hitEOF {
+		return Read{}, io.EOF
+	}
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {
-		return Read{}, err
+		if err == io.EOF {
+			parser.hitEOF = true
+			if strings.TrimSpace(string(lineBytes)) == "" {
+				// If EOF line is empty, return. If not, continue!
+				return Read{}, io.EOF
+			}
+		} else {
+			return Read{}, err
+		}
 	}
 	parser.line++
 	line := strings.TrimSpace(string(lineBytes))
@@ -209,6 +236,7 @@ func (parser *Parser) ParseNext() (Read, error) {
 	// Reads have started.
 	// Once we have the read headers, start to parse the actual reads
 	var newRead Read
+	newRead.EndReasonMap = parser.endReasonHeaderMap
 	for valueIndex := 0; valueIndex < len(values); valueIndex++ {
 		fieldValue := parser.headerMap[valueIndex]
 		if values[valueIndex] == "." {
@@ -326,19 +354,22 @@ Keoni
 
 ******************************************************************************/
 
-// Write writes a list of headers and a channel of reads to an output.
-func Write(headers []Header, reads <-chan Read, output io.Writer) error {
+func (header *Header) WriteTo(w io.Writer) (int64, error) {
+	headers := header.HeaderValues
+	var written int64
 	// First, write the slow5 version number
 	slow5Version := headers[0].Slow5Version
 	endReasonHeaderMap := headers[0].EndReasonHeaderMap
-	_, err := fmt.Fprintf(output, "#slow5_version\t%s\n", slow5Version)
+	newWriteN, err := fmt.Fprintf(w, "#slow5_version\t%s\n", slow5Version)
+	written += int64(newWriteN)
 	if err != nil {
-		return err
+		return written, err
 	}
 	// Then, write the number of read groups (ie, the number of headers)
-	_, err = fmt.Fprintf(output, "#num_read_groups\t%d\n", len(headers))
+	newWriteN, err = fmt.Fprintf(w, "#num_read_groups\t%d\n", len(headers))
+	written += int64(newWriteN)
 	if err != nil {
-		return err
+		return written, err
 	}
 	// Next, we need a map of what attribute values are available
 	possibleAttributeKeys := make(map[string]bool)
@@ -378,9 +409,10 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 
 	// Write the header attribute strings to the output
 	for _, headerAttributeString := range headerAttributeStrings {
-		_, err = fmt.Fprintf(output, "%s\n", headerAttributeString)
+		newWriteN, err = fmt.Fprintf(w, "%s\n", headerAttributeString)
+		written += int64(newWriteN)
 		if err != nil {
-			return err
+			return written, err
 		}
 	}
 
@@ -404,37 +436,41 @@ func Write(headers []Header, reads <-chan Read, output io.Writer) error {
 
 	// Write the read headers
 	// These are according to the slow5 specifications
-	_, err = fmt.Fprintf(output, "#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{%s}	char*\n", endReasonString)
+	newWriteN, err = fmt.Fprintf(w, "#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{%s}	char*\n", endReasonString)
+	written += int64(newWriteN)
 	if err != nil {
-		return err
+		return written, err
 	}
-	_, err = fmt.Fprintln(output, "#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number")
+	newWriteN, err = fmt.Fprintln(w, "#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number")
+	written += int64(newWriteN)
 	if err != nil {
-		return err
+		return written, err
 	}
+	return written, nil
+}
 
-	// Iterate over reads. This is reading from a channel, and will end
-	// when the channel is closed.
-	for read := range reads {
-		// converts []int16 to string
-		var rawSignalStringBuilder strings.Builder
-		for signalIndex, signal := range read.RawSignal {
-			_, err = fmt.Fprint(&rawSignalStringBuilder, signal)
-			if err != nil {
-				return err
-			}
-			if signalIndex != len(read.RawSignal)-1 { // Don't add a comma to last number
-				_, err = fmt.Fprint(&rawSignalStringBuilder, ",")
-				if err != nil {
-					return err
-				}
-			}
-		}
-		// Look at above output.Write("#read_id ... for the values here.
-		_, err = fmt.Fprintf(output, "%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadID, read.ReadGroupID, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalStringBuilder.String(), read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, endReasonHeaderMap[read.EndReason], read.ChannelNumber)
+func (read *Read) WriteTo(w io.Writer) (int64, error) {
+	var err error
+	var written int64
+	// converts []int16 to string
+	var rawSignalStringBuilder strings.Builder
+	for signalIndex, signal := range read.RawSignal {
+		_, err = fmt.Fprint(&rawSignalStringBuilder, signal)
 		if err != nil {
-			return err
+			return written, err
+		}
+		if signalIndex != len(read.RawSignal)-1 { // Don't add a comma to last number
+			_, err = fmt.Fprint(&rawSignalStringBuilder, ",")
+			if err != nil {
+				return written, err
+			}
 		}
 	}
-	return nil
+	// Look at above output.Write("#read_id ... for the values here.
+	newWriteN, err := fmt.Fprintf(w, "%s\t%d\t%g\t%g\t%g\t%g\t%d\t%s\t%d\t%d\t%d\t%g\t%d\t%s\n", read.ReadID, read.ReadGroupID, read.Digitisation, read.Offset, read.Range, read.SamplingRate, read.LenRawSignal, rawSignalStringBuilder.String(), read.StartTime, read.ReadNumber, read.StartMux, read.MedianBefore, read.EndReasonMap[read.EndReason], read.ChannelNumber)
+	written += int64(newWriteN)
+	if err != nil {
+		return written, err
+	}
+	return written, nil
 }

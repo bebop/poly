@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/TimothyStiles/poly/bio/fasta"
+	"github.com/TimothyStiles/poly/bio/slow5"
 )
 
 type Format int
@@ -25,8 +26,10 @@ const (
 	Slow5
 	Pileup
 	Uniprot
-	Rebase
 )
+
+type FastaParser = *Parser[fasta.Record, fasta.Header]
+type Slow5Parser = *Parser[slow5.Read, slow5.Header]
 
 // DefaultMaxLineLength variables are defined for performance reasons. While
 // parsing, reading byte-by-byte takes far, far longer than reading many bytes
@@ -43,7 +46,6 @@ var DefaultMaxLengths = map[Format]int{
 	Slow5:   128 * 1024 * 1024, // 128mb is used because slow5 lines can be massive, since a single read can be many millions of base pairs.
 	Pileup:  defaultMaxLineLength,
 	Uniprot: defaultMaxLineLength,
-	Rebase:  defaultMaxLineLength,
 }
 
 /******************************************************************************
@@ -53,9 +55,17 @@ Lower level interfaces
 
 ******************************************************************************/
 
-type LowLevelParser[DataType fasta.Record, DataTypeHeader fasta.Header] interface {
+type LowLevelParser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] interface {
 	Header() (DataTypeHeader, error)
 	Next() (DataType, error)
+}
+
+type Record interface {
+	WriteTo(w io.Writer) (n int64, err error)
+}
+
+type Header interface {
+	WriteTo(w io.Writer) (n int64, err error)
 }
 
 /******************************************************************************
@@ -64,11 +74,11 @@ Higher level parse
 
 ******************************************************************************/
 
-type Parser[DataType fasta.Record, DataTypeHeader fasta.Header] struct {
+type Parser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] struct {
 	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
 }
 
-func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
+func NewParser(format Format, r io.Reader) (interface{}, error) {
 	maxLineLength, ok := DefaultMaxLengths[format]
 	if !ok {
 		return nil, fmt.Errorf("did not find format in default lengths")
@@ -76,19 +86,22 @@ func NewParser(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header],
 	return NewParserWithMaxLine(format, r, maxLineLength)
 }
 
-func NewParserWithMaxLine(format Format, r io.Reader, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
+func NewParserWithMaxLine(format Format, r io.Reader, maxLineLength int) (interface{}, error) {
 	switch format {
 	case Fasta:
 		return &Parser[fasta.Record, fasta.Header]{LowLevelParser: fasta.NewParser(r, maxLineLength)}, nil
+	case Slow5:
+		parser, err := slow5.NewParser(r, maxLineLength)
+		return &Parser[slow5.Read, slow5.Header]{LowLevelParser: parser}, err
 	}
 	return nil, nil
 }
 
-func NewParserGz(format Format, r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
+func NewParserGz(format Format, r io.Reader) (interface{}, error) {
 	return NewParserCompressed(format, r, func(r io.Reader) (io.Reader, error) { return gzip.NewReader(r) })
 }
 
-func NewParserCompressed(format Format, r io.Reader, decoderFunc func(io.Reader) (io.Reader, error)) (*Parser[fasta.Record, fasta.Header], error) {
+func NewParserCompressed(format Format, r io.Reader, decoderFunc func(io.Reader) (io.Reader, error)) (interface{}, error) {
 	decodedReader, err := decoderFunc(r)
 	if err != nil {
 		return nil, err
@@ -102,7 +115,7 @@ Parser read functions
 
 ******************************************************************************/
 
-func Read(format Format, path string) (*Parser[fasta.Record, fasta.Header], error) {
+func Read(format Format, path string) (interface{}, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -110,11 +123,11 @@ func Read(format Format, path string) (*Parser[fasta.Record, fasta.Header], erro
 	return NewParser(format, file)
 }
 
-func ReadGz(format Format, path string) (*Parser[fasta.Record, fasta.Header], error) {
+func ReadGz(format Format, path string) (interface{}, error) {
 	return ReadCompressed(format, path, func(r io.Reader) (io.Reader, error) { return gzip.NewReader(r) })
 }
 
-func ReadCompressed(format Format, path string, decoderFunc func(io.Reader) (io.Reader, error)) (*Parser[fasta.Record, fasta.Header], error) {
+func ReadCompressed(format Format, path string, decoderFunc func(io.Reader) (io.Reader, error)) (interface{}, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -156,13 +169,13 @@ func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
 }
 
 func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
-	header, err := p.Header()
-	if err != nil {
-		return []DataType{}, DataTypeHeader{}, err
-	}
+	header, headerErr := p.Header()
 	data, err := p.Parse()
+	if headerErr != nil {
+		return data, header, err
+	}
 	if err != nil {
-		return []DataType{}, DataTypeHeader{}, err
+		return data, header, err
 	}
 	return data, header, nil
 }
