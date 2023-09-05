@@ -5,10 +5,10 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/TimothyStiles/poly/bio"
+	"github.com/TimothyStiles/poly/bio/fasta"
 	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/bio/gff"
 	"github.com/TimothyStiles/poly/bio/polyjson"
@@ -134,6 +134,86 @@ DIDGDGQVNYEEFVQMMTAK*`))
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
+func ExampleParseWithHeader() {
+	// The following can be replaced with a any io.Reader. For example,
+	// `file, err := os.Open(path)` for file would also work.
+	file := strings.NewReader(`#slow5_version	0.2.0
+#num_read_groups	1
+@asic_id	4175987214
+#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}	char*
+#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
+0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
+`)
+	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
+	parser := parserInterface.(bio.Slow5Parser)
+	reads, header, _ := parser.ParseWithHeader() // Parse all data records from file
+
+	fmt.Printf("%s, %s\n", header.HeaderValues[0].Slow5Version, reads[0].ReadID)
+	// Output: 0.2.0, 0026631e-33a3-49ab-aa22-3ab157d71f8b
+}
+
+func ExampleParseToChannel() {
+	// The following can be replaced with a any io.Reader. For example,
+	// `file, err := os.Open(path)` for file would also work.
+	file := strings.NewReader(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV
+EWIWGGFSVDKATLNRFFAFHFILPFTMVALAGVHLTFLHETGSNNPLGLTSDSDKIPFHPYYTIKDFLG
+LLILILLLLLLALLSPDMLGDPDNHMPADPLNTPLHIKPEWYFLFAYAILRSVPNKLGGVLALFLSIVIL
+GLMPFLHTSKHRSMMLRPLSQALFWTLTMDLLTLTWIGSQPVEYPYTIIGQMASILYFSIILAFLPIAGX
+IENY
+
+>MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
+FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
+DIDGDGQVNYEEFVQMMTAK*`)
+	parserInterface, _ := bio.NewParser(bio.Fasta, file) // Make a parser with the file
+	parser := parserInterface.(bio.FastaParser)
+
+	channel := make(chan fasta.Record)
+	go parser.ParseToChannel(channel)
+
+	var records []fasta.Record
+	for record := range channel {
+		records = append(records, record)
+	}
+
+	fmt.Println(records[1].Sequence)
+	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
+}
+
+func ExampleWriteAll() {
+	// The following can be replaced with a any io.Reader. For example,
+	// `file, err := os.Open(path)` for file would also work.
+	file := strings.NewReader(`#slow5_version	0.2.0
+#num_read_groups	1
+@asic_id	4175987214
+#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}	char*
+#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
+0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
+`)
+	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
+	parser := parserInterface.(bio.Slow5Parser)
+	reads, header, _ := parser.ParseWithHeader() // Parse all data records from file
+
+	// Write the files to an io.Writer.
+	// All headers and all records implement io.WriterTo interfaces.
+	var buffer bytes.Buffer
+	_, _ = header.WriteTo(&buffer)
+	for _, read := range reads {
+		read.WriteTo(&buffer)
+	}
+
+	fmt.Println(string(buffer.Bytes()))
+	// Output: #slow5_version	0.2.0
+	//#num_read_groups	1
+	//@asic_id	4175987214
+	//#char*	uint32_t	double	double	double	double	uint64_t	int16_t*	uint64_t	int32_t	uint8_t	double	enum{unknown,partial,mux_change,unblock_mux_change,data_service_unblock_mux_change,signal_positive,signal_negative}	char*
+	//#read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
+	//0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
+	//
+	//
+}
+
 func ExampleFasta() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
@@ -166,10 +246,7 @@ func ExampleSlow5() {
 #read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
 0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
 `)
-	parserInterface, err := bio.NewParser(bio.Slow5, file) // Make a parser with the file
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
 	parser := parserInterface.(bio.Slow5Parser)
 	reads, _ := parser.Parse() // Parse all data records from file
 

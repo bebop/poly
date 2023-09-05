@@ -56,16 +56,8 @@ Lower level interfaces
 ******************************************************************************/
 
 type LowLevelParser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] interface {
-	Header() (DataTypeHeader, error)
-	Next() (DataType, error)
-}
-
-type Record interface {
-	WriteTo(w io.Writer) (n int64, err error)
-}
-
-type Header interface {
-	WriteTo(w io.Writer) (n int64, err error)
+	Header() (*DataTypeHeader, error)
+	Next() (*DataType, error)
 }
 
 /******************************************************************************
@@ -141,16 +133,16 @@ Parser higher-level functions
 
 ******************************************************************************/
 
-func (p *Parser[DataType, DataTypeHeader]) Next() (DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Next() (*DataType, error) {
 	return p.LowLevelParser.Next()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) Header() (*DataTypeHeader, error) {
 	return p.LowLevelParser.Header()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error) {
-	var records []DataType
+func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]*DataType, error) {
+	var records []*DataType
 	for counter := 0; counter < countN; counter++ {
 		record, err := p.Next()
 		if err != nil {
@@ -164,11 +156,11 @@ func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error
 	return records, nil
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Parse() ([]*DataType, error) {
 	return p.ParseN(math.MaxInt)
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]*DataType, *DataTypeHeader, error) {
 	header, headerErr := p.Header()
 	data, err := p.Parse()
 	if headerErr != nil {
@@ -188,36 +180,9 @@ func (p *Parser[DataType, DataTypeHeader]) ParseToChannel(channel chan<- DataTyp
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
 			}
+			close(channel)
 			return err
 		}
-		channel <- record
+		channel <- *record
 	}
-}
-
-/******************************************************************************
-
-Writer functions
-
-******************************************************************************/
-
-func WriteAll(data []io.WriterTo, header io.WriterTo, w io.Writer) error {
-	_, err := header.WriteTo(w)
-	if err != nil {
-		return err
-	}
-	for _, datum := range data {
-		_, err = datum.WriteTo(w)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func WriteFile(data []io.WriterTo, header io.WriterTo, path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	return WriteAll(data, header, file)
 }

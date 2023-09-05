@@ -39,7 +39,7 @@ func TestParse(t *testing.T) {
 			}
 			break
 		}
-		outputReads = append(outputReads, read)
+		outputReads = append(outputReads, *read)
 	}
 	if outputReads[0].RawSignal[0] != 430 {
 		t.Errorf("Expected first outputRead to have a raw_signal of 430. Got: %d", outputReads[0].RawSignal[0])
@@ -93,16 +93,12 @@ func testParseReadsHelper(t *testing.T, fileTarget string, errorMessage string) 
 	parser, _ := NewParser(file, maxLineSize)
 	var targetErr []error
 	for {
-		read, err := parser.Next()
+		_, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				t.Errorf("Got unknown error: %s", err)
+				targetErr = append(targetErr, err)
 			}
 			break
-		}
-		err = read.Error
-		if err != nil {
-			targetErr = append(targetErr, err)
 		}
 	}
 	if len(targetErr) == 0 {
@@ -126,11 +122,7 @@ func TestParseReads(t *testing.T) {
 			}
 			break
 		}
-		err = read.Error
-		if err != nil {
-			t.Errorf("Failed ParseReads with error: %s", err)
-		}
-		outputReads = append(outputReads, read)
+		outputReads = append(outputReads, *read)
 	}
 	if outputReads[0].ReadID != "0026631e-33a3-49ab-aa22-3ab157d71f8b" {
 		t.Errorf("First read id should be 0026631e-33a3-49ab-aa22-3ab157d71f8b. Got: %s", outputReads[0].ReadID)
@@ -180,7 +172,7 @@ func TestWrite(t *testing.T) {
 				// Break at EOF
 				break
 			}
-			reads <- read
+			reads <- *read
 		}
 		close(reads)
 	}()
