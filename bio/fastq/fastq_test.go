@@ -1,50 +1,11 @@
 package fastq
 
 import (
-	"errors"
-	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
 )
-
-func TestParseNLow(t *testing.T) {
-	file, err := os.Open("data/nanosavseq.fastq")
-	if err != nil {
-		t.Errorf("Failed to read nanosavseq.fastq. Got error: %s", err)
-	}
-	const maxLineSize = 2 * 32 * 1024
-	parser := NewParser(file, maxLineSize)
-	_, err = parser.ParseN(0)
-	if err != nil {
-		t.Errorf("Failed to parse 0 fastqs. Got error: %s", err)
-	}
-}
-
-func TestParseSmallLine(t *testing.T) {
-	file, _ := os.Open("data/nanosavseq.fastq")
-	parser := NewParser(file, 10)
-	_, err := parser.ParseAll()
-	if err == nil {
-		t.Errorf("Should have encountered a maxLine error")
-	}
-	parser.Reset(file)
-}
-
-func TestRead(t *testing.T) {
-	_, err := Read("data/doesntexist.fastq")
-	if err == nil {
-		t.Errorf("Should have failed to read non-existent file")
-	}
-	_, err = ReadGz("data/doesntexist.fastq.gz")
-	if err == nil {
-		t.Errorf("Should have failed to read non-existent gz file")
-	}
-	_, err = ReadGz("data/nanosavseq.fastq")
-	if err == nil {
-		t.Errorf("Should have failed to read a file that is not gz'ed")
-	}
-}
 
 func testException(t *testing.T, filePath string, errorString string) {
 	file, err := os.Open(filePath)
@@ -53,7 +14,9 @@ func testException(t *testing.T, filePath string, errorString string) {
 	}
 	const maxLineSize = 2 * 32 * 1024
 	parser := NewParser(file, maxLineSize)
-	_, err = parser.ParseAll()
+	for err == nil {
+		_, err = parser.Next()
+	}
 	if err == nil {
 		t.Errorf("%s parser should have gotten error: %s", filePath, errorString)
 	}
@@ -68,20 +31,18 @@ func TestParseExceptions(t *testing.T) {
 	testException(t, "data/nanosavseq_noquality2.fastq", "no quality EOF")
 }
 
-func TestGzpOpen(t *testing.T) {
-	fastqs, err := ReadGz("data/pOpen_v3.fastq.gz")
-	if err != nil {
-		t.Errorf("Failed to open pOpen_v3: %s", err)
+func TestParser(t *testing.T) {
+	file := strings.NewReader(`@e3cc70d5-90ef-49b6-bbe1-cfef99537d73 runid=99790f25859e24307203c25273f3a8be8283e7eb read=13956 ch=53 start_time=2020-11-11T01:49:01Z flow_cell_id=AEI083 protocol_group_id=NanoSav2 sample_id=nanosavseq2
+GATGTGCGCCGTTCCAGTTGCGACGTACTATAATCCCCGGCAACACGGTGCTGATTCTCTTCCTGTTCCAGAAAGCATAAACAGATGCAAGTCTGGTGTGATTAACTTCACCAAAGGGCTGGTTGTAATATTAGGAAATCTAACAATAGATTCTGTTGGTTGGACTCTAAAATTAGAAATTTGATAGATTCCTTTTCCCAAATGAAAGTTTAACGTACACTTTGTTTCTAAAGGAAGGTCAAATTACAGTCTACAGCATCGTAATGGTTCATTTTCATTTATATTTTAATACTAGAAAAGTCCTAGGTTGAAGATAACCACATAATAAGCTGCAACTTCAGCTGTCCCAACCTGAAGAAGAATCGCAGGAGTCGAAATAACTTCTGTAAAGCAAGTAGTTTGAACCTATTGATGTTTCAACATGAGCAATACGTAACT
++
+$$&%&%#$)*59;/767C378411,***,('11<;:,0039/0&()&'2(/*((4.1.09751).601+'#&&&,-**/0-+3558,/)+&)'&&%&$$'%'%'&*/5978<9;**'3*'&&A?99:;:97:278?=9B?CLJHGG=9<@AC@@=>?=>D>=3<>=>3362$%/((+/%&+//.-,%-4:+..000,&$#%$$%+*)&*0%.//*?<<;>DE>.8942&&//074&$033)*&&&%**)%)962133-%'&*99><<=1144??6.027639.011/-)($#$(/422*4;:=122>?@6964:.5'8:52)*675=:4@;323&&##'.-57*4597)+0&:7<7-550REGB21/0+*79/&/6538())+)+23665+(''$$$'-2(&&*-.-#$&%%$$,-)&$$#$'&,);;<C<@454)#'`)
+	const maxLineSize = 2 * 32 * 1024
+	parser := NewParser(file, maxLineSize)
+	read, err := parser.Next()
+	if err != io.EOF {
+		t.Errorf("Parser got unknown error: %s", err)
 	}
-	for _, read := range fastqs {
-		id := read.Identifier
-		sequence := read.Sequence
-		quality := read.Quality
-		for _, char := range sequence {
-			if !strings.Contains("ATGCYRSWKMBDHVNZ", string(char)) {
-				fmt.Println(id, sequence, quality)
-				t.Fatalf("%s", errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: "+string(char)))
-			}
-		}
+	if read.Optionals["ch"] != "53" {
+		t.Errorf("Optionals not parsed properly")
 	}
 }

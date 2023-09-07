@@ -10,6 +10,7 @@ import (
 	"math"
 
 	"github.com/TimothyStiles/poly/bio/fasta"
+	"github.com/TimothyStiles/poly/bio/fastq"
 	"github.com/TimothyStiles/poly/bio/slow5"
 )
 
@@ -49,9 +50,9 @@ Lower level interfaces
 
 ******************************************************************************/
 
-type LowLevelParser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] interface {
-	Header() (DataTypeHeader, error)
-	Next() (DataType, error)
+type LowLevelParser[DataType fasta.Record | fastq.Read | slow5.Read, DataTypeHeader fasta.Header | fastq.Header | slow5.Header] interface {
+	Header() (*DataTypeHeader, error)
+	Next() (*DataType, error)
 }
 
 /******************************************************************************
@@ -60,7 +61,7 @@ Higher level parse
 
 ******************************************************************************/
 
-type Parser[DataType fasta.Record | slow5.Read, DataTypeHeader fasta.Header | slow5.Header] struct {
+type Parser[DataType fasta.Record | fastq.Read | slow5.Read, DataTypeHeader fasta.Header | fastq.Header | slow5.Header] struct {
 	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
 }
 
@@ -70,6 +71,14 @@ func NewFastaParser(r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
 
 func NewFastaParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
 	return &Parser[fasta.Record, fasta.Header]{LowLevelParser: fasta.NewParser(r, maxLineLength)}, nil
+}
+
+func NewFastqParser(r io.Reader) (*Parser[fastq.Read, fastq.Header], error) {
+	return NewFastqParserWithMaxLineLength(r, DefaultMaxLengths[Fastq])
+}
+
+func NewFastqParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[fastq.Read, fastq.Header], error) {
+	return &Parser[fastq.Read, fastq.Header]{LowLevelParser: fastq.NewParser(r, maxLineLength)}, nil
 }
 
 func NewSlow5Parser(r io.Reader) (*Parser[slow5.Read, slow5.Header], error) {
@@ -87,21 +96,24 @@ Parser higher-level functions
 
 ******************************************************************************/
 
-func (p *Parser[DataType, DataTypeHeader]) Next() (DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Next() (*DataType, error) {
 	return p.LowLevelParser.Next()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Header() (DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) Header() (*DataTypeHeader, error) {
 	return p.LowLevelParser.Header()
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error) {
-	var records []DataType
+func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]*DataType, error) {
+	var records []*DataType
 	for counter := 0; counter < countN; counter++ {
 		record, err := p.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
+			}
+			if record != nil {
+				records = append(records, record)
 			}
 			return records, err
 		}
@@ -110,11 +122,11 @@ func (p *Parser[DataType, DataTypeHeader]) ParseN(countN int) ([]DataType, error
 	return records, nil
 }
 
-func (p *Parser[DataType, DataTypeHeader]) Parse() ([]DataType, error) {
+func (p *Parser[DataType, DataTypeHeader]) Parse() ([]*DataType, error) {
 	return p.ParseN(math.MaxInt)
 }
 
-func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]DataType, DataTypeHeader, error) {
+func (p *Parser[DataType, DataTypeHeader]) ParseWithHeader() ([]*DataType, *DataTypeHeader, error) {
 	header, headerErr := p.Header()
 	data, err := p.Parse()
 	if headerErr != nil {
@@ -136,6 +148,6 @@ func (p *Parser[DataType, DataTypeHeader]) ParseToChannel(channel chan<- DataTyp
 			close(channel)
 			return err
 		}
-		channel <- record
+		channel <- *record
 	}
 }
