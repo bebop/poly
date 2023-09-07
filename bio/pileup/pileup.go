@@ -30,34 +30,24 @@ wikipedia (https://en.wikipedia.org/wiki/Pileup_format) is shown below:
 	6. Quality: Phred quality scores associated with each base
 
 This package provides a parser and writer for working with pileup files.
+
+Wikipedia reference: https://en.wikipedia.org/wiki/Pileup_format
 */
 package pileup
 
 import (
 	"bufio"
-	"bytes"
-	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
-	"math"
-	"os"
 	"strconv"
 	"strings"
 	"unicode"
 )
 
-// https://en.wikipedia.org/wiki/Pileup_format
-
-var (
-	gzipReaderFn = gzip.NewReader
-	openFn       = os.Open
-)
-
-// Pileup struct is a single position in a pileup file. Pileup files "pile"
+// Line struct is a single line in a pileup file. Pileup files "pile"
 // a bunch of separate bam/sam alignments into something more readable at a per
 // base pair level, so are only useful as a grouping.
-type Pileup struct {
+type Line struct {
 	Sequence      string   `json:"sequence"`
 	Position      uint     `json:"position"`
 	ReferenceBase string   `json:"reference_base"`
@@ -66,18 +56,23 @@ type Pileup struct {
 	Quality       string   `json:"quality"`
 }
 
-// Parse parses a given Pileup file into an array of Pileup structs.
-func Parse(r io.Reader) ([]Pileup, error) {
-	// 32kB is a magic number often used by the Go stdlib for parsing. We multiply it by two.
-	const maxLineSize = 2 * 32 * 1024
-	parser := NewParser(r, maxLineSize)
-	return parser.ParseAll()
+// Header is a blank struct, needed for compatibility with bio parsers. It contains nothing.
+type Header struct{}
+
+// WriteTo is a blank function, needed for compatibility with bio parsers. It doesn't do anything.
+func (header *Header) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil
 }
 
 // Parser is a pileup parser.
 type Parser struct {
 	reader bufio.Reader
 	line   uint
+}
+
+// Header returns a identifier with nothing and nil.
+func (p *Parser) Header() (*Header, error) {
+	return nil, nil
 }
 
 // NewParser creates a parser from an io.Reader for pileup data.
@@ -87,38 +82,14 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 	}
 }
 
-// ParseAll parses all sequences in underlying reader only returning non-EOF errors.
-// It returns all valid pileup sequences up to error if encountered.
-func (parser *Parser) ParseAll() ([]Pileup, error) {
-	return parser.ParseN(math.MaxInt)
-}
-
-// ParseN parses up to maxRows pileup sequences from the Parser's underlying reader.
-// ParseN does not return EOF if encountered.
-// If an non-EOF error is encountered it returns it and all correctly parsed sequences up to then.
-func (parser *Parser) ParseN(maxRows int) (pileups []Pileup, err error) {
-	for counter := 0; counter < maxRows; counter++ {
-		pileup, err := parser.ParseNext()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				err = nil // EOF not treated as parsing error.
-			}
-			return pileups, err
-		}
-		pileups = append(pileups, pileup)
-	}
-	return pileups, nil
-}
-
-// ParseNext parses the next pileup row in a pileup file.
-// ParseNext returns an EOF if encountered.
-func (parser *Parser) ParseNext() (Pileup, error) {
-	if _, err := parser.reader.Peek(1); err != nil {
-		// Early return on error. Probably will be EOF.
-		return Pileup{}, err
-	}
+// Next parses the next pileup row in a pileup file.
+// Next returns an EOF if encountered.
+func (parser *Parser) Next() (*Line, error) {
 	// Parse out a single line
 	lineBytes, err := parser.reader.ReadSlice('\n')
+	if err != nil {
+		return nil, err
+	}
 	parser.line++
 	line := string(lineBytes)
 	line = line[:len(line)-1] // Exclude newline delimiter.
@@ -126,17 +97,17 @@ func (parser *Parser) ParseNext() (Pileup, error) {
 	// Check that there are 6 values, as defined by the pileup format
 	values := strings.Split(line, "\t")
 	if len(values) != 6 {
-		return Pileup{}, fmt.Errorf("Error on line %d: Got %d values, expected 6.", parser.line, len(values))
+		return nil, fmt.Errorf("Error on line %d: Got %d values, expected 6.", parser.line, len(values))
 	}
 
 	// Convert Position and ReadCount to integers
-	positionInteger, err := strconv.Atoi(values[1])
+	positionInteger, err := strconv.Atoi(strings.TrimSpace(values[1]))
 	if err != nil {
-		return Pileup{}, fmt.Errorf("Error on line %d. Got error: %w", parser.line, err)
+		return nil, fmt.Errorf("Error on line %d. Got error: %w", parser.line, err)
 	}
-	readCountInteger, err := strconv.Atoi(values[3])
+	readCountInteger, err := strconv.Atoi(strings.TrimSpace(values[3]))
 	if err != nil {
-		return Pileup{}, fmt.Errorf("Error on line %d. Got error: %w", parser.line, err)
+		return nil, fmt.Errorf("Error on line %d. Got error: %w", parser.line, err)
 	}
 
 	// Parse ReadResults
@@ -153,6 +124,8 @@ func (parser *Parser) ParseNext() (Pileup, error) {
 		}
 		resultRune := resultsString[resultIndex]
 		switch resultRune {
+		case ' ':
+			continue
 		case '^':
 			starts = starts + 1
 			skip = skip + 2
@@ -182,40 +155,18 @@ func (parser *Parser) ParseNext() (Pileup, error) {
 				case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'T', 'G', 'C', 'N', 'a', 't', 'g', 'c', 'n', '-', '+':
 					continue
 				default:
-					return Pileup{}, fmt.Errorf("Rune within +,- not found on line %d. Got %c: only runes allowed are: [0 1 2 3 4 5 6 7 8 9 A T G C N a t g c n - +]", parser.line, letter)
+					return nil, fmt.Errorf("Rune within +,- not found on line %d. Got %c: only runes allowed are: [0 1 2 3 4 5 6 7 8 9 A T G C N a t g c n - +]", parser.line, letter)
 				}
 			}
 			readResults = append(readResults, readResult)
 			skip = skip + regularExpressionInt + len(numberOfJumps) // The 1 makes sure to include the regularExpressionInt in readResult string
 		default:
-			return Pileup{}, fmt.Errorf("Rune not found on line %d. Got %c: only runes allowed are: [^ $ . , * A T G C N a t g c n - +]", parser.line, resultRune)
+			return nil, fmt.Errorf("Rune not found on line %d. Got %c: only runes allowed are: [^ $ . , * A T G C N a t g c n - +]", parser.line, resultRune)
 		}
 		readCount = readCount + 1
 	}
 
-	return Pileup{Sequence: values[0], Position: uint(positionInteger), ReferenceBase: values[2], ReadCount: uint(readCountInteger), ReadResults: readResults, Quality: values[5]}, nil
-}
-
-// Reset discards all data in buffer and resets state.
-func (parser *Parser) Reset(r io.Reader) {
-	parser.reader.Reset(r)
-	parser.line = 0
-}
-
-/******************************************************************************
-
-Start of  Read functions
-
-******************************************************************************/
-
-// Read reads a  file into an array of Pileup structs
-func Read(path string) ([]Pileup, error) {
-	file, err := openFn(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	return Parse(file)
+	return &Line{Sequence: values[0], Position: uint(positionInteger), ReferenceBase: values[2], ReadCount: uint(readCountInteger), ReadResults: readResults, Quality: values[5]}, nil
 }
 
 /******************************************************************************
@@ -224,29 +175,11 @@ Start of  Write functions
 
 ******************************************************************************/
 
-// WritePileup writes a pileup array to an io.Writer
-func WritePileup(pileups []Pileup, w io.Writer) {
-	for _, pileup := range pileups {
-		w.Write([]byte(pileup.Sequence))
-		w.Write([]byte("\t"))
-		w.Write([]byte(strconv.FormatUint(uint64(pileup.Position), 10)))
-		w.Write([]byte("\t"))
-		w.Write([]byte(pileup.ReferenceBase))
-		w.Write([]byte("\t"))
-		w.Write([]byte(strconv.FormatUint(uint64(pileup.ReadCount), 10)))
-		w.Write([]byte("\t"))
-		for _, readResult := range pileup.ReadResults {
-			w.Write([]byte(readResult))
-		}
-		w.Write([]byte("\t"))
-		w.Write([]byte(pileup.Quality))
-		w.Write([]byte("\n"))
+func (line *Line) WriteTo(w io.Writer) (int64, error) {
+	var buffer strings.Builder
+	for _, readResult := range line.ReadResults {
+		buffer.WriteString(readResult)
 	}
-}
-
-// Write writes a pileup array to a file
-func Write(pileups []Pileup, path string) error {
-	var b bytes.Buffer
-	WritePileup(pileups, &b)
-	return os.WriteFile(path, b.Bytes(), 0644)
+	written, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", line.Sequence, strconv.FormatUint(uint64(line.Position), 10), line.ReferenceBase, strconv.FormatUint(uint64(line.ReadCount), 10), buffer.String(), line.Quality)
+	return int64(written), err
 }

@@ -1,7 +1,6 @@
 package pileup
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -18,16 +17,16 @@ func TestParse(t *testing.T) {
 	defer file.Close()
 	const maxLineSize = 2 * 32 * 1024
 	parser := NewParser(file, maxLineSize)
-	var pileupReads []Pileup
+	var pileupReads []Line
 	for {
-		pileupRead, err := parser.ParseNext()
+		pileupRead, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				t.Errorf("Got unknown error: %s", err)
 			}
 			break
 		}
-		pileupReads = append(pileupReads, pileupRead)
+		pileupReads = append(pileupReads, *pileupRead)
 	}
 	if pileupReads[2].ReadCount != 1401 {
 		t.Errorf("Expected 1401 read counts. Got: %d", pileupReads[2].ReadCount)
@@ -41,7 +40,7 @@ func TestParse(t *testing.T) {
 	defer file2.Close()
 	parser = NewParser(file2, maxLineSize)
 	for {
-		_, err = parser.ParseNext()
+		_, err = parser.Next()
 		if err != nil {
 			if !strings.Contains(fmt.Sprint(err), "values, expected 6.") {
 				t.Errorf("Got unknown error: %s", err)
@@ -58,7 +57,7 @@ func TestParse(t *testing.T) {
 	defer file3.Close()
 	parser = NewParser(file3, maxLineSize)
 	for {
-		_, err = parser.ParseNext()
+		_, err = parser.Next()
 		if err != nil {
 			if !strings.Contains(fmt.Sprint(err), "Error on line") {
 				t.Errorf("Got unknown error: %s", err)
@@ -75,7 +74,7 @@ func TestParse(t *testing.T) {
 	defer file4.Close()
 	parser = NewParser(file4, maxLineSize)
 	for {
-		_, err = parser.ParseNext()
+		_, err = parser.Next()
 		if err != nil {
 			if !strings.Contains(fmt.Sprint(err), "Error on line") {
 				t.Errorf("Got unknown error: %s", err)
@@ -92,7 +91,7 @@ func TestParse(t *testing.T) {
 	defer file5.Close()
 	parser = NewParser(file5, maxLineSize)
 	for {
-		_, err = parser.ParseNext()
+		_, err = parser.Next()
 		if err != nil {
 			if !strings.Contains(fmt.Sprint(err), "Rune within +,- not found on line") {
 				t.Errorf("Got unknown error: %s", err)
@@ -109,79 +108,12 @@ func TestParse(t *testing.T) {
 	defer file6.Close()
 	parser = NewParser(file6, maxLineSize)
 	for {
-		_, err = parser.ParseNext()
+		_, err = parser.Next()
 		if err != nil {
 			if !strings.Contains(fmt.Sprint(err), "Rune not found on line") {
 				t.Errorf("Got unknown error: %s", err)
 			}
 			break
 		}
-	}
-
-	// Test ParseN
-	file7, err := os.Open("data/test.pileup")
-	if err != nil {
-		t.Errorf("Failed to open test.pileup: %s", err)
-	}
-	defer file7.Close()
-	parser = NewParser(file7, maxLineSize)
-	_, err = parser.ParseN(2)
-	if err != nil {
-		t.Errorf("Got unknown error: %s", err)
-	}
-}
-
-func TestBuild(t *testing.T) {
-	file, err := os.Open("data/test.pileup")
-	if err != nil {
-		t.Errorf("Failed to open test.pileup: %s", err)
-	}
-	const maxLineSize = 2 * 32 * 1024
-	parser := NewParser(file, maxLineSize)
-	pileups, err := parser.ParseAll() // Parse all
-	if err != nil {
-		t.Errorf("Failed to parse pileup: %s", err)
-	}
-	parser.Reset(file)
-	var b bytes.Buffer
-	WritePileup(pileups, &b)
-	newBody := b.Bytes()
-	file.Close()
-
-	// Open file again, read all
-	file, err = os.Open("data/test.pileup")
-	if err != nil {
-		t.Errorf("Failed to open test.pileup: %s", err)
-	}
-	body, err := io.ReadAll(file) // Read them bytes
-	if err != nil {
-		t.Errorf("Failed to readall: %s", err)
-	}
-	if string(body) != string(newBody) {
-		t.Errorf("input bytes do not equal output bytes of build")
-	}
-
-}
-
-func TestRead(t *testing.T) {
-	_, err := Read("data/DOESNT_EXIST.pileup")
-	if err == nil {
-		t.Errorf("Should have failed on empty file")
-	}
-	_, err = Read("data/test.pileup")
-	if err != nil {
-		t.Errorf("Should have succeeded in reading pileup file")
-	}
-}
-
-func TestWrite(t *testing.T) {
-	pileups, _ := Read("data/test.pileup")
-	err := Write(pileups, "tmp.pileup")
-	if err != nil {
-		t.Errorf("Failed to write temporary pileup")
-	}
-	err = os.Remove("tmp.pileup")
-	if err != nil {
-		t.Errorf("Failed to delete temporary pileup")
 	}
 }

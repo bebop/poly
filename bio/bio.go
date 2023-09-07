@@ -11,6 +11,7 @@ import (
 
 	"github.com/TimothyStiles/poly/bio/fasta"
 	"github.com/TimothyStiles/poly/bio/fastq"
+	"github.com/TimothyStiles/poly/bio/pileup"
 	"github.com/TimothyStiles/poly/bio/slow5"
 )
 
@@ -50,7 +51,7 @@ Lower level interfaces
 
 ******************************************************************************/
 
-type LowLevelParser[DataType fasta.Record | fastq.Read | slow5.Read, DataTypeHeader fasta.Header | fastq.Header | slow5.Header] interface {
+type LowLevelParser[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] interface {
 	Header() (*DataTypeHeader, error)
 	Next() (*DataType, error)
 }
@@ -61,7 +62,7 @@ Higher level parse
 
 ******************************************************************************/
 
-type Parser[DataType fasta.Record | fastq.Read | slow5.Read, DataTypeHeader fasta.Header | fastq.Header | slow5.Header] struct {
+type Parser[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] struct {
 	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
 }
 
@@ -88,6 +89,14 @@ func NewSlow5Parser(r io.Reader) (*Parser[slow5.Read, slow5.Header], error) {
 func NewSlow5ParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[slow5.Read, slow5.Header], error) {
 	parser, err := slow5.NewParser(r, maxLineLength)
 	return &Parser[slow5.Read, slow5.Header]{LowLevelParser: parser}, err
+}
+
+func NewPileupParser(r io.Reader) (*Parser[pileup.Line, pileup.Header], error) {
+	return NewPileupParserWithMaxLineLength(r, DefaultMaxLengths[Pileup])
+}
+
+func NewPileupParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[pileup.Line, pileup.Header], error) {
+	return &Parser[pileup.Line, pileup.Header]{LowLevelParser: pileup.NewParser(r, maxLineLength)}, nil
 }
 
 /******************************************************************************
