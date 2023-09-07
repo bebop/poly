@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"io"
+	"os"
 	"strings"
 
 	"github.com/TimothyStiles/poly/bio"
@@ -42,8 +42,8 @@ func Example() {
 // ExampleRead shows an example of reading a file from disk.
 func ExampleRead() {
 	// Read lets you read files from disk into a parser.
-	parserInterface, _ := bio.Read(bio.Fasta, "fasta/data/base.fasta")
-	parser := parserInterface.(bio.FastaParser)
+	file, _ := os.Open("fasta/data/base.fasta")
+	parser, _ := bio.NewFastaParser(file)
 
 	records, _ := parser.Parse()
 
@@ -53,24 +53,9 @@ func ExampleRead() {
 
 func ExampleReadGz() {
 	// ReadGz lets you read gzipped files into a parser.
-	parserInterface, _ := bio.ReadGz(bio.Fasta, "fasta/data/base.fasta.gz")
-	parser := parserInterface.(bio.FastaParser)
-	records, _ := parser.Parse()
-
-	fmt.Println(records[1].Sequence)
-	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
-}
-
-func ExampleReadCompressed() {
-	// Sometimes you have files with a different compression algorithms. Here
-	// is how you would read a compressed file without ReadGz.
-
-	// We first make a decoderFunc with a compatible function type
-	decoderFunc := func(r io.Reader) (io.Reader, error) {
-		return gzip.NewReader(r)
-	}
-	parserInterface, _ := bio.ReadCompressed(bio.Fasta, "fasta/data/base.fasta.gz", decoderFunc)
-	parser := parserInterface.(bio.FastaParser)
+	fileGz, _ := os.Open("fasta/data/base.fasta.gz")
+	file, _ := gzip.NewReader(fileGz)
+	parser, _ := bio.NewFastaParser(file)
 	records, _ := parser.Parse()
 
 	fmt.Println(records[1].Sequence)
@@ -95,39 +80,8 @@ FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
 DIDGDGQVNYEEFVQMMTAK*`))
 	zw.Close()
 
-	parserInterface, _ := bio.NewParserGz(bio.Fasta, &file) // Make a parser with the gz file
-	parser := parserInterface.(bio.FastaParser)
-	records, _ := parser.Parse() // Parse all data records from file
-
-	fmt.Println(records[1].Sequence)
-	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
-}
-
-func ExampleNewParserCompressed() {
-	// First, lets make a file that is compressed, represented by this
-	// buffer.
-	var file bytes.Buffer
-	zw := gzip.NewWriter(&file)
-	_, _ = zw.Write([]byte(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
-LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV
-EWIWGGFSVDKATLNRFFAFHFILPFTMVALAGVHLTFLHETGSNNPLGLTSDSDKIPFHPYYTIKDFLG
-LLILILLLLLLALLSPDMLGDPDNHMPADPLNTPLHIKPEWYFLFAYAILRSVPNKLGGVLALFLSIVIL
-GLMPFLHTSKHRSMMLRPLSQALFWTLTMDLLTLTWIGSQPVEYPYTIIGQMASILYFSIILAFLPIAGX
-IENY
-
->MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
-ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
-FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
-DIDGDGQVNYEEFVQMMTAK*`))
-	zw.Close()
-
-	// Next, lets make a decoderFunc with a compatible function type
-	decoderFunc := func(r io.Reader) (io.Reader, error) {
-		return gzip.NewReader(r)
-	}
-
-	parserInterface, _ := bio.NewParserCompressed(bio.Fasta, &file, decoderFunc) // Make a parser with the compressed file
-	parser := parserInterface.(bio.FastaParser)
+	fileDecompressed, _ := gzip.NewReader(&file) // Decompress the file
+	parser, _ := bio.NewFastaParser(fileDecompressed)
 	records, _ := parser.Parse() // Parse all data records from file
 
 	fmt.Println(records[1].Sequence)
@@ -144,8 +98,7 @@ func ExampleParseWithHeader() {
 #read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
 0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
 `)
-	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
-	parser := parserInterface.(bio.Slow5Parser)
+	parser, _ := bio.NewSlow5Parser(file)
 	reads, header, _ := parser.ParseWithHeader() // Parse all data records from file
 
 	fmt.Printf("%s, %s\n", header.HeaderValues[0].Slow5Version, reads[0].ReadID)
@@ -166,8 +119,7 @@ IENY
 ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
 FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
 DIDGDGQVNYEEFVQMMTAK*`)
-	parserInterface, _ := bio.NewParser(bio.Fasta, file) // Make a parser with the file
-	parser := parserInterface.(bio.FastaParser)
+	parser, _ := bio.NewFastaParser(file)
 
 	channel := make(chan fasta.Record)
 	go parser.ParseToChannel(channel)
@@ -191,8 +143,7 @@ func ExampleWriteAll() {
 #read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
 0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
 `)
-	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
-	parser := parserInterface.(bio.Slow5Parser)
+	parser, _ := bio.NewSlow5Parser(file)
 	reads, header, _ := parser.ParseWithHeader() // Parse all data records from file
 
 	// Write the files to an io.Writer.
@@ -228,8 +179,7 @@ IENY
 ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
 FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
 DIDGDGQVNYEEFVQMMTAK*`)
-	parserInterface, _ := bio.NewParser(bio.Fasta, file) // Make a parser with the file
-	parser := parserInterface.(bio.FastaParser)
+	parser, _ := bio.NewFastaParser(file)
 	records, _ := parser.Parse() // Parse all data records from file
 
 	fmt.Println(records[1].Sequence)
@@ -246,8 +196,7 @@ func ExampleSlow5() {
 #read_id	read_group	digitisation	offset	range	sampling_rate	len_raw_signal	raw_signal	start_time	read_number	start_mux	median_before	end_reason	channel_number
 0026631e-33a3-49ab-aa22-3ab157d71f8b	0	8192	16	1489.52832	4000	5347	430,472,463	8318394	5383	1	219.133423	5	10
 `)
-	parserInterface, _ := bio.NewParser(bio.Slow5, file) // Make a parser with the file
-	parser := parserInterface.(bio.Slow5Parser)
+	parser, _ := bio.NewSlow5Parser(file)
 	reads, _ := parser.Parse() // Parse all data records from file
 
 	fmt.Println(reads[0].RawSignal)
