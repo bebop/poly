@@ -3,6 +3,7 @@ package bio_test
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -122,7 +123,8 @@ DIDGDGQVNYEEFVQMMTAK*`)
 	parser, _ := bio.NewFastaParser(file)
 
 	channel := make(chan fasta.Record)
-	go parser.ParseToChannel(channel)
+	ctx := context.Background()
+	go parser.ParseToChannel(ctx, channel, false)
 
 	var records []fasta.Record
 	for record := range channel {
@@ -165,7 +167,7 @@ func ExampleWriteAll() {
 	//
 }
 
-func ExampleFasta() {
+func ExampleNewFastaParser() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
@@ -186,7 +188,7 @@ DIDGDGQVNYEEFVQMMTAK*`)
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
-func ExampleFastq() {
+func ExampleNewFastqParser() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`@e3cc70d5-90ef-49b6-bbe1-cfef99537d73 runid=99790f25859e24307203c25273f3a8be8283e7eb read=13956 ch=53 start_time=2020-11-11T01:49:01Z flow_cell_id=AEI083 protocol_group_id=NanoSav2 sample_id=nanosavseq2
@@ -200,7 +202,7 @@ $$&%&%#$)*59;/767C378411,***,('11<;:,0039/0&()&'2(/*((4.1.09751).601+'#&&&,-**/0
 	// Output:GATGTGCGCCGTTCCAGTTGCGACGTACTATAATCCCCGGCAACACGGTGCTGATTCTCTTCCTGTTCCAGAAAGCATAAACAGATGCAAGTCTGGTGTGATTAACTTCACCAAAGGGCTGGTTGTAATATTAGGAAATCTAACAATAGATTCTGTTGGTTGGACTCTAAAATTAGAAATTTGATAGATTCCTTTTCCCAAATGAAAGTTTAACGTACACTTTGTTTCTAAAGGAAGGTCAAATTACAGTCTACAGCATCGTAATGGTTCATTTTCATTTATATTTTAATACTAGAAAAGTCCTAGGTTGAAGATAACCACATAATAAGCTGCAACTTCAGCTGTCCCAACCTGAAGAAGAATCGCAGGAGTCGAAATAACTTCTGTAAAGCAAGTAGTTTGAACCTATTGATGTTTCAACATGAGCAATACGTAACT
 }
 
-func ExampleSlow5() {
+func ExampleNewSlow5Parser() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`#slow5_version	0.2.0
@@ -217,7 +219,7 @@ func ExampleSlow5() {
 	// Output: [430 472 463]
 }
 
-func ExamplePileup() {
+func ExampleNewPileupParser() {
 	file := strings.NewReader(`seq1 	272 	T 	24 	,.$.....,,.,.,...,,,.,..^+. 	<<<+;<<<<<<<<<<<=<;<;7<&
 seq1 	273 	T 	23 	,.....,,.,.,...,,,.,..A 	<<<;<<<<<<<<<3<=<<<;<<+
 seq1 	274 	T 	23 	,.$....,,.,.,...,,,.,... 	7<7;<;<<<<<<<<<=<;<;<<6
