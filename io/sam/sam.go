@@ -168,7 +168,7 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, Header, error) {
 	return parser, header, nil
 }
 
-// Next parsers the next read from a parser. Returns an error upon EOF.
+// Next parsers the next read from a parser. Returns an `io.EOF` upon EOF.
 func (parser *Parser) Next() (*Alignment, error) {
 	var alignment Alignment
 	lineBytes, err := parser.reader.ReadSlice('\n')
