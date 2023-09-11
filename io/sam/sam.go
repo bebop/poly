@@ -1,3 +1,9 @@
+/*
+Package sam implements a SAM file parser and writer.
+
+Paper: https://doi.org/10.1093%2Fbioinformatics%2Fbtp352
+Update to do date: http://samtools.github.io/hts-specs/SAMv1.pdf
+*/
 package sam
 
 import (
@@ -7,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// http://samtools.github.io/hts-specs/SAMv1.pdf
 
 const DefaultMaxLineSize int = 32768 // // 32kB is a magic number often used by the Go stdlib for parsing. We multiply it by two.
 
@@ -24,6 +28,11 @@ type Header struct {
 	RG []map[string]string // Read group. Unordered multiple @RG lines are allowed.
 	PG []map[string]string // Program.
 	CO []string            // One-line text comment. Unordered multiple @CO lines are allowed. UTF-8 encoding may be used.
+}
+
+// WriteTo writes a SAM header to an io.Writer.
+func (header *Header) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil // TODO
 }
 
 // Optional fields in SAM alignments are structured as TAG:TYPE:DATA, where
@@ -60,10 +69,15 @@ type Alignment struct {
 // Parser is a sam file parser that provide sample control over reading sam
 // alignments. It should be initialized with NewParser.
 type Parser struct {
-	reader    bufio.Reader
-	line      uint
-	Header    Header
-	firstLine string
+	reader     bufio.Reader
+	line       uint
+	FileHeader Header
+	firstLine  string
+}
+
+// Header returns the parsed sam header.
+func (p *Parser) Header() (*Header, error) {
+	return &p.FileHeader, nil
 }
 
 // NewParser creates a parser from an io.Reader for sam data. For larger
@@ -144,49 +158,50 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, Header, error) {
 			return parser, Header{}, fmt.Errorf("Line %d should contain @SQ, @RG, @PG or @CO as top level tags, but they weren't found. Line text: %s", parser.line, line)
 		}
 	}
+	parser.FileHeader = header
 	return parser, header, nil
 }
 
-// ParseNext parsers the next read from a parser. Returns an error upon EOF.
-func (parser *Parser) ParseNext() (Alignment, error) {
+// Next parsers the next read from a parser. Returns an error upon EOF.
+func (parser *Parser) Next() (*Alignment, error) {
 	var alignment Alignment
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {
-		return Alignment{}, err
+		return nil, err
 	}
 	parser.line++
 	line := strings.TrimSpace(string(lineBytes))
 	values := strings.Split(line, "\t")
 	if len(values) < 11 {
-		return Alignment{}, fmt.Errorf("Line %d had error: must have at least 11 tab-delimited values. Had %d", parser.line, len(values))
+		return nil, fmt.Errorf("Line %d had error: must have at least 11 tab-delimited values. Had %d", parser.line, len(values))
 	}
 	alignment.QNAME = values[0]
 	flag64, err := strconv.ParseUint(values[1], 10, 16) // convert string to uint16
 	if err != nil {
-		return Alignment{}, fmt.Errorf("Line %d had error: %s", parser.line, err)
+		return nil, fmt.Errorf("Line %d had error: %s", parser.line, err)
 	}
 	alignment.FLAG = uint16(flag64)
 	alignment.RNAME = values[2]
 	pos64, err := strconv.ParseInt(values[3], 10, 32) // convert string to int32
 	if err != nil {
-		return Alignment{}, fmt.Errorf("Line %d had error: %s", parser.line, err)
+		return nil, fmt.Errorf("Line %d had error: %s", parser.line, err)
 	}
 	alignment.POS = int32(pos64)
 	mapq64, err := strconv.ParseUint(values[4], 10, 8) // convert string to uint8 (otherwise known as byte)
 	if err != nil {
-		return Alignment{}, fmt.Errorf("Line %d had error: %s", parser.line, err)
+		return nil, fmt.Errorf("Line %d had error: %s", parser.line, err)
 	}
 	alignment.MAPQ = uint8(mapq64)
 	alignment.CIGAR = values[5]
 	alignment.RNEXT = values[6]
 	pnext64, err := strconv.ParseInt(values[7], 10, 32)
 	if err != nil {
-		return Alignment{}, fmt.Errorf("Line %d had error: %s", parser.line, err)
+		return nil, fmt.Errorf("Line %d had error: %s", parser.line, err)
 	}
 	alignment.PNEXT = int32(pnext64)
 	tlen64, err := strconv.ParseInt(values[8], 10, 32)
 	if err != nil {
-		return Alignment{}, fmt.Errorf("Line %d had error: %s", parser.line, err)
+		return nil, fmt.Errorf("Line %d had error: %s", parser.line, err)
 	}
 	alignment.TLEN = int32(tlen64)
 	alignment.SEQ = values[9]
@@ -198,5 +213,5 @@ func (parser *Parser) ParseNext() (Alignment, error) {
 		optionals[valueSplit[0]] = Optional{Type: rune(valueSplit[1][0]), Data: valueSplit[2]}
 	}
 	alignment.Optionals = optionals
-	return alignment, nil
+	return &alignment, nil
 }
