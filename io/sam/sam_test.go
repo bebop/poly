@@ -17,7 +17,7 @@ func TestParse(t *testing.T) {
 		t.Errorf("HD should have 3 TAG:DATA pairs")
 	}
 	for {
-		_, err := parser.ParseNext()
+		_, err := parser.Next()
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
 				t.Errorf("Got unknown error: %s", err)
