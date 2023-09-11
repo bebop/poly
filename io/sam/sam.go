@@ -44,7 +44,7 @@ func (header *Header) Validate() error {
 // Optional fields in SAM alignments are structured as TAG:TYPE:DATA, where
 // the type identifiers the typing of the data.
 //
-// For more information, check section 1.5 of the reference document.
+// For more information, check section 1.5 of http://samtools.github.io/hts-specs/SAMv1.pdf.
 type Optional struct {
 	Type rune   // The type may be one of A (character), B (general array), f (real number), H (hexadecimal array), i (integer), or Z (string).
 	Data string // Optional data
