@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const DefaultMaxLineSize int = 32768 // // 32kB is a magic number often used by the Go stdlib for parsing. We multiply it by two.
+const DefaultMaxLineSize int = 1024 * 32 * 2 // // 32kB is a magic number often used by the Go stdlib for parsing. We multiply it by two.
 
 // Each header in a SAM file begins with a @ followed by a two letter record
 // code type. Each line is tab delimited, and contains TAG:VALUE pairs. HD, the
