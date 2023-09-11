@@ -78,7 +78,7 @@ type Parser struct {
 	position   int64
 }
 
-// Header returns a identifier with nothing and nil.
+// Header returns nil,nil.
 func (p *Parser) Header() (*Header, error) {
 	return nil, nil
 }
