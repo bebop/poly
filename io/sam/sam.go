@@ -35,6 +35,12 @@ func (header *Header) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil // TODO
 }
 
+// Validate validatest that the header has all required information, as
+// described in the SAMv1 specification document.
+func (header *Header) Validate() error {
+	return nil // TODO
+}
+
 // Optional fields in SAM alignments are structured as TAG:TYPE:DATA, where
 // the type identifiers the typing of the data.
 //
