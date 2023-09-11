@@ -15,6 +15,8 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
+	github.com/koeng101/svb v0.0.0-20230815034912-d6737f9ed8b8 // indirect
 	github.com/mattn/go-sqlite3 v1.14.13 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 )

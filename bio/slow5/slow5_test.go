@@ -225,3 +225,32 @@ func TestSimpleExample(t *testing.T) {
 	}
 
 }
+
+func TestSvb(t *testing.T) {
+	file, _ := os.Open("data/example.slow5")
+	defer file.Close()
+	const maxLineSize = 2 * 32 * 1024
+	parser, _ := NewParser(file, maxLineSize)
+	var outputReads []Read
+	for {
+		read, err := parser.Next()
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				t.Errorf("Got unknown error: %s", err)
+			}
+			break
+		}
+		outputReads = append(outputReads, *read)
+	}
+
+	for readNum, read := range outputReads {
+		rawSignal := read.RawSignal
+		mask, data := SvbCompressRawSignal(rawSignal)
+		rawSignalDecompressed := SvbDecompressRawSignal(len(rawSignal), mask, data)
+		for idx := range rawSignal {
+			if rawSignal[idx] != rawSignalDecompressed[idx] {
+				t.Errorf("Read signal at readNum %d idx %d didn't match decompressed signal %d", readNum, rawSignal[idx], rawSignalDecompressed[idx])
+			}
+		}
+	}
+}
