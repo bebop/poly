@@ -46,7 +46,7 @@ most of these attributes in a map for future proofing. Even the binary file
 format, blow5, does not have types for these attributes, and just stores them
 as a long string.
 
-Reads have 8 required columns, and a few auxillary. These are typed, since they
+Reads have 8 required columns, and a few auxiliary. These are typed, since they
 are what will probably be used in real software.
 
 Cheers mate,
@@ -113,8 +113,8 @@ type Parser struct {
 }
 
 // Header returns the header
-func (p *Parser) Header() (*Header, error) {
-	return &p.header, nil
+func (parser *Parser) Header() (*Header, error) {
+	return &parser.header, nil
 }
 
 // NewParser parsers a slow5 file.
@@ -139,7 +139,6 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, error) {
 		parser.line++
 		values := strings.Split(line, "\t")
 		if len(values) < 2 {
-
 			return parser, fmt.Errorf("Got following line without tabs: %s", line)
 		}
 
@@ -231,7 +230,7 @@ func (parser *Parser) Next() (*Read, error) {
 	parser.line++
 	line := strings.TrimSpace(string(lineBytes))
 
-	values := strings.Split(string(line), "\t")
+	values := strings.Split(line, "\t")
 	// Reads have started.
 	// Once we have the read headers, start to parse the actual reads
 	var newRead Read

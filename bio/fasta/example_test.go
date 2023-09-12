@@ -11,9 +11,6 @@ import (
 	"github.com/TimothyStiles/poly/bio/fasta"
 )
 
-//go:embed data/base.fasta
-var baseFasta string
-
 // This example shows how to open a file with the fasta parser. The sequences
 // within that file can then be analyzed further with different software.
 func Example_basic() {
@@ -27,6 +24,9 @@ func Example_basic() {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
 			}
+			if err != nil {
+				fmt.Printf("Got error: %s\n", err) // check if there was a parse error
+			}
 			break
 		}
 		records = append(records, *record)
@@ -36,7 +36,7 @@ func Example_basic() {
 }
 
 // ExampleWrite shows basic usage of the  writer.
-func ExampleWrite() {
+func ExampleRecord_WriteTo() {
 	// Get a fasta record
 	fastaString := ">testing\nATGC\n"
 	fakeFile := strings.NewReader(fastaString)

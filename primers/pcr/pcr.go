@@ -23,11 +23,12 @@ package pcr
 
 import (
 	"errors"
-	"github.com/TimothyStiles/poly/primers"
-	"github.com/TimothyStiles/poly/transform"
 	"index/suffixarray"
 	"sort"
 	"strings"
+
+	"github.com/TimothyStiles/poly/primers"
+	"github.com/TimothyStiles/poly/transform"
 )
 
 // https://doi.org/10.1089/dna.1994.13.75
@@ -151,7 +152,6 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 							rotatedForwardLocation := 0
 							rotatedReverseLocation := len(sequence[forwardLocation:]) + reverseLocation
 							pcrFragments = append(pcrFragments, generatePcrFragments(rotatedSequence, rotatedForwardLocation, rotatedReverseLocation, forwardLocations[forwardLocation], reverseLocations[reverseLocation], minimalPrimers, primerList)...)
-
 						}
 					}
 				}
@@ -164,7 +164,7 @@ func SimulateSimple(sequences []string, targetTm float64, circular bool, primerL
 // Simulate simulates a PCR reaction, including concatemerization analysis. It
 // takes in a list of sequences and list of primers, produces all possible PCR
 // fragments in a given reaction, and then attempts to see if the output
-// fragments can amplify themselves. If they can, concatemerization is occuring
+// fragments can amplify themselves. If they can, concatemerization is occurring
 // in your reaction, which can lead to confusing results. The variable
 // `circular` is for if the target template is circular, like a plasmid.
 func Simulate(sequences []string, targetTm float64, circular bool, primerList []string) ([]string, error) {

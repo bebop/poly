@@ -58,8 +58,8 @@ type Parser struct {
 }
 
 // Header returns nil,nil.
-func (p *Parser) Header() (*Header, error) {
-	return nil, nil
+func (parser *Parser) Header() (*Header, error) {
+	return &Header{}, nil
 }
 
 // NewParser returns a Parser that uses r as the source

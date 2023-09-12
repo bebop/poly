@@ -186,7 +186,6 @@ func TestWrite(t *testing.T) {
 	for read := range reads {
 		_, err = read.WriteTo(testFile)
 		if err != nil {
-
 			t.Errorf("Failed to write slow5 read. Got error: %s", err)
 		}
 	}
@@ -217,11 +216,9 @@ func TestSimpleExample(t *testing.T) {
 	parser, err := NewParser(file, maxLineSize)
 	if err != nil {
 		t.Errorf("failed: %s", err)
-
 	}
 	read, _ := parser.Next()
 	if read.RawSignal[0] != 430 {
 		t.Errorf("Should have gotten 430. Got: %d", read.RawSignal[0])
 	}
-
 }

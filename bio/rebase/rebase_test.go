@@ -40,7 +40,6 @@ func TestRead_error(t *testing.T) {
 	}()
 	_, err := Read("data/rebase_test.txt")
 	assert.EqualError(t, err, readErr.Error())
-
 }
 
 func TestRead_multipleRefs(t *testing.T) {
@@ -52,7 +51,6 @@ func TestRead_multipleRefs(t *testing.T) {
 	assert.Equal(t,
 		"Calleja, F., de Waard, A., Unpublished observations.\nHughes, S.G., Bruce, T., Murray, K., Unpublished observations.",
 		enzymeMap["AcaI"].References)
-
 }
 
 func TestExport_error(t *testing.T) {

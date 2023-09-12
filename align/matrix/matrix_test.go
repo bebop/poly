@@ -11,7 +11,7 @@ import (
 func TestSubstitutionMatrix(t *testing.T) {
 	alpha1 := alphabet.NewAlphabet([]string{"-", "A", "C", "G", "T"})
 	alpha2 := alphabet.NewAlphabet([]string{"-", "A", "C", "G", "T"})
-	NUC_4 := [][]int{
+	NUC_4 := [][]int{ //nolint:stylecheck
 		/*       - A C G T */
 		/* - */ {0, 0, 0, 0, 0},
 		/* A */ {0, 5, -4, -4, -4},

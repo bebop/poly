@@ -44,7 +44,7 @@ import (
 	"unicode"
 )
 
-// Line struct is a single line in a pileup file. Pileup files "pile"
+// Pileup struct is a single position in a pileup file. Pileup files "pile"
 // a bunch of separate bam/sam alignments into something more readable at a per
 // base pair level, so are only useful as a grouping.
 type Line struct {
@@ -71,8 +71,8 @@ type Parser struct {
 }
 
 // Header returns a identifier with nothing and nil.
-func (p *Parser) Header() (*Header, error) {
-	return nil, nil
+func (parser *Parser) Header() (*Header, error) {
+	return &Header{}, nil
 }
 
 // NewParser creates a parser from an io.Reader for pileup data.

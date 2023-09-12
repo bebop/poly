@@ -138,9 +138,7 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
-
 	} else {
-
 		for _, subLocation := range location.SubLocations {
 			sequence, _ := getFeatureSequence(feature, subLocation)
 
@@ -213,19 +211,12 @@ func WriteMulti(sequences []Genbank, path string) error {
 // Build builds a GBK byte slice to be written out to db or file.
 func Build(gbk Genbank) ([]byte, error) {
 	gbkSlice := []Genbank{gbk}
-	multiGBK, err := buildMultiNth(gbkSlice, -1)
+	multiGBK, err := BuildMulti(gbkSlice)
 	return multiGBK, err
-
 }
 
 // BuildMulti builds a MultiGBK byte slice to be written out to db or file.
-func BuildMulti(sequence []Genbank) ([]byte, error) {
-	multiGBK, err := buildMultiNth(sequence, -1)
-	return multiGBK, err
-}
-
-// buildMultiNth builds a MultiGBK byte slice to be written out to db or file.
-func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
+func BuildMulti(sequences []Genbank) ([]byte, error) {
 	var gbkString bytes.Buffer
 	for _, sequence := range sequences {
 		locus := sequence.Meta.Locus
@@ -264,7 +255,6 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 		gbkString.WriteString(organismString)
 
 		if len(sequence.Meta.Taxonomy) > 0 {
-
 			var taxonomyString strings.Builder
 			for i, taxonomyData := range sequence.Meta.Taxonomy {
 				taxonomyString.WriteString(taxonomyData)
@@ -306,7 +296,6 @@ func buildMultiNth(sequences []Genbank, count int) ([]byte, error) {
 				consrtmString := buildMetaString("  CONSRTM", reference.Consortium)
 				gbkString.WriteString(consrtmString)
 			}
-
 		}
 
 		// building other meta fields that are catch all
@@ -372,7 +361,6 @@ func Parse(r io.Reader) (Genbank, error) {
 
 // ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into a slice of Genbank structs.
 func ParseMulti(r io.Reader) ([]Genbank, error) {
-
 	genbankSlice, err := parseMultiNthFn(r, -1)
 
 	if err != nil {
@@ -422,7 +410,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 	// Loop through each line of the file
 	for lineNum := 0; scanner.Scan(); lineNum++ {
-
 		// get line from scanner and split it
 		line := scanner.Text()
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
@@ -433,7 +420,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 		// keep scanning until we find the start of the first record
 		if !parameters.genbankStarted {
-
 			// We detect the beginning of a new genbank file with "LOCUS"
 			locusFlag := strings.Contains(line, "LOCUS")
 
@@ -444,11 +430,9 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.genbankStarted = true
 			}
 			continue
-
 		}
 
 		switch parameters.parseStep {
-
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
@@ -457,7 +441,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
 			if string(line[0]) != " " || parameters.metadataTag == "FEATURES" {
-
 				// If this is true, it means we are beginning a new meta tag. In that case, let's save
 				// the older data, and then continue along.
 				switch parameters.metadataTag {
@@ -541,7 +524,6 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 			// determine if current line is a new top level feature
 			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
-
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" {
 					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
@@ -568,20 +550,16 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
-
 			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
-
 				// if it's a continuation of the current feature, add it to the location
 				if !strings.Contains(parameters.currentLine, "\"") && (countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) || parameters.multiLineFeature) {
 					parameters.feature.Location.GbkLocationString += strings.TrimSpace(line)
 					parameters.multiLineFeature = true // without this we can't tell if something is a multiline feature or multiline qualifier
 				} else { // it's a continued line of a qualifier
-
 					removeAttributeValueQuotes := strings.Replace(trimmedLine, "\"", "", -1)
 
 					parameters.attributeValue = parameters.attributeValue + removeAttributeValueQuotes
 				}
-
 			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
 				trimmedCurrentLine := strings.TrimSpace(parameters.currentLine)
 				if trimmedCurrentLine[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
@@ -615,13 +593,11 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			if len(line) < 2 { // throw error if line is malformed
 				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			} else if line[0:2] == "//" { // end of sequence
-
 				parameters.genbank.Sequence = parameters.sequenceBuilder.String()
 
 				genbanks = append(genbanks, parameters.genbank)
 				parameters.genbankStarted = false
 				parameters.sequenceBuilder.Reset()
-
 			} else { // add line to total sequence
 				parameters.sequenceBuilder.WriteString(sequenceRegex.ReplaceAllString(line, ""))
 			}
@@ -802,7 +778,7 @@ func parseLocus(locusString string) Locus {
 	return locus
 }
 
-// indeces for random points of interests on a gbk line.
+// indices for random points of interests on a gbk line.
 const subMetaIndex = 5
 const qualifierIndex = 21
 
@@ -855,7 +831,6 @@ func parseLocation(locationString string) (Location, error) {
 			}
 			location = Location{Start: start - 1, End: end}
 		}
-
 	} else {
 		firstOuterParentheses := strings.Index(locationString, "(")
 		expression := locationString[firstOuterParentheses+1 : strings.LastIndex(locationString, ")")]
@@ -948,13 +923,11 @@ func buildMetaString(name string, data string) string {
 
 // BuildLocationString is a recursive function that takes a location object and creates a gbk location string for Build()
 func BuildLocationString(location Location) string {
-
 	var locationString string
 
 	if location.Complement {
 		location.Complement = false
 		locationString = "complement(" + BuildLocationString(location) + ")"
-
 	} else if location.Join {
 		locationString = "join("
 		for _, sublocation := range location.SubLocations {
@@ -962,7 +935,6 @@ func BuildLocationString(location Location) string {
 		}
 		locationString = strings.TrimSuffix(locationString, ",") + ")"
 	} else {
-
 		locationString = strconv.Itoa(location.Start+1) + ".." + strconv.Itoa(location.End)
 		if location.FivePrimePartial {
 			locationString = "<" + locationString
@@ -996,7 +968,6 @@ func BuildFeatureString(feature Feature) string {
 
 	for _, qualifier := range qualifierKeys {
 		returnString += generateWhiteSpace(qualifierIndex) + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
-
 	}
 	return returnString
 }

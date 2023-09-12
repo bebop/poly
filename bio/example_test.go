@@ -16,9 +16,7 @@ import (
 )
 
 // This is where the integration tests that make effed up cyclic dependencies go.
-
 func Example() {
-
 	// Poly can take in basic gff, gbk, fasta, and JSON.
 	// We call the json package "pson" (poly JSON) to prevent namespace collision with Go's standard json package.
 
@@ -52,7 +50,7 @@ func ExampleRead() {
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
-func ExampleReadGz() {
+func Example_readGz() {
 	// ReadGz lets you read gzipped files into a parser.
 	fileGz, _ := os.Open("fasta/data/base.fasta.gz")
 	file, _ := gzip.NewReader(fileGz)
@@ -63,7 +61,7 @@ func ExampleReadGz() {
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
-func ExampleNewParserGz() {
+func Example_newParserGz() {
 	// First, lets make a file that is gzip'd, represented by this
 	// buffer.
 	var file bytes.Buffer
@@ -89,7 +87,7 @@ DIDGDGQVNYEEFVQMMTAK*`))
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
-func ExampleParseWithHeader() {
+func ExampleParser_ParseWithHeader() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`#slow5_version	0.2.0
@@ -106,7 +104,7 @@ func ExampleParseWithHeader() {
 	// Output: 0.2.0, 0026631e-33a3-49ab-aa22-3ab157d71f8b
 }
 
-func ExampleParseToChannel() {
+func ExampleParser_ParseToChannel() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
@@ -124,7 +122,7 @@ DIDGDGQVNYEEFVQMMTAK*`)
 
 	channel := make(chan fasta.Record)
 	ctx := context.Background()
-	go parser.ParseToChannel(ctx, channel, false)
+	go func() { _ = parser.ParseToChannel(ctx, channel, false) }()
 
 	var records []fasta.Record
 	for record := range channel {
@@ -135,7 +133,7 @@ DIDGDGQVNYEEFVQMMTAK*`)
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
-func ExampleWriteAll() {
+func Example_writeAll() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`#slow5_version	0.2.0
@@ -156,7 +154,7 @@ func ExampleWriteAll() {
 		_, _ = read.WriteTo(&buffer)
 	}
 
-	fmt.Println(string(buffer.Bytes()))
+	fmt.Println(buffer.String())
 	// Output: #slow5_version	0.2.0
 	//#num_read_groups	1
 	//@asic_id	4175987214

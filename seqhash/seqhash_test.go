@@ -63,7 +63,6 @@ func TestHash(t *testing.T) {
 	if seqhash != "v1_PLS_922ec11f5227ce77a42f07f565a7a1a479772b5cf3f1f6e93afc5ecbc0fd5955" {
 		t.Errorf("Linear single stranded hashing failed. Expected v1_PLS_922ec11f5227ce77a42f07f565a7a1a479772b5cf3f1f6e93afc5ecbc0fd5955, got: " + seqhash)
 	}
-
 }
 
 func TestLeastRotation(t *testing.T) {
@@ -89,5 +88,4 @@ func TestLeastRotation(t *testing.T) {
 			}
 		}
 	}
-
 }

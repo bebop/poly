@@ -19,7 +19,6 @@ func TestTranslation(t *testing.T) {
 	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
 		t.Errorf("TestTranslation has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
-
 }
 
 // Non-Met start codons should still map to Met for our standard codon tables.
@@ -65,7 +64,6 @@ func TestTranslationMixedCase(t *testing.T) {
 	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
 		t.Errorf("TestTranslationMixedCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
-
 }
 
 func TestTranslationLowerCase(t *testing.T) {
@@ -74,7 +72,6 @@ func TestTranslationLowerCase(t *testing.T) {
 	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
 		t.Errorf("TestTranslationLowerCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
-
 }
 
 func TestOptimize(t *testing.T) {
@@ -211,7 +208,6 @@ func TestOptimizeErrorsOnBrokenChooser(t *testing.T) {
 }
 
 func TestGetCodonFrequency(t *testing.T) {
-
 	translationTable := GetCodonTable(11).GenerateTranslationTable()
 
 	var codons strings.Builder
@@ -253,7 +249,6 @@ func TestGetCodonFrequency(t *testing.T) {
 			t.Errorf("TestGetCodonFrequency has failed. The codon \"%q\" appears %q times when it should only appear twice.", codon, frequency)
 		}
 	}
-
 }
 
 func TestChooserError(t *testing.T) {
@@ -288,7 +283,6 @@ func TestWriteCodonJSON(t *testing.T) {
 	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
 	}
-
 }
 
 /*

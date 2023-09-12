@@ -8,11 +8,6 @@ import (
 	"testing"
 )
 
-const (
-	// This fasta stream contains no Fasta.
-	emptyFasta = "testing\natagtagtagtagtagatgatgatgatgagatg\n\n\n\n\n\n\n\n\n\n\n"
-)
-
 func TestHeader(t *testing.T) {
 	_, err := NewParser(nil, 256).Header()
 	if err != nil {
@@ -47,9 +42,7 @@ func TestParser(t *testing.T) {
 		for {
 			fa, err := parser.Next()
 			if err != nil {
-				if errors.Is(err, io.EOF) {
-					err = nil // EOF not treated as parsing error.
-				} else {
+				if !errors.Is(err, io.EOF) {
 					t.Errorf("Got error: %s", err)
 				}
 				break
@@ -95,12 +88,11 @@ func TestReadEmptyFasta(t *testing.T) {
 }
 
 func TestReadEmptySequence(t *testing.T) {
-	var fastas []Record
 	var targetError error
 	emptyFasta := ">testing\natagtagtagtagtagatgatgatgatgagatg\n>testing2\n\n\n\n\n\n\n\n\n\n"
 	parser := NewParser(strings.NewReader(emptyFasta), 256)
 	for {
-		fa, err := parser.Next()
+		_, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -108,7 +100,6 @@ func TestReadEmptySequence(t *testing.T) {
 			targetError = err
 			break
 		}
-		fastas = append(fastas, *fa)
 	}
 	if targetError == nil {
 		t.Errorf("expected error reading empty fasta sequence stream: %s", targetError)
@@ -116,12 +107,11 @@ func TestReadEmptySequence(t *testing.T) {
 }
 
 func TestBufferSmall(t *testing.T) {
-	var fastas []Record
 	var targetError error
 	emptyFasta := ">test\natagtagtagtagtagatgatgatgatgagatg\n>test\n\n\n\n\n\n\n\n\n\n"
 	parser := NewParser(strings.NewReader(emptyFasta), 8)
 	for {
-		fa, err := parser.Next()
+		_, err := parser.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				err = nil // EOF not treated as parsing error.
@@ -129,7 +119,6 @@ func TestBufferSmall(t *testing.T) {
 			targetError = err
 			break
 		}
-		fastas = append(fastas, *fa)
 	}
 	if targetError == nil {
 		t.Errorf("expected error with too small of a buffer")
@@ -176,5 +165,4 @@ func TestWrite(t *testing.T) {
 		writer := NewLimitedWriter(&buf, int64(i))
 		_, _ = fa.WriteTo(writer)
 	}
-
 }

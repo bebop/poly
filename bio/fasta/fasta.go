@@ -75,12 +75,11 @@ type Parser struct {
 	start      bool
 	line       uint
 	more       bool
-	position   int64
 }
 
 // Header returns nil,nil.
 func (p *Parser) Header() (*Header, error) {
-	return nil, nil
+	return &Header{}, nil
 }
 
 // NewParser returns a Parser that uses r as the source
@@ -108,7 +107,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // the next fasta starts which means this function can effectively be used
 // to index where fastas start in a file or string.
 func (p *Parser) Next() (*Record, error) {
-	if p.more == false {
+	if !p.more {
 		return nil, io.EOF
 	}
 	for p.scanner.Scan() {
