@@ -65,8 +65,8 @@ func Example_newParserGz() {
 	// First, lets make a file that is gzip'd, represented by this
 	// buffer.
 	var file bytes.Buffer
-	zw := gzip.NewWriter(&file)
-	_, _ = zw.Write([]byte(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+	zipWriter := gzip.NewWriter(&file)
+	_, _ = zipWriter.Write([]byte(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
 LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV
 EWIWGGFSVDKATLNRFFAFHFILPFTMVALAGVHLTFLHETGSNNPLGLTSDSDKIPFHPYYTIKDFLG
 LLILILLLLLLALLSPDMLGDPDNHMPADPLNTPLHIKPEWYFLFAYAILRSVPNKLGGVLALFLSIVIL
@@ -77,7 +77,7 @@ IENY
 ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
 FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
 DIDGDGQVNYEEFVQMMTAK*`))
-	zw.Close()
+	zipWriter.Close()
 
 	fileDecompressed, _ := gzip.NewReader(&file) // Decompress the file
 	parser, _ := bio.NewFastaParser(fileDecompressed)
