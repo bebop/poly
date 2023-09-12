@@ -27,7 +27,6 @@ func TestMarmurDoty(t *testing.T) {
 }
 
 func ExampleSantaLucia() {
-
 	sequenceString := "ACGATGGCAGTAGCATGC" //"GTAAAACGACGGCCAGT" // M13 fwd
 	testCPrimer := 0.1e-6                  // primer concentration
 	testCNa := 350e-3                      // salt concentration
@@ -64,7 +63,6 @@ func TestSantaLuciaReverseComplement(t *testing.T) {
 	if calcTM, _, _ := primers.SantaLucia(testSeq, testCPrimer, testCNa, testCMg); math.Abs(expectedTM-calcTM)/expectedTM >= 0.02 {
 		t.Errorf("SantaLucia has changed on test. Got %f instead of %f", calcTM, expectedTM)
 	}
-
 }
 
 func ExampleMeltingTemp() {

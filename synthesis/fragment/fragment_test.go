@@ -34,13 +34,12 @@ func TestFragmentSizes(t *testing.T) {
 	if err == nil {
 		t.Errorf("Fragment should fail when minFragmentSize < 8")
 	}
-
 }
 
 func TestSmallFragmentSize(t *testing.T) {
 	// The following should succeed, but will require setting minFragmentSize = 12
 	lacZ := "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAG"
-  _, _, err := Fragment(lacZ, 12, 30, []string{})
+	_, _, err := Fragment(lacZ, 12, 30, []string{})
 	if err != nil {
 		t.Errorf("Got error in small fragmentation: %s", err)
 	}
@@ -75,7 +74,6 @@ func TestCheckLongRegresssion(t *testing.T) {
 	if foundGTCT {
 		t.Errorf("Should not have found GTCT since it is the reverse complement of AGAC")
 	}
-
 }
 
 func TestRegressionTestMatching12(t *testing.T) {
@@ -84,7 +82,6 @@ func TestRegressionTestMatching12(t *testing.T) {
 	overhangs := []string{"CGAG", "GTCT", "TACT", "AATG", "ATCC", "CGCT", "AAAA", "AAGT", "ATAG", "ATTA", "ACAA", "ACGC", "TATC", "TAGA", "TTAC", "TTCA", "TGTG", "TCGG", "TCCC", "GAAG", "GTGC", "GCCG", "CAGG", "TACG"}
 	efficiency := SetEfficiency(overhangs)
 	if (efficiency > 1) || (efficiency < 0.965) {
-
 		t.Errorf("Expected efficiency of .99 - approximately matches NEB ligase fidelity viewer of .97. Got: %g", efficiency)
 	}
 }

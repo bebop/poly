@@ -76,7 +76,6 @@ const (
 
 // boothLeastRotation gets the least rotation of a circular string.
 func boothLeastRotation(sequence string) int {
-
 	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
 	// this is generally over commented but I'm keeping it this way for now. - Tim
 
@@ -97,7 +96,6 @@ func boothLeastRotation(sequence string) int {
 		failure := failureSlice[characterIndex-leastRotationIndex-1]
 		// while failure does not equal -1 and character does not equal the character found at the least rotation + failure + 1 <- why this?
 		for failure != -1 && character != sequence[leastRotationIndex+failure+1] {
-
 			// if character is lexically less than whatever is at the leastRotationIndex index update leastRotation index
 			if character < sequence[leastRotationIndex+failure+1] {
 				leastRotationIndex = characterIndex - failure - 1
@@ -108,7 +106,6 @@ func boothLeastRotation(sequence string) int {
 
 		// if character does not equal whatever character is at leastRotationIndex plus failure.
 		if character != sequence[leastRotationIndex+failure+1] {
-
 			// if character is lexically less then what is rotated least leastRotationIndex gets value of character index.
 			if character < sequence[leastRotationIndex] {
 				leastRotationIndex = characterIndex
@@ -224,5 +221,4 @@ func Hash(sequence string, sequenceType SequenceType, circular bool, doubleStran
 	newhash := blake3.Sum256([]byte(deterministicSequence))
 	seqhash := "v1" + "_" + sequenceTypeLetter + circularLetter + doubleStrandedLetter + "_" + hex.EncodeToString(newhash[:])
 	return seqhash, nil
-
 }

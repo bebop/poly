@@ -41,7 +41,7 @@ A - number of helices in the loop
 B - number of unpaired nucleotides in the loop
 C - coxial stacking in the loop
 D - terminal mismatch contributions
-E - base composition of the unpaired nucleotides (probably neglible?)
+E - base composition of the unpaired nucleotides (probably negligible?)
 Inferred from:
 Supplemental Material: Annu.Rev.Biophs.Biomol.Struct.33:415-40
 doi: 10.1146/annurev.biophys.32.110601.141800
@@ -189,7 +189,6 @@ func newFoldingContext(seq string, temp float64) (context, error) {
 		return context{}, fmt.Errorf("error filling the caches for the FoldingContext: %w", err)
 	}
 	return ret, nil
-
 }
 
 // Result holds the resulting structures of the folded s

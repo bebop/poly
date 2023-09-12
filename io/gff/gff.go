@@ -78,7 +78,7 @@ type Location struct {
 // AddFeature takes a feature and adds it to the Gff struct.
 func (sequence *Gff) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
-	var featureCopy Feature = *feature
+	featureCopy := *feature
 	sequence.Features = append(sequence.Features, featureCopy)
 	return nil
 }
@@ -97,7 +97,6 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
-
 		for _, subLocation := range location.SubLocations {
 			sequence, _ := getFeatureSequence(feature, subLocation)
 			sequenceBuffer.WriteString(sequence)
@@ -224,7 +223,6 @@ func extractInfoFromField(lines []string, fieldName string) ([]string, int, erro
 		}
 		endOfMetaInfo = lineIndex
 		break
-
 	}
 	if index == 0 && fieldName != "gff-version" {
 		return nil, 0, errors.New("the given file does not have any meta information")

@@ -77,7 +77,6 @@ type Scoring struct {
 
 // NewScoring returns a new Scoring struct with default values for DNA.
 func NewScoring(substitutionMatrix *matrix.SubstitutionMatrix, gapPenalty int) (Scoring, error) {
-
 	if substitutionMatrix == nil {
 		substitutionMatrix = matrix.Default
 	}
@@ -99,7 +98,6 @@ func (s Scoring) Score(a, b byte) (int, error) {
 // It returns the final score and the optimal alignments of the two strings in O(nm) time and O(nm) space.
 // https://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm
 func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, string, string, error) {
-
 	// Get the M and N dimensions of the matrix. The M x N matrix is standard linear algebra notation.
 	// But I added columns and rows to the variable name to make it more clear what the dimensions are.
 	columnLengthM, rowLengthN := len(stringA), len(stringB)
@@ -171,7 +169,6 @@ func NeedlemanWunsch(stringA string, stringB string, scoring Scoring) (int, stri
 // It returns the max score and optimal local alignments between two strings alignments of the two strings in O(nm) time and O(nm) space.
 // https://en.wikipedia.org/wiki/Smith-Waterman_algorithm
 func SmithWaterman(stringA string, stringB string, scoring Scoring) (int, string, string, error) {
-
 	columnLengthM, rowLengthN := len(stringA), len(stringB)
 
 	// Initialize the alignment matrix
