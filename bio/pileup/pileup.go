@@ -70,7 +70,7 @@ type Parser struct {
 	line   uint
 }
 
-// Header returns a identifier with nothing and nil.
+// Header returns nil,nil.
 func (parser *Parser) Header() (*Header, error) {
 	return &Header{}, nil
 }
