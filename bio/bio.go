@@ -54,7 +54,7 @@ Lower level interfaces
 
 ******************************************************************************/
 
-// LowLevelParser is a generic interface that all parsers must support. It is
+// parserInterface is a generic interface that all parsers must support. It is
 // very simple, only requiring two functions, Header() and Next(). Header()
 // returns the header of the file if there is one: most files, like fasta,
 // fastq, and pileup do not contain headers, while others like sam and slow5 do
@@ -66,7 +66,7 @@ Lower level interfaces
 // for this is needed at the last Next(), when it returns an io.EOF error. A
 // pointer is used to represent the difference between a null DataType and an
 // empty DataType.
-type LowLevelParser[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] interface {
+type parserInterface[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] interface {
 	Header() (*DataTypeHeader, error)
 	Next() (*DataType, error)
 }
@@ -91,7 +91,7 @@ Higher level parse
 // and implements useful functions on top of it: such as Parse(), ParseToChannel(), and
 // ParseWithHeader().
 type Parser[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] struct {
-	LowLevelParser LowLevelParser[DataType, DataTypeHeader]
+	parserInterface parserInterface[DataType, DataTypeHeader]
 }
 
 // NewFastaParser initiates a new FASTA parser from an io.Reader.
@@ -102,7 +102,7 @@ func NewFastaParser(r io.Reader) (*Parser[fasta.Record, fasta.Header], error) {
 // NewFastaParserWithMaxLineLength initiates a new FASTA parser from an
 // io.Reader and a user-given maxLineLength.
 func NewFastaParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[fasta.Record, fasta.Header], error) {
-	return &Parser[fasta.Record, fasta.Header]{LowLevelParser: fasta.NewParser(r, maxLineLength)}, nil
+	return &Parser[fasta.Record, fasta.Header]{parserInterface: fasta.NewParser(r, maxLineLength)}, nil
 }
 
 // NewFastqParser initiates a new FASTQ parser from an io.Reader.
@@ -113,7 +113,7 @@ func NewFastqParser(r io.Reader) (*Parser[fastq.Read, fastq.Header], error) {
 // NewFastqParserWithMaxLineLength initiates a new FASTQ parser from an
 // io.Reader and a user-given maxLineLength.
 func NewFastqParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[fastq.Read, fastq.Header], error) {
-	return &Parser[fastq.Read, fastq.Header]{LowLevelParser: fastq.NewParser(r, maxLineLength)}, nil
+	return &Parser[fastq.Read, fastq.Header]{parserInterface: fastq.NewParser(r, maxLineLength)}, nil
 }
 
 // NewSlow5Parser initiates a new SLOW5 parser from an io.Reader.
@@ -125,7 +125,7 @@ func NewSlow5Parser(r io.Reader) (*Parser[slow5.Read, slow5.Header], error) {
 // io.Reader and a user-given maxLineLength.
 func NewSlow5ParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[slow5.Read, slow5.Header], error) {
 	parser, err := slow5.NewParser(r, maxLineLength)
-	return &Parser[slow5.Read, slow5.Header]{LowLevelParser: parser}, err
+	return &Parser[slow5.Read, slow5.Header]{parserInterface: parser}, err
 }
 
 // NewPileupParser initiates a new Pileup parser from an io.Reader.
@@ -136,7 +136,7 @@ func NewPileupParser(r io.Reader) (*Parser[pileup.Line, pileup.Header], error) {
 // NewPileupParserWithMaxLineLength initiates a new Pileup parser from an
 // io.Reader and a user-given maxLineLength.
 func NewPileupParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[pileup.Line, pileup.Header], error) {
-	return &Parser[pileup.Line, pileup.Header]{LowLevelParser: pileup.NewParser(r, maxLineLength)}, nil
+	return &Parser[pileup.Line, pileup.Header]{parserInterface: pileup.NewParser(r, maxLineLength)}, nil
 }
 
 /******************************************************************************
@@ -153,7 +153,7 @@ Parser higher-level functions
 // records in a file, as the parser reads the underlying io.Reader in a
 // straight line.
 func (p *Parser[DataType, DataTypeHeader]) Next() (*DataType, error) {
-	return p.LowLevelParser.Next()
+	return p.parserInterface.Next()
 }
 
 // Header is a parsing primitive that should be used when low-level control is
@@ -172,7 +172,7 @@ func (p *Parser[DataType, DataTypeHeader]) Next() (*DataType, error) {
 //
 //	SLOW5
 func (p *Parser[DataType, DataTypeHeader]) Header() (*DataTypeHeader, error) {
-	return p.LowLevelParser.Header()
+	return p.parserInterface.Header()
 }
 
 // ParseN returns a countN number of records/reads/lines from the parser.
