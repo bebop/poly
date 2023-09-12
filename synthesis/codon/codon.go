@@ -118,7 +118,6 @@ func Translate(sequence string, codonTable Table) (string, error) {
 
 	startCodonReached := false
 	for _, letter := range sequence {
-
 		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
 
@@ -182,7 +181,6 @@ func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, 
 // OptimizeTable weights each codon in a codon table according to input string codon frequency.
 // This function actually mutates the codonTable struct itself.
 func (table codonTable) OptimizeTable(sequence string) Table {
-
 	sequence = strings.ToUpper(sequence)
 	codonFrequencyMap := getCodonFrequency(sequence)
 
@@ -191,7 +189,6 @@ func (table codonTable) OptimizeTable(sequence string) Table {
 		for codonIndex, codon := range aminoAcid.Codons {
 			table.AminoAcids[aminoAcidIndex].Codons[codonIndex].Weight = codonFrequencyMap[codon.Triplet]
 		}
-
 	}
 	return table
 }
@@ -209,22 +206,20 @@ func (table codonTable) GenerateStartCodonTable() map[string]string {
 
 // getCodonFrequency takes a DNA sequence and returns a hashmap of its codons and their frequencies.
 func getCodonFrequency(sequence string) map[string]int {
-
 	codonFrequencyHashMap := map[string]int{}
 	var currentCodon strings.Builder
 
 	for _, letter := range sequence {
-
 		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
 
 		// if current nucleotide is the third in a codon add to hashmap
 		if currentCodon.Len() == 3 {
-			// if codon is already initalized in map increment
+			// if codon is already initialized in map increment
 			if _, ok := codonFrequencyHashMap[currentCodon.String()]; ok {
 				codonString := currentCodon.String()
 				codonFrequencyHashMap[codonString]++
-				// if codon is not already initalized in map initialize with value at 1
+				// if codon is not already initialized in map initialize with value at 1
 			} else {
 				codonString := currentCodon.String()
 				codonFrequencyHashMap[codonString] = 1
@@ -242,13 +237,11 @@ func (table codonTable) IsEmpty() bool {
 
 // Chooser is a codonTable method to convert a codon table to a chooser
 func (table codonTable) Chooser() (map[string]weightedRand.Chooser, error) {
-
 	// This maps codon tables structure to weightRand.NewChooser structure
 	codonChooser := make(map[string]weightedRand.Chooser)
 
 	// iterate over every amino acid in the codonTable
 	for _, aminoAcid := range table.AminoAcids {
-
 		// create a list of codon choices for this specific amino acid
 		codonChoices := make([]weightedRand.Choice, len(aminoAcid.Codons))
 
@@ -364,7 +357,7 @@ func GetCodonTable(index int) Table {
 	return defaultCodonTablesByNumber[index]
 }
 
-// defaultCodonTablesByNumber stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using numbered indeces.
+// defaultCodonTablesByNumber stores all codon tables published by NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi using numbered indices.
 var defaultCodonTablesByNumber = map[int]codonTable{
 	1:  generateCodonTable("FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------"),
 	2:  generateCodonTable("FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------"),

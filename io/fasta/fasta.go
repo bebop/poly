@@ -363,7 +363,6 @@ func Build(fastas []Fasta) ([]byte, error) {
 		lineCount := 0
 		// write the fasta sequence 80 characters at a time
 		for _, character := range fasta.Sequence {
-
 			fastaString.WriteRune(character)
 			lineCount++
 			if lineCount == 80 {

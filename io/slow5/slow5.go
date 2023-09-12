@@ -46,7 +46,7 @@ most of these attributes in a map for future proofing. Even the binary file
 format, blow5, does not have types for these attributes, and just stores them
 as a long string.
 
-Reads have 8 required columns, and a few auxillary. These are typed, since they
+Reads have 8 required columns, and a few auxiliary. These are typed, since they
 are what will probably be used in real software.
 
 Cheers mate,
@@ -205,7 +205,7 @@ func (parser *Parser) ParseNext() (Read, error) {
 	parser.line++
 	line := strings.TrimSpace(string(lineBytes))
 
-	values := strings.Split(string(line), "\t")
+	values := strings.Split(line, "\t")
 	// Reads have started.
 	// Once we have the read headers, start to parse the actual reads
 	var newRead Read

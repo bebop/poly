@@ -51,7 +51,6 @@ func TestGbkIO(t *testing.T) {
 			t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
 		}
 	} // end test single gbk read, write, build, parse
-
 }
 
 func TestMultiLineFeatureParse(t *testing.T) {
@@ -84,7 +83,6 @@ func TestMultiGenbankIO(t *testing.T) {
 	if diff := cmp.Diff(multiGbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
 	}
-
 }
 
 func TestGbkLocationStringBuilder(t *testing.T) {
@@ -171,7 +169,6 @@ func TestSnapgeneGenbankRegression(t *testing.T) {
 }
 
 func TestGetSequenceMethod(t *testing.T) {
-
 	gbk, _ := Read("../../data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Features struct
@@ -180,7 +177,6 @@ func TestGetSequenceMethod(t *testing.T) {
 	if feature != seq {
 		t.Errorf("Feature GetSequence method has failed. Got this:\n%s instead of \n%s", feature, seq)
 	}
-
 }
 
 func TestLocationParser(t *testing.T) {
@@ -360,7 +356,7 @@ func TestFeature_GetSequence_Legacy(t *testing.T) {
 	subLocationReverseComplemented.End = sequenceLength
 	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
-	feature.Description = "Green Flourescent Protein"
+	feature.Description = "Green Fluorescent Protein"
 	feature.Location.SubLocations = []Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
@@ -373,7 +369,6 @@ func TestFeature_GetSequence_Legacy(t *testing.T) {
 	if gfpSequence != featureSequence {
 		t.Error("Feature sequence was not properly retrieved.")
 	}
-
 }
 
 func Test_parseLoopParameters_init(t *testing.T) {

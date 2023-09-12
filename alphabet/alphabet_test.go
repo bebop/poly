@@ -64,7 +64,6 @@ func TestAlphabet(t *testing.T) {
 }
 
 func TestAlphabet_Symbols(t *testing.T) {
-
 	// Test Symbols
 	symbols := []string{"A", "C", "G", "T"}
 	a := alphabet.NewAlphabet(symbols)

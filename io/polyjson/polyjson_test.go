@@ -51,7 +51,7 @@ func TestFeature_GetSequence(t *testing.T) {
 	subLocationReverseComplemented.End = sequenceLength
 	subLocationReverseComplemented.Complement = true // According to genbank complement means reverse complement. What a country.
 
-	feature.Description = "Green Flourescent Protein"
+	feature.Description = "Green Fluorescent Protein"
 	feature.Location.SubLocations = []Location{subLocation, subLocationReverseComplemented}
 
 	// Add the GFP feature to the sequence struct.
@@ -64,7 +64,6 @@ func TestFeature_GetSequence(t *testing.T) {
 	if gfpSequence != featureSequence {
 		t.Error("Feature sequence was not properly retrieved.")
 	}
-
 }
 
 func TestParse_error(t *testing.T) {

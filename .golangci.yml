@@ -5,31 +5,25 @@ run:
 linters:
   enable:
     - bodyclose
-    ##- dogsled
     - dupl
-    #- exhaustivestruct
     - exportloopref
-    #- funlen
     - gochecknoinits
-    ##- goconst
-    ##- gocritic
-    ##- gocyclo
-    ##- gofmt
-    ##- goimports
-    #- gomnd
+    # - goconst # TODO: Enable this and fix the errors.
+    - gofmt
+    - goimports
     - goprintffuncname
-    ##- gosec
-    #- lll
-    ##- misspell
+    - misspell
     - nakedret
     - nilnil
     - noctx
     - nolintlint
-    ##- stylecheck
-    ##- unconvert
-    ##- unparam
-    ##- whitespace
-#linters-settings:
-#  stylecheck:
-#    # https://staticcheck.io/docs/options#checks
-#    checks: ["all", "-ST1005"]
+    - stylecheck
+    - unconvert
+    - unparam
+    - whitespace
+linters-settings:
+  stylecheck:
+    # https://staticcheck.io/docs/options#checks
+    checks:
+      - "all"
+      - "-ST1005" # Disable "Incorrectly formatted error string" errors. TODO: Enable this and fix the errors.

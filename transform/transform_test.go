@@ -112,7 +112,7 @@ func TestComplementBaseRNA(t *testing.T) {
 		got := ComplementBaseRNA(c)
 		gotI := ComplementBaseRNA(got)
 		gotII := ComplementBaseRNA(gotI)
-		if rune(c) != gotI || gotII != got {
+		if c != gotI || gotII != got {
 			t.Errorf("complement transform mismatch: %q->%q->%q->%q", c, got, gotI, gotII)
 		}
 	}

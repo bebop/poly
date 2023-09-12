@@ -144,7 +144,9 @@ func TestBuild(t *testing.T) {
 	}
 	parser.Reset(file)
 	var b bytes.Buffer
-	WritePileup(pileups, &b)
+	if err := WritePileups(pileups, &b); err != nil {
+		t.Errorf("Failed to write pileups: %v", err)
+	}
 	newBody := b.Bytes()
 	file.Close()
 
@@ -160,7 +162,6 @@ func TestBuild(t *testing.T) {
 	if string(body) != string(newBody) {
 		t.Errorf("input bytes do not equal output bytes of build")
 	}
-
 }
 
 func TestRead(t *testing.T) {

@@ -41,13 +41,11 @@ func ProteinSequence(length int, seed int64) (string, error) {
 
 // DNASequence returns a random DNA sequence string of a given length and seed.
 func DNASequence(length int, seed int64) (string, error) {
-
 	return randomNucelotideSequence(length, seed, []rune("ACTG")), nil
 }
 
 // RNASequence returns a random DNA sequence string of a given length and seed.
 func RNASequence(length int, seed int64) (string, error) {
-
 	return randomNucelotideSequence(length, seed, []rune("ACUG")), nil
 }
 
