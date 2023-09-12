@@ -16,7 +16,7 @@ const (
 func TestHeader(t *testing.T) {
 	_, err := NewParser(nil, 256).Header()
 	if err != nil {
-		t.Errorf("Header should never be nil")
+		t.Errorf("Unexpected error while parsing header: %v", err)
 	}
 }
 
