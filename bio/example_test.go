@@ -12,8 +12,8 @@ import (
 	"github.com/TimothyStiles/poly/bio/fasta"
 )
 
-// ExampleRead shows an example of reading a file from disk.
-func ExampleRead() {
+// Example_read shows an example of reading a file from disk.
+func Example_read() {
 	// Read lets you read files from disk into a parser.
 	file, _ := os.Open("fasta/data/base.fasta")
 	parser, _ := bio.NewFastaParser(file)
@@ -174,7 +174,7 @@ $$&%&%#$)*59;/767C378411,***,('11<;:,0039/0&()&'2(/*((4.1.09751).601+'#&&&,-**/0
 	// Output:GATGTGCGCCGTTCCAGTTGCGACGTACTATAATCCCCGGCAACACGGTGCTGATTCTCTTCCTGTTCCAGAAAGCATAAACAGATGCAAGTCTGGTGTGATTAACTTCACCAAAGGGCTGGTTGTAATATTAGGAAATCTAACAATAGATTCTGTTGGTTGGACTCTAAAATTAGAAATTTGATAGATTCCTTTTCCCAAATGAAAGTTTAACGTACACTTTGTTTCTAAAGGAAGGTCAAATTACAGTCTACAGCATCGTAATGGTTCATTTTCATTTATATTTTAATACTAGAAAAGTCCTAGGTTGAAGATAACCACATAATAAGCTGCAACTTCAGCTGTCCCAACCTGAAGAAGAATCGCAGGAGTCGAAATAACTTCTGTAAAGCAAGTAGTTTGAACCTATTGATGTTTCAACATGAGCAATACGTAACT
 }
 
-func ExampleGenbankParser() {
+func ExampleNewGenbankParser() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.
 	file := strings.NewReader(`LOCUS       pUC19_lacZ         336 bp DNA     linear   UNA 12-SEP-2023
