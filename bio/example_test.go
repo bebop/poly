@@ -10,33 +10,7 @@ import (
 
 	"github.com/TimothyStiles/poly/bio"
 	"github.com/TimothyStiles/poly/bio/fasta"
-	"github.com/TimothyStiles/poly/bio/genbank"
-	"github.com/TimothyStiles/poly/bio/gff"
-	"github.com/TimothyStiles/poly/bio/polyjson"
 )
-
-// This is where the integration tests that make effed up cyclic dependencies go.
-func Example() {
-	// Poly can take in basic gff, gbk, fasta, and JSON.
-	// We call the json package "pson" (poly JSON) to prevent namespace collision with Go's standard json package.
-
-	gffInput, _ := gff.Read("../data/ecoli-mg1655-short.gff")
-	gbkInput, _ := genbank.Read("../data/puc19.gbk")
-	//fastaInput, _ := fasta.Read("fasta/data/base.fasta")
-	jsonInput, _ := polyjson.Read("../data/cat.json")
-
-	// Poly can also output these file formats. Every file format has a corresponding Write function.
-	_ = gff.Write(gffInput, "test.gff")
-	_ = genbank.Write(gbkInput, "test.gbk")
-	//_ = fasta.WriteFile(fastaInput, "test.fasta")
-	_ = polyjson.Write(jsonInput, "test.json")
-
-	// Extra tips:
-
-	// 1. All of these file formats can be read and written in JSON format using their native schemas.
-	// 2. If you want to convert from one format to another (e.g. genbank to polyjson), you can easily do so with a for-loop and some field mapping.
-	// 3. Every file format is unique but they all share a common interface so you can use them with almost every native function in Poly.
-}
 
 // ExampleRead shows an example of reading a file from disk.
 func ExampleRead() {
@@ -50,8 +24,8 @@ func ExampleRead() {
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
+// Example_readGz shows an example of reading and parsing a gzipped file.
 func Example_readGz() {
-	// ReadGz lets you read gzipped files into a parser.
 	fileGz, _ := os.Open("fasta/data/base.fasta.gz")
 	file, _ := gzip.NewReader(fileGz)
 	parser, _ := bio.NewFastaParser(file)
@@ -198,6 +172,60 @@ $$&%&%#$)*59;/767C378411,***,('11<;:,0039/0&()&'2(/*((4.1.09751).601+'#&&&,-**/0
 
 	fmt.Println(records[0].Sequence)
 	// Output:GATGTGCGCCGTTCCAGTTGCGACGTACTATAATCCCCGGCAACACGGTGCTGATTCTCTTCCTGTTCCAGAAAGCATAAACAGATGCAAGTCTGGTGTGATTAACTTCACCAAAGGGCTGGTTGTAATATTAGGAAATCTAACAATAGATTCTGTTGGTTGGACTCTAAAATTAGAAATTTGATAGATTCCTTTTCCCAAATGAAAGTTTAACGTACACTTTGTTTCTAAAGGAAGGTCAAATTACAGTCTACAGCATCGTAATGGTTCATTTTCATTTATATTTTAATACTAGAAAAGTCCTAGGTTGAAGATAACCACATAATAAGCTGCAACTTCAGCTGTCCCAACCTGAAGAAGAATCGCAGGAGTCGAAATAACTTCTGTAAAGCAAGTAGTTTGAACCTATTGATGTTTCAACATGAGCAATACGTAACT
+}
+
+func ExampleGenbankParser() {
+	// The following can be replaced with a any io.Reader. For example,
+	// `file, err := os.Open(path)` for file would also work.
+	file := strings.NewReader(`LOCUS       pUC19_lacZ         336 bp DNA     linear   UNA 12-SEP-2023
+DEFINITION  natural linear DNA
+ACCESSION   .
+VERSION     .
+KEYWORDS    .
+SOURCE      natural DNA sequence
+  ORGANISM  unspecified
+REFERENCE   1  (bases 1 to 336)
+  AUTHORS   Keoni Gandall
+  TITLE     Direct Submission
+  JOURNAL   Exported Sep 12, 2023 from SnapGene 6.2.2
+            https://www.snapgene.com
+FEATURES             Location/Qualifiers
+     source          1..336
+                     /mol_type="genomic DNA"
+                     /organism="unspecified"
+     primer_bind     1..17
+                     /label=M13 rev
+                     /note="common sequencing primer, one of multiple similar
+                     variants"
+     CDS             13..336
+                     /codon_start=1
+                     /gene="lacZ"
+                     /product="LacZ-alpha fragment of beta-galactosidase"
+                     /label=lacZ-alpha
+                     /translation="MTMITPSLHACRSTLEDPRVPSSNSLAVVLQRRDWENPGVTQLNR
+                     LAAHPPFASWRNSEEARTDRPSQQLRSLNGEWRLMRYFLLTHLCGISHRIWCTLSTICS
+                     DAA"
+     misc_feature    30..86
+                     /label=MCS
+                     /note="pUC19 multiple cloning site"
+     primer_bind     complement(87..103)
+                     /label=M13 fwd
+                     /note="common sequencing primer, one of multiple similar
+                     variants"
+ORIGIN
+        1 caggaaacag ctatgaccat gattacgcca agcttgcatg cctgcaggtc gactctagag
+       61 gatccccggg taccgagctc gaattcactg gccgtcgttt tacaacgtcg tgactgggaa
+      121 aaccctggcg ttacccaact taatcgcctt gcagcacatc cccctttcgc cagctggcgt
+      181 aatagcgaag aggcccgcac cgatcgccct tcccaacagt tgcgcagcct gaatggcgaa
+      241 tggcgcctga tgcggtattt tctccttacg catctgtgcg gtatttcaca ccgcatatgg
+      301 tgcactctca gtacaatctg ctctgatgcc gcatag
+//
+`)
+	parser, _ := bio.NewGenbankParser(file)
+	records, _ := parser.Parse()
+
+	fmt.Println(records[0].Features[2].Attributes["translation"])
+	// Output: MTMITPSLHACRSTLEDPRVPSSNSLAVVLQRRDWENPGVTQLNRLAAHPPFASWRNSEEARTDRPSQQLRSLNGEWRLMRYFLLTHLCGISHRIWCTLSTICSDAA
 }
 
 func ExampleNewSlow5Parser() {

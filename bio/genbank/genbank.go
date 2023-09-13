@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,12 +29,6 @@ import (
 GBK specific IO related things begin here.
 
 ******************************************************************************/
-
-var (
-	readFileFn        = os.ReadFile
-	parseMultiNthFn   = ParseMultiNth
-	parseReferencesFn = parseReferences
-)
 
 // Genbank is the main struct for the Genbank file format.
 type Genbank struct {
@@ -154,65 +147,6 @@ func getFeatureSequence(feature Feature, location Location) (string, error) {
 	}
 
 	return sequenceString, nil
-}
-
-// Read reads a GBK file from path and returns a Genbank struct.
-func Read(path string) (Genbank, error) {
-	genbankSlice, err := ReadMultiNth(path, 1)
-	if err != nil {
-		return Genbank{}, err
-	}
-	genbank := genbankSlice[0]
-	return genbank, err
-}
-
-// ReadMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
-func ReadMulti(path string) ([]Genbank, error) {
-	return ReadMultiNth(path, -1)
-}
-
-// ReadMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
-func ReadMultiNth(path string, count int) ([]Genbank, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	sequence, err := parseMultiNthFn(file, count)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	return sequence, nil
-}
-
-// Write takes an Genbank list and a path string and writes out a genbank record to that path.
-func Write(sequences Genbank, path string) error {
-	// build function always returns nil error.
-	// This is for API consistency in case we need to
-	// add error handling in the future.
-	gbk, _ := Build(sequences)
-
-	err := os.WriteFile(path, gbk, 0644)
-	return err
-}
-
-// WriteMulti takes a slice of Genbank structs and a path string and writes out a multi genbank record to that path.
-func WriteMulti(sequences []Genbank, path string) error {
-	// buildmulti function always returns nil error.
-	// This is for API consistency in case we need to
-	// add error handling in the future.
-	gbk, _ := BuildMulti(sequences)
-
-	err := os.WriteFile(path, gbk, 0644)
-	return err
-}
-
-// Build builds a GBK byte slice to be written out to db or file.
-func Build(gbk Genbank) ([]byte, error) {
-	gbkSlice := []Genbank{gbk}
-	multiGBK, err := BuildMulti(gbkSlice)
-	return multiGBK, err
 }
 
 // BuildMulti builds a MultiGBK byte slice to be written out to db or file.
@@ -348,28 +282,6 @@ func BuildMulti(sequences []Genbank) ([]byte, error) {
 	return gbkString.Bytes(), nil
 }
 
-// Parse takes in a reader representing a single gbk/gb/genbank file and parses it into a Genbank struct.
-func Parse(r io.Reader) (Genbank, error) {
-	genbankSlice, err := parseMultiNthFn(r, 1)
-
-	if err != nil {
-		return Genbank{}, err
-	}
-
-	return genbankSlice[0], err
-}
-
-// ParseMulti takes in a reader representing a multi gbk/gb/genbank file and parses it into a slice of Genbank structs.
-func ParseMulti(r io.Reader) ([]Genbank, error) {
-	genbankSlice, err := parseMultiNthFn(r, -1)
-
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	return genbankSlice, err
-}
-
 type parseLoopParameters struct {
 	newLocation      bool
 	quoteActive      bool
@@ -398,119 +310,142 @@ func (params *parseLoopParameters) init() {
 	params.genbank.Meta.Other = make(map[string]string)
 }
 
-// ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
-func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
+// Header is a blank struct, needed for compatibility with bio parsers. It contains nothing.
+type Header struct{}
+
+// WriteTo is a blank function, needed for compatibility with bio parsers. It doesn't do anything.
+func (header *Header) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil
+}
+
+// Parser is a genbank parser created on an io.Reader.
+type Parser struct {
+	scanner    bufio.Scanner
+	parameters parseLoopParameters
+}
+
+// Header returns nil,nil.
+func (parser *Parser) Header() (*Header, error) {
+	return &Header{}, nil
+}
+
+// NewParser returns a Parser that uses r as the source
+// from which to parse genbank formatted sequences.
+func NewParser(r io.Reader, maxLineSize int) *Parser {
 	scanner := bufio.NewScanner(r)
-	var genbanks []Genbank
+	buf := make([]byte, maxLineSize)
+	scanner.Buffer(buf, maxLineSize)
+	return &Parser{
+		scanner: *scanner,
+	}
+}
 
-	// Sequence setup
-
-	var parameters parseLoopParameters
-	parameters.init()
-
+// ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
+func (parser *Parser) Next() (*Genbank, error) {
+	parser.parameters.init()
 	// Loop through each line of the file
-	for lineNum := 0; scanner.Scan(); lineNum++ {
+	for lineNum := 0; parser.scanner.Scan(); lineNum++ {
 		// get line from scanner and split it
-		line := scanner.Text()
+		line := parser.scanner.Text()
 		splitLine := strings.Split(strings.TrimSpace(line), " ")
 
-		prevline := parameters.currentLine
-		parameters.currentLine = line
-		parameters.prevline = prevline
+		prevline := parser.parameters.currentLine
+		parser.parameters.currentLine = line
+		parser.parameters.prevline = prevline
 
 		// keep scanning until we find the start of the first record
-		if !parameters.genbankStarted {
+		if !parser.parameters.genbankStarted {
 			// We detect the beginning of a new genbank file with "LOCUS"
 			locusFlag := strings.Contains(line, "LOCUS")
 
 			if locusFlag {
-				parameters = parseLoopParameters{}
-				parameters.init()
-				parameters.genbank.Meta.Locus = parseLocus(line)
-				parameters.genbankStarted = true
+				parser.parameters = parseLoopParameters{}
+				parser.parameters.init()
+				parser.parameters.genbank.Meta.Locus = parseLocus(line)
+				parser.parameters.genbankStarted = true
 			}
 			continue
 		}
 
-		switch parameters.parseStep {
+		switch parser.parameters.parseStep {
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
-				return genbanks, fmt.Errorf("Empty metadata line on line %d", lineNum)
+				return nil, fmt.Errorf("Empty metadata line on line %d", lineNum)
 			}
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
-			if string(line[0]) != " " || parameters.metadataTag == "FEATURES" {
+			if string(line[0]) != " " || parser.parameters.metadataTag == "FEATURES" {
 				// If this is true, it means we are beginning a new meta tag. In that case, let's save
 				// the older data, and then continue along.
-				switch parameters.metadataTag {
+				switch parser.parameters.metadataTag {
 				case "DEFINITION":
-					parameters.genbank.Meta.Definition = parseMetadata(parameters.metadataData)
+					parser.parameters.genbank.Meta.Definition = parseMetadata(parser.parameters.metadataData)
 				case "ACCESSION":
-					parameters.genbank.Meta.Accession = parseMetadata(parameters.metadataData)
+					parser.parameters.genbank.Meta.Accession = parseMetadata(parser.parameters.metadataData)
 				case "VERSION":
-					parameters.genbank.Meta.Version = parseMetadata(parameters.metadataData)
+					parser.parameters.genbank.Meta.Version = parseMetadata(parser.parameters.metadataData)
 				case "KEYWORDS":
-					parameters.genbank.Meta.Keywords = parseMetadata(parameters.metadataData)
+					parser.parameters.genbank.Meta.Keywords = parseMetadata(parser.parameters.metadataData)
 				case "SOURCE":
-					parameters.genbank.Meta.Source, parameters.genbank.Meta.Organism, parameters.genbank.Meta.Taxonomy = getSourceOrganism(parameters.metadataData)
+					parser.parameters.genbank.Meta.Source, parser.parameters.genbank.Meta.Organism, parser.parameters.genbank.Meta.Taxonomy = getSourceOrganism(parser.parameters.metadataData)
 				case "REFERENCE":
-					reference, err := parseReferencesFn(parameters.metadataData)
+					reference, err := parseReferences(parser.parameters.metadataData)
 					if err != nil {
-						return []Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return nil, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
-					parameters.genbank.Meta.References = append(parameters.genbank.Meta.References, reference)
+					parser.parameters.genbank.Meta.References = append(parser.parameters.genbank.Meta.References, reference)
 
 				case "FEATURES":
-					parameters.parseStep = "features"
+					parser.parameters.parseStep = "features"
 
 					// We know that we are now parsing features, so lets initialize our first feature
-					parameters.feature.Type = strings.TrimSpace(splitLine[0])
-					parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-					parameters.newLocation = true
+					parser.parameters.feature.Type = strings.TrimSpace(splitLine[0])
+					parser.parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+					parser.parameters.newLocation = true
 
 					continue
 
 				default:
-					if parameters.metadataTag != "" {
-						parameters.genbank.Meta.Other[parameters.metadataTag] = parseMetadata(parameters.metadataData)
+					if parser.parameters.metadataTag != "" {
+						parser.parameters.genbank.Meta.Other[parser.parameters.metadataTag] = parseMetadata(parser.parameters.metadataData)
 					}
 				}
 
-				parameters.metadataTag = strings.TrimSpace(splitLine[0])
-				parameters.metadataData = []string{strings.TrimSpace(line[len(parameters.metadataTag):])}
+				parser.parameters.metadataTag = strings.TrimSpace(splitLine[0])
+				parser.parameters.metadataData = []string{strings.TrimSpace(line[len(parser.parameters.metadataTag):])}
 			} else {
-				parameters.metadataData = append(parameters.metadataData, line)
+				parser.parameters.metadataData = append(parser.parameters.metadataData, line)
 			}
 		case "features":
 
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
 			if originFlag {
-				parameters.parseStep = "sequence"
+				parser.parameters.parseStep = "sequence"
 
 				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
-					parameters.features = append(parameters.features, parameters.feature)
-					parameters.attributeValue = ""
-					parameters.attribute = ""
-					parameters.feature = Feature{}
-					parameters.feature.Attributes = make(map[string]string)
+				if parser.parameters.attributeValue != "" {
+					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
+					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
+					parser.parameters.attributeValue = ""
+					parser.parameters.attribute = ""
+					parser.parameters.feature = Feature{}
+					parser.parameters.feature.Attributes = make(map[string]string)
 				} else {
-					parameters.features = append(parameters.features, parameters.feature)
+					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
 				}
 
 				// add our features to the genbank
-				for _, feature := range parameters.features {
+				for _, feature := range parser.parameters.features {
 					location, err := parseLocation(feature.Location.GbkLocationString)
 					if err != nil {
-						return []Genbank{}, err
+						return nil, err
 					}
 					feature.Location = location
-					err = parameters.genbank.AddFeature(&feature)
+					err = parser.parameters.genbank.AddFeature(&feature)
 					if err != nil {
-						return []Genbank{}, err
+						return nil, err
 					}
 				}
 				continue
@@ -523,90 +458,90 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			}
 
 			// determine if current line is a new top level feature
-			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
+			if countLeadingSpaces(parser.parameters.currentLine) < countLeadingSpaces(parser.parameters.prevline) || parser.parameters.prevline == "FEATURES" {
 				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
-					parameters.features = append(parameters.features, parameters.feature)
-					parameters.attributeValue = ""
-					parameters.attribute = ""
-					parameters.feature = Feature{}
-					parameters.feature.Attributes = make(map[string]string)
+				if parser.parameters.attributeValue != "" {
+					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
+					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
+					parser.parameters.attributeValue = ""
+					parser.parameters.attribute = ""
+					parser.parameters.feature = Feature{}
+					parser.parameters.feature.Attributes = make(map[string]string)
 				}
 
 				// }
 				// checks for empty types
-				if parameters.feature.Type != "" {
-					parameters.features = append(parameters.features, parameters.feature)
+				if parser.parameters.feature.Type != "" {
+					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
 				}
 
-				parameters.feature = Feature{}
-				parameters.feature.Attributes = make(map[string]string)
+				parser.parameters.feature = Feature{}
+				parser.parameters.feature.Attributes = make(map[string]string)
 
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
-					return genbanks, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+					return nil, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
 				}
-				parameters.feature.Type = strings.TrimSpace(splitLine[0])
-				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
-				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
-			} else if !strings.Contains(parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
+				parser.parameters.feature.Type = strings.TrimSpace(splitLine[0])
+				parser.parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
+				parser.parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
+			} else if !strings.Contains(parser.parameters.currentLine, "/") { // current line is continuation of a feature or qualifier (sub-constituent of a feature)
 				// if it's a continuation of the current feature, add it to the location
-				if !strings.Contains(parameters.currentLine, "\"") && (countLeadingSpaces(parameters.currentLine) > countLeadingSpaces(parameters.prevline) || parameters.multiLineFeature) {
-					parameters.feature.Location.GbkLocationString += strings.TrimSpace(line)
-					parameters.multiLineFeature = true // without this we can't tell if something is a multiline feature or multiline qualifier
+				if !strings.Contains(parser.parameters.currentLine, "\"") && (countLeadingSpaces(parser.parameters.currentLine) > countLeadingSpaces(parser.parameters.prevline) || parser.parameters.multiLineFeature) {
+					parser.parameters.feature.Location.GbkLocationString += strings.TrimSpace(line)
+					parser.parameters.multiLineFeature = true // without this we can't tell if something is a multiline feature or multiline qualifier
 				} else { // it's a continued line of a qualifier
 					removeAttributeValueQuotes := strings.Replace(trimmedLine, "\"", "", -1)
 
-					parameters.attributeValue = parameters.attributeValue + removeAttributeValueQuotes
+					parser.parameters.attributeValue = parser.parameters.attributeValue + removeAttributeValueQuotes
 				}
-			} else if strings.Contains(parameters.currentLine, "/") { // current line is a new qualifier
-				trimmedCurrentLine := strings.TrimSpace(parameters.currentLine)
+			} else if strings.Contains(parser.parameters.currentLine, "/") { // current line is a new qualifier
+				trimmedCurrentLine := strings.TrimSpace(parser.parameters.currentLine)
 				if trimmedCurrentLine[0] != '/' { // if we have an exception case, like (adenine(1518)-N(6)/adenine(1519)-N(6))-
-					parameters.attributeValue = parameters.attributeValue + trimmedCurrentLine
+					parser.parameters.attributeValue = parser.parameters.attributeValue + trimmedCurrentLine
 					continue
 				}
 				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" || parameters.emptyAttribute {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
-					parameters.emptyAttribute = false
+				if parser.parameters.attributeValue != "" || parser.parameters.emptyAttribute {
+					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
+					parser.parameters.emptyAttribute = false
 				}
-				parameters.attributeValue = ""
+				parser.parameters.attributeValue = ""
 				splitAttribute := strings.Split(line, "=")
 				trimmedSpaceAttribute := strings.TrimSpace(splitAttribute[0])
 				removedForwardSlashAttribute := strings.Replace(trimmedSpaceAttribute, "/", "", 1)
 
-				parameters.attribute = removedForwardSlashAttribute
+				parser.parameters.attribute = removedForwardSlashAttribute
 
 				var removeAttributeValueQuotes string
 				if len(splitAttribute) == 1 { // handle case of ` /pseudo `, which has no text
 					removeAttributeValueQuotes = ""
-					parameters.emptyAttribute = true
+					parser.parameters.emptyAttribute = true
 				} else { // this is normally triggered
 					removeAttributeValueQuotes = strings.Replace(splitAttribute[1], "\"", "", -1)
 				}
-				parameters.attributeValue = removeAttributeValueQuotes
-				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
+				parser.parameters.attributeValue = removeAttributeValueQuotes
+				parser.parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
 			}
 
 		case "sequence":
 			if len(line) < 2 { // throw error if line is malformed
-				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+				return nil, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			} else if line[0:2] == "//" { // end of sequence
-				parameters.genbank.Sequence = parameters.sequenceBuilder.String()
+				parser.parameters.genbank.Sequence = parser.parameters.sequenceBuilder.String()
 
-				genbanks = append(genbanks, parameters.genbank)
-				parameters.genbankStarted = false
-				parameters.sequenceBuilder.Reset()
+				parser.parameters.genbankStarted = false
+				parser.parameters.sequenceBuilder.Reset()
+				return &parser.parameters.genbank, nil
 			} else { // add line to total sequence
-				parameters.sequenceBuilder.WriteString(sequenceRegex.ReplaceAllString(line, ""))
+				parser.parameters.sequenceBuilder.WriteString(sequenceRegex.ReplaceAllString(line, ""))
 			}
 		default:
-			log.Warnf("Unknown parse step: %s", parameters.parseStep)
-			parameters.genbankStarted = false
+			log.Warnf("Unknown parse step: %s", parser.parameters.parseStep)
+			parser.parameters.genbankStarted = false
 		}
 	}
-	return genbanks, nil
+	return nil, io.EOF
 }
 
 func countLeadingSpaces(line string) int {

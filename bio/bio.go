@@ -18,6 +18,7 @@ import (
 
 	"github.com/TimothyStiles/poly/bio/fasta"
 	"github.com/TimothyStiles/poly/bio/fastq"
+	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/bio/pileup"
 	"github.com/TimothyStiles/poly/bio/slow5"
 	"golang.org/x/sync/errgroup"
@@ -29,6 +30,7 @@ type Format int
 const (
 	Fasta Format = iota
 	Fastq
+	Genbank
 	Slow5
 	Pileup
 )
@@ -41,10 +43,11 @@ const (
 // particular reason to use a different number.
 const defaultMaxLineLength int = bufio.MaxScanTokenSize // 64kB is a magic number often used by the Go stdlib for parsing.
 var DefaultMaxLengths = map[Format]int{
-	Fasta:  defaultMaxLineLength,
-	Fastq:  8 * 1024 * 1024,   // The longest single nanopore sequencing read so far is 4Mb. A 8mb buffer should be large enough for any sequencing.
-	Slow5:  128 * 1024 * 1024, // 128mb is used because slow5 lines can be massive, since a single read can be many millions of base pairs.
-	Pileup: defaultMaxLineLength,
+	Fasta:   defaultMaxLineLength,
+	Fastq:   8 * 1024 * 1024, // The longest single nanopore sequencing read so far is 4Mb. A 8mb buffer should be large enough for any sequencing.
+	Genbank: defaultMaxLineLength,
+	Slow5:   128 * 1024 * 1024, // 128mb is used because slow5 lines can be massive, since a single read can be many millions of base pairs.
+	Pileup:  defaultMaxLineLength,
 }
 
 /******************************************************************************
@@ -66,7 +69,7 @@ Lower level interfaces
 // for this is needed at the last Next(), when it returns an io.EOF error. A
 // pointer is used to represent the difference between a null DataType and an
 // empty DataType.
-type parserInterface[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] interface {
+type parserInterface[DataType fasta.Record | fastq.Read | genbank.Genbank | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | genbank.Header | slow5.Header | pileup.Header] interface {
 	Header() (*DataTypeHeader, error)
 	Next() (*DataType, error)
 }
@@ -74,10 +77,14 @@ type parserInterface[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Li
 // The following checks that all DataType and DataTypeHeaders implement the io.WriteTo interface.
 var _ io.WriterTo = (*fasta.Record)(nil)
 var _ io.WriterTo = (*fastq.Read)(nil)
+
+// genbank
 var _ io.WriterTo = (*slow5.Read)(nil)
 var _ io.WriterTo = (*pileup.Line)(nil)
 var _ io.WriterTo = (*fasta.Header)(nil)
 var _ io.WriterTo = (*fastq.Header)(nil)
+
+// genbank
 var _ io.WriterTo = (*slow5.Header)(nil)
 var _ io.WriterTo = (*pileup.Header)(nil)
 
@@ -90,7 +97,7 @@ Higher level parse
 // Parser is generic bioinformatics file parser. It contains a LowerLevelParser
 // and implements useful functions on top of it: such as Parse(), ParseToChannel(), and
 // ParseWithHeader().
-type Parser[DataType fasta.Record | fastq.Read | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | slow5.Header | pileup.Header] struct {
+type Parser[DataType fasta.Record | fastq.Read | genbank.Genbank | slow5.Read | pileup.Line, DataTypeHeader fasta.Header | fastq.Header | genbank.Header | slow5.Header | pileup.Header] struct {
 	parserInterface parserInterface[DataType, DataTypeHeader]
 }
 
@@ -114,6 +121,17 @@ func NewFastqParser(r io.Reader) (*Parser[fastq.Read, fastq.Header], error) {
 // io.Reader and a user-given maxLineLength.
 func NewFastqParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[fastq.Read, fastq.Header], error) {
 	return &Parser[fastq.Read, fastq.Header]{parserInterface: fastq.NewParser(r, maxLineLength)}, nil
+}
+
+// NewGenbankParser initiates a new Genbank parser form an io.Reader.
+func NewGenbankParser(r io.Reader) (*Parser[genbank.Genbank, genbank.Header], error) {
+	return NewGenbankParserWithMaxLineLength(r, DefaultMaxLengths[Genbank])
+}
+
+// NewGenbankParserWithMaxLineLength initiates a new Genbank parser from an
+// io.Reader and a user-given maxLineLength.
+func NewGenbankParserWithMaxLineLength(r io.Reader, maxLineLength int) (*Parser[genbank.Genbank, genbank.Header], error) {
+	return &Parser[genbank.Genbank, genbank.Header]{parserInterface: genbank.NewParser(r, maxLineLength)}, nil
 }
 
 // NewSlow5Parser initiates a new SLOW5 parser from an io.Reader.
