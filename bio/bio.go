@@ -266,35 +266,11 @@ func (p *Parser[Data, Header]) ParseToChannel(ctx context.Context, channel chan<
 	}
 }
 
-// ManyFastaToChannel takes a list of FASTA parsers and pipes all
-// records/reads/lines to a single channel.
-func ManyFastaToChannel(ctx context.Context, parsers []*Parser[*fasta.Record, *fasta.Header], channel chan<- *fasta.Record) error {
-	return manyToChannel[*fasta.Record, *fasta.Header](ctx, parsers, channel)
-}
-
-// ManyFastqToChannel takes a list of FASTQ parsers and pipes all
-// records/reads/lines to a single channel.
-func ManyFastqToChannel(ctx context.Context, parsers []*Parser[*fastq.Read, *fastq.Header], channel chan<- *fastq.Read) error {
-	return manyToChannel[*fastq.Read, *fastq.Header](ctx, parsers, channel)
-}
-
-// ManySlow5ToChannel takes a list of SLOW5 parsers and pipes all
-// records/reads/lines to a single channel.
-func ManySlow5ToChannel(ctx context.Context, parsers []*Parser[*slow5.Read, *slow5.Header], channel chan<- *slow5.Read) error {
-	return manyToChannel[*slow5.Read, *slow5.Header](ctx, parsers, channel)
-}
-
-// ManyPileupToChannel takes a list of pileup parsers and pipes all
-// records/reads/lines to a single channel.
-func ManyPileupToChannel(ctx context.Context, parsers []*Parser[*pileup.Line, *pileup.Header], channel chan<- *pileup.Line) error {
-	return manyToChannel[*pileup.Line, *pileup.Header](ctx, parsers, channel)
-}
-
-// manyToChannel is a generic function that implements the ManyXXXToChannel
+// ManyToChannel is a generic function that implements the ManyXXXToChannel
 // functions. It properly does concurrent parsing of many parsers to a
 // single channel, then closes that channel. If any of the files fail to
 // parse, the entire pipeline exits and returns.
-func manyToChannel[Data io.WriterTo, Header io.WriterTo](ctx context.Context, parsers []*Parser[Data, Header], channel chan<- Data) error {
+func ManyToChannel[Data io.WriterTo, Header io.WriterTo](ctx context.Context, channel chan<- Data, parsers ...*Parser[Data, Header]) error {
 	errorGroup, ctx := errgroup.WithContext(ctx)
 	// For each parser, start a new goroutine to parse data to the channel
 	for _, p := range parsers {

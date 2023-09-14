@@ -107,6 +107,34 @@ DIDGDGQVNYEEFVQMMTAK*`)
 	// Output: ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK*
 }
 
+func ExampleManyToChannel() {
+	file1 := strings.NewReader(`>gi|5524211|gb|AAD44166.1| cytochrome b [Elephas maximus maximus]
+LCLYTHIGRNIYYGSYLYSETWNTGIMLLLITMATAFMGYVLPWGQMSFWGATVITNLFSAIPYIGTNLV
+EWIWGGFSVDKATLNRFFAFHFILPFTMVALAGVHLTFLHETGSNNPLGLTSDSDKIPFHPYYTIKDFLG
+LLILILLLLLLALLSPDMLGDPDNHMPADPLNTPLHIKPEWYFLFAYAILRSVPNKLGGVLALFLSIVIL
+GLMPFLHTSKHRSMMLRPLSQALFWTLTMDLLTLTWIGSQPVEYPYTIIGQMASILYFSIILAFLPIAGX
+IENY
+`)
+	file2 := strings.NewReader(`>MCHU - Calmodulin - Human, rabbit, bovine, rat, and chicken
+ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTID
+FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
+DIDGDGQVNYEEFVQMMTAK*`)
+	parser1, _ := bio.NewFastaParser(file1)
+	parser2, _ := bio.NewFastaParser(file2)
+
+	channel := make(chan *fasta.Record)
+	ctx := context.Background()
+	go func() { _ = bio.ManyToChannel(ctx, channel, parser1, parser2) }()
+
+	var records []*fasta.Record
+	for record := range channel {
+		records = append(records, record)
+	}
+
+	fmt.Println(len(records)) // Records come out in a stochastic order, so we just make sure there are 2
+	// Output: 2
+}
+
 func Example_writeAll() {
 	// The following can be replaced with a any io.Reader. For example,
 	// `file, err := os.Open(path)` for file would also work.

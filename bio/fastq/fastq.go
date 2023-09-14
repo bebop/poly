@@ -55,7 +55,7 @@ type Parser struct {
 	// reader keeps state of current reader.
 	reader bufio.Reader
 	line   uint
-	atEof  bool
+	atEOF  bool
 }
 
 // Header returns nil,nil.
@@ -88,7 +88,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // a line limit of 80 like fasta files have. So instead of a for loop, you
 // can just parse 4 lines at once.
 func (parser *Parser) Next() (*Read, error) {
-	if parser.atEof {
+	if parser.atEOF {
 		return &Read{}, io.EOF
 	}
 	// Initialization of parser state variables.
@@ -156,7 +156,7 @@ func (parser *Parser) Next() (*Read, error) {
 		if err != io.EOF {
 			return &Read{}, nil
 		}
-		parser.atEof = true
+		parser.atEOF = true
 	}
 	if len(line) <= 1 { // newline delimiter - actually checking for empty line
 		return &Read{}, fmt.Errorf("empty quality sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)

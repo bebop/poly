@@ -68,7 +68,7 @@ func (header *Header) WriteTo(w io.Writer) (int64, error) {
 type Parser struct {
 	reader bufio.Reader
 	line   uint
-	atEof  bool
+	atEOF  bool
 }
 
 // Header returns nil,nil.
@@ -86,7 +86,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // Next parses the next pileup row in a pileup file.
 // Next returns an EOF if encountered.
 func (parser *Parser) Next() (*Line, error) {
-	if parser.atEof {
+	if parser.atEOF {
 		return &Line{}, io.EOF
 	}
 	// Parse out a single line
@@ -95,7 +95,7 @@ func (parser *Parser) Next() (*Line, error) {
 		if err != io.EOF {
 			return &Line{}, err
 		}
-		parser.atEof = true
+		parser.atEOF = true
 	}
 	parser.line++
 	line := string(lineBytes)
