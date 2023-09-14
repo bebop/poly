@@ -74,18 +74,6 @@ type parserInterface[Data io.WriterTo, Header io.WriterTo] interface {
 	Next() (Data, error)
 }
 
-// The following checks that all Data and Headers implement the io.WriteTo interface.
-var _ io.WriterTo = (*fasta.Record)(nil)
-var _ io.WriterTo = (*fastq.Read)(nil)
-var _ io.WriterTo = (*genbank.Genbank)(nil)
-var _ io.WriterTo = (*slow5.Read)(nil)
-var _ io.WriterTo = (*pileup.Line)(nil)
-var _ io.WriterTo = (*fasta.Header)(nil)
-var _ io.WriterTo = (*fastq.Header)(nil)
-var _ io.WriterTo = (*genbank.Header)(nil)
-var _ io.WriterTo = (*slow5.Header)(nil)
-var _ io.WriterTo = (*pileup.Header)(nil)
-
 /******************************************************************************
 
 Higher level parse
