@@ -39,6 +39,7 @@ $$&%&%#$)*59;/767C378411,***,('11<;:,0039/0&()&'2(/*((4.1.09751).601+'#&&&,-**/0
 	const maxLineSize = 2 * 32 * 1024
 	parser := NewParser(file, maxLineSize)
 	read, err := parser.Next()
+	_, err = parser.Next()
 	if err != io.EOF {
 		t.Errorf("Parser got unknown error: %s", err)
 	}

@@ -389,7 +389,6 @@ func (sequence *Genbank) WriteTo(w io.Writer) (int64, error) {
 
 type parseLoopParameters struct {
 	newLocation      bool
-	quoteActive      bool
 	attribute        string
 	attributeValue   string
 	emptyAttribute   bool
@@ -476,7 +475,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
-				return nil, fmt.Errorf("Empty metadata line on line %d", lineNum)
+				return &Genbank{}, fmt.Errorf("Empty metadata line on line %d", lineNum)
 			}
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
@@ -497,7 +496,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 				case "REFERENCE":
 					reference, err := parseReferences(parser.parameters.metadataData)
 					if err != nil {
-						return nil, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return &Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
 					parser.parameters.genbank.Meta.References = append(parser.parameters.genbank.Meta.References, reference)
 
@@ -545,12 +544,12 @@ func (parser *Parser) Next() (*Genbank, error) {
 				for _, feature := range parser.parameters.features {
 					location, err := parseLocation(feature.Location.GbkLocationString)
 					if err != nil {
-						return nil, err
+						return &Genbank{}, err
 					}
 					feature.Location = location
 					err = parser.parameters.genbank.AddFeature(&feature)
 					if err != nil {
-						return nil, err
+						return &Genbank{}, err
 					}
 				}
 				continue
@@ -585,7 +584,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
-					return nil, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+					return &Genbank{}, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
 				}
 				parser.parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parser.parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
@@ -631,7 +630,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 
 		case "sequence":
 			if len(line) < 2 { // throw error if line is malformed
-				return nil, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+				return &Genbank{}, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
 			} else if line[0:2] == "//" { // end of sequence
 				parser.parameters.genbank.Sequence = parser.parameters.sequenceBuilder.String()
 
@@ -646,7 +645,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 			parser.parameters.genbankStarted = false
 		}
 	}
-	return nil, io.EOF
+	return &Genbank{}, io.EOF
 }
 
 func countLeadingSpaces(line string) int {

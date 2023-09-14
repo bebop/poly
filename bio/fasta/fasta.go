@@ -108,7 +108,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // to index where fastas start in a file or string.
 func (p *Parser) Next() (*Record, error) {
 	if !p.more {
-		return nil, io.EOF
+		return &Record{}, io.EOF
 	}
 	for p.scanner.Scan() {
 		line := p.scanner.Bytes()
@@ -149,7 +149,7 @@ func (p *Parser) Next() (*Record, error) {
 	if err != nil {
 		return &record, err
 	}
-	return &record, p.scanner.Err()
+	return &record, nil
 }
 
 func (p *Parser) newRecord() (Record, error) {

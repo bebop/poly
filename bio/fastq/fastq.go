@@ -55,6 +55,7 @@ type Parser struct {
 	// reader keeps state of current reader.
 	reader bufio.Reader
 	line   uint
+	atEof  bool
 }
 
 // Header returns nil,nil.
@@ -87,6 +88,9 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 // a line limit of 80 like fasta files have. So instead of a for loop, you
 // can just parse 4 lines at once.
 func (parser *Parser) Next() (*Read, error) {
+	if parser.atEof {
+		return &Read{}, io.EOF
+	}
 	// Initialization of parser state variables.
 	var (
 		// Parser looks for a line starting with '@'
@@ -102,7 +106,7 @@ func (parser *Parser) Next() (*Read, error) {
 	line, err = parser.reader.ReadSlice('\n')
 	parser.line++
 	if err != nil {
-		return nil, err
+		return &Read{}, err
 	}
 
 	line = line[:len(line)-1] // Exclude newline delimiter.
@@ -123,7 +127,7 @@ func (parser *Parser) Next() (*Read, error) {
 	line, err = parser.reader.ReadSlice('\n')
 	parser.line++
 	if err != nil {
-		return nil, err
+		return &Read{}, err
 	}
 	if len(line) <= 1 { // newline delimiter - actually checking for empty line
 		return &Read{}, fmt.Errorf("empty fastq sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
@@ -141,7 +145,7 @@ func (parser *Parser) Next() (*Read, error) {
 	_, err = parser.reader.ReadSlice('\n')
 	parser.line++
 	if err != nil {
-		return nil, err
+		return &Read{}, err
 	}
 
 	// parse quality
@@ -150,17 +154,18 @@ func (parser *Parser) Next() (*Read, error) {
 	if err != nil {
 		// If the line is EOF, just continue and finish off returning the new read.
 		if err != io.EOF {
-			return nil, err
+			return &Read{}, nil
 		}
+		parser.atEof = true
 	}
 	if len(line) <= 1 { // newline delimiter - actually checking for empty line
-		return nil, fmt.Errorf("empty quality sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
+		return &Read{}, fmt.Errorf("empty quality sequence for %q,  got to line %d: %w", seqIdentifier, parser.line, err)
 	}
 	quality = string(line[:len(line)-1])
 
 	// Parsing ended. Check for inconsistencies.
 	if lookingForIdentifier {
-		return nil, fmt.Errorf("did not find fastq start '@', got to line %d: %w", parser.line, err)
+		return &Read{}, fmt.Errorf("did not find fastq start '@', got to line %d: %w", parser.line, err)
 	}
 	fastq := Read{
 		Identifier: seqIdentifier,
@@ -171,7 +176,7 @@ func (parser *Parser) Next() (*Read, error) {
 	// Gotten to this point err is non-nil only in EOF case.
 	// We report this error to note the fastq may be incomplete/corrupt
 	// like in the case of using an io.LimitReader wrapping the underlying reader.
-	return &fastq, err
+	return &fastq, nil
 }
 
 // Reset discards all data in buffer and resets state.

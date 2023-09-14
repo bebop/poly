@@ -213,7 +213,7 @@ func NewParser(r io.Reader, maxLineSize int) (*Parser, error) {
 // Next parses the next read from a parser.
 func (parser *Parser) Next() (*Read, error) {
 	if parser.hitEOF {
-		return nil, io.EOF
+		return &Read{}, io.EOF
 	}
 	lineBytes, err := parser.reader.ReadSlice('\n')
 	if err != nil {

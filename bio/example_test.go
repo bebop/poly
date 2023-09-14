@@ -94,11 +94,11 @@ FPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREA
 DIDGDGQVNYEEFVQMMTAK*`)
 	parser, _ := bio.NewFastaParser(file)
 
-	channel := make(chan fasta.Record)
+	channel := make(chan *fasta.Record)
 	ctx := context.Background()
 	go func() { _ = parser.ParseToChannel(ctx, channel, false) }()
 
-	var records []fasta.Record
+	var records []*fasta.Record
 	for record := range channel {
 		records = append(records, record)
 	}
