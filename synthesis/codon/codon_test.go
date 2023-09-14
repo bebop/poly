@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/bio/genbank"
+	"github.com/TimothyStiles/poly/bio"
 	"github.com/google/go-cmp/cmp"
 	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +77,11 @@ func TestTranslationLowerCase(t *testing.T) {
 func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
+
 	codonTable := GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -107,7 +111,10 @@ func TestOptimize(t *testing.T) {
 
 func TestOptimizeSameSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	var sequence, _ = genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	var codonTable = GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -137,7 +144,10 @@ func TestOptimizeSameSeed(t *testing.T) {
 
 func TestOptimizeDifferentSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	var sequence, _ = genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	var codonTable = GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -273,12 +283,12 @@ JSON related tests begin here.
 ******************************************************************************/
 
 func TestWriteCodonJSON(t *testing.T) {
-	testCodonTable := ReadCodonJSON("../../data/bsub_codon_test.json")
-	WriteCodonJSON(testCodonTable, "../../data/codon_test1.json")
-	readTestCodonTable := ReadCodonJSON("../../data/codon_test1.json")
+	testCodonTable := ReadCodonJSON("../../../data/bsub_codon_test.json")
+	WriteCodonJSON(testCodonTable, "../../../data/codon_test1.json")
+	readTestCodonTable := ReadCodonJSON("../../../data/codon_test1.json")
 
 	// cleaning up test data
-	os.Remove("../../data/codon_test1.json")
+	os.Remove("../../../data/codon_test1.json")
 
 	if diff := cmp.Diff(testCodonTable, readTestCodonTable); diff != "" {
 		t.Errorf(" mismatch (-want +got):\n%s", diff)
@@ -293,7 +303,10 @@ Codon Compromise + Add related tests begin here.
 *****************************************************************************
 */
 func TestCompromiseCodonTable(t *testing.T) {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	codonTable := GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -313,7 +326,10 @@ func TestCompromiseCodonTable(t *testing.T) {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2, _ := genbank.Read("../../data/phix174.gb")
+	file2, _ := os.Open("../../data/phix174.gb")
+	defer file2.Close()
+	parser2, _ := bio.NewGenbankParser(file2)
+	sequence2, _ := parser2.Next()
 	codonTable2 := GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -361,7 +377,10 @@ func TestCapitalizationRegression(t *testing.T) {
 	// Tests to make sure that amino acids are capitalized
 	gfpTranslation := "MaSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	codonTable := GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions

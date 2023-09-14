@@ -3,9 +3,10 @@ package seqhash
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
-	"github.com/TimothyStiles/poly/bio/genbank"
+	"github.com/TimothyStiles/poly/bio"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -66,7 +67,10 @@ func TestHash(t *testing.T) {
 }
 
 func TestLeastRotation(t *testing.T) {
-	sequence, _ := genbank.Read("../data/puc19.gbk")
+	file, _ := os.Open("../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	var sequenceBuffer bytes.Buffer
 
 	sequenceBuffer.WriteString(sequence.Sequence)

@@ -2,8 +2,9 @@ package seqhash_test
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/TimothyStiles/poly/bio/genbank"
+	"github.com/TimothyStiles/poly/bio"
 	"github.com/TimothyStiles/poly/seqhash"
 )
 
@@ -31,7 +32,11 @@ func ExampleHash() {
 }
 
 func ExampleRotateSequence() {
-	sequence, _ := genbank.Read("../data/puc19.gbk")
+	file, _ := os.Open("../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
+
 	sequenceLength := len(sequence.Sequence)
 	testSequence := sequence.Sequence[sequenceLength/2:] + sequence.Sequence[0:sequenceLength/2]
 

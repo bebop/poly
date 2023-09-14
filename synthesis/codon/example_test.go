@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TimothyStiles/poly/bio/genbank"
+	"github.com/TimothyStiles/poly/bio"
 	"github.com/TimothyStiles/poly/synthesis/codon"
 )
 
@@ -21,7 +21,10 @@ func ExampleTranslate() {
 func ExampleOptimize() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	codonTable := codon.GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -99,7 +102,10 @@ func ExampleWriteCodonJSON() {
 }
 
 func ExampleCompromiseCodonTable() {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	codonTable := codon.GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -119,7 +125,11 @@ func ExampleCompromiseCodonTable() {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2, _ := genbank.Read("../../data/phix174.gb")
+	file2, _ := os.Open("../../data/phix174.gb")
+	defer file2.Close()
+	parser2, _ := bio.NewGenbankParser(file2)
+	sequence2, _ := parser2.Next()
+
 	codonTable2 := codon.GetCodonTable(11)
 	// a string builder to build a single concatenated string of all coding regions
 	var codingRegionsBuilder2 strings.Builder
@@ -150,7 +160,10 @@ func ExampleCompromiseCodonTable() {
 }
 
 func ExampleAddCodonTable() {
-	sequence, _ := genbank.Read("../../data/puc19.gbk")
+	file, _ := os.Open("../../data/puc19.gbk")
+	defer file.Close()
+	parser, _ := bio.NewGenbankParser(file)
+	sequence, _ := parser.Next()
 	codonTable := codon.GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
@@ -170,7 +183,10 @@ func ExampleAddCodonTable() {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	sequence2, _ := genbank.Read("../../data/phix174.gb")
+	file2, _ := os.Open("../../data/phix174.gb")
+	defer file2.Close()
+	parser2, _ := bio.NewGenbankParser(file2)
+	sequence2, _ := parser2.Next()
 	codonTable2 := codon.GetCodonTable(11)
 
 	// a string builder to build a single concatenated string of all coding regions
