@@ -99,6 +99,13 @@ func (parser *Parser) Next() (*Line, error) {
 	}
 	parser.line++
 	line := string(lineBytes)
+
+	// In this case, the file has ended on a newline. Just return
+	// with an io.EOF
+	if len(strings.TrimSpace(line)) == 0 && parser.atEOF {
+		return &Line{}, io.EOF
+	}
+
 	line = line[:len(line)-1] // Exclude newline delimiter.
 
 	// Check that there are 6 values, as defined by the pileup format
