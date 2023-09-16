@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const maxLineSize = 2 * 32 * 1024
@@ -247,10 +249,8 @@ func TestSvb(t *testing.T) {
 		rawSignal := read.RawSignal
 		mask, data := SvbCompressRawSignal(rawSignal)
 		rawSignalDecompressed := SvbDecompressRawSignal(len(rawSignal), mask, data)
-		for idx := range rawSignal {
-			if rawSignal[idx] != rawSignalDecompressed[idx] {
-				t.Errorf("Read signal at readNum %d idx %d didn't match decompressed signal %d", readNum, rawSignal[idx], rawSignalDecompressed[idx])
-			}
+		if !cmp.Equal(rawSignal, rawSignalDecompressed) {
+			t.Errorf("Read signal at readNum %d (%v) didn't match decompressed signal %v", readNum, rawSignal, rawSignalDecompressed)
 		}
 	}
 }
