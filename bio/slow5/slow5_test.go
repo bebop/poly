@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const maxLineSize = 2 * 32 * 1024
@@ -220,5 +222,32 @@ func TestSimpleExample(t *testing.T) {
 	read, _ := parser.Next()
 	if read.RawSignal[0] != 430 {
 		t.Errorf("Should have gotten 430. Got: %d", read.RawSignal[0])
+	}
+}
+
+func TestSvb(t *testing.T) {
+	file, _ := os.Open("data/example.slow5")
+	defer file.Close()
+	const maxLineSize = 2 * 32 * 1024
+	parser, _ := NewParser(file, maxLineSize)
+	var outputReads []Read
+	for {
+		read, err := parser.Next()
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				t.Errorf("Got unknown error: %s", err)
+			}
+			break
+		}
+		outputReads = append(outputReads, *read)
+	}
+
+	for readNum, read := range outputReads {
+		rawSignal := read.RawSignal
+		mask, data := SvbCompressRawSignal(rawSignal)
+		rawSignalDecompressed := SvbDecompressRawSignal(len(rawSignal), mask, data)
+		if !cmp.Equal(rawSignal, rawSignalDecompressed) {
+			t.Errorf("Read signal at readNum %d (%v) didn't match decompressed signal %v", readNum, rawSignal, rawSignalDecompressed)
+		}
 	}
 }
