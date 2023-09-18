@@ -8,6 +8,7 @@ import (
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
@@ -229,7 +230,7 @@ func TestGetCodonFrequency(t *testing.T) {
 	codonFrequencyHashMap := getCodonFrequency(codonString)
 
 	if len(codonFrequencyHashMap) != 64 {
-		t.Errorf("TestGetCodonFrequency has failed. codonFrequencyHashMap does not contain every codon.")
+		t.Errorf("TestGetCodonFrequency has failed. codonFrequencyHashMap does not contain every ")
 	}
 
 	for codon, frequency := range codonFrequencyHashMap {
@@ -241,7 +242,7 @@ func TestGetCodonFrequency(t *testing.T) {
 	doubleCodonFrequencyHashMap := getCodonFrequency(codonString + codonString)
 
 	if len(doubleCodonFrequencyHashMap) != 64 {
-		t.Errorf("TestGetCodonFrequency has failed. doubleCodonFrequencyHashMap does not contain every codon.")
+		t.Errorf("TestGetCodonFrequency has failed. doubleCodonFrequencyHashMap does not contain every ")
 	}
 
 	for codon, frequency := range doubleCodonFrequencyHashMap {
@@ -386,5 +387,175 @@ func TestCapitalizationRegression(t *testing.T) {
 
 	if optimizedSequenceTranslation != strings.ToUpper(gfpTranslation) {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
+}
+
+func TestGenerateCodonTable(t *testing.T) {
+	t.Parallel()
+
+	sortStrings := cmpopts.SortSlices((func(a, b string) bool { return a < b }))
+	sortAminoAcids := cmpopts.SortSlices(func(a, b AminoAcid) bool { return a.Letter < b.Letter })
+	sortCodons := cmpopts.SortSlices(func(a, b Codon) bool { return a.Triplet < b.Triplet })
+
+	tests := []struct {
+		name string
+
+		aminoAcids string
+		starts     string
+
+		wantCodonTable codonTable
+	}{
+		{
+			name: "ok",
+
+			aminoAcids: "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
+			starts:     "---M------**--*----M---------------M----------------------------",
+
+			wantCodonTable: codonTable{
+				StartCodons: []string{
+					"TTG",
+					"CTG",
+					"ATG",
+				},
+				StopCodons: []string{
+					"TAA",
+					"TAG",
+					"TGA",
+				},
+				AminoAcids: []AminoAcid{
+					{
+						Letter: "Y",
+						Codons: []Codon{{Triplet: "TAT", Weight: 1}, {Triplet: "TAC", Weight: 1}},
+					},
+					{
+						Letter: "*",
+						Codons: []Codon{
+							{Triplet: "TAA", Weight: 1}, {Triplet: "TAG", Weight: 1},
+							{Triplet: "TGA", Weight: 1},
+						},
+					},
+					{
+						Letter: "Q",
+						Codons: []Codon{{Triplet: "CAA", Weight: 1}, {Triplet: "CAG", Weight: 1}},
+					},
+					{
+						Letter: "I",
+						Codons: []Codon{
+							{Triplet: "ATT", Weight: 1}, {Triplet: "ATC", Weight: 1},
+							{Triplet: "ATA", Weight: 1},
+						},
+					},
+					{Letter: "M", Codons: []Codon{{Triplet: "ATG", Weight: 1}}},
+					{
+						Letter: "A",
+						Codons: []Codon{
+							{Triplet: "GCT", Weight: 1}, {Triplet: "GCC", Weight: 1},
+							{Triplet: "GCA", Weight: 1}, {Triplet: "GCG", Weight: 1},
+						},
+					},
+					{
+						Letter: "D",
+						Codons: []Codon{{Triplet: "GAT", Weight: 1}, {Triplet: "GAC", Weight: 1}},
+					},
+					{
+						Letter: "S",
+						Codons: []Codon{
+							{Triplet: "TCT", Weight: 1}, {Triplet: "TCC", Weight: 1},
+							{Triplet: "TCA", Weight: 1}, {Triplet: "TCG", Weight: 1},
+							{Triplet: "AGT", Weight: 1}, {Triplet: "AGC", Weight: 1},
+						},
+					},
+					{
+						Letter: "C",
+						Codons: []Codon{{Triplet: "TGT", Weight: 1}, {Triplet: "TGC", Weight: 1}},
+					},
+					{
+						Letter: "R",
+						Codons: []Codon{
+							{Triplet: "CGT", Weight: 1}, {Triplet: "CGC", Weight: 1},
+							{Triplet: "CGA", Weight: 1}, {Triplet: "CGG", Weight: 1},
+							{Triplet: "AGA", Weight: 1}, {Triplet: "AGG", Weight: 1},
+						},
+					},
+					{
+						Letter: "N",
+						Codons: []Codon{{Triplet: "AAT", Weight: 1}, {Triplet: "AAC", Weight: 1}},
+					},
+					{
+						Letter: "V",
+						Codons: []Codon{
+							{Triplet: "GTT", Weight: 1}, {Triplet: "GTC", Weight: 1},
+							{Triplet: "GTA", Weight: 1}, {Triplet: "GTG", Weight: 1},
+						},
+					},
+					{
+						Letter: "F",
+						Codons: []Codon{{Triplet: "TTT", Weight: 1}, {Triplet: "TTC", Weight: 1}},
+					},
+					{
+						Letter: "L",
+						Codons: []Codon{
+							{Triplet: "TTA", Weight: 1}, {Triplet: "TTG", Weight: 1},
+							{Triplet: "CTT", Weight: 1}, {Triplet: "CTC", Weight: 1},
+							{Triplet: "CTA", Weight: 1}, {Triplet: "CTG", Weight: 1},
+						},
+					},
+					{
+						Letter: "P",
+						Codons: []Codon{
+							{Triplet: "CCT", Weight: 1}, {Triplet: "CCC", Weight: 1},
+							{Triplet: "CCA", Weight: 1}, {Triplet: "CCG", Weight: 1},
+						},
+					},
+					{Letter: "W", Codons: []Codon{{Triplet: "TGG", Weight: 1}}},
+					{
+						Letter: "H",
+						Codons: []Codon{{Triplet: "CAT", Weight: 1}, {Triplet: "CAC", Weight: 1}},
+					},
+					{
+						Letter: "T",
+						Codons: []Codon{
+							{Triplet: "ACT", Weight: 1}, {Triplet: "ACC", Weight: 1},
+							{Triplet: "ACA", Weight: 1}, {Triplet: "ACG", Weight: 1},
+						},
+					},
+					{
+						Letter: "K",
+						Codons: []Codon{{Triplet: "AAA", Weight: 1}, {Triplet: "AAG", Weight: 1}},
+					},
+					{
+						Letter: "E",
+						Codons: []Codon{{Triplet: "GAA", Weight: 1}, {Triplet: "GAG", Weight: 1}},
+					},
+					{
+						Letter: "G",
+						Codons: []Codon{
+							{Triplet: "GGT", Weight: 1}, {Triplet: "GGC", Weight: 1},
+							{Triplet: "GGA", Weight: 1}, {Triplet: "GGG", Weight: 1},
+						},
+					},
+				},
+				Stats: &Stats{
+					StartCodonCount: map[string]int{
+						"ATG": 1,
+						"CTG": 1,
+						"TTG": 1,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		var tt = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := generateCodonTable(tt.aminoAcids, tt.starts)
+
+			if !cmp.Equal(got, tt.wantCodonTable, sortCodons, sortAminoAcids, sortStrings) {
+				t.Errorf("got and tt.wantCodonTable didn't match %s", cmp.Diff(got, tt.wantCodonTable))
+			}
+		})
 	}
 }
