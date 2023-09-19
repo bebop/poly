@@ -535,13 +535,6 @@ func TestGenerateCodonTable(t *testing.T) {
 						},
 					},
 				},
-				Stats: &Stats{
-					StartCodonCount: map[string]int{
-						"ATG": 1,
-						"CTG": 1,
-						"TTG": 1,
-					},
-				},
 			},
 		},
 	}

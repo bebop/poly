@@ -91,27 +91,8 @@ type Table interface {
 	GetAminoAcids() []AminoAcid
 	GetStartCodons() []string
 	GetStopCodons() []string
-	GetStats() *Stats
 	IsEmpty() bool
 	OptimizeTable(string) Table
-}
-
-// Stats denotes a set of computed codon table statistics
-type Stats struct {
-	StartCodonCount map[string]int `json:"start_codons_counts"`
-}
-
-// Add merges the given stats with this instance
-func (s *Stats) Add(toAdd *Stats) {
-	for codon, count := range toAdd.StartCodonCount {
-		s.StartCodonCount[codon] = s.StartCodonCount[codon] + count
-	}
-}
-
-func NewStats() *Stats {
-	return &Stats{
-		StartCodonCount: map[string]int{},
-	}
 }
 
 // codonTable holds information for a codon table.
@@ -119,11 +100,6 @@ type codonTable struct {
 	StartCodons []string    `json:"start_codons"`
 	StopCodons  []string    `json:"stop_codons"`
 	AminoAcids  []AminoAcid `json:"amino_acids"`
-	Stats       *Stats      `json:"stats"`
-}
-
-func (table codonTable) GetStats() *Stats {
-	return table.Stats
 }
 
 // Translate translates a codon sequence to an amino acid sequence
@@ -197,8 +173,10 @@ func Optimize(aminoAcids string, codonTable Table, randomState ...int) (string, 
 		if !ok {
 			return "", invalidAminoAcidError{aminoAcid}
 		}
+
 		codons.WriteString(chooser.Pick().(string))
 	}
+
 	return codons.String(), nil
 }
 
@@ -348,8 +326,6 @@ Tim
 
 // Function to generate default codon tables from NCBI https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
 func generateCodonTable(aminoAcids, starts string) codonTable {
-	stats := NewStats()
-
 	base1 := "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
 	base2 := "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
 	base3 := "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
@@ -364,7 +340,6 @@ func generateCodonTable(aminoAcids, starts string) codonTable {
 		triplet := string([]byte{base1[i], base2[i], base3[i]})
 		aminoAcidMap[aminoAcid] = append(aminoAcidMap[aminoAcid], Codon{triplet, 1})
 		if starts[i] == 77 { // M rune
-			stats.StartCodonCount[triplet]++
 			startCodons = append(startCodons, triplet)
 		}
 		if starts[i] == 42 { // * rune
@@ -376,7 +351,7 @@ func generateCodonTable(aminoAcids, starts string) codonTable {
 	for k, v := range aminoAcidMap {
 		aminoAcidSlice = append(aminoAcidSlice, AminoAcid{string(k), v})
 	}
-	return codonTable{startCodons, stopCodons, aminoAcidSlice, stats}
+	return codonTable{startCodons, stopCodons, aminoAcidSlice}
 }
 
 // GetCodonTable takes the index of desired NCBI codon table and returns it.
@@ -535,10 +510,6 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 	c.StartCodons = firstCodonTable.GetStartCodons()
 	c.StopCodons = firstCodonTable.GetStopCodons()
 
-	// we only use the start codons of the first table in the compromise table, so we use its stats too
-	c.Stats = NewStats()
-	c.Stats.Add(firstCodonTable.GetStats())
-
 	// Initialize the finalAminoAcid list for the output codonTable
 	var finalAminoAcids []AminoAcid
 
@@ -606,8 +577,6 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new codonTable.
 func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
-	finalStats := NewStats()
-
 	// Add up codons
 	var finalAminoAcids []AminoAcid
 	for _, firstAa := range firstCodonTable.GetAminoAcids() {
@@ -624,13 +593,9 @@ func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	finalStats.Add(firstCodonTable.GetStats())
-	finalStats.Add(secondCodonTable.GetStats())
-
 	return codonTable{
 		StartCodons: firstCodonTable.GetStartCodons(),
 		StopCodons:  firstCodonTable.GetStopCodons(),
 		AminoAcids:  finalAminoAcids,
-		Stats:       finalStats,
 	}
 }
