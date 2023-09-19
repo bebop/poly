@@ -230,7 +230,7 @@ func TestGetCodonFrequency(t *testing.T) {
 	codonFrequencyHashMap := getCodonFrequency(codonString)
 
 	if len(codonFrequencyHashMap) != 64 {
-		t.Errorf("TestGetCodonFrequency has failed. codonFrequencyHashMap does not contain every ")
+		t.Errorf("TestGetCodonFrequency has failed. codonFrequencyHashMap does not contain every codon.")
 	}
 
 	for codon, frequency := range codonFrequencyHashMap {
@@ -242,7 +242,7 @@ func TestGetCodonFrequency(t *testing.T) {
 	doubleCodonFrequencyHashMap := getCodonFrequency(codonString + codonString)
 
 	if len(doubleCodonFrequencyHashMap) != 64 {
-		t.Errorf("TestGetCodonFrequency has failed. doubleCodonFrequencyHashMap does not contain every ")
+		t.Errorf("TestGetCodonFrequency has failed. doubleCodonFrequencyHashMap does not contain every codon.")
 	}
 
 	for codon, frequency := range doubleCodonFrequencyHashMap {
