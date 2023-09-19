@@ -86,7 +86,3 @@ func (m *Mash) Distance(other *Mash) float64 {
 	}
 	return 1 - (float64(sameHashes) / float64(len(m.Sketches)))
 }
-
-// for each kmer in the window, hash it to a 32 bit number
-// keep the minimum hash value of all the kmers in the window up to a given sketch size
-// the sketch is a vector of the minimum hash values
