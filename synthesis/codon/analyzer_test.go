@@ -49,8 +49,8 @@ func TestComputeStats(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if !cmp.Equal(stats, tt.wantStats, sortStrings) {
-				t.Errorf("stats and tt.wantStats didn't match %s", cmp.Diff(stats, tt.wantStats, sortStrings))
+			if diff := cmp.Diff(stats, tt.wantStats); diff != "" {
+				t.Errorf("stats and tt.wantStats didn't match (-got,+want): %s", diff)
 			}
 		})
 	}
