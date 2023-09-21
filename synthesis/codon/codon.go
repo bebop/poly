@@ -161,7 +161,30 @@ func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
 	return table.AminoAcids
 }
 
-func (table *TranslationTable) UpdateWeights(data genbank.Genbank) (*Stats, error) {
+func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
+	// regenerate a map of codons -> amino acid
+
+	var updatedTranslationMap = make(map[string]string)
+	for _, aminoAcid := range table.AminoAcids {
+		for _, codon := range aminoAcid.Codons {
+			updatedTranslationMap[codon.Triplet] = aminoAcid.Letter
+		}
+	}
+
+	table.TranslationMap = updatedTranslationMap
+
+	// Update Chooser
+	updatedChoosers, err := newAminoAcidChoosers(table.AminoAcids)
+	if err != nil {
+		return err
+	}
+
+	table.Choosers = updatedChoosers
+
+	return nil
+}
+
+func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) (*Stats, error) {
 	stats := NewStats()
 
 	codingRegions, err := extractCodingRegion(data)
@@ -179,26 +202,12 @@ func (table *TranslationTable) UpdateWeights(data genbank.Genbank) (*Stats, erro
 	}
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	table.AminoAcids = weightAminoAcids(strings.Join(codingRegions, ""), table.AminoAcids)
+	newWeights := weightAminoAcids(strings.Join(codingRegions, ""), table.AminoAcids)
 
-	// regenerate a map of codons -> amino acid
-
-	var updatedTranslationMap = make(map[string]string)
-	for _, aminoAcid := range table.AminoAcids {
-		for _, codon := range aminoAcid.Codons {
-			updatedTranslationMap[codon.Triplet] = aminoAcid.Letter
-		}
-	}
-
-	table.TranslationMap = updatedTranslationMap
-
-	// Update Chooser
-	updatedChoosers, err := newAminoAcidChoosers(table.AminoAcids)
+	err = table.UpdateWeights(newWeights)
 	if err != nil {
 		return nil, err
 	}
-
-	table.Choosers = updatedChoosers
 
 	return stats, nil
 }
@@ -642,7 +651,7 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable *TranslationTable, c
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	mergedTable.AminoAcids = finalAminoAcids
+	mergedTable.UpdateWeights(finalAminoAcids)
 
 	return mergedTable, nil
 }
@@ -667,7 +676,7 @@ func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) *Transla
 	}
 
 	mergedTable := firstCodonTable.Copy()
-	mergedTable.AminoAcids = finalAminoAcids
+	mergedTable.UpdateWeights(finalAminoAcids)
 
 	return mergedTable
 }
