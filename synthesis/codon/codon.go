@@ -106,29 +106,117 @@ type Table interface {
 	OptimizeTable(string) Table
 }
 
-// codonTable holds information for a codon table.
-type codonTable struct {
+// TranslationTable holds information for a codon table.
+type TranslationTable struct {
 	StartCodons []string    `json:"start_codons"`
 	StopCodons  []string    `json:"stop_codons"`
 	AminoAcids  []AminoAcid `json:"amino_acids"`
+
+	TranslationMap  map[string]string
+	StartCodonTable map[string]string
+	Choosers        map[string]weightedRand.Chooser
 }
 
-// Translate translates a codon sequence to an amino acid sequence
-func Translate(sequence string, codonTable Table) (string, error) {
-	if codonTable.IsEmpty() {
-		return "", errEmptyCodonTable
+func (table *TranslationTable) Copy() *TranslationTable {
+	return &TranslationTable{
+		StartCodons: table.StartCodons,
+		StopCodons:  table.StopCodons,
+		AminoAcids:  table.AminoAcids,
+
+		StartCodonTable: table.StartCodonTable,
+		TranslationMap:  table.TranslationMap,
+		Choosers:        table.Choosers,
 	}
-	if len(sequence) == 0 {
+}
+
+func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState ...int) (string, error) {
+	// Finding any given aminoAcid is dependent upon it being capitalized, so
+	// we do that here.
+	aminoAcids = strings.ToUpper(aminoAcids)
+
+	if len(aminoAcids) == 0 {
+		return "", errEmptyAminoAcidString
+	}
+
+	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
+	if len(randomState) > 0 {
+		rand.Seed(int64(randomState[0]))
+	} else {
+		rand.Seed(time.Now().UTC().UnixNano())
+	}
+
+	var codons strings.Builder
+	codonChooser := table.Choosers
+
+	for _, aminoAcid := range aminoAcids {
+		chooser, ok := codonChooser[string(aminoAcid)]
+		if !ok {
+			return "", invalidAminoAcidError{aminoAcid}
+		}
+
+		codons.WriteString(chooser.Pick().(string))
+	}
+
+	return codons.String(), nil
+}
+
+func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
+	return table.AminoAcids
+}
+
+func (table *TranslationTable) UpdateWeights(data genbank.Genbank) (*Stats, error) {
+	stats := NewStats()
+
+	codingRegions, err := extractCodingRegion(data)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sequence := range codingRegions {
+		stats.StartCodonCount[sequence[:3]]++
+	}
+
+	if len(codingRegions) == 0 {
+		return nil, errNoCodingRegions
+	}
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
+	table.AminoAcids = weightAminoAcids(strings.Join(codingRegions, ""), table.AminoAcids)
+
+	// regenerate a map of codons -> amino acid
+
+	var updatedTranslationMap = make(map[string]string)
+	for _, aminoAcid := range table.AminoAcids {
+		for _, codon := range aminoAcid.Codons {
+			updatedTranslationMap[codon.Triplet] = aminoAcid.Letter
+		}
+	}
+
+	table.TranslationMap = updatedTranslationMap
+
+	// Update Chooser
+	updatedChoosers, err := newAminoAcidChoosers(table.AminoAcids)
+	if err != nil {
+		return nil, err
+	}
+
+	table.Choosers = updatedChoosers
+
+	return stats, nil
+}
+
+func (table *TranslationTable) Translate(dnaSeq string) (string, error) {
+	if dnaSeq == "" {
 		return "", errEmptySequenceString
 	}
 
 	var aminoAcids strings.Builder
 	var currentCodon strings.Builder
-	translationTable := codonTable.GenerateTranslationTable()
-	startCodonTable := codonTable.GenerateStartCodonTable()
+	translationTable := table.TranslationMap
+	startCodonTable := table.StartCodonTable
 
 	startCodonReached := false
-	for _, letter := range sequence {
+	for _, letter := range dnaSeq {
 		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
 
