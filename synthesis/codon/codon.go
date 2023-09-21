@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TimothyStiles/poly/io/genbank"
 	weightedRand "github.com/mroth/weightedrand"
 )
 
@@ -57,6 +58,7 @@ with a whole section on how it works and why it's gotta be that way.
 
 var (
 	errEmptyCodonTable      = errors.New("empty codon table")
+	errNoCodingRegions      = errors.New("no coding regions found")
 	errEmptyAminoAcidString = errors.New("empty amino acid string")
 	errEmptySequenceString  = errors.New("empty sequence string")
 	newChooserFn            = weightedRand.NewChooser
