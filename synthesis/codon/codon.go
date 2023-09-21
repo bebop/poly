@@ -73,9 +73,10 @@ func (e invalidAminoAcidError) Error() string {
 	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
 }
 
-// Stats denotes a set of computed codon table statistics
+// Stats denotes a set of stats computed from a genebank file used to update a table's weights
 type Stats struct {
 	StartCodonCount map[string]int
+	GeneCount       int
 }
 
 func NewStats() *Stats {
@@ -170,6 +171,7 @@ func (table *TranslationTable) UpdateWeights(data genbank.Genbank) (*Stats, erro
 
 	for _, sequence := range codingRegions {
 		stats.StartCodonCount[sequence[:3]]++
+		stats.GeneCount++
 	}
 
 	if len(codingRegions) == 0 {
