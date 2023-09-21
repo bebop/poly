@@ -512,21 +512,21 @@ Keoni
 ******************************************************************************/
 
 // ParseCodonJSON parses a codonTable JSON file.
-func ParseCodonJSON(file []byte) Table {
-	var codonTable codonTable
+func ParseCodonJSON(file []byte) *TranslationTable {
+	var codonTable TranslationTable
 	_ = json.Unmarshal(file, &codonTable)
-	return codonTable
+	return &codonTable
 }
 
 // ReadCodonJSON reads a codonTable JSON file.
-func ReadCodonJSON(path string) Table {
+func ReadCodonJSON(path string) *TranslationTable {
 	file, _ := os.ReadFile(path)
 	codonTable := ParseCodonJSON(file)
 	return codonTable
 }
 
 // WriteCodonJSON writes a codonTable struct out to JSON.
-func WriteCodonJSON(codonTable Table, path string) {
+func WriteCodonJSON(codonTable *TranslationTable, path string) {
 	file, _ := json.MarshalIndent(codonTable, "", " ")
 	_ = os.WriteFile(path, file, 0644)
 }
