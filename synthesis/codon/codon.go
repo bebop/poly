@@ -71,6 +71,17 @@ func (e invalidAminoAcidError) Error() string {
 	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
 }
 
+// Stats denotes a set of computed codon table statistics
+type Stats struct {
+	StartCodonCount map[string]int
+}
+
+func NewStats() *Stats {
+	return &Stats{
+		StartCodonCount: map[string]int{},
+	}
+}
+
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string `json:"triplet"`
