@@ -562,27 +562,26 @@ Keoni
 
 // CompromiseCodonTable takes 2 CodonTables and makes a new codonTable
 // that is an equal compromise between the two tables.
-func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float64) (Table, error) {
-	// Initialize output codonTable, c
-	var c codonTable
+func CompromiseCodonTable(firstCodonTable, secondCodonTable *TranslationTable, cutOff float64) (*TranslationTable, error) {
+	// Copy first table to base our merge on
+	//
+	// this take start and stop strings from first table
+	// and use them as start + stops in final codonTable
+	mergedTable := firstCodonTable.Copy()
+
 	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
-		return c, errors.New("cut off too low, cannot be less than 0")
+		return mergedTable, errors.New("cut off too low, cannot be less than 0")
 	}
 	if cutOff > 1 {
-		return c, errors.New("cut off too high, cannot be greater than 1")
+		return mergedTable, errors.New("cut off too high, cannot be greater than 1")
 	}
-
-	// Take start and stop strings from first table
-	// and use them as start + stops in final codonTable
-	c.StartCodons = firstCodonTable.GetStartCodons()
-	c.StopCodons = firstCodonTable.GetStopCodons()
 
 	// Initialize the finalAminoAcid list for the output codonTable
 	var finalAminoAcids []AminoAcid
 
 	// Loop over all AminoAcids represented in the first codonTable
-	for _, firstAa := range firstCodonTable.GetAminoAcids() {
+	for _, firstAa := range firstCodonTable.AminoAcids {
 		var firstTriplets []string
 		var firstWeights []int
 		var firstTotal int
@@ -595,7 +594,7 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 			firstTriplets = append(firstTriplets, firstCodon.Triplet)
 			firstWeights = append(firstWeights, firstCodon.Weight)
 			firstTotal = firstTotal + firstCodon.Weight
-			for _, secondAa := range secondCodonTable.GetAminoAcids() {
+			for _, secondAa := range secondCodonTable.AminoAcids {
 				if secondAa.Letter == firstAa.Letter {
 					for _, secondCodon := range secondAa.Codons {
 						// For each codon from firstCodonTable, get the
@@ -638,19 +637,21 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable Table, cutOff float6
 		// Append list of Codons to finalAminoAcids
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
-	c.AminoAcids = finalAminoAcids
-	return c, nil
+
+	mergedTable.AminoAcids = finalAminoAcids
+
+	return mergedTable, nil
 }
 
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new codonTable.
-func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
+func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) *TranslationTable {
 	// Add up codons
 	var finalAminoAcids []AminoAcid
-	for _, firstAa := range firstCodonTable.GetAminoAcids() {
+	for _, firstAa := range firstCodonTable.AminoAcids {
 		var finalCodons []Codon
 		for _, firstCodon := range firstAa.Codons {
-			for _, secondAa := range secondCodonTable.GetAminoAcids() {
+			for _, secondAa := range secondCodonTable.AminoAcids {
 				for _, secondCodon := range secondAa.Codons {
 					if firstCodon.Triplet == secondCodon.Triplet {
 						finalCodons = append(finalCodons, Codon{firstCodon.Triplet, firstCodon.Weight + secondCodon.Weight})
@@ -661,9 +662,8 @@ func AddCodonTable(firstCodonTable, secondCodonTable Table) Table {
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	return codonTable{
-		StartCodons: firstCodonTable.GetStartCodons(),
-		StopCodons:  firstCodonTable.GetStopCodons(),
-		AminoAcids:  finalAminoAcids,
-	}
+	mergedTable := firstCodonTable.Copy()
+	mergedTable.AminoAcids = finalAminoAcids
+
+	return mergedTable
 }
