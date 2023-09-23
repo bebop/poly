@@ -21,21 +21,13 @@ Tim
 */
 package mash
 
-import "github.com/spaolacci/murmur3"
+import "github.com/spaolacci/murmur3" // murmur3 is a fast non-cryptographic hash algorithm that was also used in the original papers-> https://github.com/shenwei356/go-hashing-kmer-bench
 
-// sketch algorithm
-// slide a window of size k along the sequence
-// for each kmer in the window, hash it to a 32 or 64 bit number
-// keep the minimum hash value of all the kmers in the window up to a given sketch size
-// the sketch is a vector of the minimum hash values
-
-// what are mash's inputs and outputs?
-// inputs: a
-
+// Mash is a collection of hashes of kmers from a given sequence.
 type Mash struct {
-	KmerSize   uint
-	SketchSize uint
-	Sketches   []uint32
+	KmerSize   uint     // The kmer size is the size of the sliding window that is used to generate the hashes.
+	SketchSize uint     // The sketch size is the number of hashes to store.
+	Sketches   []uint32 // The sketches are the hashes of the kmers that we can compare to other sketches.
 }
 
 func NewMash(kmerSize uint, sketchSize uint) *Mash {
@@ -69,11 +61,6 @@ func (m *Mash) Sketch(sequence string) {
 	}
 }
 
-// distance algorithm
-// compare the sketches of two sequences
-// count the number of hashes that are the same
-// divide the number of hashes that are the same by the total number of hashes
-// the result is the distance between the two sequences
 func (m *Mash) Distance(other *Mash) float64 {
 	var sameHashes int
 	for i := 0; i < len(m.Sketches); i++ {
