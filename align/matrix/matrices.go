@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package matrix provides a variety of alignment scoring matrices for sequence alignment. 
+Package matrix provides a variety of alignment scoring matrices for sequence alignment.
 These matrices have been lovingly borrowed from biogo/align.
 
 https://github.com/biogo/biogo/blob/master/align/matrix/matrices.go

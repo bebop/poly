@@ -146,7 +146,7 @@ If we pooled these two samples together into a single tube, and sequenced
 them, we would not be able to tell if ATGC came from DNA-1 or DNA-2. In order
 to tell the difference, we would have to go through the process of DNA
 barcoding. Let's attach(2) two small barcodes to each DNA fragment separately
-in their own tubes and then pool them togehter:
+in their own tubes and then pool them together:
 
 Barcode-1 + DNA-1 = GC + ATGC = GCATGC
 Barcode-2 + DNA-2 = AT + AGGC = ATAGGC

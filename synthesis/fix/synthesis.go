@@ -129,7 +129,6 @@ func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggest
 		}
 		waitgroup.Done()
 	}
-
 }
 
 // getSuggestions gets suggestions from the suggestions channel. This removes
@@ -218,7 +217,6 @@ changes that were done to the sequence.
 // functions to solve for, and a number of iterations to attempt fixing.
 // Unless you are an advanced user, you should use CdsSimple.
 func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
-
 	codonLength := 3
 	if len(sequence)%codonLength != 0 {
 		return "", []Change{}, errors.New("this sequence isn't a complete CDS, please try to use a CDS without interrupted codons")

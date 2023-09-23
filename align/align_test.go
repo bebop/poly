@@ -9,7 +9,6 @@ import (
 )
 
 func TestNeedlemanWunsch(t *testing.T) {
-
 	mat := [][]int{
 		/*       A C G T U */
 		/* A */ {1, -1, -1, -1, -1},
@@ -138,7 +137,6 @@ func TestNeedlemanWunsch(t *testing.T) {
 }
 
 func TestSmithWaterman(t *testing.T) {
-
 	mat := [][]int{
 		/*       - A C G T */
 		/* - */ {0, 0, 0, 0, 0},
@@ -291,5 +289,4 @@ func TestSmithWaterman(t *testing.T) {
 	if alignN != "G" {
 		t.Errorf("Alignment is %s, expected G", alignN)
 	}
-
 }

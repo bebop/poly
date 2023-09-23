@@ -1,27 +1,30 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.166.1/containers/ubuntu
+// For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "poly - Ubuntu",
-  "build": {
-    "dockerfile": "Dockerfile",
-    // Update 'VARIANT' to pick an Ubuntu version: focal, bionic
-    "args": { "VARIANT": "focal" }
-  },
+	"name": "poly-devcontainer",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
 
-  // Set *default* container specific settings.json values on container create.
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash"
-  },
+	"features": {
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "latest",
+			"golangciLintVersion": "latest"
+		},
+	},
+	
+	"extensions": ["golang.go","premparihar.gotestexplorer","github.vscode-pull-request-github","eamodio.gitlens"],
+	
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
 
-  // Add the IDs of extensions you want installed when the container is created.
-  "extensions": ["golang.go","premparihar.gotestexplorer","github.vscode-pull-request-github","eamodio.gitlens"]
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "kubectl version",
 
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
+	// Use 'postStartCommand' to run commands after the container is created like starting minikube.
+	"postStartCommand": "go mod tidy && go test -v ./...",
 
-  // Use 'postCreateCommand' to run commands after the container is created.
-  // "postCreateCommand": "uname -a",
+	// Configure tool-specific properties.
+	// "customizations": {},
 
-  // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-  // "remoteUser": "vscode"
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
 }

@@ -2,6 +2,7 @@ package uniprot_test
 
 import (
 	"fmt"
+
 	"github.com/TimothyStiles/poly/io/uniprot"
 )
 

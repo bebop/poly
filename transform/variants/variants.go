@@ -20,21 +20,21 @@ func AllVariantsIUPAC(seq string) ([]string, error) {
 	seqVariants := []string{}
 
 	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
-		'G': []rune{'G'},
-		'A': []rune{'A'},
-		'T': []rune{'T'},
-		'C': []rune{'C'},
-		'R': []rune{'G', 'A'},
-		'Y': []rune{'T', 'C'},
-		'M': []rune{'A', 'C'},
-		'K': []rune{'G', 'T'},
-		'S': []rune{'G', 'C'},
-		'W': []rune{'A', 'T'},
-		'H': []rune{'A', 'C', 'T'},
-		'B': []rune{'G', 'T', 'C'},
-		'V': []rune{'G', 'C', 'A'},
-		'D': []rune{'G', 'A', 'T'},
-		'N': []rune{'G', 'A', 'T', 'C'},
+		'G': {'G'},
+		'A': {'A'},
+		'T': {'T'},
+		'C': {'C'},
+		'R': {'G', 'A'},
+		'Y': {'T', 'C'},
+		'M': {'A', 'C'},
+		'K': {'G', 'T'},
+		'S': {'G', 'C'},
+		'W': {'A', 'T'},
+		'H': {'A', 'C', 'T'},
+		'B': {'G', 'T', 'C'},
+		'V': {'G', 'C', 'A'},
+		'D': {'G', 'A', 'T'},
+		'N': {'G', 'A', 'T', 'C'},
 	}
 
 	for _, s := range strings.ToUpper(seq) {
@@ -44,7 +44,6 @@ func AllVariantsIUPAC(seq string) ([]string, error) {
 		} else {
 			return seqVariants, errors.New("Error:" + string(s) + " is not a supported IUPAC character")
 		}
-
 	}
 
 	cartesianProducts := cartRune(seqVariantList...)
@@ -59,7 +58,7 @@ func cartRune(inLists ...[]rune) [][]rune {
 	// Adapted from https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists
 	// supposedly "minimizes allocations and computes and fills the result sequentially"
 
-	var possibleVariants int = 1 // a counter used to determine the possible number of variants
+	possibleVariants := 1 // a counter used to determine the possible number of variants
 	for _, inList := range inLists {
 		possibleVariants *= len(inList)
 	}

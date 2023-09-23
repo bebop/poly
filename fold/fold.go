@@ -480,7 +480,6 @@ func multibranch(start, mid, end int, foldContext context, helix bool) (nucleicA
 			}
 			summedEnergy += w.energy
 		}
-
 	}
 
 	if unpaired < 0 {
@@ -539,7 +538,6 @@ func internalLoop(start, rightOfStart, end, leftOfEnd int, foldContext context) 
 
 	if loopLeftIndex < 1 {
 		return 0, fmt.Errorf("internal loop: subsequence (%d, %d, %d, %d): missing left part of the loop", start, rightOfStart, end, leftOfEnd)
-
 	}
 	if loopRightIndex < 1 {
 		return 0, fmt.Errorf("internal loop: subsequence (%d, %d, %d, %d): missing right part of the loop", start, rightOfStart, end, leftOfEnd)

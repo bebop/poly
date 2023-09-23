@@ -36,7 +36,6 @@ package pileup
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -48,11 +47,6 @@ import (
 )
 
 // https://en.wikipedia.org/wiki/Pileup_format
-
-var (
-	gzipReaderFn = gzip.NewReader
-	openFn       = os.Open
-)
 
 // Pileup struct is a single position in a pileup file. Pileup files "pile"
 // a bunch of separate bam/sam alignments into something more readable at a per
@@ -119,6 +113,9 @@ func (parser *Parser) ParseNext() (Pileup, error) {
 	}
 	// Parse out a single line
 	lineBytes, err := parser.reader.ReadSlice('\n')
+	if err != nil {
+		return Pileup{}, err
+	}
 	parser.line++
 	line := string(lineBytes)
 	line = line[:len(line)-1] // Exclude newline delimiter.
@@ -210,7 +207,7 @@ Start of  Read functions
 
 // Read reads a  file into an array of Pileup structs
 func Read(path string) ([]Pileup, error) {
-	file, err := openFn(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -224,29 +221,32 @@ Start of  Write functions
 
 ******************************************************************************/
 
-// WritePileup writes a pileup array to an io.Writer
-func WritePileup(pileups []Pileup, w io.Writer) {
+// WritePileups writes a pileup array to an io.Writer
+func WritePileups(pileups []Pileup, w io.Writer) error {
 	for _, pileup := range pileups {
-		w.Write([]byte(pileup.Sequence))
-		w.Write([]byte("\t"))
-		w.Write([]byte(strconv.FormatUint(uint64(pileup.Position), 10)))
-		w.Write([]byte("\t"))
-		w.Write([]byte(pileup.ReferenceBase))
-		w.Write([]byte("\t"))
-		w.Write([]byte(strconv.FormatUint(uint64(pileup.ReadCount), 10)))
-		w.Write([]byte("\t"))
-		for _, readResult := range pileup.ReadResults {
-			w.Write([]byte(readResult))
+		_, err := w.Write([]byte(
+			strings.Join(
+				[]string{
+					pileup.Sequence,
+					strconv.FormatUint(uint64(pileup.Position), 10),
+					pileup.ReferenceBase,
+					strconv.FormatUint(uint64(pileup.ReadCount), 10),
+					strings.Join(pileup.ReadResults, ""),
+					pileup.Quality,
+				},
+				"\t") + "\n"))
+		if err != nil {
+			return err
 		}
-		w.Write([]byte("\t"))
-		w.Write([]byte(pileup.Quality))
-		w.Write([]byte("\n"))
 	}
+	return nil
 }
 
 // Write writes a pileup array to a file
 func Write(pileups []Pileup, path string) error {
 	var b bytes.Buffer
-	WritePileup(pileups, &b)
+	if err := WritePileups(pileups, &b); err != nil {
+		return err
+	}
 	return os.WriteFile(path, b.Bytes(), 0644)
 }

@@ -56,7 +56,6 @@ func TestGffIO(t *testing.T) {
 	if gffDiffText != "" {
 		t.Errorf("Build() does not output the same file as was input through ReadGff(). Got this diff:\n%s", gffDiffText)
 	}
-
 }
 
 // testing that readAllFn() returns an error.

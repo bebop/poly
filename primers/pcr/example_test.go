@@ -2,6 +2,7 @@ package pcr_test
 
 import (
 	"fmt"
+
 	"github.com/TimothyStiles/poly/primers/pcr"
 )
 
