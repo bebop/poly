@@ -1,8 +1,7 @@
-# .github/workflows/take.yml 
 name: Assign issue to contributor
 on: 
   issue_comment:
-    types: [created, edited] // action runs on new and edited issue comments
+    types: [created, edited] # action runs on new and edited issue comments
 
 jobs:
   assign:
