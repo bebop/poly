@@ -2,6 +2,8 @@ package pcr
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // gene is a gene for testing PCR
@@ -70,5 +72,20 @@ func TestSimulateConcatemerization(t *testing.T) {
 	_, err := Simulate([]string{gene}, 55.0, false, []string{forwardPrimer, reversePrimer})
 	if err == nil {
 		t.Errorf("Should have gotten concatemerization")
+	}
+}
+
+// Test to catch bug discovered by @Koeng101, see issue #279.
+func TestIssue279PCRBug(t *testing.T) {
+	gene := "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+
+	fragments, err := Simulate([]string{gene}, 55.0, false, []string{"TATATGGTCTCTTCATTTAAGAAAGCGCATTTTCCAGC", "TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGG", "CTGCAGGTCGACTCTAG"})
+	if err != nil {
+		t.Fatalf("unexpected error during PCR simulation: %v", err)
+	}
+
+	want := "TTATAGGTCTCATACTAATAATTACACCGAGATAACACATCATGGATAAACCGATACTCAAAGATTCTATGAAGCTATTTGAGGCACTTGGTACGATCAAGTCGCGCTCAATGTTTGGTGGCTTCGGACTTTTCGCTGATGAAACGATGTTTGCACTGGTTGTGAATGATCAACTTCACATACGAGCAGACCAGCAAACTTCATCTAACTTCGAGAAGCAAGGGCTAAAACCGTACGTTTATAAAAAGCGTGGTTTTCCAGTCGTTACTAAGTACTACGCGATTTCCGACGACTTGTGGGAATCCAGTGAACGCTTGATAGAAGTAGCGAAGAAGTCGTTAGAACAAGCCAATTTGGAAAAAAAGCAACAGGCAAGTAGTAAGCCCGACAGGTTGAAAGACCTGCCTAACTTACGACTAGCGACTGAACGAATGCTTAAGAAAGCTGGTATAAAATCAGTTGAACAACTTGAAGAGAAAGGTGCATTGAATGCTTACAAAGCGATACGTGACTCTCACTCCGCAAAAGTAAGTATTGAGCTACTCTGGGCTTTAGAAGGAGCGATAAACGGCACGCACTGGAGCGTCGTTCCTCAATCTCGCAGAGAAGAGCTGGAAAATGCGCTTTCTTAAATGAAGAGACCATATA"
+	if diff := cmp.Diff(fragments[0], want); diff != "" {
+		t.Errorf("incorrect PCR output (-want,+got): %s", diff)
 	}
 }
