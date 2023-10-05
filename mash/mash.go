@@ -96,7 +96,6 @@ func (mash *Mash) Sketch(sequence string) {
 			}
 			continue
 		}
-
 	}
 }
 
