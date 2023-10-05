@@ -30,9 +30,11 @@ hash is kept. The process is repeated until the vector is full. The vector of ha
 The sketch is then compared to other sketches by counting the number of hashes that are the same between the two sketches.
 The number of hashes that are the same is divided by the size of the sketch to get a distance between 0 and 1.
 
-Hash vectors can only be compared to other hash vectors that use the same sliding window size K.
-Sketch size S limits how many hashes can be stored in the vector and the return vector
-will always be of size S containing the lexographically smallest hashes that were generated.
+Hash vectors can only be compared to other hash vectors that use the same sliding window size.
+Sketch size limits how many hashes can be stored in the vector and the return vector
+will always be of length of the sketch size and filled the smallest hashes that were generated
+and sorted from smallest to largest.
+
 The larger the sketch size the more accurate the distance calculation will be but the longer it will take to calculate.
 
 TTFN,
