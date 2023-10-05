@@ -136,7 +136,7 @@ func (mash *Mash) Similarity(other *Mash) float64 {
 		}
 	}
 
-	return float64(sameHashes) / float64(len(mash.Sketches))
+	return float64(sameHashes) / float64(smallerSketch.SketchSize)
 }
 
 func (mash *Mash) Distance(other *Mash) float64 {
