@@ -66,8 +66,8 @@ func (mash *Mash) Sketch(sequence string) {
 	maxShiftedSketchSize := mash.SketchSize - 1
 
 	// slide a window of size k along the sequence
-	for kmerStart := 0; kmerStart < len(sequence)-int(mash.KmerSize); kmerStart++ {
-		kmer := sequence[kmerStart : kmerStart+int(mash.KmerSize)]
+	for kmerStart := 0; kmerStart < len(sequence)-mash.KmerSize; kmerStart++ {
+		kmer := sequence[kmerStart : kmerStart+mash.KmerSize]
 		// hash the kmer to a 32 bit number
 		hash := murmur3.Sum32([]byte(kmer))
 		// keep the minimum hash value of all the kmers in the window up to a given sketch size
@@ -75,10 +75,11 @@ func (mash *Mash) Sketch(sequence string) {
 
 		// if the sketch is not full, store the hash in the sketch
 		if kmerStart < maxShiftedSketchSize {
-			mash.Sketches[kmerStart] = uint32(hash)
+			mash.Sketches[kmerStart] = hash
 			continue
 		}
 
+		// if the sketch has just been filled add the hash to the sketch and sort the sketch
 		if kmerStart == maxShiftedSketchSize {
 			// sort the sketch from smallest to largest
 			mash.Sketches[maxShiftedSketchSize] = hash
@@ -87,7 +88,7 @@ func (mash *Mash) Sketch(sequence string) {
 		}
 
 		// if the sketch is full and the new hash is smaller than the largest hash in the sketch,
-		// replace the largest hash with the new hash and sort the sketch
+		// replace the largest hash with the new hash and sort the sketch if the new hash is smaller than the second largest hash in the sketch
 		if kmerStart > maxShiftedSketchSize && mash.Sketches[maxShiftedSketchSize] > hash {
 			mash.Sketches[maxShiftedSketchSize] = hash
 			if hash < mash.Sketches[maxShiftedSketchSize-1] { // if the new hash is smaller than the second largest hash in the sketch, sort the sketch
