@@ -7,10 +7,10 @@ import (
 )
 
 func TestMash(t *testing.T) {
-	fingerprint1 := mash.NewMash(17, 10)
+	fingerprint1 := mash.New(17, 10)
 	fingerprint1.Sketch("ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGA")
 
-	fingerprint2 := mash.NewMash(17, 9)
+	fingerprint2 := mash.New(17, 9)
 	fingerprint2.Sketch("ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGA")
 
 	distance := fingerprint1.Distance(fingerprint2)
@@ -23,7 +23,7 @@ func TestMash(t *testing.T) {
 		t.Errorf("Expected distance to be 0, got %f", distance)
 	}
 
-	spoofedFingerprint := mash.NewMash(17, 10)
+	spoofedFingerprint := mash.New(17, 10)
 	spoofedFingerprint.Sketches[0] = 0
 
 	distance = fingerprint1.Distance(spoofedFingerprint)
@@ -31,7 +31,7 @@ func TestMash(t *testing.T) {
 		t.Errorf("Expected distance to be 1, got %f", distance)
 	}
 
-	spoofedFingerprint = mash.NewMash(17, 9)
+	spoofedFingerprint = mash.New(17, 9)
 
 	distance = fingerprint1.Distance(spoofedFingerprint)
 	if distance != 1 {

@@ -55,8 +55,8 @@ type Mash struct {
 	Sketches   []uint32 // The sketches are the hashes of the kmers that we can compare to other sketches.
 }
 
-// NewMash initializes a new mash sketch.
-func NewMash(kmerSize int, sketchSize int) *Mash {
+// New initializes a new mash sketch.
+func New(kmerSize int, sketchSize int) *Mash {
 	return &Mash{
 		KmerSize:   kmerSize,
 		SketchSize: sketchSize,
