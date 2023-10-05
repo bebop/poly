@@ -53,6 +53,7 @@ type Mash struct {
 	Sketches   []uint32 // The sketches are the hashes of the kmers that we can compare to other sketches.
 }
 
+// NewMash initializes a new mash sketch.
 func NewMash(kmerSize int, sketchSize int) *Mash {
 	return &Mash{
 		KmerSize:   kmerSize,
@@ -61,6 +62,7 @@ func NewMash(kmerSize int, sketchSize int) *Mash {
 	}
 }
 
+// Sketch generates a mash sketch of the sequence.
 func (mash *Mash) Sketch(sequence string) {
 	// the sketch size is the number of hashes to store. Pre-shifted to avoid off-by-one errors.
 	maxShiftedSketchSize := mash.SketchSize - 1
@@ -99,15 +101,44 @@ func (mash *Mash) Sketch(sequence string) {
 	}
 }
 
-func (mash *Mash) Distance(other *Mash) float64 {
+// Similarity returns the Jaccard similarity between two sketches (number of matching hashes / sketch size)
+func (mash *Mash) Similarity(other *Mash) float64 {
 	var sameHashes int
-	for hashIndex := 0; hashIndex < len(mash.Sketches); hashIndex++ {
-		for otherHashIndex := 0; otherHashIndex < len(other.Sketches); otherHashIndex++ {
-			if mash.Sketches[hashIndex] == other.Sketches[otherHashIndex] {
-				sameHashes++
-				break
-			}
+
+	var largerSketch *Mash
+	var smallerSketch *Mash
+
+	if mash.SketchSize > other.SketchSize {
+		largerSketch = mash
+		smallerSketch = other
+	} else {
+		largerSketch = other
+		smallerSketch = mash
+	}
+
+	largerSketchSizeShifted := largerSketch.SketchSize - 1
+	smallerSketchSizeShifted := smallerSketch.SketchSize - 1
+
+	// if the largest hash in the larger sketch is smaller than the smallest hash in the smaller sketch, the distance is 1
+	if largerSketch.Sketches[largerSketchSizeShifted] < smallerSketch.Sketches[0] {
+		return 1
+	}
+
+	// if the largest hash in the smaller sketch is smaller than the smallest hash in the larger sketch, the distance is 1
+	if smallerSketch.Sketches[smallerSketchSizeShifted] < largerSketch.Sketches[0] {
+		return 1
+	}
+
+	for _, hash := range smallerSketch.Sketches {
+		ind := sort.Search(largerSketchSizeShifted, func(ind int) bool { return largerSketch.Sketches[ind] <= hash })
+		if largerSketch.Sketches[ind] == hash {
+			sameHashes++
 		}
 	}
-	return 1 - (float64(sameHashes) / float64(len(mash.Sketches)))
+
+	return float64(sameHashes) / float64(len(mash.Sketches))
+}
+
+func (mash *Mash) Distance(other *Mash) float64 {
+	return 1 - mash.Similarity(other)
 }
