@@ -22,4 +22,19 @@ func TestMash(t *testing.T) {
 	if distance != 0 {
 		t.Errorf("Expected distance to be 0, got %f", distance)
 	}
+
+	spoofedFingerprint := mash.NewMash(17, 10)
+	spoofedFingerprint.Sketches[0] = 0
+
+	distance = fingerprint1.Distance(spoofedFingerprint)
+	if distance != 1 {
+		t.Errorf("Expected distance to be 1, got %f", distance)
+	}
+
+	spoofedFingerprint = mash.NewMash(17, 9)
+
+	distance = fingerprint1.Distance(spoofedFingerprint)
+	if distance != 1 {
+		t.Errorf("Expected distance to be 1, got %f", distance)
+	}
 }
