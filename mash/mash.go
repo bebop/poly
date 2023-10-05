@@ -62,7 +62,6 @@ func NewMash(kmerSize int, sketchSize int) *Mash {
 }
 
 func (mash *Mash) Sketch(sequence string) {
-
 	// the sketch size is the number of hashes to store. Pre-shifted to avoid off-by-one errors.
 	maxShiftedSketchSize := mash.SketchSize - 1
 
@@ -91,7 +90,9 @@ func (mash *Mash) Sketch(sequence string) {
 		// replace the largest hash with the new hash and sort the sketch
 		if kmerStart > maxShiftedSketchSize && mash.Sketches[maxShiftedSketchSize] > hash {
 			mash.Sketches[maxShiftedSketchSize] = hash
-			sort.Slice(mash.Sketches, func(i, j int) bool { return mash.Sketches[i] < mash.Sketches[j] })
+			if hash < mash.Sketches[maxShiftedSketchSize-1] { // if the new hash is smaller than the second largest hash in the sketch, sort the sketch
+				sort.Slice(mash.Sketches, func(i, j int) bool { return mash.Sketches[i] < mash.Sketches[j] })
+			}
 			continue
 		}
 
