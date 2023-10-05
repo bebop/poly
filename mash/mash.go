@@ -18,7 +18,7 @@ tl;dr for the papers above:
 Comparing biological sequences is really hard because similar sequences can have frameshifts that make it impossible
 to measure similarity using more common metric distances like hamming distance or levenshtein distance.
 
-Bioinformatics and nlp researchers have come up with tons of strings comparison algorithms that are better suited for
+Bioinformatics and nlp researchers have come up with tons of string comparison algorithms that are better suited for
 comparing biological sequences. For example poly already implements a few of them like the Needleman-Wunsch and Smith-Waterman
 algorithms in our "align" package.
 
@@ -40,16 +40,20 @@ Tim
 */
 package mash
 
-import "github.com/spaolacci/murmur3" // murmur3 is a fast non-cryptographic hash algorithm that was also used in the original papers-> https://github.com/shenwei356/go-hashing-kmer-bench
+import (
+	"sort"
+
+	"github.com/spaolacci/murmur3"
+) // murmur3 is a fast non-cryptographic hash algorithm that was also used in the original papers-> https://github.com/shenwei356/go-hashing-kmer-bench
 
 // Mash is a collection of hashes of kmers from a given sequence.
 type Mash struct {
-	KmerSize   uint     // The kmer size is the size of the sliding window that is used to generate the hashes.
-	SketchSize uint     // The sketch size is the number of hashes to store.
+	KmerSize   int      // The kmer size is the size of the sliding window that is used to generate the hashes.
+	SketchSize int      // The sketch size is the number of hashes to store.
 	Sketches   []uint32 // The sketches are the hashes of the kmers that we can compare to other sketches.
 }
 
-func NewMash(kmerSize uint, sketchSize uint) *Mash {
+func NewMash(kmerSize int, sketchSize int) *Mash {
 	return &Mash{
 		KmerSize:   kmerSize,
 		SketchSize: sketchSize,
@@ -57,38 +61,52 @@ func NewMash(kmerSize uint, sketchSize uint) *Mash {
 	}
 }
 
-func (m *Mash) Sketch(sequence string) {
+func (mash *Mash) Sketch(sequence string) {
+
+	// the sketch size is the number of hashes to store. Pre-shifted to avoid off-by-one errors.
+	maxShiftedSketchSize := mash.SketchSize - 1
+
 	// slide a window of size k along the sequence
-	for kmerStart := 0; kmerStart < len(sequence)-int(m.KmerSize); kmerStart++ {
-		kmer := sequence[kmerStart : kmerStart+int(m.KmerSize)]
+	for kmerStart := 0; kmerStart < len(sequence)-int(mash.KmerSize); kmerStart++ {
+		kmer := sequence[kmerStart : kmerStart+int(mash.KmerSize)]
 		// hash the kmer to a 32 bit number
 		hash := murmur3.Sum32([]byte(kmer))
 		// keep the minimum hash value of all the kmers in the window up to a given sketch size
 		// the sketch is a vector of the minimum hash values
-		var biggestHashIndex int
 
-		// find the biggest hash value in the sketch
-		for i := 0; i < len(m.Sketches); i++ {
-			if m.Sketches[i] == 0 {
-				biggestHashIndex = i
-				break
-			} else if m.Sketches[i] > m.Sketches[biggestHashIndex] {
-				biggestHashIndex = i
-			}
+		// if the sketch is not full, store the hash in the sketch
+		if kmerStart < maxShiftedSketchSize {
+			mash.Sketches[kmerStart] = uint32(hash)
+			continue
 		}
-		m.Sketches[biggestHashIndex] = hash
+
+		if kmerStart == maxShiftedSketchSize {
+			// sort the sketch from smallest to largest
+			mash.Sketches[maxShiftedSketchSize] = hash
+			sort.Slice(mash.Sketches, func(i, j int) bool { return mash.Sketches[i] < mash.Sketches[j] })
+			continue
+		}
+
+		// if the sketch is full and the new hash is smaller than the largest hash in the sketch,
+		// replace the largest hash with the new hash and sort the sketch
+		if kmerStart > maxShiftedSketchSize && mash.Sketches[maxShiftedSketchSize] > hash {
+			mash.Sketches[maxShiftedSketchSize] = hash
+			sort.Slice(mash.Sketches, func(i, j int) bool { return mash.Sketches[i] < mash.Sketches[j] })
+			continue
+		}
+
 	}
 }
 
-func (m *Mash) Distance(other *Mash) float64 {
+func (mash *Mash) Distance(other *Mash) float64 {
 	var sameHashes int
-	for i := 0; i < len(m.Sketches); i++ {
-		for j := 0; j < len(other.Sketches); j++ {
-			if m.Sketches[i] == other.Sketches[j] {
+	for hashIndex := 0; hashIndex < len(mash.Sketches); hashIndex++ {
+		for otherHashIndex := 0; otherHashIndex < len(other.Sketches); otherHashIndex++ {
+			if mash.Sketches[hashIndex] == other.Sketches[otherHashIndex] {
 				sameHashes++
 				break
 			}
 		}
 	}
-	return 1 - (float64(sameHashes) / float64(len(m.Sketches)))
+	return 1 - (float64(sameHashes) / float64(len(mash.Sketches)))
 }
