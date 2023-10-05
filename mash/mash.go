@@ -139,6 +139,7 @@ func (mash *Mash) Similarity(other *Mash) float64 {
 	return float64(sameHashes) / float64(smallerSketch.SketchSize)
 }
 
+// Distance returns the Jaccard distance between two sketches (1 - similarity)
 func (mash *Mash) Distance(other *Mash) float64 {
 	return 1 - mash.Similarity(other)
 }
