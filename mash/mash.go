@@ -121,12 +121,12 @@ func (mash *Mash) Similarity(other *Mash) float64 {
 
 	// if the largest hash in the larger sketch is smaller than the smallest hash in the smaller sketch, the distance is 1
 	if largerSketch.Sketches[largerSketchSizeShifted] < smallerSketch.Sketches[0] {
-		return 1
+		return 0
 	}
 
 	// if the largest hash in the smaller sketch is smaller than the smallest hash in the larger sketch, the distance is 1
 	if smallerSketch.Sketches[smallerSketchSizeShifted] < largerSketch.Sketches[0] {
-		return 1
+		return 0
 	}
 
 	for _, hash := range smallerSketch.Sketches {
