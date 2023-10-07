@@ -13,32 +13,52 @@ import (
 	"strings"
 )
 
+var iupacToBases = map[rune][]rune{ // rune map of all iupac nucleotide variants
+	'G': {'G'},
+	'A': {'A'},
+	'T': {'T'},
+	'C': {'C'},
+	'R': {'G', 'A'},
+	'Y': {'T', 'C'},
+	'M': {'A', 'C'},
+	'K': {'G', 'T'},
+	'S': {'G', 'C'},
+	'W': {'A', 'T'},
+	'H': {'A', 'C', 'T'},
+	'B': {'G', 'T', 'C'},
+	'V': {'G', 'C', 'A'},
+	'D': {'G', 'A', 'T'},
+	'N': {'G', 'A', 'T', 'C'},
+}
+
+var iupacToAAs = map[rune][]rune{
+	'X': []rune("ACDEFGHIJLMNPQRSTVWY"), // Unknown
+	'B': {'D', 'N'},
+	'Z': {'E', 'Q'},
+	'J': {'I', 'L'},
+	'+': {'K', 'R', 'H'},	// Positively charged
+	'-': {'D', 'E'},	// Negatively charged
+}
+
+
+func IUPAC2Bases() map[rune][]rune {
+	return iupacToBases
+}
+
+
+func IUPAC2AAs() map[rune][]rune {
+	return iupacToAAs
+}
+
+
 // AllVariantsIUPAC takes a string as input
 // and returns all iupac variants as output
 func AllVariantsIUPAC(seq string) ([]string, error) {
 	seqVariantList := [][]rune{}
 	seqVariants := []string{}
 
-	iupac := map[rune][]rune{ // rune map of all iupac nucleotide variants
-		'G': {'G'},
-		'A': {'A'},
-		'T': {'T'},
-		'C': {'C'},
-		'R': {'G', 'A'},
-		'Y': {'T', 'C'},
-		'M': {'A', 'C'},
-		'K': {'G', 'T'},
-		'S': {'G', 'C'},
-		'W': {'A', 'T'},
-		'H': {'A', 'C', 'T'},
-		'B': {'G', 'T', 'C'},
-		'V': {'G', 'C', 'A'},
-		'D': {'G', 'A', 'T'},
-		'N': {'G', 'A', 'T', 'C'},
-	}
-
 	for _, s := range strings.ToUpper(seq) {
-		variantsIUPAC, ok := iupac[s]
+		variantsIUPAC, ok := iupacToBases[s]
 		if ok {
 			seqVariantList = append(seqVariantList, variantsIUPAC)
 		} else {
