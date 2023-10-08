@@ -3,6 +3,8 @@ Package alphabet provides structs for defining biological sequence alphabets.
 */
 package alphabet
 
+// TODO: add Alphabet for codons
+
 import "fmt"
 
 // Alphabet is a struct that holds a list of symbols and a map of symbols to their index in the list.
@@ -52,6 +54,16 @@ func (alphabet *Alphabet) EncodeAll(seq string) ([]uint8, error) {
 		encoded[i] = uint8(encoding)
 	}
 	return encoded, nil
+}
+
+func (alphabet *Alphabet) Check(seq string) int {
+	for i, r := range seq {
+		encoding, err := alphabet.Encode(string(r))
+		if err != nil {
+			return i
+		}
+	}
+	return -1
 }
 
 // Decode returns the symbol at a given index in the alphabet.

@@ -1,7 +1,7 @@
-package checks
+package fix
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -20,12 +20,6 @@ func buildPatternTranslator(ambiguityCodes map[rune][]rune) map[rune]string {
 	}
 	trans['('] = "(?:"
 
-	b, err := json.Marshal(trans)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(string(b))
-
 	return trans
 }
 
@@ -42,22 +36,37 @@ func patternToRegexp(buf *strings.Builder, pattern string, translator map[rune]s
 	buf.WriteRune(')')
 }
 
-func patternsToRegexp(patterns []string) (*regexp.Regexp, error) {
+func PatternsToRegexp(patterns []string, doubleStranded bool) (*regexp.Regexp, error) {
 	var buf strings.Builder
 	if len(patterns) == 0 {
 		return nil, nil
 	}
+
+	// expand to reduce reallocations
 	estSize := -1
 	for _, pat := range patterns {
 		estSize += len(pat) + 3
 	}
 	buf.Grow(estSize)
+
 	for i, pat := range patterns {
 		if i != 0 {
-			buf.WriteString("|")
+			buf.WriteRune('|')
 		}
 		patternToRegexp(&buf, pat, translator)
+		if doubleStranded {
+			reverseComplementPat := transform.ReverseComplement(pat)
+			if reverseComplementPat != pat {
+				buf.WriteRune('|')
+				patternToRegexp(&buf, reverseComplementPat, translator)
+			}
+		}
 	}
+	// TODO: only print during testing
 	log.Println(buf.String())
 	return regexp.Compile(buf.String())
+}
+
+func HomopolymericRuns(length int) string {
+	return fmt.Sprintf("N{%d}", length)
 }

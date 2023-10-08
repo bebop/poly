@@ -1,4 +1,4 @@
-package checks
+package fix
 
 import (
 	"testing"
@@ -50,4 +50,17 @@ func TestAcceptsRandomGen(t *testing.T) {
 	Assertf(t, err == nil, "Encountered error building regexp")
 	sample := random.DNASequenceFromPattern(allBases, 0)
 	Assertf(t, len(re.FindAllStringSubmatchIndex(sample, -1)) == 1, "Expected sample DNA sequence %s to match pattern %s", sample, allBases)
+}
+
+func TestCheckHomopolymericRuns(t *testing.T) {
+	testSeq := "GTAAAACGACGGCCAGT" // M13 fwd
+	if run := checkHomopolymericRuns(testSeq); run == false {
+		t.Errorf("checkHomopolymericRuns has changed on test. Got false instead of true")
+	}
+
+	testSeq = "ACGATGGCAGTAGCATGC" //"GTAAAACGACGGCCAGT" // M13 fwd
+
+	if run := checkHomopolymericRuns(testSeq); run == true {
+		t.Errorf("checkHomopolymericRuns has changed on test. Got true instead of false")
+	}
 }

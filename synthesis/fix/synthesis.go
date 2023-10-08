@@ -54,9 +54,11 @@ type Change struct {
 	Reason   string `db:"reason"`
 }
 
+type ProblematicSequenceFunc func(string, chan DnaSuggestion, *sync.WaitGroup)
+
 // RemoveSequence is a generator for a problematicSequenceFuncs for specific
 // sequences.
-func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+func RemoveSequence(sequencesToRemove []string, reason string) ProblematicSequenceFunc {
 	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		var sequencesToRemoveForReverse []string
 		for _, seq := range sequencesToRemove {
@@ -82,8 +84,27 @@ func RemoveSequence(sequencesToRemove []string, reason string) func(string, chan
 	}
 }
 
+// TODO: support custom reasons per pattern
+// TODO: benchmark against RemoveSequence
+func RemovePatterns(patternsToRemove []string, reason string) (ProblematicSequenceFunc, err) {
+	re, err := PatternsToRegex(patternsToRemove)
+
+	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
+		for _, site := range sequencesToRemoveForReverse {
+			locations := re.FindAllStringSubmatchIndex(sequence, -1)
+			for _, location := range locations {
+				codonLength := 3
+				position := location[0] / codonLength
+				c <- DnaSuggestion{position, (location[1] / codonLength) - 1, "NA", 1, reason}
+			}
+		}
+		waitgroup.Done()
+	}
+}
+
 // RemoveRepeat is a generator to make a problematicSequenceFunc for repeats.
-func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+// TODO: replace with more efficient kmer counter
+func RemoveRepeat(repeatLen int) ProblematicSequenceFunc {
 	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		// Get a kmer list
 		kmers := make(map[string]bool)
@@ -114,7 +135,7 @@ func RemoveRepeat(repeatLen int) func(string, chan DnaSuggestion, *sync.WaitGrou
 // base pairs in comparison to adenine and thymine base pairs. Usually, you
 // want the range to be somewhere around 50%, with a decent upperBound being
 // 80% GC and a decent lowerBound being 20%.
-func GcContentFixer(upperBound, lowerBound float64) func(string, chan DnaSuggestion, *sync.WaitGroup) {
+func GcContentFixer(upperBound, lowerBound float64) ProblematicSequenceFunc {
 	return func(sequence string, c chan DnaSuggestion, waitgroup *sync.WaitGroup) {
 		gcContent := checks.GcContent(sequence)
 		var numberOfChanges int
@@ -149,7 +170,7 @@ func getSuggestions(suggestions chan DnaSuggestion, suggestionOutputs chan []Dna
 
 // findProblems is a helper function in FixCDS that concurrently runs each
 // sequence check and returns a list of all the suggested changes.
-func findProblems(sequence string, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) []DnaSuggestion {
+func findProblems(sequence string, problematicSequenceFuncs []ProblematicSequenceFunc) []DnaSuggestion {
 	// Run functions to get suggestions
 	suggestions := make(chan DnaSuggestion)
 	suggestionOutputs := make(chan []DnaSuggestion)
@@ -216,7 +237,7 @@ changes that were done to the sequence.
 // Cds fixes a CDS given the CDS sequence, a codon table, a list of
 // functions to solve for, and a number of iterations to attempt fixing.
 // Unless you are an advanced user, you should use CdsSimple.
-func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []func(string, chan DnaSuggestion, *sync.WaitGroup)) (string, []Change, error) {
+func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []ProblematicSequenceFunc) (string, []Change, error) {
 	codonLength := 3
 	if len(sequence)%codonLength != 0 {
 		return "", []Change{}, errors.New("this sequence isn't a complete CDS, please try to use a CDS without interrupted codons")

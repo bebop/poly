@@ -1,4 +1,3 @@
-// TODO: add Alphabet and KmerCounter for codons
 // TODO: create benchmark for space and time costs vs https://github.com/shenwei356/bio/tree/master/sketches
 // TODO: create efficient storage for children + counts in top node via multidimensional array
 // TODO: integrate with IO parsers
