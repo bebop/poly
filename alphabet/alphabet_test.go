@@ -16,7 +16,7 @@ func TestAlphabet(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error encoding symbol %s: %v", symbol, err)
 		}
-		if code != i {
+		if int(code) != i {
 			t.Errorf("Incorrect encoding of symbol %s: expected %d, got %d", symbol, i, code)
 		}
 	}
@@ -48,7 +48,7 @@ func TestAlphabet(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error encoding symbol %s: %v", symbol, err)
 		}
-		if code != i {
+		if int(code) != i {
 			t.Errorf("Incorrect encoding of symbol %s: expected %d, got %d", symbol, i, code)
 		}
 	}
@@ -57,7 +57,7 @@ func TestAlphabet(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error encoding symbol %s: %v", symbol, err)
 		}
-		if code != i+len(symbols) {
+		if int(code) != i+len(symbols) {
 			t.Errorf("Incorrect encoding of symbol %s: expected %d, got %d", symbol, i+len(symbols), code)
 		}
 	}

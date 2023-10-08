@@ -8,7 +8,7 @@ import "fmt"
 // Alphabet is a struct that holds a list of symbols and a map of symbols to their index in the list.
 type Alphabet struct {
 	symbols  []string
-	encoding map[interface{}]int
+	encoding map[interface{}]uint8
 }
 
 // Error is an error type that is returned when a symbol is not in the alphabet.
@@ -23,21 +23,35 @@ func (e *Error) Error() string {
 
 // NewAlphabet creates a new alphabet from a list of symbols.
 func NewAlphabet(symbols []string) *Alphabet {
-	encoding := make(map[interface{}]int)
+	encoding := make(map[interface{}]uint8)
 	for index, symbol := range symbols {
-		encoding[symbol] = index
-		encoding[index] = index
+		encoding[symbol] = uint8(index)
+		encoding[index] = uint8(index)
 	}
 	return &Alphabet{symbols, encoding}
 }
 
 // Encode returns the index of a symbol in the alphabet.
-func (alphabet *Alphabet) Encode(symbol interface{}) (int, error) {
+func (alphabet *Alphabet) Encode(symbol interface{}) (uint8, error) {
 	c, ok := alphabet.encoding[symbol]
 	if !ok {
-		return 0, &Error{fmt.Sprintf("Symbol %v not in alphabet", symbol)}
+		return 0, fmt.Errorf("Symbol %v not in alphabet", symbol)
 	}
 	return c, nil
+}
+
+// TODO: compress more when len(symbols) << 2^8
+// TODO: DecodeAll
+func (alphabet *Alphabet) EncodeAll(seq string) ([]uint8, error) {
+	encoded := make([]uint8, len(seq))
+	for i, r := range seq {
+		encoding, err := alphabet.Encode(string(r))
+		if err != nil {
+			return nil, fmt.Errorf("Symbol %c in position %d not in alphabet", r, i)
+		}
+		encoded[i] = uint8(encoding)
+	}
+	return encoded, nil
 }
 
 // Decode returns the symbol at a given index in the alphabet.
