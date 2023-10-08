@@ -3,11 +3,11 @@ package checks
 import (
 	"testing"
 
-	"github.com/TimothyStiles/poly/transform/variants"
 	"github.com/TimothyStiles/poly/random"
+	"github.com/TimothyStiles/poly/transform/variants"
 )
 
-func Assertf (t *testing.T, cond bool, format string, args ...any) {
+func Assertf(t *testing.T, cond bool, format string, args ...any) {
 	if !cond {
 		t.Errorf(format, args...)
 	}
@@ -37,7 +37,7 @@ func TestMultiple(t *testing.T) {
 func keys[K comparable, V any](m map[K]V) []K {
 	array := make([]K, len(m))
 	var i = 0
-	for k, _ := range m {
+	for k := range m {
 		array[i] = k
 		i += 1
 	}

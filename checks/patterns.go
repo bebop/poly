@@ -1,36 +1,33 @@
 package checks
 
 import (
+	"encoding/json"
+	"log"
 	"regexp"
 	"strings"
-	"log"
-	"encoding/json"
 
 	"github.com/TimothyStiles/poly/transform/variants"
 )
 
-
 var translator = buildPatternTranslator(variants.IUPAC2Bases())
-
 
 func buildPatternTranslator(ambiguityCodes map[rune][]rune) map[rune]string {
 	trans := make(map[rune]string)
 	for r, options := range ambiguityCodes {
 		if len(options) > 1 {
-			trans[r] = "["+string(options)+"]"
+			trans[r] = "[" + string(options) + "]"
 		}
 	}
 	trans['('] = "(?:"
-	
+
 	b, err := json.Marshal(trans)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println(string(b))
-	
+
 	return trans
 }
-
 
 // TODO support (n/m) notation for point of cleavage for non-palindromic enzymes
 func patternToRegexp(buf *strings.Builder, pattern string, translator map[rune]string) {
@@ -45,15 +42,14 @@ func patternToRegexp(buf *strings.Builder, pattern string, translator map[rune]s
 	buf.WriteRune(')')
 }
 
-
-func patternsToRegexp(patterns []string) (*regexp.Regexp, error)  {
+func patternsToRegexp(patterns []string) (*regexp.Regexp, error) {
 	var buf strings.Builder
-	if (len(patterns) == 0) {
+	if len(patterns) == 0 {
 		return nil, nil
 	}
 	estSize := -1
 	for _, pat := range patterns {
-		estSize += len(pat)+3
+		estSize += len(pat) + 3
 	}
 	buf.Grow(estSize)
 	for i, pat := range patterns {

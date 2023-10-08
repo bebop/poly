@@ -36,20 +36,17 @@ var iupacToAAs = map[rune][]rune{
 	'B': {'D', 'N'},
 	'Z': {'E', 'Q'},
 	'J': {'I', 'L'},
-	'+': {'K', 'R', 'H'},	// Positively charged
-	'-': {'D', 'E'},	// Negatively charged
+	'+': {'K', 'R', 'H'}, // Positively charged
+	'-': {'D', 'E'},      // Negatively charged
 }
-
 
 func IUPAC2Bases() map[rune][]rune {
 	return iupacToBases
 }
 
-
 func IUPAC2AAs() map[rune][]rune {
 	return iupacToAAs
 }
-
 
 // AllVariantsIUPAC takes a string as input
 // and returns all iupac variants as output

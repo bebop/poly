@@ -9,7 +9,7 @@ import (
 	"github.com/TimothyStiles/poly/transform/variants"
 )
 
-func Assertf (t *testing.T, cond bool, format string, args ...any) {
+func Assertf(t *testing.T, cond bool, format string, args ...any) {
 	if !cond {
 		t.Errorf(format, args...)
 	}

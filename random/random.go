@@ -10,10 +10,8 @@ import (
 	"github.com/TimothyStiles/poly/transform/variants"
 )
 
-
 var iupacToBases = variants.IUPAC2Bases()
 var iupacToAAs = variants.IUPAC2AAs()
-
 
 // ProteinSequence returns a random protein sequence string of a given length and seed.
 // All returned sequences start M (Methionine) and end with * (stop codon).
@@ -46,12 +44,10 @@ func ProteinSequence(length int, seed int64) (string, error) {
 	return string(randomSequence), nil
 }
 
-
 func RandomRune(runes []rune) rune {
 	randomIndex := rand.Intn(len(runes))
 	return runes[randomIndex]
 }
-
 
 func ProteinSequenceFromPattern(pattern string, seed int64) string {
 	randomSequence := make([]rune, len(pattern))
@@ -67,12 +63,10 @@ func ProteinSequenceFromPattern(pattern string, seed int64) string {
 	return string(randomSequence)
 }
 
-
 // DNASequence returns a random DNA sequence string of a given length and seed.
 func DNASequence(length int, seed int64) (string, error) {
 	return randomNucelotideSequence(length, seed, []rune("ACTG")), nil
 }
-
 
 func DNASequenceFromPattern(pattern string, seed int64) string {
 	randomSequence := make([]rune, len(pattern))
@@ -87,7 +81,6 @@ func DNASequenceFromPattern(pattern string, seed int64) string {
 	}
 	return string(randomSequence)
 }
-
 
 // RNASequence returns a random DNA sequence string of a given length and seed.
 func RNASequence(length int, seed int64) (string, error) {
