@@ -177,12 +177,14 @@ func TestSubLocationStringParseRegression(t *testing.T) {
 
 	byteValue, _ := io.ReadAll(jsonFile)
 	var testParsedLocation Location
-	json.Unmarshal(byteValue, &testParsedLocation)
+	err = json.Unmarshal(byteValue, &testParsedLocation)
+	if err != nil {
+		t.Errorf("Failed to unmarshal json. Got err: %s", err)
+	}
 
 	if diff := cmp.Diff(parsedLocation, testParsedLocation); diff != "" {
 		t.Errorf("Failed to parse sublocation string. Got this diff:\n%s", diff)
 	}
-
 }
 
 func TestSnapgeneGenbankRegression(t *testing.T) {
