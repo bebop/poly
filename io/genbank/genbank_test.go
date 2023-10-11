@@ -1,6 +1,7 @@
 package genbank
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -167,7 +168,21 @@ func TestSubLocationStringParseRegression(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse location string. Got err: %s", err)
 	}
-	fmt.Println(parsedLocation)
+	jsonFile, err := os.Open("../../data/parseLocationRegressionTest.json")
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := io.ReadAll(jsonFile)
+	var testParsedLocation Location
+	json.Unmarshal(byteValue, &testParsedLocation)
+
+	if diff := cmp.Diff(parsedLocation, testParsedLocation); diff != "" {
+		t.Errorf("Failed to parse sublocation string. Got this diff:\n%s", diff)
+	}
+
 }
 
 func TestSnapgeneGenbankRegression(t *testing.T) {
