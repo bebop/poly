@@ -2,6 +2,7 @@ package genbank
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -158,6 +159,15 @@ func TestPartialLocationParseRegression(t *testing.T) {
 			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read().")
 		}
 	}
+}
+
+func TestSubLocationStringParseRegression(t *testing.T) {
+	location := "join(complement(5306942..5307394),complement(5304401..5305029),complement(5303328..5303393),complement(5301928..5302004))"
+	parsedLocation, err := parseLocation(location)
+	if err != nil {
+		t.Errorf("Failed to parse location string. Got err: %s", err)
+	}
+	fmt.Println(parsedLocation)
 }
 
 func TestSnapgeneGenbankRegression(t *testing.T) {
