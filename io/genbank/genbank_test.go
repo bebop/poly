@@ -116,12 +116,11 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 
 func TestGbLocationStringBuilder(t *testing.T) {
 	tmpDataDir, err := os.MkdirTemp("", "data-*")
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGb, _ := Read("../../data/t4_intron.gb")
+	scrubbedGb, err := Read("../../data/t4_intron.gb")
+	assert.NoError(t, err)
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGb.Features {
@@ -129,10 +128,13 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
-	_ = Write(scrubbedGb, tmpGbFilePath)
+	err = Write(scrubbedGb, tmpGbFilePath)
+	assert.NoError(t, err)
 
-	testInputGb, _ := Read("../../data/t4_intron.gb")
-	testOutputGb, _ := Read(tmpGbFilePath)
+	testInputGb, err := Read("../../data/t4_intron.gb")
+	assert.NoError(t, err)
+	testOutputGb, err := Read(tmpGbFilePath)
+	assert.NoError(t, err)
 
 	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
