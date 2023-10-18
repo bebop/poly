@@ -292,6 +292,15 @@ func TestOptimizeSequence(t *testing.T) {
 
 			wantErr: nil,
 		},
+		{
+			name: "giving no sequence to optimise",
+
+			sequenceToOptimise: "",
+			updateWeightsWith:  puc19,
+			wantOptimised:      optimisedGFP,
+
+			wantErr: errEmptyAminoAcidString,
+		},
 	}
 
 	for _, tt := range tests {
@@ -301,7 +310,7 @@ func TestOptimizeSequence(t *testing.T) {
 
 			optimizationTable := NewTranslationTable(11)
 			err := optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
-			if !errors.Is(err, tt.wantErr) {
+			if err != nil {
 				t.Fatal(err)
 			}
 
