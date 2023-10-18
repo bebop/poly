@@ -72,7 +72,8 @@ func (e invalidAminoAcidError) Error() string {
 	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
 }
 
-// Stats denotes a set of stats computed from a genebank file used to update a table's weights
+// Stats denotes a set of statistics we maintain throughout the translation table's lifetime. For example we track
+// the start codons observed when we update the codon table's weights with other DNA sequences
 type Stats struct {
 	StartCodonCount map[string]int
 	GeneCount       int
@@ -102,7 +103,8 @@ type Table interface {
 	OptimizeSequence(aminoAcids string, randomState ...int) (string, error)
 }
 
-// TranslationTable holds information for a codon table.
+// TranslationTable contains a weighted codon table, which is used when translating and optimizing sequences. The
+// weights can be updated through the codon frequencies we observe in given DNA sequences.
 type TranslationTable struct {
 	StartCodons []string    `json:"start_codons"`
 	StopCodons  []string    `json:"stop_codons"`
@@ -115,6 +117,8 @@ type TranslationTable struct {
 	stats *Stats
 }
 
+// Copy returns a deep copy of the translation table. This is to prevent an unintended update of data used in another
+// process, since the tables are generated at build time.
 func (table *TranslationTable) Copy() *TranslationTable {
 	return &TranslationTable{
 		StartCodons: table.StartCodons,
@@ -129,14 +133,19 @@ func (table *TranslationTable) Copy() *TranslationTable {
 	}
 }
 
+// GetWeightedAminoAcids returns the amino acids along with their associated codon weights
 func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
 	return table.AminoAcids
 }
 
+// GetStats returns a set of statistics we maintain throughout the translation table's lifetime. For example we track
+// the start codons observed when we update the codon table's weights with other DNA sequences
 func (table *TranslationTable) GetStats() *Stats {
 	return table.stats
 }
 
+// OptimizeSequence will return a set of codons which can be used to encode the given amino acid sequence. The codons
+// picked are weighted according to the computed translation table's weights
 func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState ...int) (string, error) {
 	// Finding any given aminoAcid is dependent upon it being capitalized, so
 	// we do that here.
@@ -168,6 +177,7 @@ func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState .
 	return codons.String(), nil
 }
 
+// UpdateWeights will update the translation table's codon pickers with the given amino acid codon weights
 func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
 	// regenerate a map of codons -> amino acid
 
@@ -191,6 +201,12 @@ func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
 	return nil
 }
 
+// UpdateWeightsWithSequence will look at the coding regions in the given genbank data, and use those to generate new
+// weights for the codons in the translation table. The next time a sequence is optimised, it will use those updated
+// weights.
+//
+// This can be used to, for example, figure out which DNA sequence is needed to give the best yield of protein when
+// trying to express a protein across different species
 func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) error {
 	codingRegions, err := extractCodingRegion(data)
 	if err != nil {
@@ -212,6 +228,7 @@ func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) e
 	return table.UpdateWeights(newWeights)
 }
 
+// Translate will return an amino acid sequence which the given DNA will yield
 func (table *TranslationTable) Translate(dnaSeq string) (string, error) {
 	if dnaSeq == "" {
 		return "", errEmptySequenceString
