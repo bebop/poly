@@ -297,7 +297,7 @@ func TestOptimizeSequence(t *testing.T) {
 
 			sequenceToOptimise: "",
 			updateWeightsWith:  puc19,
-			wantOptimised:      optimisedGFP,
+			wantOptimised:      "",
 
 			wantErr: errEmptyAminoAcidString,
 		},
