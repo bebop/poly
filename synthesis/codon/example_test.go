@@ -34,9 +34,7 @@ func ExampleTranslationTable_OptimizeSequence() {
 		}
 	}
 
-	stats := codonTable.GetStats()
-
-	if stopCodonCount != stats.GeneCount {
+	if stopCodonCount != codonTable.Stats.GeneCount {
 		fmt.Println("Stop codons don't equal number of genes!")
 	}
 

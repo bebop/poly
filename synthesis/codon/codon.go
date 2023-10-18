@@ -114,7 +114,7 @@ type TranslationTable struct {
 	StartCodonTable map[string]string
 	Choosers        map[string]weightedRand.Chooser
 
-	stats *Stats
+	Stats *Stats
 }
 
 // Copy returns a deep copy of the translation table. This is to prevent an unintended update of data used in another
@@ -129,19 +129,13 @@ func (table *TranslationTable) Copy() *TranslationTable {
 		TranslationMap:  table.TranslationMap,
 		Choosers:        table.Choosers,
 
-		stats: table.stats,
+		Stats: table.Stats,
 	}
 }
 
 // GetWeightedAminoAcids returns the amino acids along with their associated codon weights
 func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
 	return table.AminoAcids
-}
-
-// GetStats returns a set of statistics we maintain throughout the translation table's lifetime. For example we track
-// the start codons observed when we update the codon table's weights with other DNA sequences
-func (table *TranslationTable) GetStats() *Stats {
-	return table.stats
 }
 
 // OptimizeSequence will return a set of codons which can be used to encode the given amino acid sequence. The codons
@@ -214,8 +208,8 @@ func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) e
 	}
 
 	for _, sequence := range codingRegions {
-		table.stats.StartCodonCount[sequence[:3]]++
-		table.stats.GeneCount++
+		table.Stats.StartCodonCount[sequence[:3]]++
+		table.Stats.GeneCount++
 	}
 
 	if len(codingRegions) == 0 {
@@ -456,7 +450,7 @@ func generateCodonTable(aminoAcids, starts string) *TranslationTable {
 		TranslationMap:  translationMap,
 		StartCodonTable: startCodonsMap,
 		Choosers:        chooser,
-		stats:           NewStats(),
+		Stats:           NewStats(),
 	}
 }
 
