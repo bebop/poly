@@ -22,7 +22,7 @@ func ExampleTranslationTable_OptimizeSequence() {
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 	codonTable := codon.NewTranslationTable(11)
-	stats, _ := codonTable.UpdateWeightsWithSequence(sequence)
+	_ = codonTable.UpdateWeightsWithSequence(sequence)
 
 	// Here, we double check if the number of genes is equal to the number of stop codons
 	stopCodonCount := 0
@@ -33,6 +33,9 @@ func ExampleTranslationTable_OptimizeSequence() {
 			}
 		}
 	}
+
+	stats := codonTable.GetStats()
+
 	if stopCodonCount != stats.GeneCount {
 		fmt.Println("Stop codons don't equal number of genes!")
 	}
@@ -76,14 +79,14 @@ func ExampleCompromiseCodonTable() {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codon.NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	optimizationTable2 := codon.NewTranslationTable(11)
-	_, err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
@@ -104,14 +107,14 @@ func ExampleAddCodonTable() {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codon.NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	optimizationTable2 := codon.NewTranslationTable(11)
-	_, err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}

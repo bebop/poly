@@ -69,7 +69,7 @@ func TestOptimize(t *testing.T) {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	table := NewTranslationTable(11)
-	_, err := table.UpdateWeightsWithSequence(sequence)
+	err := table.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -88,7 +88,7 @@ func TestOptimizeSameSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
 	optimizationTable := NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,7 +110,7 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
 	optimizationTable := NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -215,14 +215,14 @@ func TestCompromiseCodonTable(t *testing.T) {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 
 	optimizationTable := NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	optimizationTable2 := NewTranslationTable(11)
-	_, err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -244,7 +244,7 @@ func TestCapitalizationRegression(t *testing.T) {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	optimizationTable := NewTranslationTable(11)
-	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}

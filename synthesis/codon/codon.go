@@ -111,6 +111,8 @@ type TranslationTable struct {
 	TranslationMap  map[string]string
 	StartCodonTable map[string]string
 	Choosers        map[string]weightedRand.Chooser
+
+	stats *Stats
 }
 
 func (table *TranslationTable) Copy() *TranslationTable {
@@ -122,7 +124,17 @@ func (table *TranslationTable) Copy() *TranslationTable {
 		StartCodonTable: table.StartCodonTable,
 		TranslationMap:  table.TranslationMap,
 		Choosers:        table.Choosers,
+
+		stats: table.stats,
 	}
+}
+
+func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
+	return table.AminoAcids
+}
+
+func (table *TranslationTable) GetStats() *Stats {
+	return table.stats
 }
 
 func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState ...int) (string, error) {
@@ -156,10 +168,6 @@ func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState .
 	return codons.String(), nil
 }
 
-func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
-	return table.AminoAcids
-}
-
 func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
 	// regenerate a map of codons -> amino acid
 
@@ -183,32 +191,25 @@ func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
 	return nil
 }
 
-func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) (*Stats, error) {
-	stats := NewStats()
-
+func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) error {
 	codingRegions, err := extractCodingRegion(data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, sequence := range codingRegions {
-		stats.StartCodonCount[sequence[:3]]++
-		stats.GeneCount++
+		table.stats.StartCodonCount[sequence[:3]]++
+		table.stats.GeneCount++
 	}
 
 	if len(codingRegions) == 0 {
-		return nil, errNoCodingRegions
+		return errNoCodingRegions
 	}
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	newWeights := weightAminoAcids(strings.Join(codingRegions, ""), table.AminoAcids)
 
-	err = table.UpdateWeights(newWeights)
-	if err != nil {
-		return nil, err
-	}
-
-	return stats, nil
+	return table.UpdateWeights(newWeights)
 }
 
 func (table *TranslationTable) Translate(dnaSeq string) (string, error) {
@@ -431,7 +432,15 @@ func generateCodonTable(aminoAcids, starts string) *TranslationTable {
 		panic(fmt.Errorf("tried to generate an invalid codon table %w", err))
 	}
 
-	return &TranslationTable{startCodons, stopCodons, aminoAcidSlice, translationMap, startCodonsMap, chooser}
+	return &TranslationTable{
+		StartCodons:     startCodons,
+		StopCodons:      stopCodons,
+		AminoAcids:      aminoAcidSlice,
+		TranslationMap:  translationMap,
+		StartCodonTable: startCodonsMap,
+		Choosers:        chooser,
+		stats:           NewStats(),
+	}
 }
 
 // NewTranslationTable takes the index of desired NCBI codon table and returns it.
