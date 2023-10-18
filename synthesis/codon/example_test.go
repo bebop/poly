@@ -76,11 +76,17 @@ func ExampleCompromiseCodonTable() {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codon.NewTranslationTable(11)
-	optimizationTable.UpdateWeightsWithSequence(sequence)
+	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	optimizationTable2 := codon.NewTranslationTable(11)
-	optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	_, err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
 	finalTable, _ := codon.CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
 	for _, aa := range finalTable.GetWeightedAminoAcids() {
@@ -98,13 +104,23 @@ func ExampleAddCodonTable() {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codon.NewTranslationTable(11)
-	optimizationTable.UpdateWeightsWithSequence(sequence)
+	_, err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
 	optimizationTable2 := codon.NewTranslationTable(11)
-	optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	_, err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
-	finalTable := codon.AddCodonTable(optimizationTable, optimizationTable2)
+	finalTable, err := codon.AddCodonTable(optimizationTable, optimizationTable2)
+	if err != nil {
+		panic(fmt.Errorf("got error in adding codon table example: %w", err))
+	}
+
 	for _, aa := range finalTable.GetWeightedAminoAcids() {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "GGC" {

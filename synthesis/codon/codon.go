@@ -57,7 +57,6 @@ with a whole section on how it works and why it's gotta be that way.
 ******************************************************************************/
 
 var (
-	errEmptyCodonTable      = errors.New("empty codon table")
 	errNoCodingRegions      = errors.New("no coding regions found")
 	errEmptyAminoAcidString = errors.New("empty amino acid string")
 	errEmptySequenceString  = errors.New("empty sequence string")
@@ -651,14 +650,17 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable *TranslationTable, c
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	mergedTable.UpdateWeights(finalAminoAcids)
+	err := mergedTable.UpdateWeights(finalAminoAcids)
+	if err != nil {
+		return nil, err
+	}
 
 	return mergedTable, nil
 }
 
 // AddCodonTable takes 2 CodonTables and adds them together to create
 // a new codonTable.
-func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) *TranslationTable {
+func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) (*TranslationTable, error) {
 	// Add up codons
 	var finalAminoAcids []AminoAcid
 	for _, firstAa := range firstCodonTable.AminoAcids {
@@ -676,7 +678,11 @@ func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) *Transla
 	}
 
 	mergedTable := firstCodonTable.Copy()
-	mergedTable.UpdateWeights(finalAminoAcids)
 
-	return mergedTable
+	err := mergedTable.UpdateWeights(finalAminoAcids)
+	if err != nil {
+		return nil, err
+	}
+
+	return mergedTable, nil
 }
