@@ -208,9 +208,9 @@ func (table *TranslationTable) UpdateWeightsWithSequence(data genbank.Genbank) e
 		return err
 	}
 
+	table.Stats.GeneCount = len(codingRegions)
 	for _, sequence := range codingRegions {
 		table.Stats.StartCodonCount[sequence[:3]]++
-		table.Stats.GeneCount++
 	}
 
 	if len(codingRegions) == 0 {
