@@ -191,6 +191,7 @@ func (table *TranslationTable) UpdateWeights(aminoAcids []AminoAcid) error {
 	}
 
 	table.Choosers = updatedChoosers
+	table.AminoAcids = aminoAcids
 
 	return nil
 }

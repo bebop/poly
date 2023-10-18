@@ -122,7 +122,7 @@ func ExampleAddCodonTable() {
 		panic(fmt.Errorf("got error in adding codon table example: %w", err))
 	}
 
-	for _, aa := range finalTable.GetWeightedAminoAcids() {
+	for _, aa := range finalTable.AminoAcids {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "GGC" {
 				fmt.Println(codon.Weight)
