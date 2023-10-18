@@ -1,6 +1,7 @@
 package codon
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -249,10 +250,69 @@ func TestCapitalizationRegression(t *testing.T) {
 		t.Error(err)
 	}
 
-	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation)
+	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, 1)
 	optimizedSequenceTranslation, _ := optimizationTable.Translate(optimizedSequence)
 
 	if optimizedSequenceTranslation != strings.ToUpper(gfpTranslation) {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
+}
+
+func TestOptimizeSequence(t *testing.T) {
+	t.Parallel()
+
+	var (
+		gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+		optimisedGFP   = "ATGGCAAGTAAGGGAGAAGAGCTTTTTACCGGCGTAGTACCAATTCTGGTAGAACTGGATGGTGATGTAAACGGTCACAAATTTAGTGTAAGCGGAGAAGGTGAGGGTGATGCTACCTATGGCAAACTGACCCTAAAGTTTATATGCACGACTGGAAAACTTCCGGTACCGTGGCCAACGTTAGTTACAACGTTTTCTTATGGAGTACAGTGCTTCAGCCGCTACCCAGATCATATGAAACGCCATGATTTCTTTAAGAGCGCCATGCCAGAGGGTTATGTTCAGGAGCGCACGATCTCGTTTAAGGATGATGGTAACTATAAGACTCGTGCTGAGGTGAAGTTCGAAGGCGATACCCTTGTAAATCGTATTGAATTGAAGGGTATAGACTTCAAGGAGGATGGAAATATTCTTGGACATAAGCTGGAATACAATTACAATTCACATAACGTTTATATAACTGCCGACAAGCAAAAAAACGGGATAAAAGCTAATTTTAAAATACGCCACAACATAGAGGACGGGTCGGTGCAACTAGCCGATCATTATCAACAAAACACACCAATCGGCGACGGACCAGTTCTGTTGCCCGATAATCATTACTTATCAACCCAAAGTGCCTTAAGTAAGGATCCGAACGAAAAGCGCGATCATATGGTACTTCTTGAGTTTGTTACCGCTGCAGGCATAACGCATGGCATGGACGAGCTATACAAATAA"
+		puc19          = func() genbank.Genbank {
+			seq, err := genbank.Read("../../data/puc19.gbk")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			return seq
+		}()
+	)
+
+	tests := []struct {
+		name string
+
+		sequenceToOptimise string
+		updateWeightsWith  genbank.Genbank
+		wantOptimised      string
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			sequenceToOptimise: gfpTranslation,
+			updateWeightsWith:  puc19,
+			wantOptimised:      optimisedGFP,
+
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		var tt = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			optimizationTable := NewTranslationTable(11)
+			err := optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatal(err)
+			}
+
+			got, err := optimizationTable.OptimizeSequence(tt.sequenceToOptimise, 1)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+
+			if !cmp.Equal(got, tt.wantOptimised) {
+				t.Errorf("got and tt.wantOptimised didn't match %s", cmp.Diff(got, tt.wantOptimised))
+			}
+		})
 	}
 }
