@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Alternative start codons can now be used in the `synthesis/codon` DNA -> protein translation package (#305)
 - Added a parser and writer for the `pileup` sequence alignment format (#329)
+- Added option to fragmenter to fragment with only certain overhangs (#387)
 
 ### Fixed
 - `fastq` parser no longer becomes de-aligned when reading (#325)
