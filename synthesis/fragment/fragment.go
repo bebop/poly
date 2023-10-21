@@ -19,8 +19,6 @@ import (
 	"github.com/TimothyStiles/poly/transform"
 )
 
-var recursiveBuildOverhangs = []string{"CGAG", "GTCT", "GGGG", "AAAA", "AACT", "AATG", "ATCC", "CGCT", "TTCT", "AAGC", "ATAG", "ATTA", "ATGT", "ACTC", "ACGA", "TATC", "TAGG", "TACA", "TTAC", "TTGA", "TGGA", "GAAG", "GACC", "GCCG", "TCTG", "GTTG", "GTGC", "TGCC", "CTGG", "TAAA", "TGAG", "AAGA", "AGGT", "TTCG", "ACTA", "TTAG", "TCTC", "TCGG", "ATAA", "ATCA", "TTGC", "CACG", "AATA", "ACAA", "ATGG", "TATG", "AAAT", "TCAC"}
-
 // SetEfficiency gets the estimated fidelity rate of a given set of
 // GoldenGate overhangs.
 func SetEfficiency(overhangs []string) float64 {
