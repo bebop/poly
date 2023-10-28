@@ -178,7 +178,7 @@ func Simulate(sequences []string, targetTm float64, circular bool, primerList []
 
 func generatePcrFragments(sequence string, forwardLocation int, reverseLocation int, forwardPrimerIndxs []int, reversePrimerIndxs []int, minimalPrimers []string, primerList []string) []string {
 	var pcrFragments []string
-	for forwardPrimerIndex := range forwardPrimerIndxs {
+	for _, forwardPrimerIndex := range forwardPrimerIndxs {
 		minimalPrimer := minimalPrimers[forwardPrimerIndex]
 		fullPrimerForward := primerList[forwardPrimerIndex]
 		for _, reversePrimerIndex := range reversePrimerIndxs {
