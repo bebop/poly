@@ -57,12 +57,6 @@ type Meta struct {
 	SequenceHashFunction string            `json:"hash_function"`
 }
 
-// BaseCount is a struct that holds the base counts for a sequence.
-type BaseCount struct {
-	Base  string
-	Count int
-}
-
 // Feature holds the information for a feature in a Genbank file and other annotated sequence files.
 type Feature struct {
 	Type                 string            `json:"type"`
@@ -107,6 +101,12 @@ type Location struct {
 	ThreePrimePartial bool       `json:"three_prime_partial"`
 	GbkLocationString string     `json:"gbk_location_string"`
 	SubLocations      []Location `json:"sub_locations"`
+}
+
+// BaseCount is a struct that holds the base counts for a sequence.
+type BaseCount struct {
+	Base  string
+	Count int
 }
 
 // Precompiled regular expressions:
@@ -568,7 +568,6 @@ func (parser *Parser) Next() (*Genbank, error) {
 				}
 				break
 			}
-
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
 			if originFlag {
@@ -896,8 +895,8 @@ func getSourceOrganism(metadataData []string) (string, string, []string) {
 func parseLocation(locationString string) (Location, error) {
 	var location Location
 	location.GbkLocationString = locationString
-	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
+	if !strings.ContainsAny(locationString, "(") { // Case checks for simple expression of x..x
+		if !strings.ContainsAny(locationString, ".") { //Case checks for simple expression x
 			position, err := strconv.Atoi(locationString)
 			if err != nil {
 				return Location{}, err
