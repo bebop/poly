@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,6 +30,12 @@ import (
 GBK specific IO related things begin here.
 
 ******************************************************************************/
+
+var (
+	readFileFn        = os.ReadFile
+	parseMultiNthFn   = parseMultiNth
+	parseReferencesFn = parseReferences
+)
 
 // Genbank is the main struct for the Genbank file format.
 type Genbank struct {
@@ -1079,3 +1086,86 @@ func generateWhiteSpace(length int) string {
 GBK specific IO related things end here.
 
 ******************************************************************************/
+
+/******************************************************************************
+
+Old functions for testing here.
+
+We used to have integrated read files, before we had the generic parser
+interface. These are still here because of the need to switch over our tests.
+
+******************************************************************************/
+
+// read reads a GBK file from path and returns a Genbank struct.
+func read(path string) (Genbank, error) {
+	genbankSlice, err := readMultiNth(path, 1)
+	if err != nil {
+		return Genbank{}, err
+	}
+	genbank := genbankSlice[0]
+	return genbank, err
+}
+
+// readMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
+func readMulti(path string) ([]Genbank, error) {
+	return readMultiNth(path, -1)
+}
+
+// readMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
+func readMultiNth(path string, count int) ([]Genbank, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	sequence, err := parseMultiNthFn(file, count)
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	return sequence, nil
+}
+
+func parseMultiNth(r io.Reader, count int) ([]Genbank, error) {
+	parser := NewParser(r, bufio.MaxScanTokenSize)
+	var genbanks []Genbank
+	for i := 0; i < count; i++ {
+		gb, err := parser.Next()
+		if err != nil {
+			return genbanks, err
+		}
+		genbanks = append(genbanks, *gb)
+	}
+	return genbanks, nil
+}
+
+func parse(r io.Reader) (Genbank, error) {
+	parser := NewParser(r, bufio.MaxScanTokenSize)
+	gb, err := parser.Next()
+	return *gb, err
+}
+
+func write(gb Genbank, path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = gb.WriteTo(file)
+	return err
+}
+
+func writeMulti(gbs []Genbank, path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	for _, gb := range gbs {
+		_, err = gb.WriteTo(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

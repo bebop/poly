@@ -1,7 +1,6 @@
 package genbank
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,92 +17,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 )
-
-/******************************************************************************
-
-Gbk/gb/genbank related benchmarks begin here.
-
-******************************************************************************/
-
-var (
-	readFileFn        = os.ReadFile
-	parseMultiNthFn   = parseMultiNth
-	parseReferencesFn = parseReferences
-)
-
-// read reads a GBK file from path and returns a Genbank struct.
-func read(path string) (Genbank, error) {
-	genbankSlice, err := readMultiNth(path, 1)
-	if err != nil {
-		return Genbank{}, err
-	}
-	genbank := genbankSlice[0]
-	return genbank, err
-}
-
-// readMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
-func readMulti(path string) ([]Genbank, error) {
-	return readMultiNth(path, -1)
-}
-
-// readMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
-func readMultiNth(path string, count int) ([]Genbank, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	sequence, err := parseMultiNthFn(file, count)
-	if err != nil {
-		return []Genbank{}, err
-	}
-
-	return sequence, nil
-}
-
-func parseMultiNth(r io.Reader, count int) ([]Genbank, error) {
-	parser := NewParser(r, bufio.MaxScanTokenSize)
-	var genbanks []Genbank
-	for i := 0; i < count; i++ {
-		gb, err := parser.Next()
-		if err != nil {
-			return genbanks, err
-		}
-		genbanks = append(genbanks, *gb)
-	}
-	return genbanks, nil
-}
-
-func parse(r io.Reader) (Genbank, error) {
-	parser := NewParser(r, bufio.MaxScanTokenSize)
-	gb, err := parser.Next()
-	return *gb, err
-}
-
-func write(gb Genbank, path string) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = gb.WriteTo(file)
-	return err
-}
-
-func writeMulti(gbs []Genbank, path string) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	for _, gb := range gbs {
-		_, err = gb.WriteTo(file)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 /******************************************************************************
 
@@ -349,17 +262,17 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	}
 }
 
-func Benchmarkread(b *testing.B) {
+func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = read("../../data/bsub.gbk")
 	}
 }
 
-func Benchmarkread1(b *testing.B)     { Benchmarkread(b) }
-func Benchmarkread10(b *testing.B)    { Benchmarkread(b) }
-func Benchmarkread100(b *testing.B)   { Benchmarkread(b) }
-func Benchmarkread1000(b *testing.B)  { Benchmarkread(b) }
-func Benchmarkread10000(b *testing.B) { Benchmarkread(b) }
+func BenchmarkRead1(b *testing.B)     { BenchmarkRead(b) }
+func BenchmarkRead10(b *testing.B)    { BenchmarkRead(b) }
+func BenchmarkRead100(b *testing.B)   { BenchmarkRead(b) }
+func BenchmarkRead1000(b *testing.B)  { BenchmarkRead(b) }
+func BenchmarkRead10000(b *testing.B) { BenchmarkRead(b) }
 
 /******************************************************************************
 
@@ -429,7 +342,6 @@ func TestFeature_GetSequence_Legacy(t *testing.T) {
 func Test_parseLoopParameters_init(t *testing.T) {
 	type fields struct {
 		newLocation     bool
-		quoteActive     bool
 		attribute       string
 		attributeValue  string
 		sequenceBuilder strings.Builder
@@ -598,7 +510,7 @@ func Test_parseLocus(t *testing.T) {
 	}
 }
 
-func Testread(t *testing.T) {
+func TestRead(t *testing.T) {
 	type args struct {
 		path string
 	}
@@ -638,7 +550,7 @@ func Testread(t *testing.T) {
 	}
 }
 
-func TestreadMulti(t *testing.T) {
+func TestReadMulti(t *testing.T) {
 	type args struct {
 		path string
 	}
@@ -751,7 +663,7 @@ func Test_generateWhiteSpace(t *testing.T) {
 	}
 }
 
-func Testread_error(t *testing.T) {
+func TestRead_error(t *testing.T) {
 	readErr := errors.New("open /tmp/file: no such file or directory")
 	oldreadFileFn := readFileFn
 	readFileFn = func(filename string) ([]byte, error) {
