@@ -50,10 +50,17 @@ type Meta struct {
 	Origin               string            `json:"origin"`
 	Locus                Locus             `json:"locus"`
 	References           []Reference       `json:"references"`
+	BaseCount            []BaseCount       `json:"base_count"`
 	Other                map[string]string `json:"other"`
 	Name                 string            `json:"name"`
 	SequenceHash         string            `json:"sequence_hash"`
 	SequenceHashFunction string            `json:"hash_function"`
+}
+
+// BaseCount is a struct that holds the base counts for a sequence.
+type BaseCount struct {
+	Base  string
+	Count int
 }
 
 // Feature holds the information for a feature in a Genbank file and other annotated sequence files.
@@ -319,6 +326,27 @@ func (sequence *Genbank) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
+	// start writing base count
+	if len(sequence.Meta.BaseCount) > 0 {
+		newWrittenBytes, err = w.Write([]byte("BASE COUNT    "))
+		writtenBytes += int64(newWrittenBytes)
+		if err != nil {
+			return writtenBytes, err
+		}
+		for _, baseCount := range sequence.Meta.BaseCount {
+			newWrittenBytes, err = w.Write([]byte(strconv.Itoa(baseCount.Count) + " " + baseCount.Base + "   "))
+			writtenBytes += int64(newWrittenBytes)
+			if err != nil {
+				return writtenBytes, err
+			}
+		}
+		newWrittenBytes, err = w.Write([]byte("\n"))
+		writtenBytes += int64(newWrittenBytes)
+		if err != nil {
+			return writtenBytes, err
+		}
+	}
+
 	// start writing sequence section.
 	newWrittenBytes, err = w.Write([]byte("ORIGIN\n"))
 	writtenBytes += int64(newWrittenBytes)
@@ -394,7 +422,7 @@ type parseLoopParameters struct {
 	emptyAttribute   bool
 	sequenceBuilder  strings.Builder
 	parseStep        string
-	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
+	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.
 	feature          Feature
 	features         []Feature
 	metadataTag      string
@@ -444,7 +472,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 	}
 }
 
-// ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
+// Next takes in a reader representing a multi gbk/gb/genbank file and outputs the next record
 func (parser *Parser) Next() (*Genbank, error) {
 	parser.parameters.init()
 	// Loop through each line of the file
@@ -494,7 +522,8 @@ func (parser *Parser) Next() (*Genbank, error) {
 				case "SOURCE":
 					parser.parameters.genbank.Meta.Source, parser.parameters.genbank.Meta.Organism, parser.parameters.genbank.Meta.Taxonomy = getSourceOrganism(parser.parameters.metadataData)
 				case "REFERENCE":
-					reference, err := parseReferences(parser.parameters.metadataData)
+					// parseReferencesFn = parseReferences in genbank_test. We use Fn for testing purposes.
+					reference, err := parseReferencesFn(parser.parameters.metadataData)
 					if err != nil {
 						return &Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
 					}
@@ -522,6 +551,23 @@ func (parser *Parser) Next() (*Genbank, error) {
 				parser.parameters.metadataData = append(parser.parameters.metadataData, line)
 			}
 		case "features":
+			baseCountFlag := strings.Contains(line, "BASE COUNT") // example string for BASE COUNT: "BASE COUNT    67070277 a   48055043 c   48111528 g   67244164 t   18475410 n"
+			if baseCountFlag {
+				fields := strings.Fields(line)
+				for countIndex := 2; countIndex < len(fields)-1; countIndex += 2 { // starts at two because we don't want to include "BASE COUNT" in our fields
+					count, err := strconv.Atoi(fields[countIndex])
+					if err != nil {
+						return &Genbank{}, err
+					}
+
+					baseCount := BaseCount{
+						Base:  fields[countIndex+1],
+						Count: count,
+					}
+					parser.parameters.genbank.Meta.BaseCount = append(parser.parameters.genbank.Meta.BaseCount, baseCount)
+				}
+				break
+			}
 
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
@@ -880,26 +926,34 @@ func parseLocation(locationString string) (Location, error) {
 			if strings.ContainsAny(expression, "(") {
 				firstInnerParentheses := strings.Index(expression, "(")
 				ParenthesesCount := 1
-				comma := 0
-				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParentheses+i] {
-					case []byte("(")[0]:
+				prevSubLocationStart := 0
+				for i := firstInnerParentheses + 1; i < len(expression); i++ { // "(" is at 0, so we start at 1
+					switch expression[i] {
+					case '(':
 						ParenthesesCount++
-					case []byte(")")[0]:
+					case ')':
 						ParenthesesCount--
+					case ',':
+						if ParenthesesCount == 0 {
+							parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:i])
+							if err != nil {
+								return Location{}, err
+							}
+							parsedSubLocation.GbkLocationString = locationString
+							location.SubLocations = append(location.SubLocations, parsedSubLocation)
+							prevSubLocationStart = i + 1
+						}
 					}
 				}
-				parseLeftLocation, err := parseLocation(expression[:firstInnerParentheses+comma+1])
+				if ParenthesesCount != 0 {
+					return Location{}, fmt.Errorf("Unbalanced parentheses")
+				}
+				parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:])
 				if err != nil {
 					return Location{}, err
 				}
-				parseRightLocation, err := parseLocation(expression[2+firstInnerParentheses+comma:])
-				if err != nil {
-					return Location{}, err
-				}
-
-				location.SubLocations = append(location.SubLocations, parseLeftLocation, parseRightLocation)
+				parsedSubLocation.GbkLocationString = locationString
+				location.SubLocations = append(location.SubLocations, parsedSubLocation)
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
 					joinLocation, err := parseLocation(numberRange)
