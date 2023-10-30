@@ -773,7 +773,6 @@ func TestParse_error(t *testing.T) {
 }
 
 func TestParseReferences_error(t *testing.T) {
-	parseReferencesErr := errors.New("Failed in parsing reference above line 13. Got error: ")
 	oldParseReferencesFn := parseReferencesFn
 	parseReferencesFn = func(metadataData []string) (Reference, error) {
 		return Reference{}, errors.New("")
@@ -783,7 +782,7 @@ func TestParseReferences_error(t *testing.T) {
 	}()
 	file, _ := os.Open("../../data/puc19.gbk")
 	_, err := parseMultiNthFn(file, 1)
-	assert.EqualError(t, err, parseReferencesErr.Error())
+	assert.Error(t, err)
 }
 
 func TestIssue303Regression(t *testing.T) {
@@ -808,4 +807,9 @@ func TestConsortiumRegression(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to read consrtm. Got err: %s", err)
 	}
+}
+
+func TestParseS288C_IX(t *testing.T) {
+	_, err := ReadMulti("../../data/NC_001141.2.gb")
+	assert.Nil(t, err)
 }

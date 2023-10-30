@@ -193,7 +193,7 @@ func (feature *Feature) UnmarshalJSON(data []byte) error {
 
 // Creates deep copy of Feature, which supports safe duplication
 func (feature *Feature) Copy() Feature {
-	attributes = multimap.NewMapSlice[string, string]()
+	attributes := multimap.NewMapSlice[string, string]()
 	feature.Attributes.Each(func(key string, value string) {
 		attributes.Put(key, value)
 	})
@@ -211,7 +211,7 @@ func (feature *Feature) Copy() Feature {
 // Creates deep copy of Location, which supports safe duplication
 func (location *Location) Copy() Location {
 	sublocations := make([]Location, len(location.SubLocations))
-	for i, s := range location.SubLocations {
+	for i, _ := range location.SubLocations {
 		sublocations[i] = location.SubLocations[i].Copy()
 	}
 	return Location{
@@ -501,6 +501,14 @@ func (params *parseLoopParameters) init() {
 	params.genbank.Meta.Other = make(map[string]string)
 }
 
+func parseError(line string, lineNum int, err error, info string) error {
+	if err == nil {
+		return fmt.Errorf("Line %d malformed (%s): %s", lineNum, info, line)
+	} else {
+		return fmt.Errorf("Line %d malformed (%s): %s\n%v", lineNum, info, line, err)
+	}
+}
+
 // ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
 func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 	scanner := bufio.NewScanner(r)
@@ -510,6 +518,23 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 	var parameters parseLoopParameters
 	parameters.init()
+
+	// save our completed attribute / qualifier string to the current feature
+	saveAttribute := func() {
+		newValue := parameters.attributeValue != ""
+		emptyType := parameters.feature.Type != ""
+		if newValue || emptyType {
+			if newValue {
+				parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
+			}
+			parameters.features = append(parameters.features, parameters.feature)
+
+			parameters.attributeValue = ""
+			parameters.attribute = ""
+			parameters.feature = Feature{}
+			parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
+		}
+	}
 
 	// Loop through each line of the file
 	for lineNum := 0; scanner.Scan(); lineNum++ {
@@ -539,7 +564,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
-				return genbanks, fmt.Errorf("Empty metadata line on line %d", lineNum)
+				return genbanks, parseError(line, lineNum, nil, "empty metadata line")
 			}
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
@@ -560,7 +585,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				case "REFERENCE":
 					reference, err := parseReferencesFn(parameters.metadataData)
 					if err != nil {
-						return []Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return []Genbank{}, parseError(line, lineNum, err, "reference")
 					}
 					parameters.genbank.Meta.References = append(parameters.genbank.Meta.References, reference)
 
@@ -593,7 +618,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				for countIndex := 2; countIndex < len(fields)-1; countIndex += 2 { // starts at two because we don't want to include "BASE COUNT" in our fields
 					count, err := strconv.Atoi(fields[countIndex])
 					if err != nil {
-						return []Genbank{}, err
+						return []Genbank{}, parseError(line, lineNum, err, "base count")
 					}
 
 					baseCount := BaseCount{
@@ -606,23 +631,15 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			}
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
-			if originFlag {
+			contigFlag := strings.Contains(line, "CONTIG")
+			if originFlag || contigFlag {
 				parameters.parseStep = "sequence"
 
-				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
-					parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
-					parameters.features = append(parameters.features, parameters.feature)
-					parameters.attributeValue = ""
-					parameters.attribute = ""
-					parameters.feature = Feature{}
-					parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
-				} else {
-					parameters.features = append(parameters.features, parameters.feature)
-				}
+				saveAttribute()
 
 				// add our features to the genbank
 				for _, feature := range parameters.features {
+					// TODO: parse location when line is read, or track line number so error is localized
 					location, err := parseLocation(feature.Location.GbkLocationString)
 					if err != nil {
 						return []Genbank{}, err
@@ -633,39 +650,32 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 						return []Genbank{}, err
 					}
 				}
-				continue
-			} // end sequence parsing flag logic
 
-			// check if current line contains anything but whitespace
-			trimmedLine := strings.TrimSpace(line)
-			if len(trimmedLine) < 1 {
+				if contigFlag {
+					parameters.genbank.Meta.Other["CONTIG"] = parseMetadata(splitLine[1:])
+				}
 				continue
 			}
 
-			// determine if current line is a new top level feature
-			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
-				// save our completed attribute / qualifier string to the current feature
-				if parameters.attributeValue != "" {
-					parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
-					parameters.features = append(parameters.features, parameters.feature)
-					parameters.attributeValue = ""
-					parameters.attribute = ""
-					parameters.feature = Feature{}
-					parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
-				}
+			// check if current line contains anything but whitespace
+			trimmedLine := strings.TrimSpace(line)
+			if len(trimmedLine) == 0 {
+				continue
+			}
 
-				// }
-				// checks for empty types
-				if parameters.feature.Type != "" {
-					parameters.features = append(parameters.features, parameters.feature)
-				}
+			indent := countLeadingSpaces(parameters.currentLine)
+			// determine if current line is a new top level feature
+			if indent == 0 {
+				return genbanks, parseError(line, lineNum, nil, "unexpected metadata when parsing feature")
+			} else if indent < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
+				saveAttribute()
 
 				parameters.feature = Feature{}
 				parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
 
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
-					return genbanks, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+					return genbanks, parseError(line, lineNum, nil, "feature")
 				}
 				parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
@@ -707,11 +717,13 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 				parameters.attributeValue = removeAttributeValueQuotes
 				parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
+			} else {
+				return genbanks, parseError(line, lineNum, nil, "feature line")
 			}
 
 		case "sequence":
 			if len(line) < 2 { // throw error if line is malformed
-				return genbanks, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+				return genbanks, parseError(line, lineNum, nil, "too short line found while parsing genbank sequence")
 			} else if line[0:2] == "//" { // end of sequence
 				parameters.genbank.Sequence = parameters.sequenceBuilder.String()
 
@@ -933,7 +945,7 @@ func parseLocation(locationString string) (Location, error) {
 	location.GbkLocationString = locationString
 	if !strings.ContainsAny(locationString, "(") { // Case checks for simple expression of x..x
 		if !strings.ContainsAny(locationString, ".") { //Case checks for simple expression x
-			position, err := strconv.Atoi(locationString)
+			position, err := strconv.Atoi(partialRegex.ReplaceAllString(locationString, ""))
 			if err != nil {
 				return Location{}, err
 			}
