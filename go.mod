@@ -9,6 +9,7 @@ require (
 	github.com/mroth/weightedrand v0.4.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/sergi/go-diff v1.2.0
+	github.com/spaolacci/murmur3 v1.1.0
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	lukechampine.com/blake3 v1.1.5
 )
@@ -16,9 +17,6 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.13 // indirect
-	github.com/segmentio/fasthash v1.0.3 // indirect
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/zyedidia/generic v1.2.1 // indirect
 )
 
 require (
