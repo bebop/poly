@@ -211,7 +211,7 @@ func (feature *Feature) Copy() Feature {
 // Creates deep copy of Location, which supports safe duplication
 func (location *Location) Copy() Location {
 	sublocations := make([]Location, len(location.SubLocations))
-	for i, _ := range location.SubLocations {
+	for i := range location.SubLocations {
 		sublocations[i] = location.SubLocations[i].Copy()
 	}
 	return Location{
