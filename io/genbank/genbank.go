@@ -137,6 +137,16 @@ var (
 	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
 )
 
+func (sequence *Genbank) MarshalWithFeatureSequences() ([]byte, error) {
+	for _, f := range sequence.Features {
+		_, err := f.GetSequence(true)
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+	return json.Marshal(sequence)
+}
+
 // AddFeature adds a feature to a Genbank struct.
 // NOTE: This method assumes feature is not referenced in another location
 // as this only creates a shallow copy.
@@ -150,8 +160,17 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 }
 
 // GetSequence returns the sequence of a feature.
-func (feature Feature) GetSequence() (string, error) {
-	return getFeatureSequence(feature, feature.Location)
+// If store is true, will store the result in feature.Sequence.
+// TODO: compute SequenceHash
+func (feature Feature) GetSequence(store bool) (string, error) {
+	if feature.Sequence != "" {
+		return feature.Sequence, nil
+	}
+	seq, err := getFeatureSequence(feature, feature.Location)
+	if err != nil && store {
+		feature.Sequence = seq
+	}
+	return seq, err
 }
 
 func (feature Feature) MarshalJSON() ([]byte, error) {
