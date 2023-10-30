@@ -93,6 +93,18 @@ In order to simplify the development experience, and environment setup, the poly
 
 Whether you're a beginner with Go or you're an experienced developer, You should see the suggestions popup automatically when you goto the *Plugins* tab in VSCode. Using these plugins can help accelerate the development experience and also allow you to work more collaboratively with other poly developers.
 
+## Local Checks
+
+Poly runs numerous CI/CD checks via Github Actions before a PR can be merged. In order to make your PR mergeable, your PR must pass all of these checks.
+
+A quick way to check your PR will pass is to run:
+
+```sh
+gofmt -s -w . && go test ./...
+```
+
+Additionally, you may want to [install](https://golangci-lint.run/usage/install/#local-installation) and run the linter.
+
 # How to report a bug
 
 ### Security disclosures

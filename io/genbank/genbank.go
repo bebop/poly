@@ -13,13 +13,13 @@ package genbank
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"encoding/json"
 
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/lunny/log"
@@ -79,13 +79,13 @@ type Feature struct {
 }
 
 type FeatureJSON struct {
-	Type                 string            `json:"type"`
-	Description          string            `json:"description"`
+	Type                 string              `json:"type"`
+	Description          string              `json:"description"`
 	Attributes           map[string][]string `json:"attributes"`
-	SequenceHash         string            `json:"sequence_hash"`
-	SequenceHashFunction string            `json:"hash_function"`
-	Sequence             string            `json:"sequence"`
-	Location             Location          `json:"location"`
+	SequenceHash         string              `json:"sequence_hash"`
+	SequenceHashFunction string              `json:"hash_function"`
+	Sequence             string              `json:"sequence"`
+	Location             Location            `json:"location"`
 }
 
 // Reference holds information for one reference in a Meta struct.
@@ -151,17 +151,17 @@ func (feature Feature) GetSequence() (string, error) {
 
 func (feature Feature) MarshalJSON() ([]byte, error) {
 	attributes := make(map[string][]string)
-	feature.Attributes.EachAssociation(func (key string, values []string) {
+	feature.Attributes.EachAssociation(func(key string, values []string) {
 		attributes[key] = values
 	})
 	return json.Marshal(FeatureJSON{
-		Type: feature.Type,
-		Description: feature.Description,
-		Attributes: attributes,
-		SequenceHash: feature.SequenceHash,
+		Type:                 feature.Type,
+		Description:          feature.Description,
+		Attributes:           attributes,
+		SequenceHash:         feature.SequenceHash,
 		SequenceHashFunction: feature.SequenceHashFunction,
-		Sequence: feature.Sequence,
-		Location: feature.Location,
+		Sequence:             feature.Sequence,
+		Location:             feature.Location,
 	})
 }
 
@@ -1050,7 +1050,7 @@ func BuildFeatureString(feature Feature) string {
 	returnString := featureHeader
 
 	if feature.Attributes != nil {
-		feature.Attributes.Each(func (key string, value string) {
+		feature.Attributes.Each(func(key string, value string) {
 			returnString += generateWhiteSpace(qualifierIndex) + "/" + key + "=\"" + value + "\"\n"
 		})
 	}
@@ -1078,14 +1078,14 @@ func EqualMultiMaps(this, other multimap.MultiMap[string, string]) bool {
 	if this.Size() != other.Size() {
 		return false
 	}
-	var allEqual bool = true
-	this.EachAssociation(func (key string, values []string) {
+	allEqual := true
+	this.EachAssociation(func(key string, values []string) {
 		allEqual = allEqual && EqualSlices(values, other.Get(key))
 	})
 	if !allEqual {
 		return false
 	}
-	other.EachAssociation(func (key string, values []string) {
+	other.EachAssociation(func(key string, values []string) {
 		allEqual = allEqual && EqualSlices(values, this.Get(key))
 	})
 	return allEqual
