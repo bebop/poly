@@ -14,8 +14,8 @@ import (
 func Example_basic() {
 	sequences, _ := genbank.Read("../../data/puc19.gbk")
 	for _, feature := range sequences.Features {
-		if feature.Attributes["gene"] == "bla" {
-			fmt.Println(feature.Attributes["note"])
+		if feature.Type == "CDS" && feature.Attributes.Has("gene") && feature.Attributes.Get("gene")[0] == "bla" {
+			fmt.Println(feature.Attributes.Get("note")[0])
 		}
 	}
 	// Output: confers resistance to ampicillin, carbenicillin, andrelated antibiotics

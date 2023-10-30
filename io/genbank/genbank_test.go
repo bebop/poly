@@ -34,6 +34,13 @@ var singleGbkPaths = []string{
 	// "../../data/pichia_chr1_head.gb",
 }
 
+func CmpOptions() []cmp.Option {
+	return []cmp.Option{
+		cmpopts.IgnoreFields(Feature{}, "ParentSequence"),
+		cmp.Comparer(EqualMultiMaps),
+	}
+}
+
 func TestGbkIO(t *testing.T) {
 	tmpDataDir, err := os.MkdirTemp("", "data-*")
 	if err != nil {
@@ -49,7 +56,7 @@ func TestGbkIO(t *testing.T) {
 		_ = Write(gbk, tmpGbkFilePath)
 
 		writeTestGbk, _ := Read(tmpGbkFilePath)
-		if diff := cmp.Diff(gbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+		if diff := cmp.Diff(gbk, writeTestGbk, CmpOptions()...); diff != "" {
 			t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
 		}
 	} // end test single gbk read, write, build, parse
@@ -82,7 +89,7 @@ func TestMultiGenbankIO(t *testing.T) {
 
 	writeTestGbk, _ := ReadMulti(tmpGbkFilePath)
 
-	if diff := cmp.Diff(multiGbk, writeTestGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+	if diff := cmp.Diff(multiGbk, writeTestGbk, CmpOptions()...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(gbkPath), diff)
 	}
 }
@@ -110,7 +117,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	testInputGbk, _ := Read("../../data/sample.gbk")
 	testOutputGbk, _ := Read(tmpGbkFilePath)
 
-	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+	if diff := cmp.Diff(testInputGbk, testOutputGbk, CmpOptions()...); diff != "" {
 		t.Errorf("Issue with partial location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -135,7 +142,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	testInputGb, _ := Read("../../data/t4_intron.gb")
 	testOutputGb, _ := Read(tmpGbFilePath)
 
-	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
+	if diff := cmp.Diff(testInputGb, testOutputGb, CmpOptions()...); diff != "" {
 		t.Errorf("Issue with either Join or complement location building. Parsing the output of Build() does not produce the same output as parsing the original file read with Read(). Got this diff:\n%s", diff)
 	}
 }
@@ -254,7 +261,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 
 	for _, feature := range gbk.Features {
 		if feature.Location.Start == 410 && feature.Location.End == 1750 && feature.Type == "CDS" {
-			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
+			if feature.Attributes.Get("product")[0] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}
 			break
@@ -783,13 +790,13 @@ func TestIssue303Regression(t *testing.T) {
 	seq, _ := Read("../../data/puc19_303_regression.gbk")
 	expectedAttribute := "16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"
 	for _, feature := range seq.Features {
-		if feature.Attributes["locus_tag"] == "JCVISYN3A_0004" && feature.Type == "CDS" {
-			if feature.Attributes["product"] != expectedAttribute {
-				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"], expectedAttribute)
+		if feature.Attributes.Has("locus_tag") && feature.Attributes.Get("locus_tag")[0] == "JCVISYN3A_0004" && feature.Type == "CDS" {
+			if feature.Attributes.Get("product")[0] != expectedAttribute {
+				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes.Get("product")[0], expectedAttribute)
 			}
 		}
-		if feature.Attributes["locus_tag"] == "JCVISYN3A_0051" && feature.Type == "CDS" {
-			if _, ok := feature.Attributes["pseudo"]; !ok {
+		if feature.Attributes.Has("locus_tag") && feature.Attributes.Get("locus_tag")[0] == "JCVISYN3A_0051" && feature.Type == "CDS" {
+			if ok := feature.Attributes.Has("pseudo"); !ok {
 				t.Errorf("pseudo should be in attributes")
 			}
 		}
