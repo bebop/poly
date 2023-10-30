@@ -138,6 +138,11 @@ var (
 )
 
 // AddFeature adds a feature to a Genbank struct.
+// NOTE: This method assumes feature is not referenced in another location
+// as this only creates a shallow copy.
+// If you intend to duplicate a feature from another Genbank and plan
+// to modify in either location, it is reocmmended you first call feature.Copy()
+// before passing as input to save yourself trouble.
 func (sequence *Genbank) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
@@ -184,6 +189,41 @@ func (feature *Feature) UnmarshalJSON(data []byte) error {
 	feature.Sequence = aux.Sequence
 	feature.Location = aux.Location
 	return nil
+}
+
+// Creates deep copy of Feature, which supports safe duplication
+func (feature *Feature) Copy() Feature {
+	attributes = multimap.NewMapSlice[string, string]()
+	feature.Attributes.Each(func(key string, value string) {
+		attributes.Put(key, value)
+	})
+	return Feature{
+		Type:                 feature.Type,
+		Description:          feature.Description,
+		Attributes:           attributes,
+		SequenceHash:         feature.SequenceHash,
+		SequenceHashFunction: feature.SequenceHashFunction,
+		Sequence:             feature.Sequence,
+		Location:             feature.Location.Copy(),
+	}
+}
+
+// Creates deep copy of Location, which supports safe duplication
+func (location *Location) Copy() Location {
+	sublocations := make([]Location, len(location.SubLocations))
+	for i, s := range location.SubLocations {
+		sublocations[i] = location.SubLocations[i].Copy()
+	}
+	return Location{
+		Start:             location.Start,
+		End:               location.End,
+		Complement:        location.Complement,
+		Join:              location.Join,
+		FivePrimePartial:  location.FivePrimePartial,
+		ThreePrimePartial: location.ThreePrimePartial,
+		GbkLocationString: location.GbkLocationString,
+		SubLocations:      sublocations,
+	}
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
