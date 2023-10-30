@@ -104,3 +104,9 @@ func TestWrite_error(t *testing.T) {
 	err := Write(Poly{}, "/tmp/file")
 	assert.EqualError(t, err, marshalIndentErr.Error())
 }
+
+func TestConvert(t *testing.T) {
+	sequence, err := Read("../../data/cat.json")
+	assert.NoError(t, err)
+	sequence.ToGenbank()
+}

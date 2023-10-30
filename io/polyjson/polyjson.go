@@ -13,7 +13,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/transform"
+	"github.com/zyedidia/generic/multimap"
 )
 
 /******************************************************************************
@@ -151,6 +153,72 @@ func Write(sequence Poly, path string) error {
 		return err
 	}
 	return os.WriteFile(path, file, 0644)
+}
+
+// convert -> genbank
+// TODO add convert <- genbank methods
+
+func (sequence *Poly) ToGenbank() genbank.Genbank {
+	gb := genbank.Genbank{
+		Meta:     sequence.Meta.ToGenbank(),
+		Features: make([]genbank.Feature, len(sequence.Features)),
+		Sequence: sequence.Sequence,
+	}
+	for i, f := range sequence.Features {
+		gb.Features[i] = f.ToGenbank()
+		gb.Features[i].ParentSequence = &gb
+	}
+	return gb
+}
+
+func (meta *Meta) ToGenbank() genbank.Meta {
+	other := make(map[string]string)
+	other["URL"] = meta.URL
+	other["CreatedBy"] = meta.CreatedBy
+	other["CreatedWith"] = meta.CreatedWith
+	other["CreatedOn"] = meta.CreatedOn.String()
+	other["Schema"] = meta.Schema
+	return genbank.Meta{
+		Definition:   meta.Description,
+		Source:       meta.CreatedBy,
+		Origin:       meta.CreatedWith,
+		Name:         meta.Name,
+		SequenceHash: meta.Hash,
+	}
+}
+
+func (feature *Feature) ToGenbank() genbank.Feature {
+	attributes := multimap.NewMapSlice[string, string]()
+	for key, value := range feature.Tags {
+		attributes.Put(key, value)
+	}
+	attributes.Put("Name", feature.Name)
+
+	return genbank.Feature{
+		Type:         feature.Type,
+		Description:  feature.Description,
+		Attributes:   attributes,
+		SequenceHash: feature.Hash,
+		Sequence:     feature.Sequence,
+		Location:     feature.Location.ToGenbank(),
+	}
+}
+
+func (location *Location) ToGenbank() genbank.Location {
+	sublocations := make([]genbank.Location, len(location.SubLocations))
+	for i, s := range location.SubLocations {
+		sublocations[i] = s.ToGenbank()
+	}
+	return genbank.Location{
+		Start:             location.Start,
+		End:               location.End,
+		Complement:        location.Complement,
+		Join:              location.Join,
+		FivePrimePartial:  location.FivePrimePartial,
+		ThreePrimePartial: location.ThreePrimePartial,
+		GbkLocationString: "",
+		SubLocations:      sublocations,
+	}
 }
 
 /******************************************************************************

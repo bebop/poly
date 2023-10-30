@@ -139,7 +139,7 @@ var (
 
 func (sequence *Genbank) MarshalWithFeatureSequences() ([]byte, error) {
 	for _, f := range sequence.Features {
-		_, err := f.GetSequence(true)
+		_, err := f.StoreSequence()
 		if err != nil {
 			return []byte{}, err
 		}
@@ -160,14 +160,19 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 }
 
 // GetSequence returns the sequence of a feature.
-// If store is true, will store the result in feature.Sequence.
+func (feature Feature) GetSequence() (string, error) {
+	return getFeatureSequence(feature, feature.Location)
+}
+
+// GetSequence returns the sequence of a feature.
+// This version will store the result in feature.Sequence.
 // TODO: compute SequenceHash
-func (feature Feature) GetSequence(store bool) (string, error) {
+func (feature Feature) StoreSequence() (string, error) {
 	if feature.Sequence != "" {
 		return feature.Sequence, nil
 	}
 	seq, err := getFeatureSequence(feature, feature.Location)
-	if err != nil && store {
+	if err != nil {
 		feature.Sequence = seq
 	}
 	return seq, err
