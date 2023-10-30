@@ -19,10 +19,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"encoding/json"
 
 	"github.com/TimothyStiles/poly/transform"
 	"github.com/lunny/log"
 	"github.com/mitchellh/go-wordwrap"
+	"github.com/zyedidia/generic/multimap"
 )
 
 /******************************************************************************
@@ -66,14 +68,24 @@ type Meta struct {
 
 // Feature holds the information for a feature in a Genbank file and other annotated sequence files.
 type Feature struct {
+	Type                 string
+	Description          string
+	Attributes           multimap.MultiMap[string, string]
+	SequenceHash         string
+	SequenceHashFunction string
+	Sequence             string
+	Location             Location
+	ParentSequence       *Genbank
+}
+
+type FeatureJSON struct {
 	Type                 string            `json:"type"`
 	Description          string            `json:"description"`
-	Attributes           map[string]string `json:"attributes"`
+	Attributes           map[string][]string `json:"attributes"`
 	SequenceHash         string            `json:"sequence_hash"`
 	SequenceHashFunction string            `json:"hash_function"`
 	Sequence             string            `json:"sequence"`
 	Location             Location          `json:"location"`
-	ParentSequence       *Genbank          `json:"-"`
 }
 
 // Reference holds information for one reference in a Meta struct.
@@ -135,6 +147,43 @@ func (sequence *Genbank) AddFeature(feature *Feature) error {
 // GetSequence returns the sequence of a feature.
 func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
+}
+
+func (feature Feature) MarshalJSON() ([]byte, error) {
+	attributes := make(map[string][]string)
+	feature.Attributes.EachAssociation(func (key string, values []string) {
+		attributes[key] = values
+	})
+	return json.Marshal(FeatureJSON{
+		Type: feature.Type,
+		Description: feature.Description,
+		Attributes: attributes,
+		SequenceHash: feature.SequenceHash,
+		SequenceHashFunction: feature.SequenceHashFunction,
+		Sequence: feature.Sequence,
+		Location: feature.Location,
+	})
+}
+
+// UnmarshalJSON implements the custom JSON unmarshaling for CustomStruct
+func (feature *Feature) UnmarshalJSON(data []byte) error {
+	var aux FeatureJSON
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	feature.Type = aux.Type
+	feature.Description = aux.Description
+	feature.Attributes = multimap.NewMapSlice[string, string]()
+	for key, values := range aux.Attributes {
+		for _, value := range values {
+			feature.Attributes.Put(key, value)
+		}
+	}
+	feature.SequenceHash = aux.SequenceHash
+	feature.SequenceHashFunction = aux.SequenceHashFunction
+	feature.Sequence = aux.Sequence
+	feature.Location = aux.Location
+	return nil
 }
 
 // getFeatureSequence takes a feature and location object and returns a sequence string.
@@ -406,7 +455,7 @@ type parseLoopParameters struct {
 // method to init loop parameters
 func (params *parseLoopParameters) init() {
 	params.newLocation = true
-	params.feature.Attributes = make(map[string]string)
+	params.feature.Attributes = multimap.NewMapSlice[string, string]()
 	params.parseStep = "metadata"
 	params.genbankStarted = false
 	params.genbank.Meta.Other = make(map[string]string)
@@ -522,12 +571,12 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
 					parameters.features = append(parameters.features, parameters.feature)
 					parameters.attributeValue = ""
 					parameters.attribute = ""
 					parameters.feature = Feature{}
-					parameters.feature.Attributes = make(map[string]string)
+					parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
 				} else {
 					parameters.features = append(parameters.features, parameters.feature)
 				}
@@ -557,12 +606,12 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			if countLeadingSpaces(parameters.currentLine) < countLeadingSpaces(parameters.prevline) || parameters.prevline == "FEATURES" {
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
 					parameters.features = append(parameters.features, parameters.feature)
 					parameters.attributeValue = ""
 					parameters.attribute = ""
 					parameters.feature = Feature{}
-					parameters.feature.Attributes = make(map[string]string)
+					parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
 				}
 
 				// }
@@ -572,7 +621,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 
 				parameters.feature = Feature{}
-				parameters.feature.Attributes = make(map[string]string)
+				parameters.feature.Attributes = multimap.NewMapSlice[string, string]()
 
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
@@ -599,7 +648,7 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 				}
 				// save our completed attribute / qualifier string to the current feature
 				if parameters.attributeValue != "" || parameters.emptyAttribute {
-					parameters.feature.Attributes[parameters.attribute] = parameters.attributeValue
+					parameters.feature.Attributes.Put(parameters.attribute, parameters.attributeValue)
 					parameters.emptyAttribute = false
 				}
 				parameters.attributeValue = ""
@@ -1000,13 +1049,10 @@ func BuildFeatureString(feature Feature) string {
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
 
-	qualifierKeys := make([]string, 0, len(feature.Attributes))
-	for key := range feature.Attributes {
-		qualifierKeys = append(qualifierKeys, key)
-	}
-
-	for _, qualifier := range qualifierKeys {
-		returnString += generateWhiteSpace(qualifierIndex) + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
+	if feature.Attributes != nil {
+		feature.Attributes.Each(func (key string, value string) {
+			returnString += generateWhiteSpace(qualifierIndex) + "/" + key + "=\"" + value + "\"\n"
+		})
 	}
 	return returnString
 }
@@ -1026,3 +1072,35 @@ func generateWhiteSpace(length int) string {
 GBK specific IO related things end here.
 
 ******************************************************************************/
+
+// utility functions when comparing Feature.Attributes
+func EqualMultiMaps(this, other multimap.MultiMap[string, string]) bool {
+	if this.Size() != other.Size() {
+		return false
+	}
+	var allEqual bool = true
+	this.EachAssociation(func (key string, values []string) {
+		allEqual = allEqual && EqualSlices(values, other.Get(key))
+	})
+	if !allEqual {
+		return false
+	}
+	other.EachAssociation(func (key string, values []string) {
+		allEqual = allEqual && EqualSlices(values, this.Get(key))
+	})
+	return allEqual
+}
+
+func EqualSlices[V comparable](this, other []V) bool {
+	if this == nil && other == nil {
+		return true
+	} else if this == nil || other == nil {
+		return false
+	}
+	for i, v := range this {
+		if v != other[i] {
+			return false
+		}
+	}
+	return true
+}
