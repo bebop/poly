@@ -34,10 +34,10 @@ var singleGbkPaths = []string{
 	// "../../data/pichia_chr1_head.gb",
 }
 
+// Ignore ParentSequence as that's a pointer which can't be serialized.
 func CmpOptions() []cmp.Option {
 	return []cmp.Option{
 		cmpopts.IgnoreFields(Feature{}, "ParentSequence"),
-		cmp.Comparer(EqualMultiMaps),
 	}
 }
 
@@ -261,7 +261,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 
 	for _, feature := range gbk.Features {
 		if feature.Location.Start == 410 && feature.Location.End == 1750 && feature.Type == "CDS" {
-			if feature.Attributes.Get("product")[0] != "chromosomal replication initiator informational ATPase" {
+			if feature.Attributes["product"][0] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}
 			break
@@ -757,9 +757,9 @@ func TestBuildFeatureString(t *testing.T) {
 }
 
 func TestParse_error(t *testing.T) {
-	parseMultiErr := errors.New("parse error")
+	parseMultiErr := &ParseError{info: "parse error"}
 	oldParseMultiNthFn := parseMultiNthFn
-	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, error) {
+	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, *ParseError) {
 		return nil, parseMultiErr
 	}
 	defer func() {
@@ -789,13 +789,14 @@ func TestIssue303Regression(t *testing.T) {
 	seq, _ := Read("../../data/puc19_303_regression.gbk")
 	expectedAttribute := "16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"
 	for _, feature := range seq.Features {
-		if feature.Attributes.Has("locus_tag") && feature.Attributes.Get("locus_tag")[0] == "JCVISYN3A_0004" && feature.Type == "CDS" {
-			if feature.Attributes.Get("product")[0] != expectedAttribute {
-				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes.Get("product")[0], expectedAttribute)
+		locus, ok := feature.Attributes["locus_tag"]
+		if ok && locus[0] == "JCVISYN3A_0004" && feature.Type == "CDS" {
+			if feature.Attributes["product"][0] != expectedAttribute {
+				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"][0], expectedAttribute)
 			}
 		}
-		if feature.Attributes.Has("locus_tag") && feature.Attributes.Get("locus_tag")[0] == "JCVISYN3A_0051" && feature.Type == "CDS" {
-			if ok := feature.Attributes.Has("pseudo"); !ok {
+		if ok && locus[0] == "JCVISYN3A_0051" && feature.Type == "CDS" {
+			if _, ok = feature.Attributes["pseudo"]; !ok {
 				t.Errorf("pseudo should be in attributes")
 			}
 		}

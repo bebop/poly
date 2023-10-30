@@ -15,7 +15,6 @@ import (
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/transform"
-	"github.com/zyedidia/generic/multimap"
 )
 
 /******************************************************************************
@@ -188,11 +187,11 @@ func (meta *Meta) ToGenbank() genbank.Meta {
 }
 
 func (feature *Feature) ToGenbank() genbank.Feature {
-	attributes := multimap.NewMapSlice[string, string]()
+	attributes := genbank.NewMultiMap[string, string]()
 	for key, value := range feature.Tags {
-		attributes.Put(key, value)
+		genbank.Put(attributes, key, value)
 	}
-	attributes.Put("Name", feature.Name)
+	genbank.Put(attributes, "Name", feature.Name)
 
 	return genbank.Feature{
 		Type:         feature.Type,
@@ -209,16 +208,17 @@ func (location *Location) ToGenbank() genbank.Location {
 	for i, s := range location.SubLocations {
 		sublocations[i] = s.ToGenbank()
 	}
-	return genbank.Location{
+	loc := genbank.Location{
 		Start:             location.Start,
 		End:               location.End,
 		Complement:        location.Complement,
 		Join:              location.Join,
 		FivePrimePartial:  location.FivePrimePartial,
 		ThreePrimePartial: location.ThreePrimePartial,
-		GbkLocationString: "",
 		SubLocations:      sublocations,
 	}
+	loc.GbkLocationString = genbank.BuildLocationString(loc)
+	return loc
 }
 
 /******************************************************************************

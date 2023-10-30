@@ -46,10 +46,10 @@ TTFN,
 Tim
 ******************************************************************************/
 
+// Ignore ParentSequence as that's a pointer which can't be serialized.
 func CmpOptions() []cmp.Option {
 	return []cmp.Option{
 		cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"),
-		cmp.Comparer(genbank.EqualMultiMaps),
 	}
 }
 
@@ -173,7 +173,6 @@ func TestFileIOTutorial(t *testing.T) {
 	}
 
 	// compare our read-in plasmid to the the one we wrote out.
-	// Ignore ParentSequence as that's a pointer which can't be serialized.
 	if diff := cmp.Diff(puc19, puc19Copy, CmpOptions()...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
 	}
