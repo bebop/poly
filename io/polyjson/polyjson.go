@@ -154,8 +154,9 @@ func Write(sequence Poly, path string) error {
 	return os.WriteFile(path, file, 0644)
 }
 
-// convert -> genbank
-// TODO add convert <- genbank methods
+// Utilities to convert polyjson objects -> their genbank equivalents
+// TODO add convert <- genbank methods, which is currently difficult as most
+// genbank Meta values are discarded due to lack of support for wildcard metadata in polyjson.
 
 func (sequence *Poly) ToGenbank() genbank.Genbank {
 	gb := genbank.Genbank{
@@ -172,17 +173,26 @@ func (sequence *Poly) ToGenbank() genbank.Genbank {
 
 func (meta *Meta) ToGenbank() genbank.Meta {
 	other := make(map[string]string)
-	other["URL"] = meta.URL
-	other["CreatedBy"] = meta.CreatedBy
-	other["CreatedWith"] = meta.CreatedWith
+	if meta.URL != "" {
+		other["URL"] = meta.URL
+	}
+	if meta.CreatedBy != "" {
+		other["CreatedBy"] = meta.CreatedBy
+	}
+	if meta.CreatedWith != "" {
+		other["CreatedWith"] = meta.CreatedWith
+	}
 	other["CreatedOn"] = meta.CreatedOn.String()
-	other["Schema"] = meta.Schema
+	if meta.Schema != "" {
+		other["Schema"] = meta.Schema
+	}
 	return genbank.Meta{
 		Definition:   meta.Description,
 		Source:       meta.CreatedBy,
 		Origin:       meta.CreatedWith,
 		Name:         meta.Name,
 		SequenceHash: meta.Hash,
+		Other:        other,
 	}
 }
 
@@ -204,10 +214,6 @@ func (feature *Feature) ToGenbank() genbank.Feature {
 }
 
 func (location *Location) ToGenbank() genbank.Location {
-	sublocations := make([]genbank.Location, len(location.SubLocations))
-	for i, s := range location.SubLocations {
-		sublocations[i] = s.ToGenbank()
-	}
 	loc := genbank.Location{
 		Start:             location.Start,
 		End:               location.End,
@@ -215,7 +221,10 @@ func (location *Location) ToGenbank() genbank.Location {
 		Join:              location.Join,
 		FivePrimePartial:  location.FivePrimePartial,
 		ThreePrimePartial: location.ThreePrimePartial,
-		SubLocations:      sublocations,
+		SubLocations: genbank.MapSlice(
+			location.SubLocations,
+			func(s Location) genbank.Location { return s.ToGenbank() },
+		),
 	}
 	loc.GbkLocationString = genbank.BuildLocationString(loc)
 	return loc

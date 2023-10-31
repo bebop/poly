@@ -1,8 +1,20 @@
+/*
+This file provides utilities for working with a MultiMap,
+which is simply a map which can store multiple values for a single key instead
+of the usual one.
+
+Useful for when we expect to encounter repeated keys but we want to keep all pairs,
+not just the latest one, while preserving O(1) time lookup cost.
+Does not make uniqueness quarantees for key value pairs.
+This may end up being useful for other parsers which allow for repeated keys, in which case
+this should be made into its own module.
+*/
 package genbank
 
-// defines a new MultiMap type which can store multiple values for a single key
-// useful for when we expect repeated keys, while preserving O(1) lookup
-// does not make uniqueness guarantees for values (you can repeat key-value pairs)
+// defined as a simple type alias over a map of slices
+// while not ideal (eg computing total number of items takes O(N))
+// this has the advantage of being compatible with json.Marshal, cmp.Diff,
+// pretty printing, and bracket indexing out of the box.
 type MultiMap[K, V comparable] map[K][]V
 
 // create a new empty multimap
@@ -11,15 +23,15 @@ func NewMultiMap[K, V comparable]() MultiMap[K, V] {
 }
 
 // adds a key-value pair to the multimap
-func Put[K, V comparable](m MultiMap[K, V], k K, v V) {
+func Put[K, V comparable](m MultiMap[K, V], k K, v ...V) {
 	if _, ok := m[k]; !ok {
-		m[k] = []V{v}
+		m[k] = v
 	} else {
-		m[k] = append(m[k], v)
+		m[k] = append(m[k], v...)
 	}
 }
 
-// iterates over the multimap, once for each key
+// iterates over the multimap, once for each key with all values passed as a slice
 func ForEachKey[K, V comparable](m MultiMap[K, V], do func(K, []V)) {
 	for k, values := range m {
 		do(k, values)
@@ -35,12 +47,7 @@ func ForEachValue[K, V comparable](m MultiMap[K, V], do func(K, V)) {
 	})
 }
 
-// returns number of unique keys
-func KeyCount[K, V comparable](m MultiMap[K, V]) int {
-	return len(m)
-}
-
-// efficiently each element of a slice to create a new slice
+// efficiently apply a transformation to each element of a slice to create a new slice
 func MapSlice[X any, Y any](slice []X, mapper func(X) Y) []Y {
 	y := make([]Y, len(slice))
 	for i, x := range slice {
