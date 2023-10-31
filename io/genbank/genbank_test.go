@@ -273,6 +273,12 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 	}
 }
 
+func TestDuplicateFeatureAttributes(t *testing.T) {
+	seq, _ := Read("../../data/bsub.gbk")
+
+	assert.Equal(t, len(seq.Features[2].Attributes["db_xref"]), 15)
+}
+
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = Read("../../data/bsub.gbk")
@@ -817,7 +823,7 @@ func TestConsortiumRegression(t *testing.T) {
 // testcase for subset of unusual file
 // includes implicit genome range with partial
 // and origin is replaced with contig
-func TestParseS288C_IX(t *testing.T) {
+func TestParseS288C_IX_Regression(t *testing.T) {
 	_, err := ReadMulti("../../data/NC_001141.2_redux.gb")
 	assert.Nil(t, err)
 }

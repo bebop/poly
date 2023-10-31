@@ -168,18 +168,18 @@ func (feature *Feature) StoreSequence() (string, error) {
 	return seq, err
 }
 
-// Creates deep copy of Feature, which supports safe duplication.
+// Copy creates deep copy of Feature, which supports safe duplication.
 func (feature *Feature) Copy() Feature {
 	copy := *feature
 	copy.Location = CopyLocation(feature.Location)
 	copy.Attributes = NewMultiMap[string, string]()
 	ForEachKey(feature.Attributes, func(k string, v []string) {
-		copy.Attributes[k] = MapSlice[string](v, identity[string])
+		copy.Attributes[k] = MapSlice(v, identity[string])
 	})
 	return copy
 }
 
-// Creates deep copy of Location, which supports safe duplication
+// CopyLocation creates deep copy of Location, which supports safe duplication
 func CopyLocation(location Location) Location {
 	location.SubLocations = MapSlice(location.SubLocations, CopyLocation)
 	return location
@@ -434,7 +434,8 @@ func ParseMulti(r io.Reader) ([]Genbank, error) {
 	return genbankSlice, err
 }
 
-// an error struct to represent failures encountered while parsing
+// ParseError represents failures encountered while parsing,
+// and pointers to it are fully compatable with the error interface.
 type ParseError struct {
 	file   string // the file origin
 	line   string // the offending line
