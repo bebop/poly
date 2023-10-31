@@ -106,24 +106,33 @@ func getBaseRestrictionEnzymes() map[string]Enzyme {
 
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
-// allows us to specify the enzyme by name.
-func CutWithEnzymeByName(seq Part, directional bool, enzymeStr string) ([]Fragment, error) {
+// allows us to specify the enzyme by name. Set methylated flag to true if
+// there is lowercase methylated DNA as part of the sequence.
+func CutWithEnzymeByName(seq Part, directional bool, enzymeStr string, methylated bool) ([]Fragment, error) {
 	enzymeMap := getBaseRestrictionEnzymes()
 	if _, ok := enzymeMap[enzymeStr]; !ok {
 		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
 	}
 	enzyme := enzymeMap[enzymeStr]
-	return CutWithEnzyme(seq, directional, enzyme), nil
+	return CutWithEnzyme(seq, directional, enzyme, methylated), nil
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
-func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
+// If there is methylated parts of the target DNA, set the "methylated" flag to
+// true and lowercase ONLY methylated DNA.
+func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) []Fragment {
 	var fragmentSeqs []string
-	var sequence string
+
+	// Setup circular sequences
+	sequence := seq.Sequence
 	if seq.Circular {
-		sequence = strings.ToUpper(seq.Sequence + seq.Sequence)
-	} else {
-		sequence = strings.ToUpper(seq.Sequence)
+		sequence = sequence + sequence
+	}
+
+	// If unmethylated, set everything to uppercase so that the enzyme regex
+	// works on all the sequence
+	if !methylated {
+		sequence = strings.ToUpper(sequence)
 	}
 
 	// Check for palindromes
@@ -332,11 +341,12 @@ Specific cloning functions begin here.
 ******************************************************************************/
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
-// support BsaI, BbsI, BtgZI, and BsmBI.
-func GoldenGate(sequences []Part, enzymeStr string) ([]string, []string, error) {
+// support BsaI, BbsI, BtgZI, and BsmBI. Set methylated flag to true if there
+// is lowercase methylated DNA as part of the sequence.
+func GoldenGate(sequences []Part, enzymeStr string, methylated bool) ([]string, []string, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr)
+		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr, methylated)
 		if err != nil {
 			return []string{}, []string{}, err
 		}
