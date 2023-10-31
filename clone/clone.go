@@ -32,6 +32,11 @@ in a single tube and that is extraordinarily efficient (up to 50 parts) and is p
 for new modular DNA part toolkits. Users can easily simulate GoldenGate assembly reactions
 with just their input fragments + the enzyme name.
 
+Unlike many other GoldenGate simulators, we support simulating GoldenGate with
+methylated DNA sequences, which are represented as lowercased sequences in user
+inputted sequences. Normally, this can be turned off, but can be used in the
+special case of recursive GoldenGate reactions.
+
 Let's build some DNA!
 
 # Keoni
