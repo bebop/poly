@@ -97,6 +97,8 @@ var enzymeMap = map[string]Enzyme{
 	"BsaI":  {"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
 	"BbsI":  {"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
 	"BtgZI": {"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
+	"PaqCI": {"PaqCI", regexp.MustCompile("CACCTGC"), regexp.MustCompile("GCAGGTG"), 4, 4, "CACCTGC"},
+	"BsmBI": {"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, "CGTCTC"},
 }
 
 /******************************************************************************
