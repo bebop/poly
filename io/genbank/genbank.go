@@ -13,7 +13,6 @@ package genbank
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -126,15 +125,17 @@ var (
 	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
 )
 
-// MarshalWithFeatureSequences calls StoreSequence on all features then marshals to JSON
-func (sequence *Genbank) MarshalWithFeatureSequences() ([]byte, error) {
-	for _, f := range sequence.Features {
-		_, err := f.StoreSequence()
+// StoreFeatureSequences calls StoreSequence on all features.
+// The resulting JSON is guaranteed to have useful Feature.Sequence values.
+// Useful when exporting for downstream analysis, such as with json.Marshal.
+func (sequence *Genbank) StoreFeatureSequences() error {
+	for i := range sequence.Features {
+		_, err := sequence.Features[i].StoreSequence()
 		if err != nil {
-			return []byte{}, err
+			return err
 		}
 	}
-	return json.Marshal(sequence)
+	return nil
 }
 
 // AddFeature adds a feature to a Genbank struct.
@@ -155,13 +156,13 @@ func (feature Feature) GetSequence() (string, error) {
 }
 
 // StoreSequence infers and assigns the value of feature.Sequence
-// if currently an empty string
-func (feature Feature) StoreSequence() (string, error) {
+// if currently an empty string.
+func (feature *Feature) StoreSequence() (string, error) {
 	if feature.Sequence != "" {
 		return feature.Sequence, nil
 	}
-	seq, err := getFeatureSequence(feature, feature.Location)
-	if err != nil {
+	seq, err := getFeatureSequence(*feature, feature.Location)
+	if err == nil {
 		feature.Sequence = seq
 	}
 	return seq, err
@@ -187,24 +188,25 @@ func CopyLocation(location Location) Location {
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
-	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
 		for _, subLocation := range location.SubLocations {
-			sequence, _ := getFeatureSequence(feature, subLocation)
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return "", err
+			}
 
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
 
 	// reverse complements resulting string if needed.
+	sequenceString := sequenceBuffer.String()
 	if location.Complement {
-		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
-	} else {
-		sequenceString = sequenceBuffer.String()
+		sequenceString = transform.ReverseComplement(sequenceString)
 	}
 
 	return sequenceString, nil
@@ -436,7 +438,7 @@ func ParseMulti(r io.Reader) ([]Genbank, error) {
 type ParseError struct {
 	file   string // the file origin
 	line   string // the offending line
-	before bool   // whether the error occured before or on this line
+	before bool   // whether the error occurred before or on this line
 	lineNo int    // the line number, 0 indexed
 	info   string `default:"syntax error"` // description of the error type
 	wraps  error  // stores the error that led to this, if any
@@ -491,19 +493,20 @@ func (params *parseLoopParameters) init() {
 
 // save our completed attribute / qualifier string to the current feature
 // useful as a wrap-up step from multiple states
-func (parameters *parseLoopParameters) saveLastAttribute() {
-	newValue := parameters.attributeValue != ""
-	emptyType := parameters.feature.Type != ""
+func (params *parseLoopParameters) saveLastAttribute() {
+	newValue := params.attributeValue != ""
+	emptyType := params.feature.Type != ""
 	if newValue || emptyType {
 		if newValue {
-			Put(parameters.feature.Attributes, parameters.attribute, parameters.attributeValue)
+			Put(params.feature.Attributes, params.attribute, params.attributeValue)
 		}
-		parameters.features = append(parameters.features, parameters.feature)
+		params.features = append(params.features, params.feature)
 
-		parameters.attributeValue = ""
-		parameters.attribute = ""
-		parameters.feature = Feature{}
-		parameters.feature.Attributes = NewMultiMap[string, string]()
+		// reset attribute state
+		params.attributeValue = ""
+		params.attribute = ""
+		params.feature = Feature{}
+		params.feature.Attributes = NewMultiMap[string, string]()
 	}
 }
 
