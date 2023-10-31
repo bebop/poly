@@ -1,0 +1,147 @@
+LOCUS       NC_001141             439888 bp    DNA     linear   CON 15-SEP-2023
+DEFINITION  Saccharomyces cerevisiae S288C chromosome IX, complete sequence.
+ACCESSION   NC_001141
+VERSION     NC_001141.2
+DBLINK      BioProject: PRJNA128
+            Assembly: GCF_000146045.2
+KEYWORDS    RefSeq.
+SOURCE      Saccharomyces cerevisiae S288C
+  ORGANISM  Saccharomyces cerevisiae S288C
+            Eukaryota; Fungi; Dikarya; Ascomycota; Saccharomycotina;
+            Saccharomycetes; Saccharomycetales; Saccharomycetaceae;
+            Saccharomyces.
+REFERENCE   1  (bases 1 to 439888)
+  AUTHORS   Engel,S.R., Wong,E.D., Nash,R.S., Aleksander,S., Alexander,M.,
+            Douglass,E., Karra,K., Miyasato,S.R., Simison,M., Skrzypek,M.S.,
+            Weng,S. and Cherry,J.M.
+  TITLE     New data and collaborations at the Saccharomyces Genome Database:
+            updated reference genome, alleles, and the Alliance of Genome
+            Resources
+  JOURNAL   Genetics 220 (4) (2022)
+   PUBMED   34897464
+REFERENCE   2  (bases 1 to 439888)
+  AUTHORS   Churcher,C., Bowman,S., Badcock,K., Bankier,A., Brown,D.,
+            Chillingworth,T., Connor,R., Devlin,K., Gentles,S., Hamlin,N.,
+            Harris,D., Horsnell,T., Hunt,S., Jagels,K., Jones,M., Lye,G.,
+            Moule,S., Odell,C., Pearson,D., Rajandream,M., Rice,P., Rowley,N.,
+            Skelton,J., Smith,V., Barrell,B. et al.
+  TITLE     The nucleotide sequence of Saccharomyces cerevisiae chromosome IX
+  JOURNAL   Nature 387 (6632 SUPPL), 84-87 (1997)
+   PUBMED   9169870
+REFERENCE   3  (bases 1 to 439888)
+  AUTHORS   Goffeau,A., Barrell,B.G., Bussey,H., Davis,R.W., Dujon,B.,
+            Feldmann,H., Galibert,F., Hoheisel,J.D., Jacq,C., Johnston,M.,
+            Louis,E.J., Mewes,H.W., Murakami,Y., Philippsen,P., Tettelin,H. and
+            Oliver,S.G.
+  TITLE     Life with 6000 genes
+  JOURNAL   Science 274 (5287), 546 (1996)
+   PUBMED   8849441
+REFERENCE   4  (bases 1 to 439888)
+  CONSRTM   NCBI Genome Project
+  TITLE     Direct Submission
+  JOURNAL   Submitted (14-SEP-2023) National Center for Biotechnology
+            Information, NIH, Bethesda, MD 20894, USA
+REFERENCE   5  (bases 1 to 439888)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (04-MAY-2012) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Protein update by submitter
+REFERENCE   6  (bases 1 to 439888)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (31-MAR-2011) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+  REMARK    Sequence update by submitter
+REFERENCE   7  (bases 1 to 439888)
+  CONSRTM   Saccharomyces Genome Database
+  TITLE     Direct Submission
+  JOURNAL   Submitted (14-DEC-2009) Department of Genetics, Stanford
+            University, Stanford, CA 94305-5120, USA
+COMMENT     REVIEWED REFSEQ: This record has been curated by SGD. The reference
+            sequence is identical to BK006942.
+            
+            On Apr 26, 2011 this sequence version replaced NC_001141.1.
+            
+            ##Genome-Annotation-Data-START##
+            Annotation Provider :: SGD
+            Annotation Status   :: Full Annotation
+            Annotation Version  :: R64-4-1
+            URL                 :: http://www.yeastgenome.org/
+            ##Genome-Annotation-Data-END##
+            COMPLETENESS: full length.
+FEATURES             Location/Qualifiers
+     source          1..439888
+                     /organism="Saccharomyces cerevisiae S288C"
+                     /mol_type="genomic DNA"
+                     /strain="S288C"
+                     /db_xref="taxon:559292"
+                     /chromosome="IX"
+     telomere        complement(1..7784)
+                     /note="TEL09L; Telomeric region on the left arm of
+                     Chromosome IX; composed of an X element core sequence, X
+                     element combinatorial repeats, a long Y' element, and a
+                     short terminal stretch of telomeric repeats"
+                     /db_xref="SGD:S000028896"
+     gene            complement(<483..>6147)
+                     /locus_tag="YIL177C"
+                     /db_xref="GeneID:854630"
+     mRNA            complement(join(<483..4598,4987..>6147))
+                     /locus_tag="YIL177C"
+                     /product="Y' element ATP-dependent helicase"
+                     /transcript_id="NM_001179522.1"
+                     /db_xref="GeneID:854630"
+     CDS             complement(join(483..4598,4987..6147))
+                     /locus_tag="YIL177C"
+                     /EC_number="3.6.4.12"
+                     /note="Putative Y' element ATP-dependent helicase"
+                     /codon_start=1
+                     /product="Y' element ATP-dependent helicase"
+                     /protein_id="NP_012092.1"
+                     /db_xref="GeneID:854630"
+                     /db_xref="SGD:S000001439"
+                     /translation="MKVSDRRKFEKANFDEFESALNNKNDLVHCPSITLFESIPTEVR
+                     SFYEDEKSGLIKVVKFRTGAMDRKRSFEKVVISVMVGKNVKKFLTFVEDEPDFQGGPI
+                     PSKYLIPKKINLMVYTLFQVHTLKFNRKDYDTLSLFYLNRGYYNELSFRVLERCHEIA
+                     SARPNDSSTMRTFTDFVSGAPIVRSLQKSTIRKYGYNLAPYMFLLLHVDELSIFSAYQ
+                     ASLPGEKKVDTERLKRDLCPRKPIEIKYFSQICNDMMNKKDRLGDILHIILRACALNF
+                     GAGPRGGAGDEEDRSITNEEPIIPSVDEHGLKVCKLRSPNTPRRLRKTLDAVKALLVS
+                     SCACTARDLDIFDDNNGVAMWKWIKILYHEVAQETTLKDSYRITLVPSSDGISLLAFA
+                     GPQRNVYVDDTTRRIQLYTDYNKNGSSEPRLKTLDGLTSDYVFYFVTVLRQMQICALG
+                     NSYDAFNHDPWMDVVGFEDPNQVTNRDISRIVLYSYMFLNTAKGCLVEYATFRQYMRE
+                     LPKNAPQKLNFREMRQGLIALGRHCVGSRFETDLYESATSELMANHSVQTGRNIYGVD
+                     SFSLTSVSGTTATLLQERASERWIQWLGLESDYHCSFSSTRNAEDVVAGEAASSNHHQ
+                     KISRVTRKRPREPKSTNDILVAGQKLFGSSFEFRDLHQLRLCYEIYMADTPSVAVQAP
+                     PGYGKTELFHLPLIALASKGDVEYVSFLFVPYTVLLANCMIRLGRCGCLNVAPVRNFI
+                     EEGYDGVTDLYVGIYDDLASTNFTDRIAAWENIVECTFRTNNVKLGYLIVDEFHNFET
+                     EVYRQSQFGGITNLDFDAFEKAIFLSGTAPEAVADAALQRIGLTGLAKKSMDINELKR
+                     SEDLSRGLSSYPTRMFNLIKEKSEVPLGHVHKIRKKVESQPEEALKLLLALFESEPES
+                     KAIVVASTTNEVEELACSWRKYFRVVWIHGKLGAAEKVSRTKEFVTDGSMQVLIGTKL
+                     VTEGIDIKQLMMVIMLDNRLNIIELIQGVGRLRDGGLCYLLSRKNSWAARNRKGELPP
+                     IKEGCITEQVREFYGLESKKGKKGQHVGCCGSRTDLSADTVELIERMDRLAEKQATAS
+                     MSIVALPSSFQESNSSDRYRKYCSSDEDSNTCIHGSANASTNASTNAITTASTNVRTN
+                     ATTNASTNATTNASTNASTNATTNASTNATTNSSTNATTTASTNVRTSATTTASINVR
+                     TSATTTESTNSSTNATTTESTNSSTNATTTESTNSNTSATTTASINVRTSATTTESTN
+                     SSTSATTTASINVRTSATTTKSINSSTNATTTESTNSNTNATTTESTNSSTNATTTES
+                     TNSSTNATTTESTNSNTSAATTESTNSNTSATTTESTNASAKEDANKDGNAEDNRFHP
+                     VTDINKESYKRKGSQMVLLERKKLKAQFPNTSENMNVLQFLGFRSDEIKHLFLYGIDI
+                     YFCPEGVFTQYGLCKGCQKMFELCVCWAGQKVSYRRIAWEALAVERMLRNDEEYKEYL
+                     EDIEPYHGDPVGYLKYFSVKRREIYSQIQRNYAWYLAITRRRETISVLDSTRGKQGSQ
+                     VFRMSGRQIKELYFKVWSNLRESKTEVLQYFLNWDEKKCQEEWEAKDDTVVVEALEKG
+                     GVFQRLRSMTSAGLQGPQYVKLQFSRHHRQLRSRYELSLGMHLRDQIALGVTPSKVPH
+                     WTAFLSMLIGLFYNKTFRQKLEYLLEQISEVWLLPHWLDLANVEVLAADDTRVPLYML
+                     MVAVHKELDSDDVPDGRFDILLCRDSSREVGE"
+     rep_origin      7470..8793
+                     /note="ARS902; Putative replication origin; identified in
+                     multiple array studies, not yet confirmed by plasmid-based
+                     assay"
+                     /db_xref="SGD:S000130156"
+     mRNA            join(<155222,155311..>155765)
+                     /gene="COX5B"
+                     /locus_tag="YIL111W"
+                     /product="cytochrome c oxidase subunit Vb"
+                     /transcript_id="NM_001179459.1"
+                     /db_xref="GeneID:854695"
+CONTIG      join(BK006942.2:1..439888)
+//
+

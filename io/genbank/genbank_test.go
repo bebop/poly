@@ -810,7 +810,10 @@ func TestConsortiumRegression(t *testing.T) {
 	}
 }
 
+// testcase for subset of unusual file
+// includes implicit genome range with partial
+// and origin is replaced with contig
 func TestParseS288C_IX(t *testing.T) {
-	_, err := ReadMulti("../../data/NC_001141.2.gb")
+	_, err := ReadMulti("../../data/NC_001141.2_redux.gb")
 	assert.Nil(t, err)
 }
