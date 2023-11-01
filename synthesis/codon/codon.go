@@ -88,6 +88,7 @@ type AminoAcid struct {
 type Table interface {
 	GetWeightedAminoAcids() []AminoAcid
 	OptimizeSequence(aminoAcids string, randomState ...int) (string, error)
+	Translate(dnaSeq string) (string, error)
 }
 
 // Stats denotes a set of statistics we maintain throughout the translation table's lifetime. For example we track
