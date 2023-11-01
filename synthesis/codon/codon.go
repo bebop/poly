@@ -72,19 +72,6 @@ func (e invalidAminoAcidError) Error() string {
 	return fmt.Sprintf("amino acid %q is missing from codon table", e.AminoAcid)
 }
 
-// Stats denotes a set of statistics we maintain throughout the translation table's lifetime. For example we track
-// the start codons observed when we update the codon table's weights with other DNA sequences
-type Stats struct {
-	StartCodonCount map[string]int
-	GeneCount       int
-}
-
-func NewStats() *Stats {
-	return &Stats{
-		StartCodonCount: map[string]int{},
-	}
-}
-
 // Codon holds information for a codon triplet in a struct
 type Codon struct {
 	Triplet string `json:"triplet"`
@@ -101,6 +88,19 @@ type AminoAcid struct {
 type Table interface {
 	GetWeightedAminoAcids() []AminoAcid
 	OptimizeSequence(aminoAcids string, randomState ...int) (string, error)
+}
+
+// Stats denotes a set of statistics we maintain throughout the translation table's lifetime. For example we track
+// the start codons observed when we update the codon table's weights with other DNA sequences
+type Stats struct {
+	StartCodonCount map[string]int
+	GeneCount       int
+}
+
+func NewStats() *Stats {
+	return &Stats{
+		StartCodonCount: map[string]int{},
+	}
 }
 
 // TranslationTable contains a weighted codon table, which is used when translating and optimizing sequences. The
