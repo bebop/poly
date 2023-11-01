@@ -31,29 +31,25 @@ import (
 )
 
 /******************************************************************************
-Oct, 15, 2020
-
 File is structured as so:
 
-	Interfaces:
-		Table - specifies the functions that all table types must implement
+  Interfaces:
+    Table - An interface encompassing what a potentially codon optimized Translation table can do
 
-	Structs:
-		codonTable - holds all information mapping codons <-> amino acids during transformations.
+  Structs:
+    TranslationTable - contains a weighted codon table, which is used when translating and optimizing sequences. The weights can be updated through the codon frequencies we observe in given DNA sequences.
+
 		AminoAcid - holds amino acid related info for codonTable struct
-		Codon - holds codon related info for AminoAcid struct
 
-	Big functions that everything else is related to:
+    Codon - holds codon related info for AminoAcid struct
 
-		Translate - given a nucleic sequence string and codon table it translates sequences
-								to UPPERCASE amino acid sequences.
+  Key functions:
+    TranslationTable.Translate - given a nucleic sequence string and codon table it translates sequences to UPPERCASE amino acid sequences.
 
-		Optimize - given an amino acid sequence string and codon table it translates
-							 sequences to UPPERCASE nucleic acid sequences.
+    TranslationTable.OptimizeSequence - will return a set of codons which can be used to encode the given amino acid sequence. The codons picked are weighted according to the computed translation table's weights
 
-Anywho, most of this file and codonTable's struct methods are meant to help overcome
-this codon bias. There's a default codonTable generator near the bottom of this file
-with a whole section on how it works and why it's gotta be that way.
+    TranslationTable.UpdateWeightsWithSequence - will look at the coding regions in the given genbank data, and use those to generate new weights for the codons in the translation table. The next time a sequence is optimised, it will use those updated weights.
+
 ******************************************************************************/
 
 var (
@@ -84,7 +80,7 @@ type AminoAcid struct {
 	Codons []Codon `json:"codons"`
 }
 
-// Table is an interface that specifies the functions that all table types must implement
+// Table is an interface encompassing what a potentially codon optimized Translation table can do
 type Table interface {
 	GetWeightedAminoAcids() []AminoAcid
 	OptimizeSequence(aminoAcids string, randomState ...int) (string, error)
