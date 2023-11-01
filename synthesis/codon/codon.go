@@ -50,6 +50,7 @@ File is structured as so:
 
     TranslationTable.UpdateWeightsWithSequence - will look at the coding regions in the given genbank data, and use those to generate new weights for the codons in the translation table. The next time a sequence is optimised, it will use those updated weights.
 
+		TranslationTable.Stats - a set of statistics we maintain throughout the translation table's lifetime. For example we track the start codons observed when we update the codon table's weights with other DNA sequences
 ******************************************************************************/
 
 var (
