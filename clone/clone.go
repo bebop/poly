@@ -355,3 +355,12 @@ func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openCon
 	oc, il := CircularLigate(fragments)
 	return oc, il, nil
 }
+
+// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
+func GetBaseRestrictionEnzymes() []Enzyme {
+	return []Enzyme{
+		{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
+		{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
+		{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
+	}
+}
