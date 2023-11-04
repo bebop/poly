@@ -46,7 +46,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/seqhash"
@@ -240,12 +239,18 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 	return fragments
 }
 
-func recurseLigate(wg *sync.WaitGroup, constructs chan string, infiniteLoopingConstructs chan string, seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment) {
+// TODO: see about not makeing this recursive
+func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment, existingSeqhashes map[string]struct{}) (openConstructs []string, infiniteConstructs []string) {
 	// Recurse ligate simulates all possible ligations of a series of fragments. Each possible combination begins with a "seed" that fragments from the pool can be added to.
-	defer wg.Done()
 	// If the seed ligates to itself, we can call it done with a successful circularization!
 	if seedFragment.ForwardOverhang == seedFragment.ReverseOverhang {
-		constructs <- seedFragment.ForwardOverhang + seedFragment.Sequence
+		construct := seedFragment.ForwardOverhang + seedFragment.Sequence
+		seqhash, _ := seqhash.Hash(construct, "DNA", true, true)
+		if _, ok := existingSeqhashes[seqhash]; ok {
+			return nil, nil
+		}
+		existingSeqhashes[seqhash] = struct{}{}
+		return []string{construct}, nil
 	} else {
 		for _, newFragment := range fragmentList {
 			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
@@ -265,19 +270,29 @@ func recurseLigate(wg *sync.WaitGroup, constructs chan string, infiniteLoopingCo
 			// If fragment is actually attached, move to some checks
 			if fragmentAttached {
 				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
+				// TODO: measure to see a map would be better here. Ask about how large things get
 				for _, usedFragment := range usedFragments {
 					if usedFragment.Sequence == newFragment.Sequence {
-						infiniteLoopingConstructs <- usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
-						return
+						infiniteConstruct := usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
+						seqhash, _ := seqhash.Hash(infiniteConstruct, "DNA", false, true)
+						if _, ok := existingSeqhashes[seqhash]; ok {
+							return nil, nil
+						}
+						existingSeqhashes[seqhash] = struct{}{}
+						return nil, []string{infiniteConstruct}
 					}
 				}
-				wg.Add(1)
 				// If everything is clear, append fragment to usedFragments and recurse.
 				usedFragments = append(usedFragments, newFragment)
-				go recurseLigate(wg, constructs, infiniteLoopingConstructs, newSeed, fragmentList, usedFragments)
+				oc, ic := recurseLigate(newSeed, fragmentList, usedFragments, existingSeqhashes)
+
+				openConstructs = append(openConstructs, oc...)
+				infiniteConstructs = append(infiniteConstructs, ic...)
 			}
 		}
 	}
+
+	return openConstructs, infiniteConstructs
 }
 
 func getConstructs(c chan string, constructSequences chan []string, circular bool) {
@@ -308,26 +323,17 @@ func getConstructs(c chan string, constructSequences chan []string, circular boo
 }
 
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
-func CircularLigate(fragments []Fragment) ([]string, []string, error) {
-	var wg sync.WaitGroup
+func CircularLigate(fragments []Fragment) ([]string, []string) {
 	var outputConstructs []string
 	var outputInfiniteLoopingConstructs []string
-	constructs := make(chan string)
-	infiniteLoopingConstructs := make(chan string) // sometimes we will get stuck in infinite loops. These are sequences with a recursion break
-	constructSequences := make(chan []string)
-	infiniteLoopingConstructSequences := make(chan []string)
+	existingSeqhashes := make(map[string]struct{})
 	for _, fragment := range fragments {
-		wg.Add(1)
-		go recurseLigate(&wg, constructs, infiniteLoopingConstructs, fragment, fragments, []Fragment{})
+		openConstructs, infiniteConstructs := recurseLigate(fragment, fragments, []Fragment{}, existingSeqhashes)
+
+		outputConstructs = append(outputConstructs, openConstructs...)
+		outputInfiniteLoopingConstructs = append(outputInfiniteLoopingConstructs, infiniteConstructs...)
 	}
-	go getConstructs(constructs, constructSequences, true)
-	go getConstructs(infiniteLoopingConstructs, infiniteLoopingConstructSequences, false)
-	wg.Wait()
-	close(constructs)
-	close(infiniteLoopingConstructs)
-	outputConstructs = <-constructSequences
-	outputInfiniteLoopingConstructs = <-infiniteLoopingConstructSequences
-	return outputConstructs, outputInfiniteLoopingConstructs, nil
+	return outputConstructs, outputInfiniteLoopingConstructs
 }
 
 /******************************************************************************
@@ -338,7 +344,7 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) ([]string, []string, error) {
+func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
 		newFragments, err := em.CutWithEnzymeByName(sequence, true, enzymeStr)
@@ -347,5 +353,6 @@ func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) ([]strin
 		}
 		fragments = append(fragments, newFragments...)
 	}
-	return CircularLigate(fragments)
+	oc, il := CircularLigate(fragments)
+	return oc, il, nil
 }
