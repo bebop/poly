@@ -93,6 +93,7 @@ type EnzymeManager struct {
 	eMap map[string]Enzyme
 }
 
+// NewEnzymeManager creates a new EnzymeManager given some enzymes.
 func NewEnzymeManager(enzymes []Enzyme) EnzymeManager {
 	eMap := make(map[string]Enzyme)
 	for i := range enzymes {
@@ -239,7 +240,6 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme) []Fragment {
 	return fragments
 }
 
-// TODO: see about not makeing this recursive
 func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment, existingSeqhashes map[string]struct{}) (openConstructs []string, infiniteConstructs []string) {
 	// Recurse ligate simulates all possible ligations of a series of fragments. Each possible combination begins with a "seed" that fragments from the pool can be added to.
 	// If the seed ligates to itself, we can call it done with a successful circularization!
@@ -270,7 +270,6 @@ func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments
 			// If fragment is actually attached, move to some checks
 			if fragmentAttached {
 				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
-				// TODO: measure to see a map would be better here. Ask about how large things get
 				for _, usedFragment := range usedFragments {
 					if usedFragment.Sequence == newFragment.Sequence {
 						infiniteConstruct := usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
