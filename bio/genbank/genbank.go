@@ -486,7 +486,7 @@ func (e ParseError) Error() string {
 	var out, loc string
 	if e.wraps == io.EOF {
 		out = "unexpected EOF"
-		if e.file == "" {
+		if e.file != "" {
 			return fmt.Sprintf("%s in %s", out, e.file)
 		} else {
 			return out

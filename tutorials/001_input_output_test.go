@@ -61,7 +61,7 @@ func TestFileIOTutorial(t *testing.T) {
 	// backbone puc19. Plasmids are super small rings of "Circular DNA" that are
 	// between 1 and 10 kilobases in length.
 
-	file, _ := os.Open("../data/puc19.gbk")
+	file, _ := os.Open("../bio/genbank/data/puc19.gbk")
 	defer file.Close()
 	parser, _ := bio.NewGenbankParser(file)
 	puc19, _ := parser.Next()
