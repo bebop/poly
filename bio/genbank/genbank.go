@@ -382,6 +382,27 @@ func (sequence *Genbank) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
+	// start writing base count
+	if len(sequence.Meta.BaseCount) > 0 {
+		newWrittenBytes, err = w.Write([]byte("BASE COUNT    "))
+		writtenBytes += int64(newWrittenBytes)
+		if err != nil {
+			return writtenBytes, err
+		}
+		for _, baseCount := range sequence.Meta.BaseCount {
+			newWrittenBytes, err = w.Write([]byte(strconv.Itoa(baseCount.Count) + " " + baseCount.Base + "   "))
+			writtenBytes += int64(newWrittenBytes)
+			if err != nil {
+				return writtenBytes, err
+			}
+		}
+		newWrittenBytes, err = w.Write([]byte("\n"))
+		writtenBytes += int64(newWrittenBytes)
+		if err != nil {
+			return writtenBytes, err
+		}
+	}
+
 	// start writing sequence section.
 	newWrittenBytes, err = w.Write([]byte("ORIGIN\n"))
 	writtenBytes += int64(newWrittenBytes)
@@ -564,7 +585,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 	}
 }
 
-// Next takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
+// Next takes in a reader representing a multi gbk/gb/genbank file and outputs the next record
 func (parser *Parser) Next() (*Genbank, error) {
 	parser.parameters.init()
 	// Loop through each line of the file
@@ -615,7 +636,8 @@ func (parser *Parser) Next() (*Genbank, error) {
 				case "SOURCE":
 					parser.parameters.genbank.Meta.Source, parser.parameters.genbank.Meta.Organism, parser.parameters.genbank.Meta.Taxonomy = getSourceOrganism(parser.parameters.metadataData)
 				case "REFERENCE":
-					reference, err := parseReferences(parser.parameters.metadataData)
+					// parseReferencesFn = parseReferences in genbank_test. We use Fn for testing purposes.
+					reference, err := parseReferencesFn(parser.parameters.metadataData)
 					if err != nil {
 						return &Genbank{}, &ParseError{line: line, lineNo: lineNum, before: true, wraps: err, info: "failed in parsing reference"}
 					}
@@ -643,7 +665,6 @@ func (parser *Parser) Next() (*Genbank, error) {
 				parser.parameters.metadataData = append(parser.parameters.metadataData, line)
 			}
 		case "features":
-
 			baseCountFlag := strings.Contains(line, "BASE COUNT") // example string for BASE COUNT: "BASE COUNT    67070277 a   48055043 c   48111528 g   67244164 t   18475410 n"
 			if baseCountFlag {
 				fields := strings.Fields(line)
