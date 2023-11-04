@@ -87,11 +87,22 @@ type Enzyme struct {
 	RecognitionSite string
 }
 
-// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
-var enzymeMap = map[string]Enzyme{
-	"BsaI":  {"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
-	"BbsI":  {"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
-	"BtgZI": {"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
+// EnzymeManager manager for Enzymes. Allows for management of enzymes throughout the lifecyle of your
+// program. EnzymeManager is not safe for concurrent use.
+type EnzymeManager struct {
+	// eMap Map of enzymes that exist for the lifetime of the manager. Not safe for concurrent use.
+	eMap map[string]Enzyme
+}
+
+func NewEnzymeManager(enzymes []Enzyme) EnzymeManager {
+	eMap := make(map[string]Enzyme)
+	for i := range enzymes {
+		eMap[enzymes[i].Name] = enzymes[i]
+	}
+
+	return EnzymeManager{
+		eMap: eMap,
+	}
 }
 
 /******************************************************************************
@@ -100,20 +111,14 @@ Base cloning functions begin here.
 
 ******************************************************************************/
 
-func getBaseRestrictionEnzymes() map[string]Enzyme {
-	return enzymeMap
-}
-
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
 // allows us to specify the enzyme by name.
-func CutWithEnzymeByName(seq Part, directional bool, enzymeStr string) ([]Fragment, error) {
-	enzymeMap := getBaseRestrictionEnzymes()
-	if _, ok := enzymeMap[enzymeStr]; !ok {
-		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
+func (em EnzymeManager) CutWithEnzymeByName(seq Part, directional bool, name string) ([]Fragment, error) {
+	if v, ok := em.eMap[name]; ok {
+		return CutWithEnzyme(seq, directional, v), nil
 	}
-	enzyme := enzymeMap[enzymeStr]
-	return CutWithEnzyme(seq, directional, enzyme), nil
+	return []Fragment{}, errors.New("Enzyme " + name + " not found")
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
@@ -333,10 +338,10 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func GoldenGate(sequences []Part, enzymeStr string) ([]string, []string, error) {
+func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) ([]string, []string, error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr)
+		newFragments, err := em.CutWithEnzymeByName(sequence, true, enzymeStr)
 		if err != nil {
 			return []string{}, []string{}, err
 		}
