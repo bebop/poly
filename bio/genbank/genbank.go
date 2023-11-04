@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,6 +30,12 @@ import (
 GBK specific IO related things begin here.
 
 ******************************************************************************/
+
+var (
+	readFileFn        = os.ReadFile
+	parseMultiNthFn   = parseMultiNth
+	parseReferencesFn = parseReferences
+)
 
 // Genbank is the main struct for the Genbank file format.
 type Genbank struct {
@@ -50,6 +57,7 @@ type Meta struct {
 	Origin               string            `json:"origin"`
 	Locus                Locus             `json:"locus"`
 	References           []Reference       `json:"references"`
+	BaseCount            []BaseCount       `json:"base_count"`
 	Other                map[string]string `json:"other"`
 	Name                 string            `json:"name"`
 	SequenceHash         string            `json:"sequence_hash"`
@@ -58,14 +66,14 @@ type Meta struct {
 
 // Feature holds the information for a feature in a Genbank file and other annotated sequence files.
 type Feature struct {
-	Type                 string            `json:"type"`
-	Description          string            `json:"description"`
-	Attributes           map[string]string `json:"attributes"`
-	SequenceHash         string            `json:"sequence_hash"`
-	SequenceHashFunction string            `json:"hash_function"`
-	Sequence             string            `json:"sequence"`
-	Location             Location          `json:"location"`
-	ParentSequence       *Genbank          `json:"-"`
+	Type                 string              `json:"type"`
+	Description          string              `json:"description"`
+	Attributes           map[string][]string `json:"attributes"`
+	SequenceHash         string              `json:"sequence_hash"`
+	SequenceHashFunction string              `json:"hash_function"`
+	Sequence             string              `json:"sequence"`
+	Location             Location            `json:"location"`
+	ParentSequence       *Genbank            `json:"-"`
 }
 
 // Reference holds information for one reference in a Meta struct.
@@ -102,6 +110,12 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
+// BaseCount is a struct that holds the base counts for a sequence.
+type BaseCount struct {
+	Base  string
+	Count int
+}
+
 // Precompiled regular expressions:
 var (
 	basePairRegex         = regexp.MustCompile(` \d* \w{2} `)
@@ -111,7 +125,25 @@ var (
 	sequenceRegex         = regexp.MustCompile("[^a-zA-Z]+")
 )
 
+// StoreFeatureSequences calls StoreSequence on all features.
+// The resulting JSON is guaranteed to have useful Feature.Sequence values.
+// Useful when exporting for downstream analysis, such as with json.Marshal.
+func (sequence *Genbank) StoreFeatureSequences() error {
+	for i := range sequence.Features {
+		_, err := sequence.Features[i].StoreSequence()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // AddFeature adds a feature to a Genbank struct.
+// NOTE: This method assumes feature is not referenced in another location
+// as this only creates a shallow copy.
+// If you intend to duplicate a feature from another Genbank and plan
+// to modify in either location, it is recommended you first call feature.Copy()
+// before passing as input to save yourself trouble.
 func (sequence *Genbank) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	sequence.Features = append(sequence.Features, *feature)
@@ -123,27 +155,58 @@ func (feature Feature) GetSequence() (string, error) {
 	return getFeatureSequence(feature, feature.Location)
 }
 
+// StoreSequence infers and assigns the value of feature.Sequence
+// if currently an empty string.
+func (feature *Feature) StoreSequence() (string, error) {
+	if feature.Sequence != "" {
+		return feature.Sequence, nil
+	}
+	seq, err := getFeatureSequence(*feature, feature.Location)
+	if err == nil {
+		feature.Sequence = seq
+	}
+	return seq, err
+}
+
+// Copy creates deep copy of Feature, which supports safe duplication.
+func (feature *Feature) Copy() Feature {
+	copy := *feature
+	copy.Location = CopyLocation(feature.Location)
+	copy.Attributes = NewMultiMap[string, string]()
+	ForEachKey(feature.Attributes, func(k string, v []string) {
+		copy.Attributes[k] = MapSlice(v, identity[string])
+	})
+	return copy
+}
+
+// CopyLocation creates deep copy of Location, which supports safe duplication
+func CopyLocation(location Location) Location {
+	location.SubLocations = MapSlice(location.SubLocations, CopyLocation)
+	return location
+}
+
 // getFeatureSequence takes a feature and location object and returns a sequence string.
 func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
-	var sequenceString string
 	parentSequence := feature.ParentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
 		for _, subLocation := range location.SubLocations {
-			sequence, _ := getFeatureSequence(feature, subLocation)
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return "", err
+			}
 
 			sequenceBuffer.WriteString(sequence)
 		}
 	}
 
 	// reverse complements resulting string if needed.
+	sequenceString := sequenceBuffer.String()
 	if location.Complement {
-		sequenceString = transform.ReverseComplement(sequenceBuffer.String())
-	} else {
-		sequenceString = sequenceBuffer.String()
+		sequenceString = transform.ReverseComplement(sequenceString)
 	}
 
 	return sequenceString, nil
@@ -387,6 +450,44 @@ func (sequence *Genbank) WriteTo(w io.Writer) (int64, error) {
 	return writtenBytes, nil
 }
 
+// ParseError represents failures encountered while parsing,
+// and pointers to it are fully compatable with the error interface.
+type ParseError struct {
+	file   string // the file origin
+	line   string // the offending line
+	before bool   // whether the error occurred before or on this line
+	lineNo int    // the line number, 0 indexed
+	info   string `default:"syntax error"` // description of the error type
+	wraps  error  // stores the error that led to this, if any
+}
+
+func (e ParseError) Error() string {
+	var out, loc string
+	if e.wraps == io.EOF {
+		out = "unexpected EOF"
+		if e.file == "" {
+			return fmt.Sprintf("%s in %s", out, e.file)
+		} else {
+			return out
+		}
+	}
+	if e.file == "" {
+		loc = fmt.Sprintf("line %d", e.lineNo)
+	} else {
+		loc = fmt.Sprintf("%s:%d", e.file, e.lineNo)
+	}
+	if e.before {
+		out = fmt.Sprintf("%s before %s", e.info, loc)
+	} else {
+		out = fmt.Sprintf("%s on %s: %s", e.info, loc, e.line)
+	}
+	if e.wraps != nil {
+		out = fmt.Sprintf("%s\nfrom %v", out, e.wraps)
+	}
+	return out
+}
+
+// defines state for the parser, and utility methods to modify
 type parseLoopParameters struct {
 	newLocation      bool
 	attribute        string
@@ -394,7 +495,7 @@ type parseLoopParameters struct {
 	emptyAttribute   bool
 	sequenceBuilder  strings.Builder
 	parseStep        string
-	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
+	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.
 	feature          Feature
 	features         []Feature
 	metadataTag      string
@@ -408,10 +509,29 @@ type parseLoopParameters struct {
 // method to init loop parameters
 func (params *parseLoopParameters) init() {
 	params.newLocation = true
-	params.feature.Attributes = make(map[string]string)
+	params.feature.Attributes = NewMultiMap[string, string]()
 	params.parseStep = "metadata"
 	params.genbankStarted = false
 	params.genbank.Meta.Other = make(map[string]string)
+}
+
+// save our completed attribute / qualifier string to the current feature
+// useful as a wrap-up step from multiple states
+func (params *parseLoopParameters) saveLastAttribute() {
+	newValue := params.attributeValue != ""
+	emptyType := params.feature.Type != ""
+	if newValue || emptyType {
+		if newValue {
+			Put(params.feature.Attributes, params.attribute, params.attributeValue)
+		}
+		params.features = append(params.features, params.feature)
+
+		// reset attribute state
+		params.attributeValue = ""
+		params.attribute = ""
+		params.feature = Feature{}
+		params.feature.Attributes = NewMultiMap[string, string]()
+	}
 }
 
 // Header is a blank struct, needed for compatibility with bio parsers. It contains nothing.
@@ -444,7 +564,7 @@ func NewParser(r io.Reader, maxLineSize int) *Parser {
 	}
 }
 
-// ParseMultiNth takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
+// Next takes in a reader representing a multi gbk/gb/genbank file and parses the first n records into a slice of Genbank structs.
 func (parser *Parser) Next() (*Genbank, error) {
 	parser.parameters.init()
 	// Loop through each line of the file
@@ -471,11 +591,12 @@ func (parser *Parser) Next() (*Genbank, error) {
 			continue
 		}
 
+		// define parser state machine
 		switch parser.parameters.parseStep {
 		case "metadata":
 			// Handle empty lines
 			if len(line) == 0 {
-				return &Genbank{}, fmt.Errorf("Empty metadata line on line %d", lineNum)
+				return &Genbank{}, &ParseError{line: line, lineNo: lineNum, info: "unexpected empty metadata"}
 			}
 
 			// If we are currently reading a line, we need to figure out if it is a new meta line.
@@ -496,7 +617,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 				case "REFERENCE":
 					reference, err := parseReferences(parser.parameters.metadataData)
 					if err != nil {
-						return &Genbank{}, fmt.Errorf("Failed in parsing reference above line %d. Got error: %s", lineNum, err)
+						return &Genbank{}, &ParseError{line: line, lineNo: lineNum, before: true, wraps: err, info: "failed in parsing reference"}
 					}
 					parser.parameters.genbank.Meta.References = append(parser.parameters.genbank.Meta.References, reference)
 
@@ -523,68 +644,70 @@ func (parser *Parser) Next() (*Genbank, error) {
 			}
 		case "features":
 
+			baseCountFlag := strings.Contains(line, "BASE COUNT") // example string for BASE COUNT: "BASE COUNT    67070277 a   48055043 c   48111528 g   67244164 t   18475410 n"
+			if baseCountFlag {
+				fields := strings.Fields(line)
+				for countIndex := 2; countIndex < len(fields)-1; countIndex += 2 { // starts at two because we don't want to include "BASE COUNT" in our fields
+					count, err := strconv.Atoi(fields[countIndex])
+					if err != nil {
+						return &Genbank{}, &ParseError{line: line, lineNo: lineNum, wraps: err, info: "invalid base count"}
+					}
+
+					baseCount := BaseCount{
+						Base:  fields[countIndex+1],
+						Count: count,
+					}
+					parser.parameters.genbank.Meta.BaseCount = append(parser.parameters.genbank.Meta.BaseCount, baseCount)
+				}
+				break
+			}
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
-			if originFlag {
+			contigFlag := strings.Contains(line, "CONTIG")
+			if originFlag || contigFlag {
 				parser.parameters.parseStep = "sequence"
 
-				// save our completed attribute / qualifier string to the current feature
-				if parser.parameters.attributeValue != "" {
-					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
-					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
-					parser.parameters.attributeValue = ""
-					parser.parameters.attribute = ""
-					parser.parameters.feature = Feature{}
-					parser.parameters.feature.Attributes = make(map[string]string)
-				} else {
-					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
-				}
+				parser.parameters.saveLastAttribute()
 
 				// add our features to the genbank
 				for _, feature := range parser.parameters.features {
+					// TODO: parse location when line is read, or track line number so error is localized
 					location, err := parseLocation(feature.Location.GbkLocationString)
 					if err != nil {
-						return &Genbank{}, err
+						return &Genbank{}, &ParseError{before: true, line: line, lineNo: lineNum, wraps: err, info: "invalid feature location"}
 					}
 					feature.Location = location
 					err = parser.parameters.genbank.AddFeature(&feature)
 					if err != nil {
-						return &Genbank{}, err
+						return &Genbank{}, &ParseError{before: true, line: line, lineNo: lineNum, wraps: err, info: "problem adding feature"}
 					}
 				}
-				continue
-			} // end sequence parsing flag logic
 
-			// check if current line contains anything but whitespace
-			trimmedLine := strings.TrimSpace(line)
-			if len(trimmedLine) < 1 {
+				if contigFlag {
+					parser.parameters.genbank.Meta.Other["CONTIG"] = parseMetadata(splitLine[1:])
+				}
 				continue
 			}
 
-			// determine if current line is a new top level feature
-			if countLeadingSpaces(parser.parameters.currentLine) < countLeadingSpaces(parser.parameters.prevline) || parser.parameters.prevline == "FEATURES" {
-				// save our completed attribute / qualifier string to the current feature
-				if parser.parameters.attributeValue != "" {
-					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
-					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
-					parser.parameters.attributeValue = ""
-					parser.parameters.attribute = ""
-					parser.parameters.feature = Feature{}
-					parser.parameters.feature.Attributes = make(map[string]string)
-				}
+			// check if current line contains anything but whitespace
+			trimmedLine := strings.TrimSpace(line)
+			if len(trimmedLine) == 0 {
+				continue
+			}
 
-				// }
-				// checks for empty types
-				if parser.parameters.feature.Type != "" {
-					parser.parameters.features = append(parser.parameters.features, parser.parameters.feature)
-				}
+			indent := countLeadingSpaces(parser.parameters.currentLine)
+			// determine if current line is a new top level feature
+			if indent == 0 {
+				return &Genbank{}, &ParseError{line: line, lineNo: lineNum, info: "unexpected metadata when parsing feature"}
+			} else if indent < countLeadingSpaces(parser.parameters.prevline) || parser.parameters.prevline == "FEATURES" {
+				parser.parameters.saveLastAttribute()
 
 				parser.parameters.feature = Feature{}
-				parser.parameters.feature.Attributes = make(map[string]string)
+				parser.parameters.feature.Attributes = NewMultiMap[string, string]()
 
 				// An initial feature line looks like this: `source          1..2686` with a type separated by its location
 				if len(splitLine) < 2 {
-					return &Genbank{}, fmt.Errorf("Feature line malformed on line %d. Got line: %s", lineNum, line)
+					return &Genbank{}, &ParseError{line: line, lineNo: lineNum, info: "malformed feature"}
 				}
 				parser.parameters.feature.Type = strings.TrimSpace(splitLine[0])
 				parser.parameters.feature.Location.GbkLocationString = strings.TrimSpace(splitLine[len(splitLine)-1])
@@ -607,7 +730,7 @@ func (parser *Parser) Next() (*Genbank, error) {
 				}
 				// save our completed attribute / qualifier string to the current feature
 				if parser.parameters.attributeValue != "" || parser.parameters.emptyAttribute {
-					parser.parameters.feature.Attributes[parser.parameters.attribute] = parser.parameters.attributeValue
+					Put(parser.parameters.feature.Attributes, parser.parameters.attribute, parser.parameters.attributeValue)
 					parser.parameters.emptyAttribute = false
 				}
 				parser.parameters.attributeValue = ""
@@ -626,11 +749,13 @@ func (parser *Parser) Next() (*Genbank, error) {
 				}
 				parser.parameters.attributeValue = removeAttributeValueQuotes
 				parser.parameters.multiLineFeature = false // without this we can't tell if something is a multiline feature or multiline qualifier
+			} else {
+				return &Genbank{}, &ParseError{line: line, lineNo: lineNum, info: "invalid feature"}
 			}
 
 		case "sequence":
 			if len(line) < 2 { // throw error if line is malformed
-				return &Genbank{}, fmt.Errorf("Too short line found while parsing genbank sequence on line %d. Got line: %s", lineNum, line)
+				return &Genbank{}, &ParseError{line: line, lineNo: lineNum, info: "too short line found while parsing genbank sequence"}
 			} else if line[0:2] == "//" { // end of sequence
 				parser.parameters.genbank.Sequence = parser.parameters.sequenceBuilder.String()
 
@@ -850,9 +975,9 @@ func getSourceOrganism(metadataData []string) (string, string, []string) {
 func parseLocation(locationString string) (Location, error) {
 	var location Location
 	location.GbkLocationString = locationString
-	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
-			position, err := strconv.Atoi(locationString)
+	if !strings.ContainsAny(locationString, "(") { // Case checks for simple expression of x..x
+		if !strings.ContainsAny(locationString, ".") { //Case checks for simple expression x
+			position, err := strconv.Atoi(partialRegex.ReplaceAllString(locationString, ""))
 			if err != nil {
 				return Location{}, err
 			}
@@ -880,26 +1005,34 @@ func parseLocation(locationString string) (Location, error) {
 			if strings.ContainsAny(expression, "(") {
 				firstInnerParentheses := strings.Index(expression, "(")
 				ParenthesesCount := 1
-				comma := 0
-				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParentheses+i] {
-					case []byte("(")[0]:
+				prevSubLocationStart := 0
+				for i := firstInnerParentheses + 1; i < len(expression); i++ { // "(" is at 0, so we start at 1
+					switch expression[i] {
+					case '(':
 						ParenthesesCount++
-					case []byte(")")[0]:
+					case ')':
 						ParenthesesCount--
+					case ',':
+						if ParenthesesCount == 0 {
+							parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:i])
+							if err != nil {
+								return Location{}, err
+							}
+							parsedSubLocation.GbkLocationString = locationString
+							location.SubLocations = append(location.SubLocations, parsedSubLocation)
+							prevSubLocationStart = i + 1
+						}
 					}
 				}
-				parseLeftLocation, err := parseLocation(expression[:firstInnerParentheses+comma+1])
+				if ParenthesesCount != 0 {
+					return Location{}, fmt.Errorf("Unbalanced parentheses")
+				}
+				parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:])
 				if err != nil {
 					return Location{}, err
 				}
-				parseRightLocation, err := parseLocation(expression[2+firstInnerParentheses+comma:])
-				if err != nil {
-					return Location{}, err
-				}
-
-				location.SubLocations = append(location.SubLocations, parseLeftLocation, parseRightLocation)
+				parsedSubLocation.GbkLocationString = locationString
+				location.SubLocations = append(location.SubLocations, parsedSubLocation)
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
 					joinLocation, err := parseLocation(numberRange)
@@ -1000,13 +1133,10 @@ func BuildFeatureString(feature Feature) string {
 	featureHeader := generateWhiteSpace(subMetaIndex) + feature.Type + whiteSpaceTrail + location + "\n"
 	returnString := featureHeader
 
-	qualifierKeys := make([]string, 0, len(feature.Attributes))
-	for key := range feature.Attributes {
-		qualifierKeys = append(qualifierKeys, key)
-	}
-
-	for _, qualifier := range qualifierKeys {
-		returnString += generateWhiteSpace(qualifierIndex) + "/" + qualifier + "=\"" + feature.Attributes[qualifier] + "\"\n"
+	if feature.Attributes != nil {
+		ForEachValue(feature.Attributes, func(key string, value string) {
+			returnString += generateWhiteSpace(qualifierIndex) + "/" + key + "=\"" + value + "\"\n"
+		})
 	}
 	return returnString
 }
@@ -1026,3 +1156,91 @@ func generateWhiteSpace(length int) string {
 GBK specific IO related things end here.
 
 ******************************************************************************/
+
+/******************************************************************************
+Old functions for testing here.
+
+We used to have integrated read files, before we had the generic parser
+interface. These are still here because of the need to switch over our tests.
+******************************************************************************/
+
+// read reads a GBK file from path and returns a Genbank struct.
+func read(path string) (Genbank, error) {
+	genbankSlice, err := readMultiNth(path, 1)
+	if err != nil {
+		return Genbank{}, err
+	}
+	genbank := genbankSlice[0]
+	return genbank, err
+}
+
+// readMulti reads a multi Gbk from path and parses it into a slice of Genbank structs.
+func readMulti(path string) ([]Genbank, error) {
+	return readMultiNth(path, -1)
+}
+
+// readMultiNth reads a multi Gbk from path and parses N entries into a slice of Genbank structs.
+func readMultiNth(path string, count int) ([]Genbank, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []Genbank{}, err
+	}
+
+	sequence, perr := parseMultiNthFn(file, count)
+	if perr != nil {
+		perr.file = path
+		return []Genbank{}, perr
+	}
+
+	return sequence, nil
+}
+
+func parseMultiNth(r io.Reader, count int) ([]Genbank, *ParseError) {
+	parser := NewParser(r, bufio.MaxScanTokenSize)
+	var genbanks []Genbank
+	for i := 0; i < count; i++ {
+		gb, err := parser.Next()
+		if err != nil {
+			var perr ParseError
+			if err == io.EOF {
+				perr = ParseError{wraps: io.EOF}
+			} else {
+				perr = err.(ParseError)
+			}
+			return genbanks, &perr
+		}
+		genbanks = append(genbanks, *gb)
+	}
+	return genbanks, nil
+}
+
+func parse(r io.Reader) (Genbank, error) {
+	parser := NewParser(r, bufio.MaxScanTokenSize)
+	gb, err := parser.Next()
+	return *gb, err
+}
+
+func write(gb Genbank, path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = gb.WriteTo(file)
+	return err
+}
+
+func writeMulti(gbs []Genbank, path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	for _, gb := range gbs {
+		_, err = gb.WriteTo(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

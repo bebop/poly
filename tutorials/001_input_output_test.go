@@ -47,6 +47,13 @@ TTFN,
 Tim
 ******************************************************************************/
 
+// Ignore ParentSequence as that's a pointer which can't be serialized.
+func CmpOptions() []cmp.Option {
+	return []cmp.Option{
+		cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence"),
+	}
+}
+
 // if you're using VS-CODE you should see a DEBUG TEST button right below this
 // comment. Please set break points and use it early and often.
 func TestFileIOTutorial(t *testing.T) {
@@ -175,8 +182,7 @@ func TestFileIOTutorial(t *testing.T) {
 	}
 
 	// compare our read-in plasmid to the the one we wrote out.
-	// Ignore ParentSequence as that's a pointer which can't be serialized.
-	if diff := cmp.Diff(puc19, puc19Copy, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")}...); diff != "" {
+	if diff := cmp.Diff(puc19, puc19Copy, CmpOptions()...); diff != "" {
 		t.Errorf("Parsing the output of Build() does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
 	}
 
@@ -199,7 +205,7 @@ func TestFileIOTutorial(t *testing.T) {
 	if err := json.Unmarshal(jsonContent, &unmarshaledPuc19); err != nil {
 		t.Error(err)
 	}
-	if diff := cmp.Diff(puc19, &unmarshaledPuc19, []cmp.Option{cmpopts.IgnoreFields(genbank.Feature{}, "ParentSequence")}...); diff != "" {
+	if diff := cmp.Diff(puc19, &unmarshaledPuc19, CmpOptions()...); diff != "" {
 		t.Errorf("Parsing the JSON does not produce the same output as parsing the original file, \"%s\", read with Read(). Got this diff:\n%s", filepath.Base(puc19Path), diff)
 	}
 

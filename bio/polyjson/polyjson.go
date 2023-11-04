@@ -13,6 +13,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/TimothyStiles/poly/bio/genbank"
 	"github.com/TimothyStiles/poly/transform"
 )
 
@@ -151,6 +152,82 @@ func Write(sequence Poly, path string) error {
 		return err
 	}
 	return os.WriteFile(path, file, 0644)
+}
+
+// Utilities to convert polyjson objects -> their genbank equivalents
+// TODO add convert <- genbank methods, which is currently difficult as most
+// genbank Meta values are discarded due to lack of support for wildcard metadata in polyjson.
+
+func (sequence *Poly) ToGenbank() genbank.Genbank {
+	gb := genbank.Genbank{
+		Meta:     sequence.Meta.ToGenbank(),
+		Features: make([]genbank.Feature, len(sequence.Features)),
+		Sequence: sequence.Sequence,
+	}
+	for i, f := range sequence.Features {
+		gb.Features[i] = f.ToGenbank()
+		gb.Features[i].ParentSequence = &gb
+	}
+	return gb
+}
+
+func (meta *Meta) ToGenbank() genbank.Meta {
+	other := make(map[string]string)
+	if meta.URL != "" {
+		other["URL"] = meta.URL
+	}
+	if meta.CreatedBy != "" {
+		other["CreatedBy"] = meta.CreatedBy
+	}
+	if meta.CreatedWith != "" {
+		other["CreatedWith"] = meta.CreatedWith
+	}
+	other["CreatedOn"] = meta.CreatedOn.String()
+	if meta.Schema != "" {
+		other["Schema"] = meta.Schema
+	}
+	return genbank.Meta{
+		Definition:   meta.Description,
+		Source:       meta.CreatedBy,
+		Origin:       meta.CreatedWith,
+		Name:         meta.Name,
+		SequenceHash: meta.Hash,
+		Other:        other,
+	}
+}
+
+func (feature *Feature) ToGenbank() genbank.Feature {
+	attributes := genbank.NewMultiMap[string, string]()
+	for key, value := range feature.Tags {
+		genbank.Put(attributes, key, value)
+	}
+	genbank.Put(attributes, "Name", feature.Name)
+
+	return genbank.Feature{
+		Type:         feature.Type,
+		Description:  feature.Description,
+		Attributes:   attributes,
+		SequenceHash: feature.Hash,
+		Sequence:     feature.Sequence,
+		Location:     feature.Location.ToGenbank(),
+	}
+}
+
+func (location *Location) ToGenbank() genbank.Location {
+	loc := genbank.Location{
+		Start:             location.Start,
+		End:               location.End,
+		Complement:        location.Complement,
+		Join:              location.Join,
+		FivePrimePartial:  location.FivePrimePartial,
+		ThreePrimePartial: location.ThreePrimePartial,
+		SubLocations: genbank.MapSlice(
+			location.SubLocations,
+			func(s Location) genbank.Location { return s.ToGenbank() },
+		),
+	}
+	loc.GbkLocationString = genbank.BuildLocationString(loc)
+	return loc
 }
 
 /******************************************************************************
