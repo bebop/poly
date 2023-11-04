@@ -1201,13 +1201,13 @@ func parseMultiNth(r io.Reader, count int) ([]Genbank, *ParseError) {
 	for i := 0; i < count; i++ {
 		gb, err := parser.Next()
 		if err != nil {
-			var perr ParseError
+			var perr *ParseError
 			if err == io.EOF {
-				perr = ParseError{wraps: io.EOF}
-			} else {
-				perr = err.(ParseError)
+				perr = &ParseError{wraps: io.EOF}
+			} else if err != nil {
+				perr = err.(*ParseError)
 			}
-			return genbanks, &perr
+			return genbanks, perr
 		}
 		genbanks = append(genbanks, *gb)
 	}
