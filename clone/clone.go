@@ -316,7 +316,7 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func (em *EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
+func (em EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
 		newFragments, err := em.CutWithEnzymeByName(sequence, true, enzymeStr)
