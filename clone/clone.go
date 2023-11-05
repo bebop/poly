@@ -294,33 +294,6 @@ func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments
 	return openConstructs, infiniteConstructs
 }
 
-func getConstructs(c chan string, constructSequences chan []string, circular bool) {
-	var constructs []string
-	var exists bool
-	var existingSeqhashes []string
-	for {
-		construct, more := <-c
-		if more {
-			exists = false
-			seqhashConstruct, _ := seqhash.Hash(construct, "DNA", circular, true)
-			// Check if this construct is unique
-			for _, existingSeqhash := range existingSeqhashes {
-				if existingSeqhash == seqhashConstruct {
-					exists = true
-				}
-			}
-			if !exists {
-				constructs = append(constructs, construct)
-				existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
-			}
-		} else {
-			constructSequences <- constructs
-			close(constructSequences)
-			return
-		}
-	}
-}
-
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
 func CircularLigate(fragments []Fragment) ([]string, []string) {
 	var outputConstructs []string

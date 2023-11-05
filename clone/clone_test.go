@@ -128,7 +128,7 @@ func TestGoldenGate(t *testing.T) {
 	}
 }
 
-func ExampleGoldenGate() {
+func ExampleEnzymeManager_GoldenGate() {
 	em := NewEnzymeManager(GetBaseRestrictionEnzymes())
 	// Fragment 1 has a palindrome at its start. This isn't very common but
 	// can occur. These two fragments are real DNA fragments used in the
@@ -204,7 +204,7 @@ func TestCircularCutRegression(t *testing.T) {
 
 func benchmarkGoldenGate(b *testing.B, em EnzymeManager, parts []Part) {
 	for n := 0; n < b.N; n++ {
-		em.GoldenGate(parts, "BbsI")
+		_, _, _ = em.GoldenGate(parts, "BbsI")
 	}
 }
 
