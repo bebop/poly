@@ -38,3 +38,15 @@ func TestMash(t *testing.T) {
 		t.Errorf("Expected distance to be 1, got %f", distance)
 	}
 }
+
+func BenchmarkMashDistancee(b *testing.B) {
+	fingerprint1 := mash.New(17, 10)
+	fingerprint1.Sketch("ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGA")
+
+	fingerprint2 := mash.New(17, 9)
+	fingerprint2.Sketch("ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGA")
+
+	for i := 0; i < b.N; i++ {
+		fingerprint1.Distance(fingerprint2)
+	}
+}
