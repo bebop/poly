@@ -25,13 +25,13 @@ Gbk/gb/genbank related benchmarks begin here.
 ******************************************************************************/
 
 var singleGbkPaths = []string{
-	"../../data/t4_intron.gb",
-	"../../data/puc19.gbk",
-	"../../data/puc19_snapgene.gb",
-	"../../data/benchling.gb",
-	"../../data/phix174.gb",
-	"../../data/sample.gbk",
-	// "../../data/pichia_chr1_head.gb",
+	"data/t4_intron.gb",
+	"data/puc19.gbk",
+	"data/puc19_snapgene.gb",
+	"data/benchling.gb",
+	"data/phix174.gb",
+	"data/sample.gbk",
+	// "data/pichia_chr1_head.gb",
 }
 
 func TestGbkIO(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGbkIO(t *testing.T) {
 }
 
 func TestMultiLineFeatureParse(t *testing.T) {
-	pichia, _ := read("../../data/pichia_chr1_head.gb")
+	pichia, _ := read("data/pichia_chr1_head.gb")
 	var multilineOutput string
 	for _, feature := range pichia.Features {
 		multilineOutput = feature.Location.GbkLocationString
@@ -75,7 +75,7 @@ func TestMultiGenbankIO(t *testing.T) {
 	defer os.RemoveAll(tmpDataDir)
 
 	// Test multiline Genbank features
-	gbkPath := "../../data/multiGbk_test.seq"
+	gbkPath := "data/multiGbk_test.seq"
 	multiGbk, _ := readMulti(gbkPath)
 	tmpGbkFilePath := filepath.Join(tmpDataDir, filepath.Base(gbkPath))
 	_ = writeMulti(multiGbk, tmpGbkFilePath)
@@ -94,7 +94,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGbk, err := read("../../data/sample.gbk")
+	scrubbedGbk, err := read("data/sample.gbk")
 	if err != nil {
 		t.Error(err)
 	}
@@ -107,7 +107,7 @@ func TestGbkLocationStringBuilder(t *testing.T) {
 	tmpGbkFilePath := filepath.Join(tmpDataDir, "sample.gbk")
 	_ = write(scrubbedGbk, tmpGbkFilePath)
 
-	testInputGbk, _ := read("../../data/sample.gbk")
+	testInputGbk, _ := read("data/sample.gbk")
 	testOutputGbk, _ := read(tmpGbkFilePath)
 
 	if diff := cmp.Diff(testInputGbk, testOutputGbk, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
@@ -122,7 +122,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDataDir)
 
-	scrubbedGb, _ := read("../../data/t4_intron.gb")
+	scrubbedGb, _ := read("data/t4_intron.gb")
 
 	// removing gbkLocationString from features to allow testing for gbkLocationBuilder
 	for featureIndex := range scrubbedGb.Features {
@@ -132,7 +132,7 @@ func TestGbLocationStringBuilder(t *testing.T) {
 	tmpGbFilePath := filepath.Join(tmpDataDir, "t4_intron_test.gb")
 	_ = write(scrubbedGb, tmpGbFilePath)
 
-	testInputGb, _ := read("../../data/t4_intron.gb")
+	testInputGb, _ := read("data/t4_intron.gb")
 	testOutputGb, _ := read(tmpGbFilePath)
 
 	if diff := cmp.Diff(testInputGb, testOutputGb, []cmp.Option{cmpopts.IgnoreFields(Feature{}, "ParentSequence")}...); diff != "" {
@@ -141,14 +141,14 @@ func TestGbLocationStringBuilder(t *testing.T) {
 }
 
 func TestPartialLocationParseRegression(t *testing.T) {
-	gbk, _ := read("../../data/sample.gbk")
+	gbk, _ := read("data/sample.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.Location.GbkLocationString == "687..3158>" && (feature.Location.Start != 686 || feature.Location.End != 3158) {
 			t.Errorf("Partial location for three prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with read()")
 		}
 	}
-	gbk, err := read("../../data/sample.gbk")
+	gbk, err := read("data/sample.gbk")
 	if err != nil {
 		t.Errorf("Failed to read sample.gbk. Got err: %s", err)
 	}
@@ -188,7 +188,7 @@ func TestSubLocationStringParseRegression(t *testing.T) {
 }
 
 func TestSnapgeneGenbankRegression(t *testing.T) {
-	snapgene, err := read("../../data/puc19_snapgene.gb")
+	snapgene, err := read("data/puc19_snapgene.gb")
 
 	if snapgene.Sequence == "" {
 		t.Errorf("Parsing snapgene returned an empty string. Got error: %s", err)
@@ -196,7 +196,7 @@ func TestSnapgeneGenbankRegression(t *testing.T) {
 }
 
 func TestGetSequenceMethod(t *testing.T) {
-	gbk, _ := read("../../data/t4_intron.gb")
+	gbk, _ := read("data/t4_intron.gb")
 
 	// Check to see if GetSequence method works on Features struct
 	feature, _ := gbk.Features[1].GetSequence()
@@ -207,7 +207,7 @@ func TestGetSequenceMethod(t *testing.T) {
 }
 
 func TestLocationParser(t *testing.T) {
-	gbk, _ := read("../../data/t4_intron.gb")
+	gbk, _ := read("data/t4_intron.gb")
 
 	// read 1..243
 	feature, _ := gbk.Features[1].GetSequence()
@@ -250,11 +250,11 @@ func TestLocationParser(t *testing.T) {
 }
 
 func TestGenbankNewlineParsingRegression(t *testing.T) {
-	gbk, _ := read("../../data/puc19.gbk")
+	gbk, _ := read("data/puc19.gbk")
 
 	for _, feature := range gbk.Features {
 		if feature.Location.Start == 410 && feature.Location.End == 1750 && feature.Type == "CDS" {
-			if feature.Attributes["product"] != "chromosomal replication initiator informational ATPase" {
+			if feature.Attributes["product"][0] != "chromosomal replication initiator informational ATPase" {
 				t.Errorf("Newline parsing has failed.")
 			}
 			break
@@ -264,7 +264,7 @@ func TestGenbankNewlineParsingRegression(t *testing.T) {
 
 func BenchmarkRead(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _ = read("../../data/bsub.gbk")
+		_, _ = read("data/bsub.gbk")
 	}
 }
 
@@ -281,7 +281,7 @@ Gbk/gb/genbank related benchmarks end here.
 ******************************************************************************/
 
 func TestBenchlingGenbank(t *testing.T) {
-	sequence, _ := read("../../data/benchling.gb")
+	sequence, _ := read("data/benchling.gb")
 
 	if len(sequence.Features) != 17 {
 		t.Errorf("Parsing benchling genbank file not returned the correct quantity of features")
@@ -531,7 +531,7 @@ func TestRead(t *testing.T) {
 		{
 			name: "error on malformed file",
 			args: args{
-				path: "../../data/malformed_read_test.gbk",
+				path: "data/malformed_read_test.gbk",
 			},
 			wantErr: true,
 		},
@@ -689,23 +689,22 @@ func TestBuildFeatureString(t *testing.T) {
 }
 
 func TestParse_error(t *testing.T) {
-	parseMultiErr := io.EOF
+	parseMultiErr := &ParseError{wraps: io.EOF}
 	oldParseMultiNthFn := parseMultiNthFn
-	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, error) {
+	parseMultiNthFn = func(r io.Reader, count int) ([]Genbank, *ParseError) {
 		return nil, parseMultiErr
 	}
 	defer func() {
 		parseMultiNthFn = oldParseMultiNthFn
 	}()
 	_, err := parse(strings.NewReader(""))
-	assert.EqualError(t, err, parseMultiErr.Error())
+	assert.Equal(t, err, parseMultiErr.wraps)
 
 	_, err = parseMultiNth(strings.NewReader(""), 10000)
-	assert.EqualError(t, err, parseMultiErr.Error())
+	assert.Equal(t, err, parseMultiErr)
 }
 
 func TestParseReferences_error(t *testing.T) {
-	parseReferencesErr := errors.New("Failed in parsing reference above line 13. Got error: ")
 	oldParseReferencesFn := parseReferencesFn
 	parseReferencesFn = func(metadataData []string) (Reference, error) {
 		return Reference{}, errors.New("")
@@ -713,21 +712,21 @@ func TestParseReferences_error(t *testing.T) {
 	defer func() {
 		parseReferencesFn = oldParseReferencesFn
 	}()
-	file, _ := os.Open("../../data/puc19.gbk")
+	file, _ := os.Open("data/puc19.gbk")
 	_, err := parseMultiNthFn(file, 1)
-	assert.EqualError(t, err, parseReferencesErr.Error())
+	assert.Equal(t, err.info, "failed in parsing reference")
 }
 
 func TestIssue303Regression(t *testing.T) {
-	seq, _ := read("../../data/puc19_303_regression.gbk")
-	expectedAttribute := "16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"
+	seq, _ := read("data/puc19_303_regression.gbk")
+	expectedAttribute := []string{"16S rRNA(adenine(1518)-N(6)/adenine(1519)-N(6))-dimethyltransferase"}
 	for _, feature := range seq.Features {
-		if feature.Attributes["locus_tag"] == "JCVISYN3A_0004" && feature.Type == "CDS" {
-			if feature.Attributes["product"] != expectedAttribute {
+		if cmp.Equal(feature.Attributes["locus_tag"], []string{"JCVISYN3A_0004"}) && feature.Type == "CDS" {
+			if !cmp.Equal(feature.Attributes["product"], expectedAttribute) {
 				t.Errorf("Failed to get proper expected attribute. Got: %s Expected: %s", feature.Attributes["product"], expectedAttribute)
 			}
 		}
-		if feature.Attributes["locus_tag"] == "JCVISYN3A_0051" && feature.Type == "CDS" {
+		if cmp.Equal(feature.Attributes["locus_tag"], []string{"JCVISYN3A_0051"}) && feature.Type == "CDS" {
 			if _, ok := feature.Attributes["pseudo"]; !ok {
 				t.Errorf("pseudo should be in attributes")
 			}
@@ -736,7 +735,7 @@ func TestIssue303Regression(t *testing.T) {
 }
 
 func TestConsortiumRegression(t *testing.T) {
-	_, err := read("../../data/puc19_consrtm.gbk")
+	_, err := read("data/puc19_consrtm.gbk")
 	if err != nil {
 		t.Errorf("Failed to read consrtm. Got err: %s", err)
 	}

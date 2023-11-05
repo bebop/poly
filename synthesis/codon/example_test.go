@@ -9,6 +9,9 @@ import (
 	"github.com/TimothyStiles/poly/synthesis/codon"
 )
 
+const puc19path = "../../bio/genbank/data/puc19.gbk"
+const phix174path = "../../bio/genbank/data/phix174.gb"
+
 func ExampleTranslate() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
@@ -21,7 +24,7 @@ func ExampleTranslate() {
 func ExampleOptimize() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
-	file, _ := os.Open("../../data/puc19.gbk")
+	file, _ := os.Open(puc19path)
 	defer file.Close()
 	parser, _ := bio.NewGenbankParser(file)
 	sequence, _ := parser.Next()
@@ -102,7 +105,7 @@ func ExampleWriteCodonJSON() {
 }
 
 func ExampleCompromiseCodonTable() {
-	file, _ := os.Open("../../data/puc19.gbk")
+	file, _ := os.Open(puc19path)
 	defer file.Close()
 	parser, _ := bio.NewGenbankParser(file)
 	sequence, _ := parser.Next()
@@ -125,7 +128,7 @@ func ExampleCompromiseCodonTable() {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	file2, _ := os.Open("../../data/phix174.gb")
+	file2, _ := os.Open(phix174path)
 	defer file2.Close()
 	parser2, _ := bio.NewGenbankParser(file2)
 	sequence2, _ := parser2.Next()
@@ -160,7 +163,7 @@ func ExampleCompromiseCodonTable() {
 }
 
 func ExampleAddCodonTable() {
-	file, _ := os.Open("../../data/puc19.gbk")
+	file, _ := os.Open(puc19path)
 	defer file.Close()
 	parser, _ := bio.NewGenbankParser(file)
 	sequence, _ := parser.Next()
@@ -183,7 +186,7 @@ func ExampleAddCodonTable() {
 	// weight our codon optimization table using the regions we collected from the genbank file above
 	optimizationTable := codonTable.OptimizeTable(codingRegions)
 
-	file2, _ := os.Open("../../data/phix174.gb")
+	file2, _ := os.Open(phix174path)
 	defer file2.Close()
 	parser2, _ := bio.NewGenbankParser(file2)
 	sequence2, _ := parser2.Next()
