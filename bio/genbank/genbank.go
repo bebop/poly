@@ -498,9 +498,9 @@ func (e ParseError) Error() string {
 		loc = fmt.Sprintf("%s:%d", e.file, e.lineNo)
 	}
 	if e.before {
-		out = fmt.Sprintf("%s before %s", e.info, loc)
+		out = fmt.Sprintf("%s encountered before %s", e.info, loc)
 	} else {
-		out = fmt.Sprintf("%s on %s: %s", e.info, loc, e.line)
+		out = fmt.Sprintf("%s encountered on %s: %s", e.info, loc, e.line)
 	}
 	if e.wraps != nil {
 		out = fmt.Sprintf("%s\nfrom %v", out, e.wraps)
