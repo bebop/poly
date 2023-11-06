@@ -55,7 +55,7 @@ func TestMash(t *testing.T) {
 	fingerprint2 = mash.New(17, 5)
 	fingerprint2.Sketch("ATGCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGA")
 
-	distance = fingerprint1.Distance(fingerprint2) // TODO: this shouldn't return 0 and should be same as above?
+	distance = fingerprint1.Distance(fingerprint2)
 	if distance != 0 {
 		t.Errorf("Expected distance to be 0, got %f", distance)
 	}
