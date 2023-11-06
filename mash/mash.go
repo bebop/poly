@@ -106,35 +106,28 @@ func (mash *Mash) Sketch(sequence string) {
 // Similarity returns the Jaccard similarity between two sketches (number of matching hashes / sketch size)
 func (mash *Mash) Similarity(other *Mash) float64 {
 	var sameHashes int
+	largerSketch := mash
+	smallerSketch := other
 
-	var largerSketch *Mash
-	var smallerSketch *Mash
-
-	if mash.SketchSize > other.SketchSize {
-		largerSketch = mash
-		smallerSketch = other
-	} else {
+	if mash.SketchSize < other.SketchSize {
 		largerSketch = other
 		smallerSketch = mash
 	}
 
-	largerSketchSizeShifted := largerSketch.SketchSize - 1
-	smallerSketchSizeShifted := smallerSketch.SketchSize - 1
-
-	// if the largest hash in the larger sketch is smaller than the smallest hash in the smaller sketch, the distance is 1
-	if largerSketch.Sketches[largerSketchSizeShifted] < smallerSketch.Sketches[0] {
+	if largerSketch.Sketches[largerSketch.SketchSize-1] < smallerSketch.Sketches[0] || smallerSketch.Sketches[smallerSketch.SketchSize-1] < largerSketch.Sketches[0] {
 		return 0
 	}
 
-	// if the largest hash in the smaller sketch is smaller than the smallest hash in the larger sketch, the distance is 1
-	if smallerSketch.Sketches[smallerSketchSizeShifted] < largerSketch.Sketches[0] {
-		return 0
-	}
-
-	for _, hash := range smallerSketch.Sketches {
-		ind := sort.Search(largerSketchSizeShifted, func(ind int) bool { return largerSketch.Sketches[ind] <= hash })
-		if largerSketch.Sketches[ind] == hash {
+	smallSketchIndex, largeSketchIndex := 0, 0
+	for smallSketchIndex < smallerSketch.SketchSize && largeSketchIndex < largerSketch.SketchSize {
+		if smallerSketch.Sketches[smallSketchIndex] == largerSketch.Sketches[largeSketchIndex] {
 			sameHashes++
+			smallSketchIndex++
+			largeSketchIndex++
+		} else if smallerSketch.Sketches[smallSketchIndex] < largerSketch.Sketches[largeSketchIndex] {
+			smallSketchIndex++
+		} else {
+			largeSketchIndex++
 		}
 	}
 
