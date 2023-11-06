@@ -118,16 +118,16 @@ func (mash *Mash) Similarity(other *Mash) float64 {
 		return 0
 	}
 
-	i, j := 0, 0
-	for i < smallerSketch.SketchSize && j < largerSketch.SketchSize {
-		if smallerSketch.Sketches[i] == largerSketch.Sketches[j] {
+	smallSketchIndex, largeSketchIndex := 0, 0
+	for smallSketchIndex < smallerSketch.SketchSize && largeSketchIndex < largerSketch.SketchSize {
+		if smallerSketch.Sketches[smallSketchIndex] == largerSketch.Sketches[largeSketchIndex] {
 			sameHashes++
-			i++
-			j++
-		} else if smallerSketch.Sketches[i] < largerSketch.Sketches[j] {
-			i++
+			smallSketchIndex++
+			largeSketchIndex++
+		} else if smallerSketch.Sketches[smallSketchIndex] < largerSketch.Sketches[largeSketchIndex] {
+			smallSketchIndex++
 		} else {
-			j++
+			largeSketchIndex++
 		}
 	}
 
