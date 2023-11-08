@@ -281,7 +281,8 @@ func TestOptimizeSequence(t *testing.T) {
 		updateWeightsWith  genbank.Genbank
 		wantOptimised      string
 
-		wantErr error
+		wantUpdateWeightsErr error
+		wantOptimiseErr      error
 	}{
 		{
 			name: "ok",
@@ -290,7 +291,8 @@ func TestOptimizeSequence(t *testing.T) {
 			updateWeightsWith:  puc19,
 			wantOptimised:      optimisedGFP,
 
-			wantErr: nil,
+			wantUpdateWeightsErr: nil,
+			wantOptimiseErr:      nil,
 		},
 		{
 			name: "giving no sequence to optimise",
@@ -299,7 +301,18 @@ func TestOptimizeSequence(t *testing.T) {
 			updateWeightsWith:  puc19,
 			wantOptimised:      "",
 
-			wantErr: errEmptyAminoAcidString,
+			wantUpdateWeightsErr: nil,
+			wantOptimiseErr:      errEmptyAminoAcidString,
+		},
+		{
+			name: "updating weights with a sequence with no CDS",
+
+			sequenceToOptimise: "",
+			updateWeightsWith:  genbank.Genbank{},
+			wantOptimised:      "",
+
+			wantUpdateWeightsErr: errNoCodingRegions,
+			wantOptimiseErr:      errEmptyAminoAcidString,
 		},
 	}
 
@@ -310,13 +323,13 @@ func TestOptimizeSequence(t *testing.T) {
 
 			optimizationTable := NewTranslationTable(11)
 			err := optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
-			if err != nil {
-				t.Fatal(err)
+			if !errors.Is(err, tt.wantUpdateWeightsErr) {
+				t.Errorf("got %v, want %v", err, tt.wantUpdateWeightsErr)
 			}
 
 			got, err := optimizationTable.OptimizeSequence(tt.sequenceToOptimise, 1)
-			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("got %v, want %v", err, tt.wantErr)
+			if !errors.Is(err, tt.wantOptimiseErr) {
+				t.Errorf("got %v, want %v", err, tt.wantOptimiseErr)
 			}
 
 			if !cmp.Equal(got, tt.wantOptimised) {
