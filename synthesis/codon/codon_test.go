@@ -237,6 +237,53 @@ func TestCompromiseCodonTable(t *testing.T) {
 	if err == nil {
 		t.Errorf("Compromise table should fail on 10.0")
 	}
+
+	// replace chooser fn with test one
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+
+	defer func() {
+		newChooserFn = weightedRand.NewChooser
+	}()
+
+	_, err = CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
+	if err == nil {
+		t.Errorf("Compromise table should fail when new chooser func rigged")
+	}
+}
+
+func TestAddCodonTable(t *testing.T) {
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
+
+	// weight our codon optimization table using the regions we collected from the genbank file above
+
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
+	}
+
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
+	optimizationTable2 := NewTranslationTable(11)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// replace chooser fn with test one
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+
+	defer func() {
+		newChooserFn = weightedRand.NewChooser
+	}()
+
+	_, err = AddCodonTable(optimizationTable, optimizationTable2)
+	if err == nil {
+		t.Errorf("Compromise table should fail when new chooser func rigged")
+	}
 }
 
 func TestCapitalizationRegression(t *testing.T) {
