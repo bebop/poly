@@ -8,6 +8,7 @@ import (
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -334,6 +335,79 @@ func TestOptimizeSequence(t *testing.T) {
 
 			if !cmp.Equal(got, tt.wantOptimised) {
 				t.Errorf("got and tt.wantOptimised didn't match %s", cmp.Diff(got, tt.wantOptimised))
+			}
+		})
+	}
+}
+
+func TestNewAminoAcidChooser(t *testing.T) {
+	var (
+		mockError = errors.New("new chooser rigged to fail")
+	)
+
+	tests := []struct {
+		name string
+
+		aminoAcids []AminoAcid
+
+		chooserFn func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error)
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: weightedRand.NewChooser,
+
+			wantErr: nil,
+		},
+		{
+			name: "chooser fn constructor error",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+				return nil, mockError
+			},
+
+			wantErr: mockError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// replace chooser fn with test one
+			newChooserFn = tt.chooserFn
+
+			defer func() {
+				newChooserFn = weightedRand.NewChooser
+			}()
+
+			_, err := newAminoAcidChoosers(tt.aminoAcids)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
 			}
 		})
 	}

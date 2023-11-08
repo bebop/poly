@@ -357,7 +357,7 @@ func newAminoAcidChoosers(aminoAcids []AminoAcid) (map[string]weightedRand.Choos
 		// add this chooser set to the codonChooser map under the name of the aminoAcid it represents.
 		chooser, err := newChooserFn(codonChoices...)
 		if err != nil {
-			return nil, fmt.Errorf("weightedRand.NewChooser() error: %s", err)
+			return nil, fmt.Errorf("weightedRand.NewChooser() error: %w", err)
 		}
 
 		codonChooser[aminoAcid.Letter] = *chooser
