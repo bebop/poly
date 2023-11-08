@@ -95,6 +95,7 @@ type Stats struct {
 	GeneCount       int
 }
 
+// NewStats returns a new instance of codon statistics (a set of statistics we maintain throughout a translation table's lifetime)
 func NewStats() *Stats {
 	return &Stats{
 		StartCodonCount: map[string]int{},
