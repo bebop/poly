@@ -301,6 +301,7 @@ var (
 )
 
 // EncodeFlag encodes the version, circularity, double-strandedness, and type into a single byte flag.
+// Used for seqhash v2
 func EncodeFlag(version int, sequenceType SequenceType, circularity bool, doubleStranded bool) byte {
 	var flag byte
 
@@ -325,7 +326,8 @@ func EncodeFlag(version int, sequenceType SequenceType, circularity bool, double
 }
 
 // DecodeFlag decodes the single byte flag into its constituent parts.
-// Outputs: version, circularity, doubleStranded, dnaRnaProtein
+// Outputs: version, circularity, doubleStranded, dnaRnaProtein.
+// Used for seqhash v2
 func DecodeFlag(flag byte) (int, SequenceType, bool, bool) {
 	version := int((flag & hash2versionMask) >> hash2versionShift)
 	circularity := (flag & hash2circularityMask) != 0
@@ -410,12 +412,14 @@ func Hash2Fragment(sequence string, fwdOverhangLength uint8, revOverhangLength u
 	return result, nil
 }
 
+// Hash2MetadataKey is a key for a seqhash v2 single letter metadata tag.
 type Hash2MetadataKey struct {
 	SequenceType   SequenceType
 	Circular       bool
 	DoubleStranded bool
 }
 
+// Hash2Metadata contains the seqhash v2 single letter metadata tags.
 var Hash2Metadata = map[Hash2MetadataKey]rune{
 	Hash2MetadataKey{DNA, true, true}:        'A',
 	Hash2MetadataKey{DNA, true, false}:       'B',
