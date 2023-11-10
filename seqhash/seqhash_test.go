@@ -122,5 +122,4 @@ func TestHash2Fragment(t *testing.T) {
 	if sqHash != expectedHash {
 		t.Errorf("Expected %s, Got: %s", expectedHash, sqHash)
 	}
-
 }

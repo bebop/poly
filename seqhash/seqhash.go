@@ -275,12 +275,6 @@ const (
 	hash2versionShift        = 4
 	hash2circularityShift    = 3
 	hash2doubleStrandedShift = 2
-
-	// Define enum values for DNA/RNA/PROTEIN
-	hash2DNA     byte = 0b00
-	hash2RNA     byte = 0b01
-	hash2PROTEIN byte = 0b10
-	// Other is represented by 0b11
 )
 
 var (
@@ -421,20 +415,20 @@ type Hash2MetadataKey struct {
 
 // Hash2Metadata contains the seqhash v2 single letter metadata tags.
 var Hash2Metadata = map[Hash2MetadataKey]rune{
-	Hash2MetadataKey{DNA, true, true}:        'A',
-	Hash2MetadataKey{DNA, true, false}:       'B',
-	Hash2MetadataKey{DNA, false, true}:       'C',
-	Hash2MetadataKey{DNA, false, false}:      'D',
-	Hash2MetadataKey{RNA, true, true}:        'E',
-	Hash2MetadataKey{RNA, true, false}:       'F',
-	Hash2MetadataKey{RNA, false, true}:       'G',
-	Hash2MetadataKey{RNA, false, false}:      'H',
-	Hash2MetadataKey{PROTEIN, false, false}:  'I',
-	Hash2MetadataKey{PROTEIN, true, false}:   'J',
-	Hash2MetadataKey{FRAGMENT, false, false}: 'K',
-	Hash2MetadataKey{FRAGMENT, true, false}:  'L',
-	Hash2MetadataKey{FRAGMENT, false, true}:  'M',
-	Hash2MetadataKey{FRAGMENT, true, true}:   'N',
+	{DNA, true, true}:        'A',
+	{DNA, true, false}:       'B',
+	{DNA, false, true}:       'C',
+	{DNA, false, false}:      'D',
+	{RNA, true, true}:        'E',
+	{RNA, true, false}:       'F',
+	{RNA, false, true}:       'G',
+	{RNA, false, false}:      'H',
+	{PROTEIN, false, false}:  'I',
+	{PROTEIN, true, false}:   'J',
+	{FRAGMENT, false, false}: 'K',
+	{FRAGMENT, true, false}:  'L',
+	{FRAGMENT, false, true}:  'M',
+	{FRAGMENT, true, true}:   'N',
 }
 
 // EncodeHash2 encodes Hash2 as a base64 string. It also adds a single
