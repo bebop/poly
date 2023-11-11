@@ -89,19 +89,19 @@ type Enzyme struct {
 // EnzymeManager manager for Enzymes. Allows for management of enzymes throughout the lifecyle of your
 // program. EnzymeManager is not safe for concurrent use.
 type EnzymeManager struct {
-	// eMap Map of enzymes that exist for the lifetime of the manager. Not safe for concurrent use.
-	eMap map[string]Enzyme
+	// enzymeMap Map of enzymes that exist for the lifetime of the manager. Not safe for concurrent use.
+	enzymeMap map[string]Enzyme
 }
 
 // NewEnzymeManager creates a new EnzymeManager given some enzymes.
 func NewEnzymeManager(enzymes []Enzyme) EnzymeManager {
-	eMap := make(map[string]Enzyme)
-	for i := range enzymes {
-		eMap[enzymes[i].Name] = enzymes[i]
+	enzymeMap := make(map[string]Enzyme)
+	for enzymeIndex := range enzymes {
+		enzymeMap[enzymes[enzymeIndex].Name] = enzymes[enzymeIndex]
 	}
 
 	return EnzymeManager{
-		eMap: eMap,
+		enzymeMap: enzymeMap,
 	}
 }
 
@@ -114,8 +114,8 @@ Base cloning functions begin here.
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
 // allows us to specify the enzyme by name.
-func (em EnzymeManager) CutWithEnzymeByName(seq Part, directional bool, name string) ([]Fragment, error) {
-	if v, ok := em.eMap[name]; ok {
+func (enzymeManager EnzymeManager) CutWithEnzymeByName(seq Part, directional bool, name string) ([]Fragment, error) {
+	if v, ok := enzymeManager.enzymeMap[name]; ok {
 		return CutWithEnzyme(seq, directional, v), nil
 	}
 	return []Fragment{}, errors.New("Enzyme " + name + " not found")
@@ -316,10 +316,10 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func (em EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
+func (enzymeManager EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := em.CutWithEnzymeByName(sequence, true, enzymeStr)
+		newFragments, err := enzymeManager.CutWithEnzymeByName(sequence, true, enzymeStr)
 		if err != nil {
 			return []string{}, []string{}, err
 		}
@@ -329,7 +329,7 @@ func (em EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openCons
 	return oc, il, nil
 }
 
-// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
+// GetBaseRestrictionEnzymes return a basic slice of common enzymes used in Golden Gate Assembly. Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
 func GetBaseRestrictionEnzymes() []Enzyme {
 	return []Enzyme{
 		{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
