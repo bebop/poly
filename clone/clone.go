@@ -126,7 +126,7 @@ func (enzymeManager EnzymeManager) CutWithEnzymeByName(part Part, directional bo
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
 func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
-	var fragmentSeqs []string
+	var fragmentSequences []string
 	var sequence string
 	if part.Circular {
 		sequence = strings.ToUpper(part.Sequence + part.Sequence)
@@ -153,7 +153,7 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 		}
 	}
 
-	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLen is over the length of the sequence, remove that overhang.
+	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLength is over the length of the sequence, remove that overhang.
 	for _, overhangSet := range [][]Overhang{forwardOverhangs, reverseOverhangs} {
 		if len(overhangSet) > 0 {
 			if !part.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.Skip+enzyme.OverheadLength > len(sequence)) {
@@ -176,11 +176,11 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 	// 2 fragments
 	if len(overhangs) == 1 && !directional && !part.Circular { // Check the case of a single cut
 		// In the case of a single cut in a linear sequence, we get two fragments with only 1 stick end
-		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length:]
-		fragmentSeq2 := sequence[:overhangs[0].Position]
-		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
-		fragments = append(fragments, Fragment{fragmentSeq1, overhangSeq, ""})
-		fragments = append(fragments, Fragment{fragmentSeq2, "", overhangSeq})
+		fragmentSequence1 := sequence[overhangs[0].Position+overhangs[0].Length:]
+		fragmentSequence2 := sequence[:overhangs[0].Position]
+		overhangSequence := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSequence1, overhangSequence, ""})
+		fragments = append(fragments, Fragment{fragmentSequence2, "", overhangSequence})
 		return fragments
 	}
 
@@ -189,11 +189,11 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 	// cut into a single fragment
 	if len(overhangs) == 2 && !directional && part.Circular {
 		// In the case of a single cut in a circular sequence, we get one fragment out with sticky overhangs
-		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length : len(part.Sequence)]
-		fragmentSeq2 := sequence[:overhangs[0].Position]
-		fragmentSeq := fragmentSeq1 + fragmentSeq2
-		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
-		fragments = append(fragments, Fragment{fragmentSeq, overhangSeq, overhangSeq})
+		fragmentSequence1 := sequence[overhangs[0].Position+overhangs[0].Length : len(part.Sequence)]
+		fragmentSequence2 := sequence[:overhangs[0].Position]
+		fragmentSequence := fragmentSequence1 + fragmentSequence2
+		overhangSequence := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSequence, overhangSequence, overhangSequence})
 		return fragments
 	}
 
@@ -213,7 +213,7 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 			// the basis of GoldenGate assembly.
 			if directional && !palindromic {
 				if currentOverhang.Forward && !nextOverhang.Forward {
-					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+					fragmentSequences = append(fragmentSequences, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
 				// We have to subtract RecognitionSitePlusSkipLength in case we have a recognition site on
 				// one side of the origin of a circular sequence and the cut site on the other side of the origin
@@ -221,20 +221,20 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 					break
 				}
 			} else {
-				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+				fragmentSequences = append(fragmentSequences, sequence[currentOverhang.Position:nextOverhang.Position])
 				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(part.Sequence) {
 					break
 				}
 			}
 		}
 		// Convert fragment sequences into fragments
-		for _, fragment := range fragmentSeqs {
+		for _, fragmentsequence := range fragmentSequences {
 			// Minimum lengths (given oligos) for assembly is 8 base pairs
 			// https://doi.org/10.1186/1756-0500-3-291
-			if len(fragment) > 8 {
-				fragmentSequence := fragment[enzyme.OverheadLength : len(fragment)-enzyme.OverheadLength]
-				forwardOverhang := fragment[:enzyme.OverheadLength]
-				reverseOverhang := fragment[len(fragment)-enzyme.OverheadLength:]
+			if len(fragmentsequence) > 8 {
+				fragmentSequence := fragmentsequence[enzyme.OverheadLength : len(fragmentsequence)-enzyme.OverheadLength]
+				forwardOverhang := fragmentsequence[:enzyme.OverheadLength]
+				reverseOverhang := fragmentsequence[len(fragmentsequence)-enzyme.OverheadLength:]
 				fragments = append(fragments, Fragment{Sequence: fragmentSequence, ForwardOverhang: forwardOverhang, ReverseOverhang: reverseOverhang})
 			}
 		}
