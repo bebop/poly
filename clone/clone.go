@@ -254,43 +254,44 @@ func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments
 		}
 		existingSeqhashes[seqhash] = struct{}{}
 		return []string{construct}, nil
-	} else {
-		for _, newFragment := range fragmentList {
-			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
-			var newSeed Fragment
-			var fragmentAttached bool
-			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
-				fragmentAttached = true
-				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
-			}
-			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
-			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
-			if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
-				fragmentAttached = true
-				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
-			}
+	}
 
-			// If fragment is actually attached, move to some checks
-			if fragmentAttached {
-				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
-				for _, usedFragment := range usedFragments {
-					if usedFragment.Sequence == newFragment.Sequence {
-						infiniteConstruct := usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
-						seqhash, _ := seqhash.Hash(infiniteConstruct, "DNA", false, true)
-						if _, ok := existingSeqhashes[seqhash]; ok {
-							return nil, nil
-						}
-						existingSeqhashes[seqhash] = struct{}{}
-						return nil, []string{infiniteConstruct}
+	// If the seed ligates to another fragment, we can recurse and add that fragment to the seed
+	for _, newFragment := range fragmentList {
+		// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
+		var newSeed Fragment
+		var fragmentAttached bool
+		if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
+			fragmentAttached = true
+			newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
+		}
+		// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
+		// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
+		if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
+			fragmentAttached = true
+			newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
+		}
+
+		// If fragment is actually attached, move to some checks
+		if fragmentAttached {
+			// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
+			for _, usedFragment := range usedFragments {
+				if usedFragment.Sequence == newFragment.Sequence {
+					infiniteConstruct := usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
+					seqhash, _ := seqhash.Hash(infiniteConstruct, "DNA", false, true)
+					if _, ok := existingSeqhashes[seqhash]; ok {
+						return nil, nil
 					}
+					existingSeqhashes[seqhash] = struct{}{}
+					return nil, []string{infiniteConstruct}
 				}
-				// If everything is clear, append fragment to usedFragments and recurse.
-				usedFragments = append(usedFragments, newFragment)
-				oc, ic := recurseLigate(newSeed, fragmentList, usedFragments, existingSeqhashes)
-
-				openConstructs = append(openConstructs, oc...)
-				infiniteConstructs = append(infiniteConstructs, ic...)
 			}
+			// If everything is clear, append fragment to usedFragments and recurse.
+			usedFragments = append(usedFragments, newFragment)
+			openconstructs, infiniteconstructs := recurseLigate(newSeed, fragmentList, usedFragments, existingSeqhashes)
+
+			openConstructs = append(openConstructs, openconstructs...)
+			infiniteConstructs = append(infiniteConstructs, infiniteconstructs...)
 		}
 	}
 
@@ -328,8 +329,8 @@ func (enzymeManager EnzymeManager) GoldenGate(sequences []Part, enzymeStr string
 		}
 		fragments = append(fragments, newFragments...)
 	}
-	oc, il := CircularLigate(fragments)
-	return oc, il, nil
+	openconstructs, infiniteloops := CircularLigate(fragments)
+	return openconstructs, infiniteloops, nil
 }
 
 // GetBaseRestrictionEnzymes return a basic slice of common enzymes used in Golden Gate Assembly. Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
