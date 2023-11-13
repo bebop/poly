@@ -26,7 +26,7 @@ func ExampleTranslationTable_UpdateWeights() {
 	// this example is using custom weights for different codons for Arginine. Use this if you would rather use your own
 	// codon weights, they can also be computed for you with `UpdateWeightsWithSequence`.
 
-	table.UpdateWeights([]codon.AminoAcid{
+	err := table.UpdateWeights([]codon.AminoAcid{
 		{
 			Letter: "R",
 			Codons: []codon.Codon{
@@ -53,6 +53,9 @@ func ExampleTranslationTable_UpdateWeights() {
 			},
 		},
 	})
+	if err != nil {
+		fmt.Println("Could not update weights in example")
+	}
 
 	optimizedSequence, _ := table.OptimizeSequence(gfpTranslation, 1)
 
