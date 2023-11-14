@@ -116,12 +116,22 @@ Base cloning functions begin here.
 // allows us to specify the enzyme by name.
 func (enzymeManager EnzymeManager) CutWithEnzymeByName(part Part, directional bool, name string) ([]Fragment, error) {
 	// Get the enzyme from the enzyme map
-	if enzyme, ok := enzymeManager.enzymeMap[name]; ok {
-		// Cut the sequence with the enzyme
-		return CutWithEnzyme(part, directional, enzyme), nil
+	enzyme, err := enzymeManager.GetEnzymeByName(name)
+	if err != nil {
+		// Return an error if there was an error
+		return []Fragment{}, err
 	}
-	// Return an error if the enzyme is not found
-	return []Fragment{}, errors.New("Enzyme " + name + " not found")
+	// Cut the sequence with the enzyme
+	return CutWithEnzyme(part, directional, enzyme), nil
+}
+
+// GetEnzymeByName gets the enzyme by it's name. If the enzyme manager does not
+// contain an enzyme with the provided name, an error will be returned
+func (enzymeManager EnzymeManager) GetEnzymeByName(name string) (Enzyme, error) {
+	if enzyme, ok := enzymeManager.enzymeMap[name]; ok {
+		return enzyme, nil
+	}
+	return Enzyme{}, errors.New("Enzyme " + name + " not found")
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
@@ -320,17 +330,14 @@ Specific cloning functions begin here.
 
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI.
-func (enzymeManager EnzymeManager) GoldenGate(sequences []Part, enzymeStr string) (openConstructs []string, infiniteLoops []string, err error) {
+func GoldenGate(sequences []Part, cuttingEnzyme Enzyme) (openConstructs []string, infiniteLoops []string) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := enzymeManager.CutWithEnzymeByName(sequence, true, enzymeStr)
-		if err != nil {
-			return []string{}, []string{}, err
-		}
+		newFragments := CutWithEnzyme(sequence, true, cuttingEnzyme)
 		fragments = append(fragments, newFragments...)
 	}
 	openconstructs, infiniteloops := CircularLigate(fragments)
-	return openconstructs, infiniteloops, nil
+	return openconstructs, infiniteloops
 }
 
 // GetBaseRestrictionEnzymes return a basic slice of common enzymes used in Golden Gate Assembly. Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase

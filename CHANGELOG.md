@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -  No more data race in GoldenGate (#276)
 
 ### Breaking
-- GoldenGate and CutWithEnzymeByName are now receivers of EnzymeManager. This is an effort to remove
+- CutWithEnzymeByName is now a receiver of EnzymeManager. This is an effort to remove
 dependence on some package level global state and build some flexibility managing enzymes over the 
 lifetime of the program.
 - Enzyme.OverhangLen is now named Enzyme.OverhangLength
