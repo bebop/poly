@@ -1,7 +1,9 @@
 package genbank
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -157,6 +159,31 @@ func TestPartialLocationParseRegression(t *testing.T) {
 		} else if feature.Location.GbkLocationString == "<1..206" && (feature.Location.Start != 0 || feature.Location.End != 206) {
 			t.Errorf("Partial location for five prime location parsing has failed. Parsing the output of Build() does not produce the same output as parsing the original file read with Read().")
 		}
+	}
+}
+
+func TestSubLocationStringParseRegression(t *testing.T) {
+	location := "join(complement(5306942..5307394),complement(5304401..5305029),complement(5303328..5303393),complement(5301928..5302004))"
+	parsedLocation, err := parseLocation(location)
+	if err != nil {
+		t.Errorf("Failed to parse location string. Got err: %s", err)
+	}
+	jsonFile, err := os.Open("../../data/parseLocationRegressionTest.json")
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := io.ReadAll(jsonFile)
+	var testParsedLocation Location
+	err = json.Unmarshal(byteValue, &testParsedLocation)
+	if err != nil {
+		t.Errorf("Failed to unmarshal json. Got err: %s", err)
+	}
+
+	if diff := cmp.Diff(parsedLocation, testParsedLocation); diff != "" {
+		t.Errorf("Failed to parse sublocation string. Got this diff:\n%s", diff)
 	}
 }
 

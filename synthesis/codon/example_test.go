@@ -3,69 +3,89 @@ package codon_test
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/TimothyStiles/poly/io/genbank"
 	"github.com/TimothyStiles/poly/synthesis/codon"
 )
 
-func ExampleTranslate() {
+func ExampleTranslationTable_Translate() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	testTranslation, _ := codon.Translate(gfpDnaSequence, codon.GetCodonTable(11)) // need to specify which codons map to which amino acids per NCBI table
+	testTranslation, _ := codon.NewTranslationTable(11).Translate(gfpDnaSequence) // need to specify which codons map to which amino acids per NCBI table
 
 	fmt.Println(gfpTranslation == testTranslation)
 	// output: true
 }
 
-func ExampleOptimize() {
+func ExampleTranslationTable_UpdateWeights() {
+	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+	sequenceWithCustomWeights := "ATGGCAAGTAAGGGAGAAGAGCTTTTTACCGGCGTAGTACCAATTCTGGTAGAACTGGATGGTGATGTAAACGGTCACAAATTTAGTGTAAGCGGAGAAGGTGAGGGTGATGCTACCTATGGCAAACTGACCCTAAAGTTTATATGCACGACTGGAAAACTTCCGGTACCGTGGCCAACGTTAGTTACAACGTTTTCTTATGGAGTACAGTGCTTCAGCCGCTACCCAGATCATATGAAACGCCATGATTTCTTTAAGAGCGCCATGCCAGAGGGTTATGTTCAGGAGCGCACGATCTCGTTTAAGGATGATGGTAACTATAAGACTCGTGCTGAGGTGAAGTTCGAAGGCGATACCCTTGTAAATCGTATTGAATTGAAGGGTATAGACTTCAAGGAGGATGGAAATATTCTTGGACATAAGCTGGAATACAATTACAATTCACATAACGTTTATATAACTGCCGACAAGCAAAAAAACGGGATAAAAGCTAATTTTAAAATACGCCACAACATAGAGGACGGGTCGGTGCAACTAGCCGATCATTATCAACAAAACACACCAATCGGCGACGGACCAGTTCTGTTGCCCGATAATCATTACTTATCAACCCAAAGTGCCTTAAGTAAGGATCCGAACGAAAAGCGCGATCATATGGTACTTCTTGAGTTTGTTACCGCTGCAGGCATAACGCATGGCATGGACGAGCTATACAAATAA"
+
+	table := codon.NewTranslationTable(11)
+
+	// this example is using custom weights for different codons for Arginine. Use this if you would rather use your own
+	// codon weights, they can also be computed for you with `UpdateWeightsWithSequence`.
+
+	err := table.UpdateWeights([]codon.AminoAcid{
+		{
+			Letter: "R",
+			Codons: []codon.Codon{
+				{
+					Triplet: "CGU",
+					Weight:  1,
+				},
+				{
+					Triplet: "CGA",
+					Weight:  2,
+				},
+				{
+					Triplet: "CGG",
+					Weight:  4,
+				},
+				{
+					Triplet: "AGA",
+					Weight:  6,
+				},
+				{
+					Triplet: "AGG",
+					Weight:  2,
+				},
+			},
+		},
+	})
+	if err != nil {
+		fmt.Println("Could not update weights in example")
+	}
+
+	optimizedSequence, _ := table.OptimizeSequence(gfpTranslation, 1)
+
+	fmt.Println(optimizedSequence == sequenceWithCustomWeights)
+	// output: true
+}
+
+func ExampleTranslationTable_OptimizeSequence() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := codon.GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// initiate genes
-	genes := 0
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			// Note: sometimes, genbank files will have annotated CDSs that are pseudo genes (not having triplet codons).
-			// This will shift the entire codon table, messing up the end results. To fix this, make sure to do a modulo
-			// check.
-			if len(sequence)%3 == 0 {
-				codingRegionsBuilder.WriteString(sequence)
-
-				// Another good double check is to count genes, then count stop codons.
-				genes++
-			}
-		}
-	}
-
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
-
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
+	codonTable := codon.NewTranslationTable(11)
+	_ = codonTable.UpdateWeightsWithSequence(sequence)
 
 	// Here, we double check if the number of genes is equal to the number of stop codons
 	stopCodonCount := 0
-	for _, aa := range optimizationTable.GetAminoAcids() {
+	for _, aa := range codonTable.AminoAcids {
 		if aa.Letter == "*" {
 			for _, codon := range aa.Codons {
 				stopCodonCount = stopCodonCount + codon.Weight
 			}
 		}
 	}
-	if stopCodonCount != genes {
+
+	if stopCodonCount != codonTable.Stats.GeneCount {
 		fmt.Println("Stop codons don't equal number of genes!")
 	}
 
-	optimizedSequence, _ := codon.Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation, _ := codon.Translate(optimizedSequence, optimizationTable)
+	optimizedSequence, _ := codonTable.OptimizeSequence(gfpTranslation)
+	optimizedSequenceTranslation, _ := codonTable.Translate(optimizedSequence)
 
 	fmt.Println(optimizedSequenceTranslation == gfpTranslation)
 	// output: true
@@ -74,7 +94,7 @@ func ExampleOptimize() {
 func ExampleReadCodonJSON() {
 	codontable := codon.ReadCodonJSON("../../data/bsub_codon_test.json")
 
-	fmt.Println(codontable.GetAminoAcids()[0].Codons[0].Weight)
+	fmt.Println(codontable.GetWeightedAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
@@ -82,7 +102,7 @@ func ExampleParseCodonJSON() {
 	file, _ := os.ReadFile("../../data/bsub_codon_test.json")
 	codontable := codon.ParseCodonJSON(file)
 
-	fmt.Println(codontable.GetAminoAcids()[0].Codons[0].Weight)
+	fmt.Println(codontable.GetWeightedAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
@@ -94,52 +114,29 @@ func ExampleWriteCodonJSON() {
 	// cleaning up test data
 	os.Remove("../../data/codon_test.json")
 
-	fmt.Println(testCodonTable.GetAminoAcids()[0].Codons[0].Weight)
+	fmt.Println(testCodonTable.GetWeightedAminoAcids()[0].Codons[0].Weight)
 	//output: 28327
 }
 
 func ExampleCompromiseCodonTable() {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := codon.GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
-	}
-
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
+	optimizationTable := codon.NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	codonTable2 := codon.GetCodonTable(11)
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder2 strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence2.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder2.WriteString(sequence)
-		}
+	optimizationTable2 := codon.NewTranslationTable(11)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions2 := codingRegionsBuilder2.String()
-
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
-
 	finalTable, _ := codon.CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
-	for _, aa := range finalTable.GetAminoAcids() {
+	for _, aa := range finalTable.GetWeightedAminoAcids() {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "TAA" {
 				fmt.Println(codon.Weight)
@@ -151,47 +148,27 @@ func ExampleCompromiseCodonTable() {
 
 func ExampleAddCodonTable() {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := codon.GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
-	}
-
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
+	optimizationTable := codon.NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
+	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	codonTable2 := codon.GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder2 strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence2.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder2.WriteString(sequence)
-		}
+	optimizationTable2 := codon.NewTranslationTable(11)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions2 := codingRegionsBuilder2.String()
+	finalTable, err := codon.AddCodonTable(optimizationTable, optimizationTable2)
+	if err != nil {
+		panic(fmt.Errorf("got error in adding codon table example: %w", err))
+	}
 
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
-
-	finalTable := codon.AddCodonTable(optimizationTable, optimizationTable2)
-	for _, aa := range finalTable.GetAminoAcids() {
+	for _, aa := range finalTable.AminoAcids {
 		for _, codon := range aa.Codons {
 			if codon.Triplet == "GGC" {
 				fmt.Println(codon.Weight)

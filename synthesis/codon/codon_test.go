@@ -16,7 +16,7 @@ func TestTranslation(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
-	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
+	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslation has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -27,7 +27,7 @@ func TestTranslationAlwaysMapsStartCodonToMet(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "TTGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
-	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
+	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslation has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -35,23 +35,14 @@ func TestTranslationAlwaysMapsStartCodonToMet(t *testing.T) {
 func TestTranslationErrorsOnIncorrectStartCodon(t *testing.T) {
 	badSequence := "GGG"
 
-	if _, gotErr := Translate(badSequence, GetCodonTable(11)); gotErr == nil {
+	if _, gotErr := NewTranslationTable(11).Translate(badSequence); gotErr == nil {
 		t.Errorf("Translation should return an error if given an incorrect start codon")
 	}
 }
 
-func TestTranslationErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := codonTable{}
-	_, err := Translate("A", emtpyCodonTable)
-
-	if err != errEmptyCodonTable {
-		t.Error("Translation should return an error if given an empty codon table")
-	}
-}
-
 func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
-	nonEmptyCodonTable := GetCodonTable(1)
-	_, err := Translate("", nonEmptyCodonTable)
+	nonEmptyCodonTable := NewTranslationTable(1)
+	_, err := nonEmptyCodonTable.Translate("")
 
 	if err != errEmptySequenceString {
 		t.Error("Translation should return an error if given an empty sequence string")
@@ -61,7 +52,7 @@ func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
 func TestTranslationMixedCase(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "atggctagcaaaggagaagaacttttcactggagttgtcccaaTTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
+	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslationMixedCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -69,7 +60,7 @@ func TestTranslationMixedCase(t *testing.T) {
 func TestTranslationLowerCase(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "atggctagcaaaggagaagaacttttcactggagttgtcccaattcttgttgaattagatggtgatgttaatgggcacaaattttctgtcagtggagagggtgaaggtgatgctacatacggaaagcttacccttaaatttatttgcactactggaaaactacctgttccatggccaacacttgtcactactttctcttatggtgttcaatgcttttcccgttatccggatcatatgaaacggcatgactttttcaagagtgccatgcccgaaggttatgtacaggaacgcactatatctttcaaagatgacgggaactacaagacgcgtgctgaagtcaagtttgaaggtgatacccttgttaatcgtatcgagttaaaaggtattgattttaaagaagatggaaacattctcggacacaaactcgagtacaactataactcacacaatgtatacatcacggcagacaaacaaaagaatggaatcaaagctaacttcaaaattcgccacaacattgaagatggatccgttcaactagcagaccattatcaacaaaatactccaattggcgatggccctgtccttttaccagacaaccattacctgtcgacacaatctgccctttcgaaagatcccaacgaaaagcgtgaccacatggtccttcttgagtttgtaactgctgctgggattacacatggcatggatgagctctacaaataa"
-	if got, _ := Translate(gfpDnaSequence, GetCodonTable(11)); got != gfpTranslation {
+	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslationLowerCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -78,27 +69,17 @@ func TestOptimize(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
 
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
+	table := NewTranslationTable(11)
+	err := table.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
+	codonTable := NewTranslationTable(11)
 
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
+	optimizedSequence, _ := table.OptimizeSequence(gfpTranslation)
+	optimizedSequenceTranslation, _ := codonTable.Translate(optimizedSequence)
 
 	if optimizedSequenceTranslation != gfpTranslation {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
@@ -108,27 +89,19 @@ func TestOptimize(t *testing.T) {
 func TestOptimizeSameSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
-	var codonTable = GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
+	}
+	if err != nil {
+		t.Error(err)
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
-
-	var optimizationTable = codonTable.OptimizeTable(codingRegions)
 	randomSeed := 10
 
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
-	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable, randomSeed)
+	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, randomSeed)
+	otherOptimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, randomSeed)
 
 	if optimizedSequence != otherOptimizedSequence {
 		t.Error("Optimized sequence with the same random seed are not the same")
@@ -138,44 +111,23 @@ func TestOptimizeSameSeed(t *testing.T) {
 func TestOptimizeDifferentSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
-	var codonTable = GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
-
-	var optimizationTable = codonTable.OptimizeTable(codingRegions)
-
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
-	otherOptimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
+	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation)
+	otherOptimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation)
 
 	if optimizedSequence == otherOptimizedSequence {
 		t.Error("Optimized sequence with different random seed have the same result")
 	}
 }
 
-func TestOptimizeErrorsOnEmptyCodonTable(t *testing.T) {
-	emtpyCodonTable := codonTable{}
-	_, err := Optimize("A", emtpyCodonTable)
-
-	if err != errEmptyCodonTable {
-		t.Error("Optimize should return an error if given an empty codon table")
-	}
-}
-
 func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
-	nonEmptyCodonTable := GetCodonTable(1)
-	_, err := Optimize("", nonEmptyCodonTable)
+	nonEmptyCodonTable := NewTranslationTable(1)
+	_, err := nonEmptyCodonTable.OptimizeSequence("")
 
 	if err != errEmptyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
@@ -183,32 +135,14 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 }
 func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	aminoAcids := "TOP"
-	table := GetCodonTable(1) // does not contain 'O'
+	table := NewTranslationTable(1) // does not contain 'O'
 
-	_, optimizeErr := Optimize(aminoAcids, table)
+	_, optimizeErr := table.OptimizeSequence(aminoAcids)
 	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
-func TestOptimizeErrorsOnBrokenChooser(t *testing.T) {
-	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-
-	chooserErr := errors.New("chooser rigged to fail")
-
-	codonTable := &mockTable{
-		ChooserFn: func() (map[string]weightedRand.Chooser, error) {
-			return nil, chooserErr
-		},
-		IsEmptyFn: func() bool {
-			return false
-		},
-	}
-
-	_, err := Optimize(gfpTranslation, codonTable)
-	assert.EqualError(t, err, chooserErr.Error())
-}
-
 func TestGetCodonFrequency(t *testing.T) {
-	translationTable := GetCodonTable(11).GenerateTranslationTable()
+	translationTable := NewTranslationTable(11).TranslationMap
 
 	var codons strings.Builder
 
@@ -251,21 +185,6 @@ func TestGetCodonFrequency(t *testing.T) {
 	}
 }
 
-func TestChooserError(t *testing.T) {
-	codonTable := GetCodonTable(11)
-
-	oldChooserFn := newChooserFn
-	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
-		return nil, errors.New("new chooser rigged to fail")
-	}
-	defer func() {
-		newChooserFn = oldChooserFn
-	}()
-
-	_, err := codonTable.Chooser()
-	assert.EqualError(t, err, "weightedRand.NewChooser() error: new chooser rigged to fail")
-}
-
 /******************************************************************************
 
 JSON related tests begin here.
@@ -294,46 +213,23 @@ Codon Compromise + Add related tests begin here.
 */
 func TestCompromiseCodonTable(t *testing.T) {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
-	}
-
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
+
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
+	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	codonTable2 := GetCodonTable(11)
-
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder2 strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence2.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder2.WriteString(sequence)
-		}
+	optimizationTable2 := NewTranslationTable(11)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		t.Error(err)
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions2 := codingRegionsBuilder2.String()
-
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable2 := codonTable2.OptimizeTable(codingRegions2)
-
-	_, err := CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
+	_, err = CompromiseCodonTable(optimizationTable, optimizationTable2, -1.0) // Fails too low
 	if err == nil {
 		t.Errorf("Compromise table should fail on -1.0")
 	}
@@ -341,20 +237,53 @@ func TestCompromiseCodonTable(t *testing.T) {
 	if err == nil {
 		t.Errorf("Compromise table should fail on 10.0")
 	}
+
+	// replace chooser fn with test one
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+
+	defer func() {
+		newChooserFn = weightedRand.NewChooser
+	}()
+
+	_, err = CompromiseCodonTable(optimizationTable, optimizationTable2, 0.1)
+	if err == nil {
+		t.Errorf("Compromise table should fail when new chooser func rigged")
+	}
 }
 
-type mockTable struct {
-	codonTable
-	ChooserFn func() (map[string]weightedRand.Chooser, error)
-	IsEmptyFn func() bool
-}
+func TestAddCodonTable(t *testing.T) {
+	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
-func (t *mockTable) Chooser() (map[string]weightedRand.Chooser, error) {
-	return t.ChooserFn()
-}
+	// weight our codon optimization table using the regions we collected from the genbank file above
 
-func (t *mockTable) IsEmpty() bool {
-	return t.IsEmptyFn()
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
+	}
+
+	sequence2, _ := genbank.Read("../../data/phix174.gb")
+	optimizationTable2 := NewTranslationTable(11)
+	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// replace chooser fn with test one
+	newChooserFn = func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+		return nil, errors.New("new chooser rigged to fail")
+	}
+
+	defer func() {
+		newChooserFn = weightedRand.NewChooser
+	}()
+
+	_, err = AddCodonTable(optimizationTable, optimizationTable2)
+	if err == nil {
+		t.Errorf("Compromise table should fail when new chooser func rigged")
+	}
 }
 
 func TestCapitalizationRegression(t *testing.T) {
@@ -362,29 +291,246 @@ func TestCapitalizationRegression(t *testing.T) {
 	gfpTranslation := "MaSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := GetCodonTable(11)
 
-	// a string builder to build a single concatenated string of all coding regions
-	var codingRegionsBuilder strings.Builder
-
-	// iterate through the features of the genbank file and if the feature is a coding region, append the sequence to the string builder
-	for _, feature := range sequence.Features {
-		if feature.Type == "CDS" {
-			sequence, _ := feature.GetSequence()
-			codingRegionsBuilder.WriteString(sequence)
-		}
+	optimizationTable := NewTranslationTable(11)
+	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	if err != nil {
+		t.Error(err)
 	}
 
-	// get the concatenated sequence string of the coding regions
-	codingRegions := codingRegionsBuilder.String()
-
-	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codonTable.OptimizeTable(codingRegions)
-
-	optimizedSequence, _ := Optimize(gfpTranslation, optimizationTable)
-	optimizedSequenceTranslation, _ := Translate(optimizedSequence, optimizationTable)
+	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, 1)
+	optimizedSequenceTranslation, _ := optimizationTable.Translate(optimizedSequence)
 
 	if optimizedSequenceTranslation != strings.ToUpper(gfpTranslation) {
 		t.Errorf("TestOptimize has failed. Translate has returned %q, want %q", optimizedSequenceTranslation, gfpTranslation)
+	}
+}
+
+func TestOptimizeSequence(t *testing.T) {
+	t.Parallel()
+
+	var (
+		gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
+		optimisedGFP   = "ATGGCAAGTAAGGGAGAAGAGCTTTTTACCGGCGTAGTACCAATTCTGGTAGAACTGGATGGTGATGTAAACGGTCACAAATTTAGTGTAAGCGGAGAAGGTGAGGGTGATGCTACCTATGGCAAACTGACCCTAAAGTTTATATGCACGACTGGAAAACTTCCGGTACCGTGGCCAACGTTAGTTACAACGTTTTCTTATGGAGTACAGTGCTTCAGCCGCTACCCAGATCATATGAAACGCCATGATTTCTTTAAGAGCGCCATGCCAGAGGGTTATGTTCAGGAGCGCACGATCTCGTTTAAGGATGATGGTAACTATAAGACTCGTGCTGAGGTGAAGTTCGAAGGCGATACCCTTGTAAATCGTATTGAATTGAAGGGTATAGACTTCAAGGAGGATGGAAATATTCTTGGACATAAGCTGGAATACAATTACAATTCACATAACGTTTATATAACTGCCGACAAGCAAAAAAACGGGATAAAAGCTAATTTTAAAATACGCCACAACATAGAGGACGGGTCGGTGCAACTAGCCGATCATTATCAACAAAACACACCAATCGGCGACGGACCAGTTCTGTTGCCCGATAATCATTACTTATCAACCCAAAGTGCCTTAAGTAAGGATCCGAACGAAAAGCGCGATCATATGGTACTTCTTGAGTTTGTTACCGCTGCAGGCATAACGCATGGCATGGACGAGCTATACAAATAA"
+		puc19          = func() genbank.Genbank {
+			seq, err := genbank.Read("../../data/puc19.gbk")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			return seq
+		}()
+	)
+
+	tests := []struct {
+		name string
+
+		sequenceToOptimise string
+		updateWeightsWith  genbank.Genbank
+		wantOptimised      string
+
+		wantUpdateWeightsErr error
+		wantOptimiseErr      error
+	}{
+		{
+			name: "ok",
+
+			sequenceToOptimise: gfpTranslation,
+			updateWeightsWith:  puc19,
+			wantOptimised:      optimisedGFP,
+
+			wantUpdateWeightsErr: nil,
+			wantOptimiseErr:      nil,
+		},
+		{
+			name: "giving no sequence to optimise",
+
+			sequenceToOptimise: "",
+			updateWeightsWith:  puc19,
+			wantOptimised:      "",
+
+			wantUpdateWeightsErr: nil,
+			wantOptimiseErr:      errEmptyAminoAcidString,
+		},
+		{
+			name: "updating weights with a sequence with no CDS",
+
+			sequenceToOptimise: "",
+			updateWeightsWith:  genbank.Genbank{},
+			wantOptimised:      "",
+
+			wantUpdateWeightsErr: errNoCodingRegions,
+			wantOptimiseErr:      errEmptyAminoAcidString,
+		},
+	}
+
+	for _, tt := range tests {
+		var tt = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			optimizationTable := NewTranslationTable(11)
+			err := optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
+			if !errors.Is(err, tt.wantUpdateWeightsErr) {
+				t.Errorf("got %v, want %v", err, tt.wantUpdateWeightsErr)
+			}
+
+			got, err := optimizationTable.OptimizeSequence(tt.sequenceToOptimise, 1)
+			if !errors.Is(err, tt.wantOptimiseErr) {
+				t.Errorf("got %v, want %v", err, tt.wantOptimiseErr)
+			}
+
+			if !cmp.Equal(got, tt.wantOptimised) {
+				t.Errorf("got and tt.wantOptimised didn't match %s", cmp.Diff(got, tt.wantOptimised))
+			}
+		})
+	}
+}
+
+func TestNewAminoAcidChooser(t *testing.T) {
+	var (
+		mockError = errors.New("new chooser rigged to fail")
+	)
+
+	tests := []struct {
+		name string
+
+		aminoAcids []AminoAcid
+
+		chooserFn func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error)
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: weightedRand.NewChooser,
+
+			wantErr: nil,
+		},
+		{
+			name: "chooser fn constructor error",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+				return nil, mockError
+			},
+
+			wantErr: mockError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// replace chooser fn with test one
+			newChooserFn = tt.chooserFn
+
+			defer func() {
+				newChooserFn = weightedRand.NewChooser
+			}()
+
+			_, err := newAminoAcidChoosers(tt.aminoAcids)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestUpdateWeights(t *testing.T) {
+	var (
+		mockError = errors.New("new chooser rigged to fail")
+	)
+
+	tests := []struct {
+		name string
+
+		aminoAcids []AminoAcid
+
+		chooserFn func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error)
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: weightedRand.NewChooser,
+
+			wantErr: nil,
+		},
+		{
+			name: "chooser fn constructor error",
+
+			aminoAcids: []AminoAcid{
+				{
+					Letter: "R",
+					Codons: []Codon{
+						{
+							Triplet: "CGU",
+							Weight:  1,
+						},
+					},
+				},
+			},
+
+			chooserFn: func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error) {
+				return nil, mockError
+			},
+
+			wantErr: mockError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// replace chooser fn with test one
+			newChooserFn = tt.chooserFn
+
+			defer func() {
+				newChooserFn = weightedRand.NewChooser
+			}()
+
+			optimizationTable := NewTranslationTable(11)
+
+			err := optimizationTable.UpdateWeights(tt.aminoAcids)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+		})
 	}
 }

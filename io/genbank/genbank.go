@@ -57,6 +57,7 @@ type Meta struct {
 	Origin               string            `json:"origin"`
 	Locus                Locus             `json:"locus"`
 	References           []Reference       `json:"references"`
+	BaseCount            []BaseCount       `json:"base_count"`
 	Other                map[string]string `json:"other"`
 	Name                 string            `json:"name"`
 	SequenceHash         string            `json:"sequence_hash"`
@@ -107,6 +108,12 @@ type Location struct {
 	ThreePrimePartial bool       `json:"three_prime_partial"`
 	GbkLocationString string     `json:"gbk_location_string"`
 	SubLocations      []Location `json:"sub_locations"`
+}
+
+// BaseCount is a struct that holds the base counts for a sequence.
+type BaseCount struct {
+	Base  string
+	Count int
 }
 
 // Precompiled regular expressions:
@@ -315,6 +322,13 @@ func BuildMulti(sequences []Genbank) ([]byte, error) {
 			gbkString.WriteString(BuildFeatureString(feature))
 		}
 
+		if len(sequence.Meta.BaseCount) > 0 {
+			gbkString.WriteString("BASE COUNT    ")
+			for _, baseCount := range sequence.Meta.BaseCount {
+				gbkString.WriteString(strconv.Itoa(baseCount.Count) + " " + baseCount.Base + "   ")
+			}
+			gbkString.WriteString("\n")
+		}
 		// start writing sequence section.
 		gbkString.WriteString("ORIGIN\n")
 
@@ -378,7 +392,7 @@ type parseLoopParameters struct {
 	emptyAttribute   bool
 	sequenceBuilder  strings.Builder
 	parseStep        string
-	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.// since we are scanning lines we need a Genbank struct to store the data outside the loop.
+	genbank          Genbank // since we are scanning lines we need a Genbank struct to store the data outside the loop.
 	feature          Feature
 	features         []Feature
 	metadataTag      string
@@ -484,6 +498,23 @@ func ParseMultiNth(r io.Reader, count int) ([]Genbank, error) {
 			}
 		case "features":
 
+			baseCountFlag := strings.Contains(line, "BASE COUNT") // example string for BASE COUNT: "BASE COUNT    67070277 a   48055043 c   48111528 g   67244164 t   18475410 n"
+			if baseCountFlag {
+				fields := strings.Fields(line)
+				for countIndex := 2; countIndex < len(fields)-1; countIndex += 2 { // starts at two because we don't want to include "BASE COUNT" in our fields
+					count, err := strconv.Atoi(fields[countIndex])
+					if err != nil {
+						return []Genbank{}, err
+					}
+
+					baseCount := BaseCount{
+						Base:  fields[countIndex+1],
+						Count: count,
+					}
+					parameters.genbank.Meta.BaseCount = append(parameters.genbank.Meta.BaseCount, baseCount)
+				}
+				break
+			}
 			// Switch to sequence parsing
 			originFlag := strings.Contains(line, "ORIGIN") // we detect the beginning of the sequence with "ORIGIN"
 			if originFlag {
@@ -811,8 +842,8 @@ func getSourceOrganism(metadataData []string) (string, string, []string) {
 func parseLocation(locationString string) (Location, error) {
 	var location Location
 	location.GbkLocationString = locationString
-	if !(strings.ContainsAny(locationString, "(")) { // Case checks for simple expression of x..x
-		if !(strings.ContainsAny(locationString, ".")) { //Case checks for simple expression x
+	if !strings.ContainsAny(locationString, "(") { // Case checks for simple expression of x..x
+		if !strings.ContainsAny(locationString, ".") { //Case checks for simple expression x
 			position, err := strconv.Atoi(locationString)
 			if err != nil {
 				return Location{}, err
@@ -841,26 +872,34 @@ func parseLocation(locationString string) (Location, error) {
 			if strings.ContainsAny(expression, "(") {
 				firstInnerParentheses := strings.Index(expression, "(")
 				ParenthesesCount := 1
-				comma := 0
-				for i := 1; ParenthesesCount > 0; i++ { // "(" is at 0, so we start at 1
-					comma = i
-					switch expression[firstInnerParentheses+i] {
-					case []byte("(")[0]:
+				prevSubLocationStart := 0
+				for i := firstInnerParentheses + 1; i < len(expression); i++ { // "(" is at 0, so we start at 1
+					switch expression[i] {
+					case '(':
 						ParenthesesCount++
-					case []byte(")")[0]:
+					case ')':
 						ParenthesesCount--
+					case ',':
+						if ParenthesesCount == 0 {
+							parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:i])
+							if err != nil {
+								return Location{}, err
+							}
+							parsedSubLocation.GbkLocationString = locationString
+							location.SubLocations = append(location.SubLocations, parsedSubLocation)
+							prevSubLocationStart = i + 1
+						}
 					}
 				}
-				parseLeftLocation, err := parseLocation(expression[:firstInnerParentheses+comma+1])
+				if ParenthesesCount != 0 {
+					return Location{}, fmt.Errorf("Unbalanced parentheses")
+				}
+				parsedSubLocation, err := parseLocation(expression[prevSubLocationStart:])
 				if err != nil {
 					return Location{}, err
 				}
-				parseRightLocation, err := parseLocation(expression[2+firstInnerParentheses+comma:])
-				if err != nil {
-					return Location{}, err
-				}
-
-				location.SubLocations = append(location.SubLocations, parseLeftLocation, parseRightLocation)
+				parsedSubLocation.GbkLocationString = locationString
+				location.SubLocations = append(location.SubLocations, parsedSubLocation)
 			} else { // This is the default join(x..x,x..x)
 				for _, numberRange := range strings.Split(expression, ",") {
 					joinLocation, err := parseLocation(numberRange)
