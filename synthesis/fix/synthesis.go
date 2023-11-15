@@ -238,7 +238,7 @@ func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []fun
 
 	// Build historical maps and full amino acid weights
 	aminoAcidWeightTable := make(map[string]int)
-	for _, aminoAcid := range codontable.GetAminoAcids() {
+	for _, aminoAcid := range codontable.GetWeightedAminoAcids() {
 		var aminoAcidTotal int
 		for _, codon := range aminoAcid.Codons {
 			// Get the total weights of all the codons for a given amino acid.
@@ -271,7 +271,7 @@ func Cds(sequence string, codontable codon.Table, problematicSequenceFuncs []fun
 
 	// Build weight map. The weight map gives the relative normalized weight of
 	// any given codon triplet.
-	for _, aminoAcid := range codontable.GetAminoAcids() {
+	for _, aminoAcid := range codontable.GetWeightedAminoAcids() {
 		for _, codon := range aminoAcid.Codons {
 			codonWeightRatio := float64(codon.Weight) / float64(aminoAcidWeightTable[aminoAcid.Letter])
 			normalizedCodonWeight := 100 * codonWeightRatio
