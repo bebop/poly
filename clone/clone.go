@@ -51,7 +51,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/TimothyStiles/poly/checks"
 	"github.com/TimothyStiles/poly/seqhash"
@@ -88,17 +87,27 @@ type Enzyme struct {
 	RegexpFor       *regexp.Regexp
 	RegexpRev       *regexp.Regexp
 	Skip            int
-	OverhangLen     int
+	OverheadLength  int
 	RecognitionSite string
 }
 
-// Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
-var enzymeMap = map[string]Enzyme{
-	"BsaI":  {"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
-	"BbsI":  {"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
-	"BtgZI": {"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
-	"PaqCI": {"PaqCI", regexp.MustCompile("CACCTGC"), regexp.MustCompile("GCAGGTG"), 4, 4, "CACCTGC"},
-	"BsmBI": {"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, "CGTCTC"},
+// EnzymeManager manager for Enzymes. Allows for management of enzymes throughout the lifecyle of your
+// program. EnzymeManager is not safe for concurrent use.
+type EnzymeManager struct {
+	// enzymeMap Map of enzymes that exist for the lifetime of the manager. Not safe for concurrent use.
+	enzymeMap map[string]Enzyme
+}
+
+// NewEnzymeManager creates a new EnzymeManager given some enzymes.
+func NewEnzymeManager(enzymes []Enzyme) EnzymeManager {
+	enzymeMap := make(map[string]Enzyme)
+	for enzymeIndex := range enzymes {
+		enzymeMap[enzymes[enzymeIndex].Name] = enzymes[enzymeIndex]
+	}
+
+	return EnzymeManager{
+		enzymeMap: enzymeMap,
+	}
 }
 
 /******************************************************************************
@@ -107,32 +116,39 @@ Base cloning functions begin here.
 
 ******************************************************************************/
 
-func getBaseRestrictionEnzymes() map[string]Enzyme {
-	return enzymeMap
-}
-
 // CutWithEnzymeByName cuts a given sequence with an enzyme represented by the
 // enzyme's name. It is a convenience wrapper around CutWithEnzyme that
 // allows us to specify the enzyme by name. Set methylated flag to true if
 // there is lowercase methylated DNA as part of the sequence.
-func CutWithEnzymeByName(seq Part, directional bool, enzymeStr string, methylated bool) ([]Fragment, error) {
-	enzymeMap := getBaseRestrictionEnzymes()
-	if _, ok := enzymeMap[enzymeStr]; !ok {
-		return []Fragment{}, errors.New("Enzyme " + enzymeStr + " not found in enzymeMap")
+func (enzymeManager EnzymeManager) CutWithEnzymeByName(part Part, directional bool, name string, methylated bool) ([]Fragment, error) {
+	// Get the enzyme from the enzyme map
+	enzyme, err := enzymeManager.GetEnzymeByName(name)
+	if err != nil {
+		// Return an error if there was an error
+		return []Fragment{}, err
 	}
-	enzyme := enzymeMap[enzymeStr]
-	return CutWithEnzyme(seq, directional, enzyme, methylated), nil
+	// Cut the sequence with the enzyme
+	return CutWithEnzyme(part, directional, enzyme, methylated), nil
+}
+
+// GetEnzymeByName gets the enzyme by it's name. If the enzyme manager does not
+// contain an enzyme with the provided name, an error will be returned
+func (enzymeManager EnzymeManager) GetEnzymeByName(name string) (Enzyme, error) {
+	if enzyme, ok := enzymeManager.enzymeMap[name]; ok {
+		return enzyme, nil
+	}
+	return Enzyme{}, errors.New("Enzyme " + name + " not found")
 }
 
 // CutWithEnzyme cuts a given sequence with an enzyme represented by an Enzyme struct.
 // If there is methylated parts of the target DNA, set the "methylated" flag to
 // true and lowercase ONLY methylated DNA.
-func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) []Fragment {
-	var fragmentSeqs []string
+func CutWithEnzyme(part Part, directional bool, enzyme Enzyme, methylated bool) []Fragment {
+	var fragmentSequences []string
 
 	// Setup circular sequences
-	sequence := seq.Sequence
-	if seq.Circular {
+	sequence := part.Sequence
+	if part.Circular {
 		sequence = sequence + sequence
 	}
 
@@ -151,20 +167,20 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) [
 	var reverseOverhangs []Overhang
 	forwardCuts := enzyme.RegexpFor.FindAllStringIndex(sequence, -1)
 	for _, forwardCut := range forwardCuts {
-		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.OverhangLen, Position: forwardCut[1] + enzyme.Skip, Forward: true, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
+		forwardOverhangs = append(forwardOverhangs, Overhang{Length: enzyme.OverheadLength, Position: forwardCut[1] + enzyme.Skip, Forward: true, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
 	}
 	// Palindromic enzymes won't need reverseCuts
 	if !palindromic {
 		reverseCuts := enzyme.RegexpRev.FindAllStringIndex(sequence, -1)
 		for _, reverseCut := range reverseCuts {
-			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.OverhangLen, Position: reverseCut[0] - enzyme.Skip, Forward: false, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
+			reverseOverhangs = append(reverseOverhangs, Overhang{Length: enzyme.OverheadLength, Position: reverseCut[0] - enzyme.Skip, Forward: false, RecognitionSitePlusSkipLength: len(enzyme.RecognitionSite) + enzyme.Skip})
 		}
 	}
 
-	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLen is over the length of the sequence, remove that overhang.
+	// If, on a linear sequence, the last overhang's position + EnzymeSkip + EnzymeOverhangLength is over the length of the sequence, remove that overhang.
 	for _, overhangSet := range [][]Overhang{forwardOverhangs, reverseOverhangs} {
 		if len(overhangSet) > 0 {
-			if !seq.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.Skip+enzyme.OverhangLen > len(sequence)) {
+			if !part.Circular && (overhangSet[len(overhangSet)-1].Position+enzyme.Skip+enzyme.OverheadLength > len(sequence)) {
 				overhangSet = overhangSet[:len(overhangSet)-1]
 			}
 		}
@@ -182,26 +198,26 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) [
 	var nextOverhang Overhang
 	// Linear fragments with 1 cut that are no directional will always give a
 	// 2 fragments
-	if len(overhangs) == 1 && !directional && !seq.Circular { // Check the case of a single cut
+	if len(overhangs) == 1 && !directional && !part.Circular { // Check the case of a single cut
 		// In the case of a single cut in a linear sequence, we get two fragments with only 1 stick end
-		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length:]
-		fragmentSeq2 := sequence[:overhangs[0].Position]
-		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
-		fragments = append(fragments, Fragment{fragmentSeq1, overhangSeq, ""})
-		fragments = append(fragments, Fragment{fragmentSeq2, "", overhangSeq})
+		fragmentSequence1 := sequence[overhangs[0].Position+overhangs[0].Length:]
+		fragmentSequence2 := sequence[:overhangs[0].Position]
+		overhangSequence := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSequence1, overhangSequence, ""})
+		fragments = append(fragments, Fragment{fragmentSequence2, "", overhangSequence})
 		return fragments
 	}
 
 	// Circular fragments with 1 cut will always have 2 overhangs (because of the
 	// concat earlier). If we don't require directionality, this will always get
 	// cut into a single fragment
-	if len(overhangs) == 2 && !directional && seq.Circular {
+	if len(overhangs) == 2 && !directional && part.Circular {
 		// In the case of a single cut in a circular sequence, we get one fragment out with sticky overhangs
-		fragmentSeq1 := sequence[overhangs[0].Position+overhangs[0].Length : len(seq.Sequence)]
-		fragmentSeq2 := sequence[:overhangs[0].Position]
-		fragmentSeq := fragmentSeq1 + fragmentSeq2
-		overhangSeq := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
-		fragments = append(fragments, Fragment{fragmentSeq, overhangSeq, overhangSeq})
+		fragmentSequence1 := sequence[overhangs[0].Position+overhangs[0].Length : len(part.Sequence)]
+		fragmentSequence2 := sequence[:overhangs[0].Position]
+		fragmentSequence := fragmentSequence1 + fragmentSequence2
+		overhangSequence := sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+		fragments = append(fragments, Fragment{fragmentSequence, overhangSequence, overhangSequence})
 		return fragments
 	}
 
@@ -221,28 +237,28 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) [
 			// the basis of GoldenGate assembly.
 			if directional && !palindromic {
 				if currentOverhang.Forward && !nextOverhang.Forward {
-					fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
+					fragmentSequences = append(fragmentSequences, sequence[currentOverhang.Position:nextOverhang.Position])
 				}
 				// We have to subtract RecognitionSitePlusSkipLength in case we have a recognition site on
 				// one side of the origin of a circular sequence and the cut site on the other side of the origin
-				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(seq.Sequence) {
+				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(part.Sequence) {
 					break
 				}
 			} else {
-				fragmentSeqs = append(fragmentSeqs, sequence[currentOverhang.Position:nextOverhang.Position])
-				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(seq.Sequence) {
+				fragmentSequences = append(fragmentSequences, sequence[currentOverhang.Position:nextOverhang.Position])
+				if nextOverhang.Position-nextOverhang.RecognitionSitePlusSkipLength > len(part.Sequence) {
 					break
 				}
 			}
 		}
 		// Convert fragment sequences into fragments
-		for _, fragment := range fragmentSeqs {
+		for _, fragmentsequence := range fragmentSequences {
 			// Minimum lengths (given oligos) for assembly is 8 base pairs
 			// https://doi.org/10.1186/1756-0500-3-291
-			if len(fragment) > 8 {
-				fragmentSequence := fragment[enzyme.OverhangLen : len(fragment)-enzyme.OverhangLen]
-				forwardOverhang := fragment[:enzyme.OverhangLen]
-				reverseOverhang := fragment[len(fragment)-enzyme.OverhangLen:]
+			if len(fragmentsequence) > 8 {
+				fragmentSequence := fragmentsequence[enzyme.OverheadLength : len(fragmentsequence)-enzyme.OverheadLength]
+				forwardOverhang := fragmentsequence[:enzyme.OverheadLength]
+				reverseOverhang := fragmentsequence[len(fragmentsequence)-enzyme.OverheadLength:]
 				fragments = append(fragments, Fragment{Sequence: fragmentSequence, ForwardOverhang: forwardOverhang, ReverseOverhang: reverseOverhang})
 			}
 		}
@@ -251,94 +267,73 @@ func CutWithEnzyme(seq Part, directional bool, enzyme Enzyme, methylated bool) [
 	return fragments
 }
 
-func recurseLigate(wg *sync.WaitGroup, constructs chan string, infiniteLoopingConstructs chan string, seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment) {
+func recurseLigate(seedFragment Fragment, fragmentList []Fragment, usedFragments []Fragment, existingSeqhashes map[string]struct{}) (openConstructs []string, infiniteConstructs []string) {
 	// Recurse ligate simulates all possible ligations of a series of fragments. Each possible combination begins with a "seed" that fragments from the pool can be added to.
-	defer wg.Done()
 	// If the seed ligates to itself, we can call it done with a successful circularization!
 	if seedFragment.ForwardOverhang == seedFragment.ReverseOverhang {
-		constructs <- seedFragment.ForwardOverhang + seedFragment.Sequence
-	} else {
-		for _, newFragment := range fragmentList {
-			// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
-			var newSeed Fragment
-			var fragmentAttached bool
-			if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
-				fragmentAttached = true
-				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
-			}
-			// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
-			// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
-			if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
-				fragmentAttached = true
-				newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
-			}
+		construct := seedFragment.ForwardOverhang + seedFragment.Sequence
+		seqhash, _ := seqhash.Hash(construct, "DNA", true, true)
+		if _, ok := existingSeqhashes[seqhash]; ok {
+			return nil, nil
+		}
+		existingSeqhashes[seqhash] = struct{}{}
+		return []string{construct}, nil
+	}
 
-			// If fragment is actually attached, move to some checks
-			if fragmentAttached {
-				// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
-				for _, usedFragment := range usedFragments {
-					if usedFragment.Sequence == newFragment.Sequence {
-						infiniteLoopingConstructs <- usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
-						return
+	// If the seed ligates to another fragment, we can recurse and add that fragment to the seed
+	for _, newFragment := range fragmentList {
+		// If the seedFragment's reverse overhang is ligates to a fragment's forward overhang, we can ligate those together and seed another ligation reaction
+		var newSeed Fragment
+		var fragmentAttached bool
+		if seedFragment.ReverseOverhang == newFragment.ForwardOverhang {
+			fragmentAttached = true
+			newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + newFragment.Sequence, seedFragment.ForwardOverhang, newFragment.ReverseOverhang}
+		}
+		// This checks if we can ligate the next fragment in its reverse direction. We have to be careful though - if our seed has a palindrome, it will ligate to itself
+		// like [-> <- -> <- -> ...] infinitely. We check for that case here as well.
+		if (seedFragment.ReverseOverhang == transform.ReverseComplement(newFragment.ReverseOverhang)) && (seedFragment.ReverseOverhang != transform.ReverseComplement(seedFragment.ReverseOverhang)) { // If the second statement isn't there, program will crash on palindromes
+			fragmentAttached = true
+			newSeed = Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + transform.ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, transform.ReverseComplement(newFragment.ForwardOverhang)}
+		}
+
+		// If fragment is actually attached, move to some checks
+		if fragmentAttached {
+			// If the newFragment's reverse complement already exists in the used fragment list, we need to cancel the recursion.
+			for _, usedFragment := range usedFragments {
+				if usedFragment.Sequence == newFragment.Sequence {
+					infiniteConstruct := usedFragment.ForwardOverhang + usedFragment.Sequence + usedFragment.ReverseOverhang
+					seqhash, _ := seqhash.Hash(infiniteConstruct, "DNA", false, true)
+					if _, ok := existingSeqhashes[seqhash]; ok {
+						return nil, nil
 					}
+					existingSeqhashes[seqhash] = struct{}{}
+					return nil, []string{infiniteConstruct}
 				}
-				wg.Add(1)
-				// If everything is clear, append fragment to usedFragments and recurse.
-				usedFragments = append(usedFragments, newFragment)
-				go recurseLigate(wg, constructs, infiniteLoopingConstructs, newSeed, fragmentList, usedFragments)
 			}
-		}
-	}
-}
+			// If everything is clear, append fragment to usedFragments and recurse.
+			usedFragments = append(usedFragments, newFragment)
+			openconstructs, infiniteconstructs := recurseLigate(newSeed, fragmentList, usedFragments, existingSeqhashes)
 
-func getConstructs(c chan string, constructSequences chan []string, circular bool) {
-	var constructs []string
-	var exists bool
-	var existingSeqhashes []string
-	for {
-		construct, more := <-c
-		if more {
-			exists = false
-			seqhashConstruct, _ := seqhash.Hash(construct, "DNA", circular, true)
-			// Check if this construct is unique
-			for _, existingSeqhash := range existingSeqhashes {
-				if existingSeqhash == seqhashConstruct {
-					exists = true
-				}
-			}
-			if !exists {
-				constructs = append(constructs, construct)
-				existingSeqhashes = append(existingSeqhashes, seqhashConstruct)
-			}
-		} else {
-			constructSequences <- constructs
-			close(constructSequences)
-			return
+			openConstructs = append(openConstructs, openconstructs...)
+			infiniteConstructs = append(infiniteConstructs, infiniteconstructs...)
 		}
 	}
+
+	return openConstructs, infiniteConstructs
 }
 
 // CircularLigate simulates ligation of all possible fragment combinations into circular plasmids.
-func CircularLigate(fragments []Fragment) ([]string, []string, error) {
-	var wg sync.WaitGroup
+func CircularLigate(fragments []Fragment) ([]string, []string) {
 	var outputConstructs []string
 	var outputInfiniteLoopingConstructs []string
-	constructs := make(chan string)
-	infiniteLoopingConstructs := make(chan string) // sometimes we will get stuck in infinite loops. These are sequences with a recursion break
-	constructSequences := make(chan []string)
-	infiniteLoopingConstructSequences := make(chan []string)
+	existingSeqhashes := make(map[string]struct{})
 	for _, fragment := range fragments {
-		wg.Add(1)
-		go recurseLigate(&wg, constructs, infiniteLoopingConstructs, fragment, fragments, []Fragment{})
+		openConstructs, infiniteConstructs := recurseLigate(fragment, fragments, []Fragment{}, existingSeqhashes)
+
+		outputConstructs = append(outputConstructs, openConstructs...)
+		outputInfiniteLoopingConstructs = append(outputInfiniteLoopingConstructs, infiniteConstructs...)
 	}
-	go getConstructs(constructs, constructSequences, true)
-	go getConstructs(infiniteLoopingConstructs, infiniteLoopingConstructSequences, false)
-	wg.Wait()
-	close(constructs)
-	close(infiniteLoopingConstructs)
-	outputConstructs = <-constructSequences
-	outputInfiniteLoopingConstructs = <-infiniteLoopingConstructSequences
-	return outputConstructs, outputInfiniteLoopingConstructs, nil
+	return outputConstructs, outputInfiniteLoopingConstructs
 }
 
 /******************************************************************************
@@ -350,14 +345,23 @@ Specific cloning functions begin here.
 // GoldenGate simulates a GoldenGate cloning reaction. As of right now, we only
 // support BsaI, BbsI, BtgZI, and BsmBI. Set methylated flag to true if there
 // is lowercase methylated DNA as part of the sequence.
-func GoldenGate(sequences []Part, enzymeStr string, methylated bool) ([]string, []string, error) {
+func GoldenGate(sequences []Part, cuttingEnzyme Enzyme, methylated bool) (openConstructs []string, infiniteLoops []string) {
 	var fragments []Fragment
 	for _, sequence := range sequences {
-		newFragments, err := CutWithEnzymeByName(sequence, true, enzymeStr, methylated)
-		if err != nil {
-			return []string{}, []string{}, err
-		}
+		newFragments := CutWithEnzyme(sequence, true, cuttingEnzyme, methylated)
 		fragments = append(fragments, newFragments...)
 	}
-	return CircularLigate(fragments)
+	openconstructs, infiniteloops := CircularLigate(fragments)
+	return openconstructs, infiniteloops
+}
+
+// GetBaseRestrictionEnzymes return a basic slice of common enzymes used in Golden Gate Assembly. Eventually, we want to get the data for this map from ftp://ftp.neb.com/pub/rebase
+func GetBaseRestrictionEnzymes() []Enzyme {
+	return []Enzyme{
+		{"BsaI", regexp.MustCompile("GGTCTC"), regexp.MustCompile("GAGACC"), 1, 4, "GGTCTC"},
+		{"BbsI", regexp.MustCompile("GAAGAC"), regexp.MustCompile("GTCTTC"), 2, 4, "GAAGAC"},
+		{"BtgZI", regexp.MustCompile("GCGATG"), regexp.MustCompile("CATCGC"), 10, 4, "GCGATG"},
+		{"PaqCI", regexp.MustCompile("CACCTGC"), regexp.MustCompile("GCAGGTG"), 4, 4, "CACCTGC"},
+		{"BsmBI", regexp.MustCompile("CGTCTC"), regexp.MustCompile("GAGACG"), 1, 4, "CGTCTC"},
+	}
 }
