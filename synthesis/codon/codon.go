@@ -149,11 +149,13 @@ func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState .
 	}
 
 	// weightedRand library insisted setting seed like this. Not sure what environmental side effects exist.
+	var randomSource rand.Source
 	if len(randomState) > 0 {
-		rand.Seed(int64(randomState[0]))
+		randomSource = rand.NewSource(int64(randomState[0]))
 	} else {
-		rand.Seed(time.Now().UTC().UnixNano())
+		randomSource = rand.NewSource(time.Now().UTC().UnixNano())
 	}
+	rand := rand.New(randomSource)
 
 	var codons strings.Builder
 	codonChooser := table.Choosers
@@ -163,6 +165,7 @@ func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState .
 		if !ok {
 			return "", invalidAminoAcidError{aminoAcid}
 		}
+		chooser.PickSource(rand)
 
 		codons.WriteString(chooser.Pick().(string))
 	}
