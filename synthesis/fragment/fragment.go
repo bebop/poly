@@ -98,11 +98,11 @@ func NextOverhang(currentOverhangs []string) string {
 }
 
 // optimizeOverhangIteration takes in a sequence and optimally fragments it.
-func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragmentSize int, existingFragments []string, existingOverhangs []string) ([]string, float64, error) {
+func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragmentSize int, existingFragments []string, excludeOverhangs []string, includeOverhangs []string) ([]string, float64, error) {
 	// If the sequence is smaller than maxFragment size, stop iteration.
 	if len(sequence) < maxFragmentSize {
 		existingFragments = append(existingFragments, sequence)
-		return existingFragments, SetEfficiency(existingOverhangs), nil
+		return existingFragments, SetEfficiency(excludeOverhangs), nil
 	}
 
 	// Make sure minFragmentSize > maxFragmentSize
@@ -136,6 +136,7 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 	var bestOverhangEfficiency float64
 	var bestOverhangPosition int
 	var alreadyExists bool
+	var buildAvailable bool
 	for overhangOffset := 0; overhangOffset <= maxFragmentSize-minFragmentSize; overhangOffset++ {
 		// We go from max -> min, so we can maximize the size of our fragments
 		overhangPosition := maxFragmentSize - overhangOffset
@@ -143,16 +144,27 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 
 		// Make sure overhang isn't already in set
 		alreadyExists = false
-		for _, existingOverhang := range existingOverhangs {
-			if existingOverhang == overhangToTest || transform.ReverseComplement(existingOverhang) == overhangToTest {
+		for _, excludeOverhang := range excludeOverhangs {
+			if excludeOverhang == overhangToTest || transform.ReverseComplement(excludeOverhang) == overhangToTest {
 				alreadyExists = true
 			}
 		}
-		if !alreadyExists {
+		// Make sure overhang is in set of includeOverhangs. If includeOverhangs is
+		// blank, skip this check.
+		buildAvailable = false
+		if len(includeOverhangs) == 0 {
+			buildAvailable = true
+		}
+		for _, includeOverhang := range includeOverhangs {
+			if includeOverhang == overhangToTest || transform.ReverseComplement(includeOverhang) == overhangToTest {
+				buildAvailable = true
+			}
+		}
+		if !alreadyExists && buildAvailable {
 			// See if this overhang is a palindrome
 			if !checks.IsPalindromic(overhangToTest) {
 				// Get this overhang set's efficiency
-				setEfficiency := SetEfficiency(append(existingOverhangs, overhangToTest))
+				setEfficiency := SetEfficiency(append(excludeOverhangs, overhangToTest))
 
 				// If this overhang is more efficient than any other found so far, set it as the best!
 				if setEfficiency > bestOverhangEfficiency {
@@ -167,16 +179,24 @@ func optimizeOverhangIteration(sequence string, minFragmentSize int, maxFragment
 		return []string{}, float64(0), fmt.Errorf("bestOverhangPosition failed by equaling zero")
 	}
 	existingFragments = append(existingFragments, sequence[:bestOverhangPosition])
-	existingOverhangs = append(existingOverhangs, sequence[bestOverhangPosition-4:bestOverhangPosition])
+	excludeOverhangs = append(excludeOverhangs, sequence[bestOverhangPosition-4:bestOverhangPosition])
 	sequence = sequence[bestOverhangPosition-4:]
-	return optimizeOverhangIteration(sequence, minFragmentSize, maxFragmentSize, existingFragments, existingOverhangs)
+	return optimizeOverhangIteration(sequence, minFragmentSize, maxFragmentSize, existingFragments, excludeOverhangs, includeOverhangs)
 }
 
 // Fragment fragments a sequence into fragments between the min and max size,
 // choosing fragment ends for optimal assembly efficiency. Since fragments will
 // be inserted into either a vector or primer binding sites, the first 4 and
 // last 4 base pairs are the initial overhang set.
-func Fragment(sequence string, minFragmentSize int, maxFragmentSize int, existingOverhangs []string) ([]string, float64, error) {
+func Fragment(sequence string, minFragmentSize int, maxFragmentSize int, excludeOverhangs []string) ([]string, float64, error) {
 	sequence = strings.ToUpper(sequence)
-	return optimizeOverhangIteration(sequence, minFragmentSize, maxFragmentSize, []string{}, append([]string{sequence[:4], sequence[len(sequence)-4:]}, existingOverhangs...))
+	return optimizeOverhangIteration(sequence, minFragmentSize, maxFragmentSize, []string{}, append([]string{sequence[:4], sequence[len(sequence)-4:]}, excludeOverhangs...), []string{})
+}
+
+// FragmentWithOverhangs fragments a sequence with only a certain overhang set.
+// This is useful if you are constraining the set of possible overhangs when
+// doing more advanced forms of cloning.
+func FragmentWithOverhangs(sequence string, minFragmentSize int, maxFragmentSize int, excludeOverhangs []string, includeOverhangs []string) ([]string, float64, error) {
+	sequence = strings.ToUpper(sequence)
+	return optimizeOverhangIteration(sequence, minFragmentSize, maxFragmentSize, []string{}, append([]string{sequence[:4], sequence[len(sequence)-4:]}, excludeOverhangs...), includeOverhangs)
 }
