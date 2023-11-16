@@ -103,6 +103,9 @@ const (
 	FRAGMENT SequenceType = "FRAGMENT"
 )
 
+// allowedChars holds a map of allowed characters for DNA/RNA, used by Hash2Fragment:
+var allowedChars = map[rune]bool{'A': true, 'T': true, 'U': true, 'G': true, 'C': true, 'Y': true, 'R': true, 'S': true, 'W': true, 'K': true, 'M': true, 'B': true, 'D': true, 'H': true, 'V': true, 'N': true, 'Z': true}
+
 // boothLeastRotation gets the least rotation of a circular string.
 func boothLeastRotation(sequence string) int {
 	// https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation
@@ -385,7 +388,7 @@ func Hash2Fragment(sequence string, fwdOverhangLength uint8, revOverhangLength u
 
 	// First, run checks and get the determistic sequence of the hash
 	for _, char := range sequence {
-		if !strings.Contains("ATUGCYRSWKMBDHVNZ", string(char)) {
+		if !allowedChars[char] {
 			return result, errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
 		}
 	}
