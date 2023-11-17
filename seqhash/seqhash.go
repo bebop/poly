@@ -362,25 +362,31 @@ func Hash2(sequence string, sequenceType SequenceType, circular bool, doubleStra
 //
 // fwdOverhangLength and revOverhangLength are the lengths of both overhangs.
 // Hashed sequences are hashed with their overhangs attached. Most of the time,
-// both of these will equal 4.
-//
-// threePrimeOverhangFwd and threePrimeOverhangRev are booleans for the
-// directionality of the overhangs. The majority of restriction enzymes cut
-// leaving 5prime overhangs, so these should nearly always be false, except
-// in very special cases. threePrimeOverhangFwd replaces circular (since
-// fragments will always be linear) and threePrimeOverhangRev replaces
-// doubleStranded (since fragments will always be double stranded).
+// both of these will equal 4, as they are released by TypeIIS restriction
+// enzymes.
 //
 // In order to make sure fwdOverhangLength and revOverhangLength fit in the
-// hash, the hash is truncated at 13 bytes rather than 15, and both uint8 are
+// hash, the hash is truncated at 13 bytes rather than 15, and both int8 are
 // inserted. So the bytes would be:
 //
 //	flag + fwdOverhangLength + revOverhangLength + [13]byte(hash)
 //
+// fwdOverhangLength and revOverhangLength are both int8, and their negatives
+// are considered if the the overhang is on the 3prime strand, rather than the
+// 5prime strand.
+//
 // 13 bytes is considered enough, because the number of fragments is limited
 // by our ability to physically produce them, while other other sequence types
 // can be found in nature.
-func Hash2Fragment(sequence string, fwdOverhangLength uint8, revOverhangLength uint8, fwdThreePrimeOverhang bool, revThreePrimeOverhang bool) ([16]byte, error) {
+//
+// The fwdOverhang and revOverhang are the lengths of the overhangs of the
+// input sequence. The hash, however, contains the forward and reverse overhang
+// lengths of the deterministic sequence - ie, the alphabetically less-than
+// strand, when comparing the uppercase forward and reverse complement strand.
+// This means if the input sequence is not less than its reverse complement (for
+// example, GTT is greater than AAC), then the output hash will have the forward
+// and reverse overhang lengths of the reverse complement, not the input strand.
+func Hash2Fragment(sequence string, fwdOverhangLength int8, revOverhangLength int8) ([16]byte, error) {
 	var result [16]byte
 
 	// First, run checks and get the determistic sequence of the hash
@@ -389,15 +395,26 @@ func Hash2Fragment(sequence string, fwdOverhangLength uint8, revOverhangLength u
 			return result, errors.New("Only letters ATUGCYRSWKMBDHVNZ are allowed for DNA/RNA. Got letter: " + string(char))
 		}
 	}
-	potentialSequences := []string{sequence, transform.ReverseComplement(sequence)}
-	sort.Strings(potentialSequences)
-	deterministicSequence := potentialSequences[0]
+	sequence = strings.ToUpper(sequence)
+	var rev, fwd int8
+	var deterministicSequence string
+	reverseComplement := transform.ReverseComplement(sequence)
+	if sequence > reverseComplement {
+		// If the reverse complement is smaller, reverse the overhangs fwd and rev
+		rev = fwdOverhangLength
+		fwd = revOverhangLength
+		deterministicSequence = reverseComplement
+	} else {
+		fwd = fwdOverhangLength
+		rev = revOverhangLength
+		deterministicSequence = sequence
+	}
 
 	// Build our byte flag and copy length flags
-	flag := EncodeFlag(2, FRAGMENT, fwdThreePrimeOverhang, revThreePrimeOverhang)
+	flag := EncodeFlag(2, FRAGMENT, false, false)
 	result[0] = flag
-	result[1] = fwdOverhangLength
-	result[2] = revOverhangLength
+	result[1] = byte(fwd)
+	result[2] = byte(rev)
 
 	// Compute BLAKE3, then copy those to the remaining 13 bytes
 	newhash := blake3.Sum256([]byte(deterministicSequence))

@@ -112,12 +112,12 @@ func TestHash2(t *testing.T) {
 
 func TestHash2Fragment(t *testing.T) {
 	// Test X failure
-	_, err := Hash2Fragment("ATGGGCTAX", 4, 4, false, false)
+	_, err := Hash2Fragment("ATGGGCTAX", 4, 4)
 	if err == nil {
 		t.Errorf("TestHash2Fragment() has failed. X is not a valid sequenceType.")
 	}
 	// Test actual hash
-	sqHash, _ := EncodeHash2(Hash2Fragment("ATGGGCTAA", 4, 4, false, false))
+	sqHash, _ := EncodeHash2(Hash2Fragment("ATGGGCTAA", 4, 4))
 	expectedHash := "K_IwQEwsn8RN9yA1CCoVLpSw=="
 	if sqHash != expectedHash {
 		t.Errorf("Expected %s, Got: %s", expectedHash, sqHash)
