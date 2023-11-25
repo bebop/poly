@@ -16,13 +16,21 @@ type bitvector struct {
 }
 
 func newBitVector(initialNumberOfBits int) bitvector {
-	capacity := getCapacityNeededForNumberOfBits(initialNumberOfBits)
+	capacity := getNumOfBitSetsNeededForNumOfBits(initialNumberOfBits)
 	bits := make([]uint, capacity)
 	return bitvector{
 		bits:             bits,
 		capacityInChunks: capacity,
 		numberOfBits:     initialNumberOfBits,
 	}
+}
+
+func (b bitvector) getNumOfBitSets() int {
+	return getNumOfBitSetsNeededForNumOfBits(b.len())
+}
+
+func (b bitvector) getBitSet(i int) uint {
+	return b.bits[i]
 }
 
 func (b bitvector) getBit(i int) bool {
@@ -57,7 +65,7 @@ const factor1point5Threshold = 1e6
 func (b *bitvector) push(val bool) {
 	previousNumberOfBits := b.numberOfBits
 	nextNumberOfBits := previousNumberOfBits + 1
-	if getCapacityNeededForNumberOfBits(nextNumberOfBits) <= b.capacityInChunks {
+	if getNumOfBitSetsNeededForNumOfBits(nextNumberOfBits) <= b.capacityInChunks {
 		b.numberOfBits = nextNumberOfBits
 		b.setBit(previousNumberOfBits, val)
 		return
@@ -75,7 +83,7 @@ func (b *bitvector) push(val bool) {
 		numOfBitsForNextCapacity = previousNumberOfBits * 2
 	}
 
-	nextCapacity := getCapacityNeededForNumberOfBits(numOfBitsForNextCapacity)
+	nextCapacity := getNumOfBitSetsNeededForNumOfBits(numOfBitsForNextCapacity)
 
 	nextBits := make([]uint, nextCapacity)
 	copy(b.bits, nextBits)
@@ -95,69 +103,95 @@ func (b bitvector) capacity() int {
 	return b.capacityInChunks
 }
 
-func getCapacityNeededForNumberOfBits(n int) int {
+func getNumOfBitSetsNeededForNumOfBits(n int) int {
 	return int(math.Ceil(float64(n) / wordSize))
 }
 
 // TODO: doc what rsa is, why these DSAs, and why we take in a bit vector
 type RSABitVector struct {
-	jacobsonRank []chunk
-	clarkSelect  []bitvector
-}
-
-type chunk struct {
-	bits               bitvector
-	onesCumulativeRank int
+	numOfBits           int
+	jrc                 []chunk
+	jrSubChunksPerChunk int
+	jrBitsPerSubChunk   int
+	clarkSelect         []bitvector
 }
 
 func newRSABitVector(b bitvector) RSABitVector {
-	return RSABitVector{}
+	jacobsonRankChunks, jacobsonRankNumOfSubChunksPerChunk, jacobsonRankNumOfBitsPerSubChunk := buildJacobsonRank(b)
+	return RSABitVector{
+		numOfBits:           b.len(),
+		jrc:                 jacobsonRankChunks,
+		jrSubChunksPerChunk: jacobsonRankNumOfSubChunksPerChunk,
+		jrBitsPerSubChunk:   jacobsonRankNumOfBitsPerSubChunk,
+		clarkSelect:         []bitvector{},
+	}
 }
 
-// TODO: doc how this is ugly and building is probably bad. talk about chunk size
-func buildJacobsonRank(inBv bitvector) (int, []chunk) {
-	// TODO: doc magic numbers and doc that this will always be a natural number
-	uLen := uint(inBv.len())
-	leading1Offset := bits.UintSize - bits.LeadingZeros(uLen)
-	perfectSquare := int(uint(1) << uint(leading1Offset))
-	chunkSize := int(math.Pow(math.Log2(float64(perfectSquare)), 2))
-	numChunks := inBv.len() / chunkSize
+// TODO: doc and mention some bit math
+func (rsa RSABitVector) rank(val bool, i int) int {
+	chunkPos := i / (len(rsa.jrc) * rsa.jrSubChunksPerChunk * rsa.jrBitsPerSubChunk)
+	chunk := rsa.jrc[chunkPos]
 
-	// TODO: doc why we have the plus 1
-	jacobsonRank := make([]chunk, numChunks+1)
-	onesCount := 0
-	for i := 0; i < numChunks; i++ {
-		chunkBv := newBitVector(chunkSize)
-		for j := 0; j < chunkSize; j++ {
-			val := inBv.getBit(i*wordSize + j)
-			if val {
-				onesCount++
-			}
-			chunkBv.setBit(j, val)
-		}
-		jacobsonRank[i] = chunk{
-			bits:               chunkBv,
-			onesCumulativeRank: onesCount,
-		}
-	}
+	subChunkPos := (i % (len(rsa.jrc) * rsa.jrSubChunksPerChunk * rsa.jrBitsPerSubChunk)) / rsa.jrBitsPerSubChunk
+	subChunk := chunk.subChunks[subChunkPos]
 
-	// TODO: doc the last chunk
-	lastChunkSize := inBv.len() % int(perfectSquare)
-	lastChunkBv := newBitVector(lastChunkSize)
-	for i := 0; i < lastChunkSize; i++ {
-		val := inBv.getBit(numChunks*wordSize + i)
-		if val {
-			onesCount++
-		}
-		lastChunkBv.setBit(i, val)
-	}
-	jacobsonRank[len(jacobsonRank)-1] = chunk{
-		bits:               lastChunkBv,
-		onesCumulativeRank: onesCount,
-	}
+	bitOffset := i % rsa.jrBitsPerSubChunk
 
-	return chunkSize, jacobsonRank
+	shiftRightAmount := uint(rsa.jrBitsPerSubChunk - bitOffset)
+	if val {
+		remaining := subChunk.bitSet >> shiftRightAmount
+		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount(remaining)
+	}
+	remaining := ^subChunk.bitSet >> shiftRightAmount
+	return (chunkPos*rsa.jrSubChunksPerChunk*rsa.jrBitsPerSubChunk - chunk.onesCumulativeRank) + (subChunkPos * rsa.jrBitsPerSubChunk) - subChunk.onesCumulativeRank + bits.OnesCount(remaining)
 }
 
-// TODO: 15:16 sub chunk impl
-// TODO: 17:25 sub chunk calc of rank lower than machine word impl.
+type chunk struct {
+	subChunks          []subChunk
+	onesCumulativeRank int
+}
+
+type subChunk struct {
+	bitSet             uint
+	onesCumulativeRank int
+}
+
+// TODO: talk about easy to read instead vs perf
+func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk int) {
+	// TODO: talk about why this is probably good enough, improves as n grows, gets worse as n gets smaller, and how this fits into a machine instruction, and how this is "simple"
+	numOfSubChunksPerChunk = 4
+
+	chunkCumulativeRank := 0
+	subChunkCumulativeRank := 0
+
+	var currSubChunks []subChunk
+	for _, bitSet := range inBv.bits {
+		if len(currSubChunks) == numOfSubChunksPerChunk {
+			jacobsonRankChunks = append(jacobsonRankChunks, chunk{
+				subChunks:          currSubChunks,
+				onesCumulativeRank: chunkCumulativeRank,
+			})
+
+			chunkCumulativeRank += subChunkCumulativeRank
+
+			currSubChunks = nil
+			subChunkCumulativeRank = 0
+		}
+		currSubChunks = append(currSubChunks, subChunk{
+			bitSet:             bitSet,
+			onesCumulativeRank: subChunkCumulativeRank,
+		})
+
+		onesCount := bits.OnesCount(bitSet)
+		subChunkCumulativeRank += onesCount
+	}
+
+	if currSubChunks != nil {
+		jacobsonRankChunks = append(jacobsonRankChunks, chunk{
+			subChunks:          currSubChunks,
+			onesCumulativeRank: chunkCumulativeRank,
+		})
+	}
+
+	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize
+}
