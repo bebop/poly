@@ -156,7 +156,7 @@ type rsaRankTestCase struct {
 	expectedRank int
 }
 
-func TestRSARank_wordSize64_singlePartialChunk(t *testing.T) {
+func TestRSARank_singlePartialChunk(t *testing.T) {
 	if wordSize != 64 {
 		t.Skip()
 	}
@@ -165,9 +165,9 @@ func TestRSARank_wordSize64_singlePartialChunk(t *testing.T) {
 	initialNumberOfBits := wordSize*2 - bitsToTruncate
 	bv := newBitVector(initialNumberOfBits)
 
-	bv.bits = []uint{
-		uint(0xffffffff00000000),
-		uint(0x00000000ffc00000),
+	bv.bits = []uint64{
+		0xffffffff00000000,
+		0x00000000ffc00000,
 	}
 
 	rsa := newRSABitVector(bv)
@@ -191,7 +191,7 @@ func TestRSARank_wordSize64_singlePartialChunk(t *testing.T) {
 
 }
 
-func TestRSARank_wordSize64_singleCompleteChunk(t *testing.T) {
+func TestRSARank_singleCompleteChunk(t *testing.T) {
 	if wordSize != 64 {
 		t.Skip()
 	}
@@ -199,11 +199,11 @@ func TestRSARank_wordSize64_singleCompleteChunk(t *testing.T) {
 	initialNumberOfBits := wordSize * 4
 	bv := newBitVector(initialNumberOfBits)
 
-	bv.bits = []uint{
-		uint(0x8000000000000001),
-		uint(0xff0f30fffacea80d),
-		uint(0x90e0a0e0b0e0cf0c),
-		uint(0x3d0f064f7206f717),
+	bv.bits = []uint64{
+		0x8000000000000001,
+		0xff0f30fffacea80d,
+		0x90e0a0e0b0e0cf0c,
+		0x3d0f064f7206f717,
 	}
 
 	rsa := newRSABitVector(bv)
@@ -273,34 +273,30 @@ func TestRSARank_wordSize64_singleCompleteChunk(t *testing.T) {
 
 }
 
-func TestRSARank_wordSize64_multipleChunks(t *testing.T) {
-	if wordSize != 64 {
-		t.Skip()
-	}
-
+func TestRSARank_multipleChunks(t *testing.T) {
 	numBitsToTruncate := 17
 	initialNumberOfBits := wordSize*15 - numBitsToTruncate
 	bv := newBitVector(initialNumberOfBits)
 
-	bv.bits = []uint{
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff),
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff),
+	bv.bits = []uint64{
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
 
-		uint(0xffffffffffffffff),
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff),
-		uint(0x0000000000000000),
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
 
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff),
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff),
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
 
-		uint(0xffffffffffffffff),
-		uint(0x0000000000000000),
-		uint(0xffffffffffffffff), // this should end up getting truncated
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff, // this should end up getting truncated
 	}
 
 	rsa := newRSABitVector(bv)
@@ -325,7 +321,7 @@ func TestRSARank_wordSize64_multipleChunks(t *testing.T) {
 
 		{true, 832, 448}, {false, 832, 384},
 		{true, 896, 448}, {false, 896, 448},
-		{true, 896 + wordSize - numBitsToTruncate, 448 + wordSize - numBitsToTruncate}, {false, 896 + wordSize - numBitsToTruncate, 448},
+		{true, 896 + wordSize - numBitsToTruncate - 1, 448 + wordSize - numBitsToTruncate - 1}, {false, 896 + wordSize - numBitsToTruncate - 1, 448},
 	}
 
 	for _, tc := range testCases {

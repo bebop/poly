@@ -5,19 +5,19 @@ import (
 	"math/bits"
 )
 
-// TODO: talk about why this is
-const wordSize = bits.UintSize
+// TODO: talk about why this is and why we approximate things to make them "simple enough"
+const wordSize = 64
 
 // TODO: document static size and why we differentiate between capacity and number of bits
 type bitvector struct {
-	bits             []uint
+	bits             []uint64
 	capacityInChunks int
 	numberOfBits     int
 }
 
 func newBitVector(initialNumberOfBits int) bitvector {
 	capacity := getNumOfBitSetsNeededForNumOfBits(initialNumberOfBits)
-	bits := make([]uint, capacity)
+	bits := make([]uint64, capacity)
 	return bitvector{
 		bits:             bits,
 		capacityInChunks: capacity,
@@ -29,7 +29,7 @@ func (b bitvector) getNumOfBitSets() int {
 	return getNumOfBitSetsNeededForNumOfBits(b.len())
 }
 
-func (b bitvector) getBitSet(i int) uint {
+func (b bitvector) getBitSet(i int) uint64 {
 	return b.bits[i]
 }
 
@@ -39,7 +39,7 @@ func (b bitvector) getBit(i int) bool {
 	chunkStart := i / wordSize
 	offset := i % wordSize
 
-	return (b.bits[chunkStart] & (uint(1) << offset)) != 0
+	return (b.bits[chunkStart] & (uint64(1) << offset)) != 0
 }
 
 func (b bitvector) setBit(i int, val bool) {
@@ -49,9 +49,9 @@ func (b bitvector) setBit(i int, val bool) {
 	offset := i % wordSize
 
 	if val {
-		b.bits[chunkStart] |= uint(1) << offset
+		b.bits[chunkStart] |= uint64(1) << offset
 	} else {
-		b.bits[chunkStart] &= ^(uint(1) << offset)
+		b.bits[chunkStart] &= ^(uint64(1) << offset)
 	}
 }
 func (b bitvector) checkBounds(i int) {
@@ -86,7 +86,7 @@ func (b *bitvector) push(val bool) {
 
 	nextCapacity := getNumOfBitSetsNeededForNumOfBits(numOfBitsForNextCapacity)
 
-	nextBits := make([]uint, nextCapacity)
+	nextBits := make([]uint64, nextCapacity)
 	copy(b.bits, nextBits)
 	b.bits = nextBits
 
@@ -141,14 +141,14 @@ func (rsa rsaBitVector) Rank(val bool, i int) int {
 
 	bitSet := rsa.bv.getBitSet(chunkPos*len(rsa.jrc) + subChunkPos)
 
-	shiftRightAmount := uint(rsa.jrBitsPerSubChunk - bitOffset)
+	shiftRightAmount := uint64(rsa.jrBitsPerSubChunk - bitOffset)
 	if val {
 		remaining := bitSet >> shiftRightAmount
-		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount(remaining)
+		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount64(remaining)
 	}
 	remaining := ^bitSet >> shiftRightAmount
 	// cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
-	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount(remaining)
+	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
 }
 
 func (rsa rsaBitVector) Select(i int) bool {
@@ -193,7 +193,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 			onesCumulativeRank: subChunkCumulativeRank,
 		})
 
-		onesCount := bits.OnesCount(inBv.getBitSet(i))
+		onesCount := bits.OnesCount64(inBv.getBitSet(i))
 		subChunkCumulativeRank += onesCount
 	}
 
