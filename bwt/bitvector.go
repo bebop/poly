@@ -109,30 +109,30 @@ func getNumOfBitSetsNeededForNumOfBits(n int) int {
 
 // TODO: doc what rsa is, why these DSAs, and why we take in a bit vector
 type RSABitVector struct {
-	numOfBits           int
-	jrc                 []chunk
-	jrSubChunksPerChunk int
-	jrBitsPerSubChunk   int
-	clarkSelect         []bitvector
+	numOfBits         int
+	jrc               []chunk
+	jrBitsPerChunk    int
+	jrBitsPerSubChunk int
+	clarkSelect       []bitvector
 }
 
 func newRSABitVector(b bitvector) RSABitVector {
-	jacobsonRankChunks, jacobsonRankNumOfSubChunksPerChunk, jacobsonRankNumOfBitsPerSubChunk := buildJacobsonRank(b)
+	jacobsonRankChunks, jrBitsPerChunk, jrBitsPerSubChunk := buildJacobsonRank(b)
 	return RSABitVector{
-		numOfBits:           b.len(),
-		jrc:                 jacobsonRankChunks,
-		jrSubChunksPerChunk: jacobsonRankNumOfSubChunksPerChunk,
-		jrBitsPerSubChunk:   jacobsonRankNumOfBitsPerSubChunk,
-		clarkSelect:         []bitvector{},
+		numOfBits:         b.len(),
+		jrc:               jacobsonRankChunks,
+		jrBitsPerChunk:    jrBitsPerChunk,
+		jrBitsPerSubChunk: jrBitsPerSubChunk,
+		clarkSelect:       []bitvector{},
 	}
 }
 
 // TODO: doc and mention some bit math
 func (rsa RSABitVector) rank(val bool, i int) int {
-	chunkPos := i / (len(rsa.jrc) * rsa.jrSubChunksPerChunk * rsa.jrBitsPerSubChunk)
+	chunkPos := (i / rsa.jrBitsPerChunk)
 	chunk := rsa.jrc[chunkPos]
 
-	subChunkPos := (i % (len(rsa.jrc) * rsa.jrSubChunksPerChunk * rsa.jrBitsPerSubChunk)) / rsa.jrBitsPerSubChunk
+	subChunkPos := (i % rsa.jrBitsPerChunk) / rsa.jrBitsPerSubChunk
 	subChunk := chunk.subChunks[subChunkPos]
 
 	bitOffset := i % rsa.jrBitsPerSubChunk
@@ -143,7 +143,7 @@ func (rsa RSABitVector) rank(val bool, i int) int {
 		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount(remaining)
 	}
 	remaining := ^subChunk.bitSet >> shiftRightAmount
-	return (chunkPos*rsa.jrSubChunksPerChunk*rsa.jrBitsPerSubChunk - chunk.onesCumulativeRank) + (subChunkPos * rsa.jrBitsPerSubChunk) - subChunk.onesCumulativeRank + bits.OnesCount(remaining)
+	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount(remaining)
 }
 
 type chunk struct {
@@ -193,5 +193,5 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 		})
 	}
 
-	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize
+	return jacobsonRankChunks, numOfSubChunksPerChunk * wordSize, wordSize
 }
