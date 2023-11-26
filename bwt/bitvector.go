@@ -34,9 +34,7 @@ func (b bitvector) getBitSet(i int) uint {
 }
 
 func (b bitvector) getBit(i int) bool {
-	if i >= b.len() || i < 0 {
-		panic("better out of bounds message")
-	}
+	b.checkBounds(i)
 
 	chunkStart := i / wordSize
 	offset := i % wordSize
@@ -45,9 +43,7 @@ func (b bitvector) getBit(i int) bool {
 }
 
 func (b bitvector) setBit(i int, val bool) {
-	if i >= b.len() || i < 0 {
-		panic("better out of bounds message")
-	}
+	b.checkBounds(i)
 
 	chunkStart := i / wordSize
 	offset := i % wordSize
@@ -56,6 +52,11 @@ func (b bitvector) setBit(i int, val bool) {
 		b.bits[chunkStart] |= uint(1) << offset
 	} else {
 		b.bits[chunkStart] &= ^(uint(1) << offset)
+	}
+}
+func (b bitvector) checkBounds(i int) {
+	if i >= b.len() || i < 0 {
+		panic("better out of bounds message")
 	}
 }
 
@@ -109,17 +110,17 @@ func getNumOfBitSetsNeededForNumOfBits(n int) int {
 
 // TODO: doc what rsa is, why these DSAs, and why we take in a bit vector
 // TODO: clarks select
-// TODO: access
-type RSABitVector struct {
+type rsaBitVector struct {
 	bv                bitvector
 	jrc               []chunk
 	jrBitsPerChunk    int
 	jrBitsPerSubChunk int
 }
 
-func newRSABitVector(bv bitvector) RSABitVector {
+// TODO: talk about why bv should never be modidifed after building the RSA bit vector
+func newRSABitVector(bv bitvector) rsaBitVector {
 	jacobsonRankChunks, jrBitsPerChunk, jrBitsPerSubChunk := buildJacobsonRank(bv)
-	return RSABitVector{
+	return rsaBitVector{
 		bv:                bv,
 		jrc:               jacobsonRankChunks,
 		jrBitsPerChunk:    jrBitsPerChunk,
@@ -127,8 +128,9 @@ func newRSABitVector(bv bitvector) RSABitVector {
 	}
 }
 
-// TODO: doc and mention some bit math
-func (rsa RSABitVector) rank(val bool, i int) int {
+func (rsa rsaBitVector) Rank(val bool, i int) int {
+	rsa.bv.checkBounds(i)
+
 	chunkPos := (i / rsa.jrBitsPerChunk)
 	chunk := rsa.jrc[chunkPos]
 
@@ -145,7 +147,16 @@ func (rsa RSABitVector) rank(val bool, i int) int {
 		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount(remaining)
 	}
 	remaining := ^bitSet >> shiftRightAmount
+	// cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
 	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount(remaining)
+}
+
+func (rsa rsaBitVector) Select(i int) bool {
+	return true
+}
+
+func (rsa rsaBitVector) Access(i int) bool {
+	return rsa.bv.getBit(i)
 }
 
 type chunk struct {

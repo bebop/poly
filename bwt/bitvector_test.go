@@ -179,11 +179,11 @@ func TestRSARank_wordSize64_singlePartialChunk(t *testing.T) {
 
 		{true, 96, 32}, {false, 96, 64},
 
-		{true, 106, 42}, {false, 106, 64},
+		{true, 105, 41}, {false, 105, 64},
 	}
 
 	for _, tc := range testCases {
-		rank := rsa.rank(tc.val, tc.bitPosition)
+		rank := rsa.Rank(tc.val, tc.bitPosition)
 		if rank != tc.expectedRank {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
@@ -265,7 +265,7 @@ func TestRSARank_wordSize64_singleCompleteChunk(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		rank := rsa.rank(tc.val, tc.bitPosition)
+		rank := rsa.Rank(tc.val, tc.bitPosition)
 		if rank != tc.expectedRank {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
@@ -329,7 +329,7 @@ func TestRSARank_wordSize64_multipleChunks(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		rank := rsa.rank(tc.val, tc.bitPosition)
+		rank := rsa.Rank(tc.val, tc.bitPosition)
 		if rank != tc.expectedRank {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
