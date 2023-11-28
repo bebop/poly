@@ -1,6 +1,6 @@
 module github.com/TimothyStiles/poly
 
-go 1.21.4
+go 1.21
 
 require (
 	github.com/google/go-cmp v0.5.8
