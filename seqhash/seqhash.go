@@ -396,25 +396,25 @@ func HashV2Fragment(sequence string, fwdOverhangLength int8, revOverhangLength i
 		}
 	}
 	sequence = strings.ToUpper(sequence)
-	var rev, fwd int8
+	var forward, reverse int8
 	var deterministicSequence string
 	reverseComplement := transform.ReverseComplement(sequence)
 	if sequence > reverseComplement {
-		// If the reverse complement is smaller, reverse the overhangs fwd and rev
-		rev = fwdOverhangLength
-		fwd = revOverhangLength
+		// If the reverse complement is smaller, reverse the overhangs forward and reverse
+		forward = revOverhangLength
+		reverse = fwdOverhangLength
 		deterministicSequence = reverseComplement
 	} else {
-		fwd = fwdOverhangLength
-		rev = revOverhangLength
+		forward = fwdOverhangLength
+		reverse = revOverhangLength
 		deterministicSequence = sequence
 	}
 
 	// Build our byte flag and copy length flags
 	flag := EncodeFlag(2, FRAGMENT, false, false)
 	result[0] = flag
-	result[1] = byte(fwd)
-	result[2] = byte(rev)
+	result[1] = byte(forward)
+	result[2] = byte(reverse)
 
 	// Compute BLAKE3, then copy those to the remaining 13 bytes
 	newhash := blake3.Sum256([]byte(deterministicSequence))
