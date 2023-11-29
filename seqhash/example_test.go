@@ -14,7 +14,7 @@ func Example_basic() {
 	circular := false
 	doubleStranded := true
 
-	sequenceSeqhash, _ := seqhash.EncodeHash2(seqhash.Hash2(sequence, sequenceType, circular, doubleStranded))
+	sequenceSeqhash, _ := seqhash.EncodeHashV2(seqhash.HashV2(sequence, sequenceType, circular, doubleStranded))
 	fmt.Println(sequenceSeqhash)
 	// Output: C_JPQCj5PgjFwjy7jaoYmwqQ==
 }
@@ -39,13 +39,13 @@ func ExampleRotateSequence() {
 	// output: true
 }
 
-func ExampleHash2() {
+func ExampleHashV2() {
 	sequence := "ATGC"
 	sequenceType := seqhash.DNA
 	circular := false
 	doubleStranded := true
 
-	sequenceSeqhash, _ := seqhash.Hash2(sequence, sequenceType, circular, doubleStranded)
+	sequenceSeqhash, _ := seqhash.HashV2(sequence, sequenceType, circular, doubleStranded)
 	fmt.Println(sequenceSeqhash)
 	// Output: [36 244 2 143 147 224 140 92 35 203 184 218 161 137 176 169]
 }

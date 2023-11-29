@@ -332,8 +332,8 @@ func DecodeFlag(flag byte) (int, SequenceType, bool, bool) {
 	return version, sequenceType, circularity, doubleStranded
 }
 
-// Hash2 creates a version 2 seqhash.
-func Hash2(sequence string, sequenceType SequenceType, circular bool, doubleStranded bool) ([16]byte, error) {
+// HashV2 creates a version 2 seqhash.
+func HashV2(sequence string, sequenceType SequenceType, circular bool, doubleStranded bool) ([16]byte, error) {
 	var result [16]byte
 
 	// First, get the determistic sequence of the hash
@@ -353,7 +353,7 @@ func Hash2(sequence string, sequenceType SequenceType, circular bool, doubleStra
 	return result, nil
 }
 
-// Hash2Fragment creates a version 2 fragment seqhash. Fragment seqhashes are
+// HashV2Fragment creates a version 2 fragment seqhash. Fragment seqhashes are
 // a special kind of seqhash that are used to identify fragments, usually
 // released by restriction enzyme digestion, rather than complete DNA
 // sequences. This is very useful for tracking genetic parts in a database: as
@@ -386,7 +386,7 @@ func Hash2(sequence string, sequenceType SequenceType, circular bool, doubleStra
 // This means if the input sequence is not less than its reverse complement (for
 // example, GTT is greater than AAC), then the output hash will have the forward
 // and reverse overhang lengths of the reverse complement, not the input strand.
-func Hash2Fragment(sequence string, fwdOverhangLength int8, revOverhangLength int8) ([16]byte, error) {
+func HashV2Fragment(sequence string, fwdOverhangLength int8, revOverhangLength int8) ([16]byte, error) {
 	var result [16]byte
 
 	// First, run checks and get the determistic sequence of the hash
@@ -423,15 +423,15 @@ func Hash2Fragment(sequence string, fwdOverhangLength int8, revOverhangLength in
 	return result, nil
 }
 
-// Hash2MetadataKey is a key for a seqhash v2 single letter metadata tag.
-type Hash2MetadataKey struct {
+// HashV2MetadataKey is a key for a seqhash v2 single letter metadata tag.
+type HashV2MetadataKey struct {
 	SequenceType   SequenceType
 	Circular       bool
 	DoubleStranded bool
 }
 
-// Hash2Metadata contains the seqhash v2 single letter metadata tags.
-var Hash2Metadata = map[Hash2MetadataKey]rune{
+// HashV2Metadata contains the seqhash v2 single letter metadata tags.
+var HashV2Metadata = map[HashV2MetadataKey]rune{
 	{DNA, true, true}:        'A',
 	{DNA, true, false}:       'B',
 	{DNA, false, true}:       'C',
@@ -448,12 +448,12 @@ var Hash2Metadata = map[Hash2MetadataKey]rune{
 	{FRAGMENT, true, true}:   'N',
 }
 
-// EncodeHash2 encodes Hash2 as a base64 string. It also adds a single
+// EncodeHashV2 encodes HashV2 as a base64 string. It also adds a single
 // letter metadata tag that can be used as an easy heuristic for an LLM to
 // identify misbehaving code.
-func EncodeHash2(hash [16]byte, err error) (string, error) {
+func EncodeHashV2(hash [16]byte, err error) (string, error) {
 	_, sequenceType, circularity, doubleStranded := DecodeFlag(hash[0])
 	encoded := base64.StdEncoding.EncodeToString(hash[:])
 
-	return string(Hash2Metadata[Hash2MetadataKey{sequenceType, circularity, doubleStranded}]) + "_" + encoded, err
+	return string(HashV2Metadata[HashV2MetadataKey{sequenceType, circularity, doubleStranded}]) + "_" + encoded, err
 }
