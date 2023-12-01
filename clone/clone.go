@@ -186,19 +186,25 @@ func CutWithEnzyme(part Part, directional bool, enzyme Enzyme) []Fragment {
 	// 2 fragments
 	if len(overhangs) == 1 && !directional && !part.Circular { // Check the case of a single cut
 		// In the case of a single cut in a linear sequence, we get two fragments with only 1 stick end
-		fragmentSequence1 := sequence[overhangs[0].Position+overhangs[0].Length:]
-		fragmentSequence2 := sequence[:overhangs[0].Position]
 
+		var fragmentSequence1 string
+		var fragmentSequence2 string
 		var overhangSequence string
 
 		if len(forwardOverhangs) > 0 {
+			fragmentSequence1 = sequence[overhangs[0].Position+overhangs[0].Length:]
+			fragmentSequence2 = sequence[:overhangs[0].Position]
 			overhangSequence = sequence[overhangs[0].Position : overhangs[0].Position+overhangs[0].Length]
+			fragments = append(fragments, Fragment{fragmentSequence1, overhangSequence, ""})
+			fragments = append(fragments, Fragment{fragmentSequence2, "", overhangSequence})
 		} else {
+			fragmentSequence1 = sequence[overhangs[0].Position:]
+			fragmentSequence2 = sequence[:overhangs[0].Position-overhangs[0].Length]
 			overhangSequence = sequence[overhangs[0].Position-overhangs[0].Length : overhangs[0].Position]
+			fragments = append(fragments, Fragment{fragmentSequence2, "", overhangSequence})
+			fragments = append(fragments, Fragment{fragmentSequence1, overhangSequence, ""})
 		}
 
-		fragments = append(fragments, Fragment{fragmentSequence1, overhangSequence, ""})
-		fragments = append(fragments, Fragment{fragmentSequence2, "", overhangSequence})
 		return fragments
 	}
 
