@@ -116,20 +116,26 @@ func TestCutWithEnzymeRegression(t *testing.T) {
 		t.Errorf("Expected 2 fragments, got: %d", len(fragments))
 	}
 
-	if fragments[0].ForwardOverhang != "ACTT" {
-		t.Errorf("Expected forward overhang to be ACTT, got: %s", fragments[0].ForwardOverhang)
-	}
-
-	if fragments[0].ReverseOverhang != "" {
-		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[0].ReverseOverhang)
-	}
-
-	if fragments[1].ForwardOverhang != "" {
+	if fragments[0].ForwardOverhang != "" {
 		t.Errorf("Expected forward overhang to be empty, got: %s", fragments[1].ForwardOverhang)
 	}
 
-	if fragments[1].ReverseOverhang != "ACTT" {
+	if fragments[0].ReverseOverhang != "ACTT" {
 		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[1].ReverseOverhang)
+	}
+
+	if fragments[1].ForwardOverhang != "ACTT" {
+		t.Errorf("Expected forward overhang to be ACTT, got: %s", fragments[0].ForwardOverhang)
+	}
+
+	if fragments[1].ReverseOverhang != "" {
+		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[0].ReverseOverhang)
+	}
+
+	// assemble the fragments back together
+	assembly := fragments[0].Sequence + fragments[0].ReverseOverhang + fragments[1].Sequence
+	if assembly != sequence {
+		t.Errorf("Expected assembly to be %s, got: %s", sequence, assembly)
 	}
 }
 
