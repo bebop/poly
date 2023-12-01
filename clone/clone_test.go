@@ -131,7 +131,6 @@ func TestCutWithEnzymeRegression(t *testing.T) {
 	if fragments[1].ReverseOverhang != "ACTT" {
 		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[1].ReverseOverhang)
 	}
-
 }
 
 func TestCircularLigate(t *testing.T) {
