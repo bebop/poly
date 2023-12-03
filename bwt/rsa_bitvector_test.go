@@ -26,6 +26,7 @@ func TestRSARank_singlePartialChunk(t *testing.T) {
 
 	testCases := []rsaRankTestCase{
 		{true, 0, 0}, {false, 0, 0},
+		{true, 1, 1}, {false, 0, 0},
 
 		{true, 64, 32}, {false, 64, 32},
 

@@ -1,1 +1,68 @@
 package bwt
+
+import "testing"
+
+type WaveletTreeAccessTestCase struct {
+	pos      int
+	expected string
+}
+
+func TestWaveletTree_Access(t *testing.T) {
+	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
+	wt := NewWaveletTreeFromString(testStr)
+
+	testCases := []WaveletTreeAccessTestCase{
+		{0, "A"},
+		{3, "A"},
+		{4, "C"},
+		{7, "C"},
+		{8, "T"},
+		{9, "T"},
+		{11, "T"},
+		{12, "G"},
+		{13, "G"},
+		{15, "G"},
+
+		{16, "A"},
+		{17, "C"},
+		{18, "T"},
+		{19, "G"},
+
+		{20, "T"},
+		{21, "G"},
+		{22, "C"},
+		{23, "A"},
+
+		{24, "T"},
+		{25, "T"},
+		{26, "A"},
+		{27, "A"},
+
+		{28, "C"},
+		{29, "C"},
+		{30, "G"},
+		{31, "G"},
+
+		{32, "G"},
+		{35, "G"},
+		{36, "T"},
+		{39, "T"},
+		{40, "C"},
+		{41, "C"},
+		{43, "C"},
+		{44, "A"},
+		{46, "A"},
+		{47, "A"},
+	}
+
+	for _, tc := range testCases {
+		actual := string(wt.Access(tc.pos))
+		if actual != tc.expected {
+			t.Fatalf("expected access(%d) to be %s but got %s", tc.pos, tc.expected, actual)
+		}
+	}
+}
+
+func TestWaveletTree_Rank(t *testing.T) {
+
+}

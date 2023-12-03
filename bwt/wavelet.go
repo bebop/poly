@@ -6,14 +6,35 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type WaveletTree struct {
-	nodes []node
+type waveletTree struct {
+	root  *node
 	alpha []charInfo
 }
 
+// TODO: figure out empty nodes case
+// TODO: figure out out of bounds case
+func (wt waveletTree) Access(i int) byte {
+	currNode := wt.root
+	for !currNode.isLeaf() {
+		bit := currNode.data.Access(i)
+		i = currNode.data.Rank(bit, i)
+		if bit {
+			currNode = currNode.right
+		} else {
+			currNode = currNode.left
+		}
+	}
+	return currNode.char
+}
+
+// TODO: talk about how we could probably greaty improve performance with one big bit vector that
+// represents the whole tree by concatenation the level order traversal of each node's bits
 type node struct {
-	data rsaBitVector
-	char byte
+	data   rsaBitVector
+	char   byte
+	parent *node
+	left   *node
+	right  *node
 }
 
 func (n node) isLeaf() bool {
@@ -26,33 +47,25 @@ type charInfo struct {
 	path    bitvector
 }
 
-func NewWaveletTreeFromString(str string) WaveletTree {
+func NewWaveletTreeFromString(str string) waveletTree {
 	bytes := []byte(str)
 
 	alpha := getCharInfoDescByRank(bytes)
-	nodes := buildWaveletTree(0, alpha, bytes)
+	root := buildWaveletTree(0, alpha, bytes)
 
-	return WaveletTree{
-		nodes: nodes,
+	return waveletTree{
+		root:  root,
+		alpha: alpha,
 	}
 }
 
-func buildWaveletTree(currentLevel int, alpha []charInfo, bytes []byte) []node {
+func buildWaveletTree(currentLevel int, alpha []charInfo, bytes []byte) *node {
 	if len(alpha) == 0 {
 		return nil
 	}
 
 	if len(alpha) == 1 {
-		return []node{
-			{char: alpha[0].char},
-		}
-	}
-
-	if len(alpha) == 2 {
-		return []node{
-			{char: alpha[0].char},
-			{char: alpha[1].char},
-		}
+		return &node{char: alpha[0].char}
 	}
 
 	leftAlpha, rightAlpha := partitionAlpha(currentLevel, alpha)
@@ -70,17 +83,24 @@ func buildWaveletTree(currentLevel int, alpha []charInfo, bytes []byte) []node {
 		}
 	}
 
-	n := node{
+	root := &node{
 		data: newRSABitVectorFromBitVector(bv),
 	}
 
 	leftTree := buildWaveletTree(currentLevel+1, leftAlpha, leftBytes)
 	rightTree := buildWaveletTree(currentLevel+1, rightAlpha, rightBytes)
 
-	tree := append([]node{n}, leftTree...)
-	tree = append(tree, rightTree...)
+	root.left = leftTree
+	root.right = rightTree
 
-	return tree
+	if leftTree != nil {
+		leftTree.parent = root
+	}
+	if rightTree != nil {
+		rightTree.parent = root
+	}
+
+	return root
 }
 
 func isInAlpha(alpha []charInfo, b byte) bool {
@@ -110,7 +130,7 @@ func getLeft(nodePos int) int {
 }
 
 func getRight(nodePos int) int {
-	return nodePos*2 + 1
+	return nodePos*2 + 2
 }
 
 func getParent(nodePos int) int {
@@ -133,7 +153,7 @@ func getCharInfoDescByRank(b []byte) []charInfo {
 		sortedInfo = append(sortedInfo, charInfo{char: k, maxRank: ranks[k]})
 	}
 
-	slices.SortFunc(sortedInfo, func(a, b charInfo) bool {
+	slices.SortStableFunc(sortedInfo, func(a, b charInfo) bool {
 		return a.maxRank > b.maxRank
 	})
 
