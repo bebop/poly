@@ -26,7 +26,6 @@ func TestRSARank_singlePartialChunk(t *testing.T) {
 
 	testCases := []rsaRankTestCase{
 		{true, 0, 0}, {false, 0, 0},
-		{true, 1, 1}, {false, 0, 0},
 
 		{true, 64, 32}, {false, 64, 32},
 
@@ -207,35 +206,35 @@ func TestRSASelect(t *testing.T) {
 	rsa := newRSABitVectorFromBitVector(bv)
 
 	testCases := []rsaSelectTestCase{
-		{true, 0, 0},
-		{true, 1, 11},
-		{true, 2, 47},
-		{false, 0, 1},
-		{false, 1, 2},
-		{false, 3, 4},
-		{false, 8, 9},
-		{false, 9, 10},
-		{false, 10, 12},
-		{false, 11, 13},
-		{false, 60, 63},
+		{true, 1, 0},
+		{true, 2, 11},
+		{true, 3, 47},
+		{false, 1, 1},
+		{false, 2, 2},
+		{false, 4, 4},
+		{false, 9, 9},
+		{false, 10, 10},
+		{false, 11, 12},
+		{false, 12, 13},
+		{false, 61, 63},
 
-		{true, 3, 64},
-		{true, 9, 70},
-		{true, 13, 74},
-		{true, 14, 75},
-		{true, 15, 79},
-		{true, 16, 80},
-		{true, 63, 127},
-		{false, 61, 76},
-		{false, 62, 77},
-		{false, 63, 78},
+		{true, 4, 64},
+		{true, 10, 70},
+		{true, 14, 74},
+		{true, 15, 75},
+		{true, 16, 79},
+		{true, 17, 80},
+		{true, 64, 127},
+		{false, 62, 76},
+		{false, 63, 77},
+		{false, 64, 78},
 
-		{true, 64, 151},
-		{false, 64, 128},
-		{false, 126, 191},
+		{true, 65, 151},
+		{false, 65, 128},
+		{false, 127, 191},
 
-		{true, 65, 192},
-		{true, 111, 238},
+		{true, 66, 192},
+		{true, 112, 238},
 	}
 
 	for _, tc := range testCases {
@@ -265,20 +264,20 @@ func TestRSASelect_notOk(t *testing.T) {
 
 	rsa := newRSABitVectorFromBitVector(bv)
 
-	if _, ok := rsa.Select(true, -1); ok {
-		t.Fatalf("expected select(true, -1) to be not ok but somehow returned a value")
+	if _, ok := rsa.Select(true, 0); ok {
+		t.Fatalf("expected select(true, 0) to be not ok but somehow returned a value")
 	}
 
-	pos, ok := rsa.Select(true, 111)
+	pos, ok := rsa.Select(true, 112)
 	if !ok {
 		t.Fatalf("expected select(true, 111) to be ok but somehow got not ok")
 	}
 
 	if pos != 238 {
-		t.Fatalf("expected select(true, 111) to be 238 ok but got")
+		t.Fatalf("expected select(true, 111) to be 238 but got %d", pos)
 	}
 
 	if _, ok := rsa.Select(true, 239); ok {
-		t.Fatalf("expected select(true, -1) to be not ok but somehow returned a value")
+		t.Fatalf("expected select(true, 239) to be not ok but somehow returned a value")
 	}
 }

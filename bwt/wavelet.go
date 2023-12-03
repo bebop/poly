@@ -14,17 +14,48 @@ type waveletTree struct {
 // TODO: figure out empty nodes case
 // TODO: figure out out of bounds case
 func (wt waveletTree) Access(i int) byte {
-	currNode := wt.root
-	for !currNode.isLeaf() {
-		bit := currNode.data.Access(i)
-		i = currNode.data.Rank(bit, i)
+	curr := wt.root
+	for !curr.isLeaf() {
+		bit := curr.data.Access(i)
+		i = curr.data.Rank(bit, i)
 		if bit {
-			currNode = currNode.right
+			curr = curr.right
 		} else {
-			currNode = currNode.left
+			curr = curr.left
 		}
 	}
-	return currNode.char
+	return curr.char
+}
+
+// TODO: deal with bad lookup char
+// TODO: deal with somehow bad path
+func (wt waveletTree) Rank(char byte, i int) int {
+	curr := wt.root
+	ci := wt.lookupCharInfo(char)
+
+	level := 0
+	var rank int
+	for !curr.isLeaf() {
+		pathBit := ci.path.getBit(ci.path.len() - 1 - level)
+		rank = curr.data.Rank(pathBit, i)
+		if pathBit {
+			curr = curr.right
+		} else {
+			curr = curr.left
+		}
+		level++
+		i = rank
+	}
+	return rank
+}
+
+func (wt waveletTree) lookupCharInfo(char byte) charInfo {
+	for i := range wt.alpha {
+		if wt.alpha[i].char == char {
+			return wt.alpha[i]
+		}
+	}
+	panic("better messaging or handling")
 }
 
 // TODO: talk about how we could probably greaty improve performance with one big bit vector that

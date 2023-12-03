@@ -124,11 +124,11 @@ func buildSelectMaps(inBv bitvector) (oneSelectMap, zeroSelectMap map[int]int) {
 	for i := 0; i < inBv.len(); i++ {
 		bit := inBv.getBit(i)
 		if bit {
-			oneSelectMap[oneCount] = i
 			oneCount++
+			oneSelectMap[oneCount] = i
 		} else {
-			zeroSelectMap[zeroCount] = i
 			zeroCount++
+			zeroSelectMap[zeroCount] = i
 		}
 	}
 
