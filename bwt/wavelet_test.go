@@ -117,3 +117,51 @@ func TestWaveletTree_Rank(t *testing.T) {
 		}
 	}
 }
+
+type WaveletTreeSelectTestCase struct {
+	char     string
+	rank     int
+	expected int
+}
+
+func TestWaveletTree_Select(t *testing.T) {
+	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
+	wt := NewWaveletTreeFromString(testStr)
+
+	testCases := []WaveletTreeSelectTestCase{
+		{"A", 0, 0},
+		{"A", 1, 1},
+		{"A", 2, 2},
+		{"A", 3, 3},
+		{"C", 0, 4},
+		{"C", 3, 7},
+
+		{"A", 4, 16},
+		{"C", 4, 17},
+		{"T", 4, 18},
+		{"G", 4, 19},
+
+		{"T", 5, 20},
+		{"G", 5, 21},
+		{"C", 5, 22},
+		{"A", 5, 23},
+
+		{"T", 6, 24},
+		{"T", 7, 25},
+		{"A", 6, 26},
+
+		{"C", 6, 28},
+		{"G", 6, 30},
+		{"G", 7, 31},
+
+		{"G", 8, 32},
+		{"A", 11, 47},
+	}
+
+	for _, tc := range testCases {
+		actual := wt.Select(tc.char[0], tc.rank)
+		if actual != tc.expected {
+			t.Fatalf("expected select(%s, %d) to be %d but got %d", tc.char, tc.rank, tc.expected, actual)
+		}
+	}
+}

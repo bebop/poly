@@ -32,7 +32,6 @@ func (wt waveletTree) Access(i int) byte {
 func (wt waveletTree) Rank(char byte, i int) int {
 	curr := wt.root
 	ci := wt.lookupCharInfo(char)
-
 	level := 0
 	var rank int
 	for !curr.isLeaf() {
@@ -46,6 +45,32 @@ func (wt waveletTree) Rank(char byte, i int) int {
 		level++
 		i = rank
 	}
+	return rank
+}
+
+func (wt waveletTree) Select(char byte, rank int) int {
+	curr := wt.root
+	ci := wt.lookupCharInfo(char)
+	level := 0
+
+	for !curr.isLeaf() {
+		pathBit := ci.path.getBit(ci.path.len() - 1 - level)
+		if pathBit {
+			curr = curr.right
+		} else {
+			curr = curr.left
+		}
+		level++
+	}
+
+	for curr.parent != nil {
+		curr = curr.parent
+		level--
+		pathBit := ci.path.getBit(ci.path.len() - 1 - level)
+		// TODO: do we really need the ok on the select?
+		rank, _ = curr.data.Select(pathBit, rank)
+	}
+
 	return rank
 }
 
@@ -184,7 +209,10 @@ func getCharInfoDescByRank(b []byte) []charInfo {
 		sortedInfo = append(sortedInfo, charInfo{char: k, maxRank: ranks[k]})
 	}
 
-	slices.SortStableFunc(sortedInfo, func(a, b charInfo) bool {
+	slices.SortFunc(sortedInfo, func(a, b charInfo) bool {
+		if a.maxRank == b.maxRank {
+			return a.char < b.char
+		}
 		return a.maxRank > b.maxRank
 	})
 
