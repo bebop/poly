@@ -4,32 +4,32 @@ import (
 	"testing"
 )
 
-type QueryTest struct {
+type BWTCountTestCase struct {
 	seq      string
-	expected bool
+	expected int
 }
 
-func TestQueryBWT(t *testing.T) {
+func TestBWT_Count(t *testing.T) {
 	bwt := New("BANANA")
 
-	testTable := []QueryTest{
-		{"NANA", true},
-		{"ANA", true},
-		{"NA", true},
-		{"B", true},
-		{"N", true},
-		{"BA", true},
-		{"ANANA", true},
-		{"QWERTY", false},
-		{"ANANANA", false},
-		{"ABCD", false},
-		{"ABA", false},
+	testTable := []BWTCountTestCase{
+		{"NANA", 1},
+		{"ANA", 2},
+		{"NA", 2},
+		{"B", 1},
+		{"N", 2},
+		{"BA", 1},
+		{"ANANA", 1},
+		{"QWERTY", 0},
+		{"ANANANA", 0},
+		{"ABCD", 0},
+		{"ABA", 0},
 	}
 
 	for _, v := range testTable {
-		res := bwt.QueryExistence(v.seq)
-		if res != v.expected {
-			t.Fatalf("Test=%s ExpectedQueryExistence=%v Received=%v", v.seq, v.expected, res)
+		count := bwt.Count(v.seq)
+		if count != v.expected {
+			t.Fatalf("seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
 		}
 	}
 }
@@ -64,6 +64,6 @@ func BenchmarkBWTQueryPower12(b *testing.B) {
 //go:noinline
 func BaseBenchmarkBWTQuery(bwt BWT, seq string, b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		bwt.QueryExistence(seq)
+		bwt.Count(seq)
 	}
 }

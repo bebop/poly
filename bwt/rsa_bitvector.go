@@ -29,8 +29,6 @@ func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
 }
 
 func (rsa rsaBitVector) Rank(val bool, i int) int {
-	rsa.bv.checkBounds(i)
-
 	chunkPos := (i / rsa.jrBitsPerChunk)
 	chunk := rsa.jrc[chunkPos]
 
