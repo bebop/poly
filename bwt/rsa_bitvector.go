@@ -5,68 +5,60 @@ import "math/bits"
 // TODO: doc what rsa is, why these DSAs, and why we take in a bit vector
 // TODO: clarks select
 type rsaBitVector struct {
-	bv                bitvector
-	totalOnesRank     int
-	jrc               []chunk
-	jrBitsPerChunk    int
-	jrBitsPerSubChunk int
-	oneSelectMap      map[int]int
-	zeroSelectMap     map[int]int
+	bv                  bitvector
+	totalOnesRank       int
+	jrc                 []chunk
+	jrSubChunksPerChunk int
+	jrBitsPerChunk      int
+	jrBitsPerSubChunk   int
+	oneSelectMap        map[int]int
+	zeroSelectMap       map[int]int
 }
 
 // TODO: talk about why bv should never be modidifed after building the RSA bit vector
 func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
-	jacobsonRankChunks, jrBitsPerChunk, jrBitsPerSubChunk, totalOnesRank := buildJacobsonRank(bv)
+	jacobsonRankChunks, jrSubChunksPerChunk, jrBitsPerSubChunk, totalOnesRank := buildJacobsonRank(bv)
 	ones, zeros := buildSelectMaps(bv)
 
 	return rsaBitVector{
-		bv:                bv,
-		totalOnesRank:     totalOnesRank,
-		jrc:               jacobsonRankChunks,
-		jrBitsPerChunk:    jrBitsPerChunk,
-		jrBitsPerSubChunk: jrBitsPerSubChunk,
-		oneSelectMap:      ones,
-		zeroSelectMap:     zeros,
+		bv:                  bv,
+		totalOnesRank:       totalOnesRank,
+		jrc:                 jacobsonRankChunks,
+		jrSubChunksPerChunk: jrSubChunksPerChunk,
+		jrBitsPerChunk:      jrSubChunksPerChunk * jrBitsPerSubChunk,
+		jrBitsPerSubChunk:   jrBitsPerSubChunk,
+		oneSelectMap:        ones,
+		zeroSelectMap:       zeros,
 	}
 }
 
 func (rsa rsaBitVector) Rank(val bool, i int) int {
-	c := 0
-	for j := 0; j < i; j++ {
-		if rsa.bv.getBit(j) {
-			c++
+	if i > rsa.bv.len()-1 {
+		if val {
+			return rsa.totalOnesRank
 		}
+		return rsa.bv.len() - rsa.totalOnesRank
 	}
+
+	chunkPos := (i / rsa.jrBitsPerChunk)
+	chunk := rsa.jrc[chunkPos]
+
+	subChunkPos := (i % rsa.jrBitsPerChunk) / rsa.jrBitsPerSubChunk
+	subChunk := chunk.subChunks[subChunkPos]
+
+	bitOffset := i % rsa.jrBitsPerSubChunk
+
+	bitSet := rsa.bv.getBitSet(chunkPos*rsa.jrSubChunksPerChunk + subChunkPos)
+
+	shiftRightAmount := uint64(rsa.jrBitsPerSubChunk - bitOffset)
 	if val {
-		return c
+		remaining := bitSet >> shiftRightAmount
+		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount64(remaining)
 	}
-	return i - c
-	// if i > rsa.bv.len()-1 {
-	// 	if val {
-	// 		return rsa.totalOnesRank
-	// 	}
-	// 	return rsa.bv.len() - rsa.totalOnesRank
-	// }
-	//
-	// chunkPos := (i / rsa.jrBitsPerChunk)
-	// chunk := rsa.jrc[chunkPos]
-	//
-	// subChunkPos := (i % rsa.jrBitsPerChunk) / rsa.jrBitsPerSubChunk
-	// subChunk := chunk.subChunks[subChunkPos]
-	//
-	// bitOffset := i % rsa.jrBitsPerSubChunk
-	//
-	// bitSet := rsa.bv.getBitSet(chunkPos*len(rsa.jrc) + subChunkPos)
-	//
-	// shiftRightAmount := uint64(rsa.jrBitsPerSubChunk - bitOffset)
-	// if val {
-	// 	remaining := bitSet >> shiftRightAmount
-	// 	return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount64(remaining)
-	// }
-	// remaining := ^bitSet >> shiftRightAmount
-	//
-	// // cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
-	// return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
+	remaining := ^bitSet >> shiftRightAmount
+
+	// cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
+	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
 }
 
 func (rsa rsaBitVector) Select(val bool, rank int) (i int, ok bool) {
@@ -130,7 +122,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 		})
 	}
 
-	return jacobsonRankChunks, numOfSubChunksPerChunk * wordSize, wordSize, totalRank
+	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize, totalRank
 }
 
 // TODO: talk about how this could be improved memory wise. Talk about how clarks select exists, but keeping it "simple for now" but maybe worth

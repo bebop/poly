@@ -1,7 +1,6 @@
 package bwt
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -182,7 +181,6 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 
 	for _, str := range testCases {
 		wt := NewWaveletTreeFromString(str)
-		fmt.Println(len(str))
 		actual := ""
 		for i := 0; i < len(str); i++ {
 			actual += string(wt.Access(i))

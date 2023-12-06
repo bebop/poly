@@ -164,9 +164,7 @@ func TestRSARank_singleCompleteChunk(t *testing.T) {
 }
 
 func TestRSARank_multipleChunks(t *testing.T) {
-	numBitsToTruncate := 17
-	initialNumberOfBits := wordSize*15 - numBitsToTruncate
-	rsa := newTestRSAFromWords(initialNumberOfBits,
+	rsa := newTestRSAFromWords((8*4+3)*64,
 		0x0000000000000000,
 		0xffffffffffffffff,
 		0x0000000000000000,
@@ -184,7 +182,32 @@ func TestRSARank_multipleChunks(t *testing.T) {
 
 		0xffffffffffffffff,
 		0x0000000000000000,
-		0xffffffffffffffff, // this should end up getting truncated
+		0xffffffffffffffff,
+		0x0000000000000000,
+
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
 	)
 
 	testCases := []rsaRankTestCase{
@@ -207,7 +230,10 @@ func TestRSARank_multipleChunks(t *testing.T) {
 
 		{true, 832, 448}, {false, 832, 384},
 		{true, 896, 448}, {false, 896, 448},
-		{true, 896 + wordSize - numBitsToTruncate - 1, 448 + wordSize - numBitsToTruncate - 1}, {false, 896 + wordSize - numBitsToTruncate - 1, 448},
+
+		{true, 1024, 512}, {false, 1024, 512},
+
+		{true, 2048, 1024}, {false, 2048, 1024},
 	}
 
 	for _, tc := range testCases {
@@ -310,16 +336,11 @@ func TestRSASelect_notOk(t *testing.T) {
 
 func newTestRSAFromWords(sizeInBits int, wordsToCopy ...uint64) rsaBitVector {
 	bv := newBitVector(sizeInBits)
-	for i := 0; i < len(wordsToCopy); i++ {
-		w := wordsToCopy[i]
-		for j := 0; j < 64; j++ {
-			if i*64+j == sizeInBits {
-				break
-			}
-			mask := uint64(1) << uint64(63-j%64)
-			bit := w&mask != 0
-			bv.setBit(i*64+j, bit)
-		}
+	for i := 0; i < sizeInBits; i++ {
+		w := wordsToCopy[i/64]
+		mask := uint64(1) << uint64(63-i%64)
+		bit := w&mask != 0
+		bv.setBit(i, bit)
 	}
 	return newRSABitVectorFromBitVector(bv)
 }
