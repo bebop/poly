@@ -13,25 +13,48 @@ const nullChar = "$"
 // allows for sub sequence querying.
 type BWT struct {
 	skipList []skipEntry
-	l        waveletTree
+	// TODO: talk about how we would want to remove this in favor of a RLFM and or r-index
+	l waveletTree
+	// TODO: Talk about how we can cut way down on memory usage by sampling this in a specific way with the RLFM and or r-index
+	suffixArray []int
 }
 
 func (bwt BWT) Count(pattern string) int {
+	searchRange := bwt.lfSearch(pattern)
+	return searchRange.end - searchRange.start
+}
+
+func (bwt BWT) Locate(pattern string) []int {
+	searchRange := bwt.lfSearch(pattern)
+	if searchRange.start >= searchRange.end {
+		return nil
+	}
+
+	numOfOffsets := searchRange.end - searchRange.start
+	offsets := make([]int, numOfOffsets)
+	for i := 0; i < numOfOffsets; i++ {
+		offsets[i] = bwt.suffixArray[searchRange.start+i]
+	}
+
+	return offsets
+}
+
+func (bwt BWT) lfSearch(pattern string) interval {
 	searchRange := interval{start: 0, end: bwt.getLenOfOriginalString()}
 	for i := 0; i < len(pattern); i++ {
 		if searchRange.end-searchRange.start <= 0 {
-			return 0
+			return interval{}
 		}
 
 		c := pattern[len(pattern)-1-i]
 		skip, ok := bwt.lookupSkip(c)
 		if !ok {
-			return 0
+			return interval{}
 		}
 		searchRange.start = skip.openEndedInterval.start + bwt.l.Rank(c, searchRange.start)
 		searchRange.end = skip.openEndedInterval.start + bwt.l.Rank(c, searchRange.end)
 	}
-	return searchRange.end - searchRange.start
+	return searchRange
 }
 
 func (bwt BWT) lookupSkip(c byte) (entry skipEntry, ok bool) {
@@ -67,10 +90,13 @@ func New(sequence string) BWT {
 
 	slices.Sort(prefixArray)
 
+	suffixArray := make([]int, len(sequence))
 	lastColBuilder := strings.Builder{}
 	for i := 0; i < len(prefixArray); i++ {
 		currChar := sequence[getBWTIndex(len(sequence), len(prefixArray[i]))]
 		lastColBuilder.WriteByte(currChar)
+
+		suffixArray[i] = len(sequence) - len(prefixArray[i])
 	}
 	fb := strings.Builder{}
 	for i := 0; i < len(prefixArray); i++ {
@@ -78,8 +104,9 @@ func New(sequence string) BWT {
 	}
 
 	return BWT{
-		skipList: buildSkipList(prefixArray),
-		l:        NewWaveletTreeFromString(lastColBuilder.String()),
+		skipList:    buildSkipList(prefixArray),
+		l:           NewWaveletTreeFromString(lastColBuilder.String()),
+		suffixArray: suffixArray,
 	}
 }
 
