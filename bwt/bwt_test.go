@@ -1,6 +1,7 @@
 package bwt
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -9,21 +10,24 @@ type BWTCountTestCase struct {
 	expected int
 }
 
+const augmentedQuickBrownFoxTest = "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown"
+
+var threeAugmentedQuickBrownFoxTest = strings.Join([]string{augmentedQuickBrownFoxTest, augmentedQuickBrownFoxTest, augmentedQuickBrownFoxTest}, "")
+
 func TestBWT_Count(t *testing.T) {
-	bwt := New("BANANA")
+	bwt := New(threeAugmentedQuickBrownFoxTest)
 
 	testTable := []BWTCountTestCase{
-		{"NANA", 1},
-		{"ANA", 2},
-		{"NA", 2},
-		{"B", 1},
-		{"N", 2},
-		{"BA", 1},
-		{"ANANA", 1},
-		{"QWERTY", 0},
-		{"ANANANA", 0},
-		{"ABCD", 0},
-		{"ABA", 0},
+		{"uick", 3},
+		{"the", 6},
+		{"over", 6},
+		{"own", 12},
+		{"ana", 6},
+		{"an", 9},
+		{"na", 9},
+		{"rown", 6},
+		{"townthe", 2},
+		{"zzz", 0},
 	}
 
 	for _, v := range testTable {

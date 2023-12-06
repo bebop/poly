@@ -6,6 +6,7 @@ import "math/bits"
 // TODO: clarks select
 type rsaBitVector struct {
 	bv                bitvector
+	totalOnesRank     int
 	jrc               []chunk
 	jrBitsPerChunk    int
 	jrBitsPerSubChunk int
@@ -15,11 +16,12 @@ type rsaBitVector struct {
 
 // TODO: talk about why bv should never be modidifed after building the RSA bit vector
 func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
-	jacobsonRankChunks, jrBitsPerChunk, jrBitsPerSubChunk := buildJacobsonRank(bv)
+	jacobsonRankChunks, jrBitsPerChunk, jrBitsPerSubChunk, totalOnesRank := buildJacobsonRank(bv)
 	ones, zeros := buildSelectMaps(bv)
 
 	return rsaBitVector{
 		bv:                bv,
+		totalOnesRank:     totalOnesRank,
 		jrc:               jacobsonRankChunks,
 		jrBitsPerChunk:    jrBitsPerChunk,
 		jrBitsPerSubChunk: jrBitsPerSubChunk,
@@ -29,25 +31,42 @@ func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
 }
 
 func (rsa rsaBitVector) Rank(val bool, i int) int {
-	chunkPos := (i / rsa.jrBitsPerChunk)
-	chunk := rsa.jrc[chunkPos]
-
-	subChunkPos := (i % rsa.jrBitsPerChunk) / rsa.jrBitsPerSubChunk
-	subChunk := chunk.subChunks[subChunkPos]
-
-	bitOffset := i % rsa.jrBitsPerSubChunk
-
-	bitSet := rsa.bv.getBitSet(chunkPos*len(rsa.jrc) + subChunkPos)
-
-	shiftRightAmount := uint64(rsa.jrBitsPerSubChunk - bitOffset)
-	if val {
-		remaining := bitSet >> shiftRightAmount
-		return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount64(remaining)
+	c := 0
+	for j := 0; j < i; j++ {
+		if rsa.bv.getBit(j) {
+			c++
+		}
 	}
-	remaining := ^bitSet >> shiftRightAmount
-
-	// cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
-	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
+	if val {
+		return c
+	}
+	return i - c
+	// if i > rsa.bv.len()-1 {
+	// 	if val {
+	// 		return rsa.totalOnesRank
+	// 	}
+	// 	return rsa.bv.len() - rsa.totalOnesRank
+	// }
+	//
+	// chunkPos := (i / rsa.jrBitsPerChunk)
+	// chunk := rsa.jrc[chunkPos]
+	//
+	// subChunkPos := (i % rsa.jrBitsPerChunk) / rsa.jrBitsPerSubChunk
+	// subChunk := chunk.subChunks[subChunkPos]
+	//
+	// bitOffset := i % rsa.jrBitsPerSubChunk
+	//
+	// bitSet := rsa.bv.getBitSet(chunkPos*len(rsa.jrc) + subChunkPos)
+	//
+	// shiftRightAmount := uint64(rsa.jrBitsPerSubChunk - bitOffset)
+	// if val {
+	// 	remaining := bitSet >> shiftRightAmount
+	// 	return chunk.onesCumulativeRank + subChunk.onesCumulativeRank + bits.OnesCount64(remaining)
+	// }
+	// remaining := ^bitSet >> shiftRightAmount
+	//
+	// // cumulative ranks for 0 should just be the sum of the compliment of cumulative ranks for 1
+	// return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
 }
 
 func (rsa rsaBitVector) Select(val bool, rank int) (i int, ok bool) {
@@ -74,10 +93,11 @@ type subChunk struct {
 }
 
 // TODO: talk about easy to read instead vs perf
-func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk int) {
+func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk, totalRank int) {
 	// TODO: talk about why this is probably good enough, improves as n grows, gets worse as n gets smaller, and how this fits into a machine instruction, and how this is "simple"
 	numOfSubChunksPerChunk = 4
 
+	totalRank = 0
 	chunkCumulativeRank := 0
 	subChunkCumulativeRank := 0
 
@@ -100,6 +120,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 
 		onesCount := bits.OnesCount64(inBv.getBitSet(i))
 		subChunkCumulativeRank += onesCount
+		totalRank += onesCount
 	}
 
 	if currSubChunks != nil {
@@ -109,7 +130,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 		})
 	}
 
-	return jacobsonRankChunks, numOfSubChunksPerChunk * wordSize, wordSize
+	return jacobsonRankChunks, numOfSubChunksPerChunk * wordSize, wordSize, totalRank
 }
 
 // TODO: talk about how this could be improved memory wise. Talk about how clarks select exists, but keeping it "simple for now" but maybe worth

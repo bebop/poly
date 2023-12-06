@@ -17,30 +17,21 @@ type BWT struct {
 }
 
 func (bwt BWT) Count(pattern string) int {
-	skip, ok := bwt.lookupSkip(pattern[len(pattern)-1])
-	if !ok {
-		return 0
-	}
-	nextRange := skip.openEndedInterval
-	for i := 1; i < len(pattern); i++ {
-		if nextRange.end-nextRange.start <= 0 {
+	searchRange := interval{start: 0, end: bwt.getLenOfOriginalString()}
+	for i := 0; i < len(pattern); i++ {
+		if searchRange.end-searchRange.start <= 0 {
 			return 0
 		}
 
-		currChar := pattern[len(pattern)-1-i]
-
-		currCharRangeStart := bwt.l.Rank(currChar, nextRange.start)
-		currCharRangeEnd := bwt.l.Rank(currChar, nextRange.end)
-
-		nextCharSkip, ok := bwt.lookupSkip(currChar)
+		c := pattern[len(pattern)-1-i]
+		skip, ok := bwt.lookupSkip(c)
 		if !ok {
 			return 0
 		}
-
-		nextRange.start = nextCharSkip.openEndedInterval.start + currCharRangeStart
-		nextRange.end = nextCharSkip.openEndedInterval.start + currCharRangeEnd
+		searchRange.start = skip.openEndedInterval.start + bwt.l.Rank(c, searchRange.start)
+		searchRange.end = skip.openEndedInterval.start + bwt.l.Rank(c, searchRange.end)
 	}
-	return nextRange.end - nextRange.start
+	return searchRange.end - searchRange.start
 }
 
 func (bwt BWT) lookupSkip(c byte) (entry skipEntry, ok bool) {
@@ -50,6 +41,10 @@ func (bwt BWT) lookupSkip(c byte) (entry skipEntry, ok bool) {
 		}
 	}
 	return skipEntry{}, false
+}
+
+func (bwt BWT) getLenOfOriginalString() int {
+	return bwt.skipList[len(bwt.skipList)-1].openEndedInterval.end
 }
 
 type interval struct {
@@ -76,6 +71,10 @@ func New(sequence string) BWT {
 	for i := 0; i < len(prefixArray); i++ {
 		currChar := sequence[getBWTIndex(len(sequence), len(prefixArray[i]))]
 		lastColBuilder.WriteByte(currChar)
+	}
+	fb := strings.Builder{}
+	for i := 0; i < len(prefixArray); i++ {
+		fb.WriteByte(prefixArray[i][0])
 	}
 
 	return BWT{

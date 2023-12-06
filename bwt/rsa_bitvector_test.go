@@ -1,6 +1,8 @@
 package bwt
 
-import "testing"
+import (
+	"testing"
+)
 
 type rsaRankTestCase struct {
 	val          bool
@@ -15,14 +17,11 @@ func TestRSARank_singlePartialChunk(t *testing.T) {
 
 	bitsToTruncate := 22
 	initialNumberOfBits := wordSize*2 - bitsToTruncate
-	bv := newBitVector(initialNumberOfBits)
 
-	bv.bits = []uint64{
+	rsa := newTestRSAFromWords(initialNumberOfBits,
 		0xffffffff00000000,
 		0x00000000ffc00000,
-	}
-
-	rsa := newRSABitVectorFromBitVector(bv)
+	)
 
 	testCases := []rsaRankTestCase{
 		{true, 0, 0}, {false, 0, 0},
@@ -43,22 +42,61 @@ func TestRSARank_singlePartialChunk(t *testing.T) {
 
 }
 
-func TestRSARank_singleCompleteChunk(t *testing.T) {
-	if wordSize != 64 {
-		t.Skip()
+func TestRSARank_singleCompleteChunk_PastBounds_Ones(t *testing.T) {
+	rsa := newTestRSAFromWords(64*4,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+	)
+
+	testCases := []rsaRankTestCase{
+		{true, 0, 0}, {false, 0, 0},
+		{true, 255, 127}, {false, 255, 128},
+		{true, 256, 128}, {false, 256, 128},
 	}
 
-	initialNumberOfBits := wordSize * 4
-	bv := newBitVector(initialNumberOfBits)
+	for _, tc := range testCases {
+		rank := rsa.Rank(tc.val, tc.bitPosition)
+		if rank != tc.expectedRank {
+			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
+		}
+	}
 
-	bv.bits = []uint64{
+}
+
+func TestRSARank_singleCompleteChunk_PastBounds_Zeros(t *testing.T) {
+	rsa := newTestRSAFromWords(64*4,
+		0xffffffffffffffff,
+		0x0000000000000000,
+		0xffffffffffffffff,
+		0x0000000000000000,
+	)
+
+	testCases := []rsaRankTestCase{
+		{true, 0, 0}, {false, 0, 0},
+		{true, 255, 128}, {false, 255, 127},
+		{true, 256, 128}, {false, 256, 128},
+	}
+
+	for _, tc := range testCases {
+		rank := rsa.Rank(tc.val, tc.bitPosition)
+		if rank != tc.expectedRank {
+			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
+		}
+	}
+
+}
+
+func TestRSARank_singleCompleteChunk(t *testing.T) {
+	initialNumberOfBits := wordSize * 4
+
+	rsa := newTestRSAFromWords(initialNumberOfBits,
 		0x8000000000000001,
 		0xff0f30fffacea80d,
 		0x90e0a0e0b0e0cf0c,
 		0x3d0f064f7206f717,
-	}
-
-	rsa := newRSABitVectorFromBitVector(bv)
+	)
 
 	testCases := []rsaRankTestCase{
 		{true, 0, 0}, {false, 0, 0},
@@ -128,9 +166,7 @@ func TestRSARank_singleCompleteChunk(t *testing.T) {
 func TestRSARank_multipleChunks(t *testing.T) {
 	numBitsToTruncate := 17
 	initialNumberOfBits := wordSize*15 - numBitsToTruncate
-	bv := newBitVector(initialNumberOfBits)
-
-	bv.bits = []uint64{
+	rsa := newTestRSAFromWords(initialNumberOfBits,
 		0x0000000000000000,
 		0xffffffffffffffff,
 		0x0000000000000000,
@@ -149,9 +185,7 @@ func TestRSARank_multipleChunks(t *testing.T) {
 		0xffffffffffffffff,
 		0x0000000000000000,
 		0xffffffffffffffff, // this should end up getting truncated
-	}
-
-	rsa := newRSABitVectorFromBitVector(bv)
+	)
 
 	testCases := []rsaRankTestCase{
 		{true, 0, 0}, {false, 0, 0},
@@ -194,16 +228,12 @@ type rsaSelectTestCase struct {
 func TestRSASelect(t *testing.T) {
 	bitsToTruncate := 17
 	initialNumberOfBits := wordSize*4 - bitsToTruncate
-	bv := newBitVector(initialNumberOfBits)
-
-	bv.bits = []uint64{
+	rsa := newTestRSAFromWords(initialNumberOfBits,
 		0x8010000000010000,
 		0xfff1ffffffffffff,
 		0x0000010000000000,
 		0xffffffffffffffff,
-	}
-
-	rsa := newRSABitVectorFromBitVector(bv)
+	)
 
 	testCases := []rsaSelectTestCase{
 		{true, 0, 0},
@@ -253,16 +283,12 @@ func TestRSASelect(t *testing.T) {
 func TestRSASelect_notOk(t *testing.T) {
 	bitsToTruncate := 17
 	initialNumberOfBits := wordSize*4 - bitsToTruncate
-	bv := newBitVector(initialNumberOfBits)
-
-	bv.bits = []uint64{
+	rsa := newTestRSAFromWords(initialNumberOfBits,
 		0x8010000000010000,
 		0xfff1ffffffffffff,
 		0x0000010000000000,
 		0xffffffffffffffff,
-	}
-
-	rsa := newRSABitVectorFromBitVector(bv)
+	)
 
 	if _, ok := rsa.Select(true, -1); ok {
 		t.Fatalf("expected select(true, -1) to be not ok but somehow returned a value")
@@ -280,4 +306,20 @@ func TestRSASelect_notOk(t *testing.T) {
 	if _, ok := rsa.Select(true, 239); ok {
 		t.Fatalf("expected select(true, 239) to be not ok but somehow returned a value")
 	}
+}
+
+func newTestRSAFromWords(sizeInBits int, wordsToCopy ...uint64) rsaBitVector {
+	bv := newBitVector(sizeInBits)
+	for i := 0; i < len(wordsToCopy); i++ {
+		w := wordsToCopy[i]
+		for j := 0; j < 64; j++ {
+			if i*64+j == sizeInBits {
+				break
+			}
+			mask := uint64(1) << uint64(63-j%64)
+			bit := w&mask != 0
+			bv.setBit(i*64+j, bit)
+		}
+	}
+	return newRSABitVectorFromBitVector(bv)
 }

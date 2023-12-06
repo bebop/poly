@@ -1,6 +1,10 @@
 package bwt
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 type WaveletTreeAccessTestCase struct {
 	pos      int
@@ -69,7 +73,7 @@ type WaveletTreeRankTestCase struct {
 	expected int
 }
 
-func TestWaveletTree_Rank(t *testing.T) {
+func TestWaveletTree_Rank_Genomic(t *testing.T) {
 	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
 	wt := NewWaveletTreeFromString(testStr)
 
@@ -162,6 +166,29 @@ func TestWaveletTree_Select(t *testing.T) {
 		actual := wt.Select(tc.char[0], tc.rank)
 		if actual != tc.expected {
 			t.Fatalf("expected select(%s, %d) to be %d but got %d", tc.char, tc.rank, tc.expected, actual)
+		}
+	}
+}
+
+func TestWaveletTree_Access_Reconstruction(t *testing.T) {
+	enhancedQuickBrownFox := "the quick brown fox jumps over the lazy dog with an overt frown after fumbling its parallelogram shaped bananagram all around downtown"
+	enhancedQuickBrownFoxRepeated := strings.Join([]string{enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox}, " ")
+
+	testCases := []string{
+		"the quick brown fox jumped over the lazy dog",
+		enhancedQuickBrownFox,
+		enhancedQuickBrownFoxRepeated,
+	}
+
+	for _, str := range testCases {
+		wt := NewWaveletTreeFromString(str)
+		fmt.Println(len(str))
+		actual := ""
+		for i := 0; i < len(str); i++ {
+			actual += string(wt.Access(i))
+		}
+		if actual != str {
+			t.Fatalf("expected to rebuild:\n%s\nbut instead got:\n%s", str, actual)
 		}
 	}
 }
