@@ -172,11 +172,16 @@ func TestWaveletTree_Select(t *testing.T) {
 func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 	enhancedQuickBrownFox := "the quick brown fox jumps over the lazy dog with an overt frown after fumbling its parallelogram shaped bananagram all around downtown"
 	enhancedQuickBrownFoxRepeated := strings.Join([]string{enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox}, " ")
+	enhancedQuickBrownFoxSuperLarge := ""
+	for i := 0; i < 100; i++ {
+		enhancedQuickBrownFoxSuperLarge += enhancedQuickBrownFoxRepeated
+	}
 
 	testCases := []string{
 		"the quick brown fox jumped over the lazy dog",
 		enhancedQuickBrownFox,
 		enhancedQuickBrownFoxRepeated,
+		enhancedQuickBrownFoxSuperLarge,
 	}
 
 	for _, str := range testCases {
