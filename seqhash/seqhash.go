@@ -3,6 +3,9 @@ Package seqhash contains the seqhash algorithm.
 
 This package contains the reference seqhash algorithm.
 
+If you are new to using seqhash, use V2. V1 should only be used in situations
+where full 256 rather than 120 bit hashing is needed.
+
 There is a big problem with current sequence databases - they all use different
 identifiers and accession numbers. This means cross-referencing databases is
 a complicated exercise, especially as the quantity of databases increases, or if
