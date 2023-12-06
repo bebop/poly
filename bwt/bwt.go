@@ -39,6 +39,30 @@ func (bwt BWT) Locate(pattern string) []int {
 	return offsets
 }
 
+// TODO: do we want to ignore the $?
+func (bwt BWT) Extract(start, end int) string {
+	if end > bwt.getLenOfOriginalString() {
+		panic("figure out what we want to do here")
+	}
+
+	strB := strings.Builder{}
+	for i := start; i < end; i++ {
+		fPos := bwt.reverseCharacterLookup(i)
+		skip := bwt.lookupSkipByOffset(fPos)
+		strB.WriteByte(skip.char)
+	}
+	return strB.String()
+}
+
+func (bwt BWT) reverseCharacterLookup(originalPos int) int {
+	for i := range bwt.suffixArray {
+		if bwt.suffixArray[i] == originalPos {
+			return i
+		}
+	}
+	panic("figure out what to do here")
+}
+
 func (bwt BWT) lfSearch(pattern string) interval {
 	searchRange := interval{start: 0, end: bwt.getLenOfOriginalString()}
 	for i := 0; i < len(pattern); i++ {
@@ -47,7 +71,7 @@ func (bwt BWT) lfSearch(pattern string) interval {
 		}
 
 		c := pattern[len(pattern)-1-i]
-		skip, ok := bwt.lookupSkip(c)
+		skip, ok := bwt.lookupSkipByChar(c)
 		if !ok {
 			return interval{}
 		}
@@ -57,13 +81,22 @@ func (bwt BWT) lfSearch(pattern string) interval {
 	return searchRange
 }
 
-func (bwt BWT) lookupSkip(c byte) (entry skipEntry, ok bool) {
+func (bwt BWT) lookupSkipByChar(c byte) (entry skipEntry, ok bool) {
 	for i := range bwt.skipList {
 		if bwt.skipList[i].char == c {
 			return bwt.skipList[i], true
 		}
 	}
 	return skipEntry{}, false
+}
+
+func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
+	for i := range bwt.skipList {
+		if bwt.skipList[i].openEndedInterval.start <= offset && offset < bwt.skipList[i].openEndedInterval.end {
+			return bwt.skipList[i]
+		}
+	}
+	panic("figure out what to do here")
 }
 
 func (bwt BWT) getLenOfOriginalString() int {

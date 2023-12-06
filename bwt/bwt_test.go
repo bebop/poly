@@ -77,36 +77,80 @@ func TestBWT_Locate(t *testing.T) {
 	}
 }
 
-func BenchmarkBWTBuildPower12(b *testing.B) {
-	base := "!BANANA!"
-	BaseBenchmarkBWTBuild(base, 12, b)
+type BWTExtractTestCase struct {
+	start    int
+	end      int
+	expected string
 }
 
-//go:noinline
-func BaseBenchmarkBWTBuild(base string, power int, b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		buildBWTForBench(base, power)
+func TestBWT_Extract(t *testing.T) {
+	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
+	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
+
+	bwt := New(testStr)
+
+	testTable := []BWTExtractTestCase{
+		{4, 8, "uick"},
+		{117, 121, "uick"},
+		{230, 234, "uick"},
+		{0, 3, "the"},
+		{25, 28, "the"},
+		{113, 116, "the"},
+		{138, 141, "the"},
+		{226, 229, "the"},
+		{251, 254, "the"},
+		{21, 25, "over"},
+		{41, 45, "over"},
+		{134, 138, "over"},
+		{154, 158, "over"},
+		{247, 251, "over"},
+		{267, 271, "over"},
+		{10, 13, "own"},
+		{48, 51, "own"},
+		{106, 109, "own"},
+		{123, 126, "own"},
+		{161, 164, "own"},
+		{219, 222, "own"},
+		{223, 226, "own"},
+		{236, 239, "own"},
+		{274, 277, "own"},
+		{332, 335, "own"},
+		{336, 339, "own"},
+		{87, 90, "ana"},
+		{89, 92, "ana"},
+		{200, 203, "ana"},
+		{202, 205, "ana"},
+		{313, 316, "ana"},
+		{315, 318, "ana"},
+		{39, 41, "an"},
+		{87, 89, "an"},
+		{152, 154, "an"},
+		{200, 202, "an"},
+		{202, 204, "an"},
+		{265, 267, "an"},
+		{313, 315, "an"},
+		{50, 52, "na"},
+		{88, 90, "na"},
+		{163, 165, "na"},
+		{201, 203, "na"},
+		{203, 205, "na"},
+		{276, 278, "na"},
+		{314, 316, "na"},
+		{316, 318, "na"},
+		{9, 13, "rown"},
+		{47, 51, "rown"},
+		{122, 126, "rown"},
+		{160, 164, "rown"},
+		{235, 239, "rown"},
+		{273, 277, "rown"},
+		{109, 116, "townthe"},
+		{222, 229, "townthe"},
 	}
-}
 
-func buildBWTForBench(base string, power int) BWT {
-	test := base
-	for i := 0; i < power; i++ {
-		test += test
-	}
-
-	return New(test)
-}
-
-func BenchmarkBWTQueryPower12(b *testing.B) {
-	base := "!BANANA!"
-	bwt := buildBWTForBench(base, 12)
-	BaseBenchmarkBWTQuery(bwt, "ANANABANANA", b)
-}
-
-//go:noinline
-func BaseBenchmarkBWTQuery(bwt BWT, seq string, b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		bwt.Count(seq)
+	for _, v := range testTable {
+		str := bwt.Extract(v.start, v.end)
+		if str != v.expected {
+			t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", v.start, v.end, v.expected, str)
+		}
 	}
 }
