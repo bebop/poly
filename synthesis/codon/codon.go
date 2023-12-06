@@ -156,7 +156,10 @@ func (table *TranslationTable) Optimize(aminoAcids string, randomState ...int) (
 	}
 
 	var codons strings.Builder
-	codonChooser := table.Choosers
+	codonChooser, err := newAminoAcidChoosers(table.AminoAcids)
+	if err != nil {
+		return "", err
+	}
 
 	for _, aminoAcid := range aminoAcids {
 		chooser, ok := codonChooser[string(aminoAcid)]
