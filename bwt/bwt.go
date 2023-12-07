@@ -7,7 +7,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const nullChar = "$"
+const nullChar = "0"
 
 // BWT Burrow Wheeler Transform
 // Compresses and Indexes a given sequence so that it can be
@@ -179,6 +179,9 @@ func New(sequence string) (BWT, error) {
 		prefixArray[i] = sequence[len(sequence)-i-1:]
 	}
 
+	// TODO: at the time of writing, the nullChar is 0, this is to ensure correctness in most cases.
+	// Do we want to roll our own sorting so we can make sure whatever is defined as the nullChar
+	// will absolutely be defined as the least?
 	slices.Sort(prefixArray)
 
 	suffixArray := make([]int, len(sequence))
