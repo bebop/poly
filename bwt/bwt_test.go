@@ -16,7 +16,10 @@ func TestBWT_Count(t *testing.T) {
 	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown"
 	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
 
-	bwt := New(testStr)
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testTable := []BWTCountTestCase{
 		{"uick", 3},
@@ -48,7 +51,10 @@ func TestBWT_Locate(t *testing.T) {
 	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
 	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
 
-	bwt := New(testStr)
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testTable := []BWTLocateTestCase{
 		{"uick", []int{4, 117, 230}},
@@ -87,7 +93,10 @@ func TestBWT_Extract(t *testing.T) {
 	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
 	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
 
-	bwt := New(testStr)
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testTable := []BWTExtractTestCase{
 		{4, 8, "uick"},
