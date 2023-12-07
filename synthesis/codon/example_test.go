@@ -57,13 +57,13 @@ func ExampleTranslationTable_UpdateWeights() {
 		fmt.Println("Could not update weights in example")
 	}
 
-	optimizedSequence, _ := table.OptimizeSequence(gfpTranslation, 1)
+	optimizedSequence, _ := table.Optimize(gfpTranslation, 1)
 
 	fmt.Println(optimizedSequence == sequenceWithCustomWeights)
 	// output: true
 }
 
-func ExampleTranslationTable_OptimizeSequence() {
+func ExampleTranslationTable_Optimize() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
@@ -84,7 +84,7 @@ func ExampleTranslationTable_OptimizeSequence() {
 		fmt.Println("Stop codons don't equal number of genes!")
 	}
 
-	optimizedSequence, _ := codonTable.OptimizeSequence(gfpTranslation)
+	optimizedSequence, _ := codonTable.Optimize(gfpTranslation)
 	optimizedSequenceTranslation, _ := codonTable.Translate(optimizedSequence)
 
 	fmt.Println(optimizedSequenceTranslation == gfpTranslation)

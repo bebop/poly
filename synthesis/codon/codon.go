@@ -46,7 +46,7 @@ File is structured as so:
   Key functions:
     TranslationTable.Translate - given a nucleic sequence string and codon table it translates sequences to UPPERCASE amino acid sequences.
 
-    TranslationTable.OptimizeSequence - will return a set of codons which can be used to encode the given amino acid sequence. The codons picked are weighted according to the computed translation table's weights
+    TranslationTable.Optimize - will return a set of codons which can be used to encode the given amino acid sequence. The codons picked are weighted according to the computed translation table's weights
 
     TranslationTable.UpdateWeightsWithSequence - will look at the coding regions in the given genbank data, and use those to generate new weights for the codons in the translation table. The next time a sequence is optimised, it will use those updated weights.
 
@@ -84,7 +84,7 @@ type AminoAcid struct {
 // Table is an interface encompassing what a potentially codon optimized Translation table can do
 type Table interface {
 	GetWeightedAminoAcids() []AminoAcid
-	OptimizeSequence(aminoAcids string, randomState ...int) (string, error)
+	Optimize(aminoAcids string, randomState ...int) (string, error)
 	Translate(dnaSeq string) (string, error)
 }
 
@@ -137,9 +137,9 @@ func (table *TranslationTable) GetWeightedAminoAcids() []AminoAcid {
 	return table.AminoAcids
 }
 
-// OptimizeSequence will return a set of codons which can be used to encode the given amino acid sequence. The codons
+// Optimize will return a set of codons which can be used to encode the given amino acid sequence. The codons
 // picked are weighted according to the computed translation table's weights
-func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState ...int) (string, error) {
+func (table *TranslationTable) Optimize(aminoAcids string, randomState ...int) (string, error) {
 	// Finding any given aminoAcid is dependent upon it being capitalized, so
 	// we do that here.
 	aminoAcids = strings.ToUpper(aminoAcids)

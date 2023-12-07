@@ -96,6 +96,49 @@ func TestCutWithEnzyme(t *testing.T) {
 	}
 }
 
+func TestCutWithEnzymeRegression(t *testing.T) {
+	sequence := "AGCTGCTGTTTAAAGCTATTACTTTGAGACC" // this is a real sequence I came across that was causing problems
+
+	part := Part{sequence, false}
+
+	// get enzymes with enzyme manager
+	enzymeManager := NewEnzymeManager(GetBaseRestrictionEnzymes())
+	bsa1, err := enzymeManager.GetEnzymeByName("BsaI")
+	if err != nil {
+		t.Errorf("Error when getting Enzyme. Got error: %s", err)
+	}
+
+	// cut with BsaI
+	fragments := CutWithEnzyme(part, false, bsa1)
+
+	// check that the fragments are correct
+	if len(fragments) != 2 {
+		t.Errorf("Expected 2 fragments, got: %d", len(fragments))
+	}
+
+	if fragments[0].ForwardOverhang != "" {
+		t.Errorf("Expected forward overhang to be empty, got: %s", fragments[1].ForwardOverhang)
+	}
+
+	if fragments[0].ReverseOverhang != "ACTT" {
+		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[1].ReverseOverhang)
+	}
+
+	if fragments[1].ForwardOverhang != "ACTT" {
+		t.Errorf("Expected forward overhang to be ACTT, got: %s", fragments[0].ForwardOverhang)
+	}
+
+	if fragments[1].ReverseOverhang != "" {
+		t.Errorf("Expected reverse overhang to be GAGT, got: %s", fragments[0].ReverseOverhang)
+	}
+
+	// assemble the fragments back together
+	assembly := fragments[0].Sequence + fragments[0].ReverseOverhang + fragments[1].Sequence
+	if assembly != sequence {
+		t.Errorf("Expected assembly to be %s, got: %s", sequence, assembly)
+	}
+}
+
 func TestCircularLigate(t *testing.T) {
 	// The following tests for complementing overhangs. Specific, this line:
 	// newSeed := Fragment{seedFragment.Sequence + seedFragment.ReverseOverhang + ReverseComplement(newFragment.Sequence), seedFragment.ForwardOverhang, ReverseComplement(newFragment.ForwardOverhang)}

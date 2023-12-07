@@ -78,7 +78,7 @@ func TestOptimize(t *testing.T) {
 
 	codonTable := NewTranslationTable(11)
 
-	optimizedSequence, _ := table.OptimizeSequence(gfpTranslation)
+	optimizedSequence, _ := table.Optimize(gfpTranslation)
 	optimizedSequenceTranslation, _ := codonTable.Translate(optimizedSequence)
 
 	if optimizedSequenceTranslation != gfpTranslation {
@@ -100,8 +100,8 @@ func TestOptimizeSameSeed(t *testing.T) {
 
 	randomSeed := 10
 
-	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, randomSeed)
-	otherOptimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, randomSeed)
+	optimizedSequence, _ := optimizationTable.Optimize(gfpTranslation, randomSeed)
+	otherOptimizedSequence, _ := optimizationTable.Optimize(gfpTranslation, randomSeed)
 
 	if optimizedSequence != otherOptimizedSequence {
 		t.Error("Optimized sequence with the same random seed are not the same")
@@ -117,8 +117,8 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 		t.Error(err)
 	}
 
-	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation)
-	otherOptimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation)
+	optimizedSequence, _ := optimizationTable.Optimize(gfpTranslation)
+	otherOptimizedSequence, _ := optimizationTable.Optimize(gfpTranslation)
 
 	if optimizedSequence == otherOptimizedSequence {
 		t.Error("Optimized sequence with different random seed have the same result")
@@ -127,7 +127,7 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 
 func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 	nonEmptyCodonTable := NewTranslationTable(1)
-	_, err := nonEmptyCodonTable.OptimizeSequence("")
+	_, err := nonEmptyCodonTable.Optimize("")
 
 	if err != errEmptyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
@@ -137,7 +137,7 @@ func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	aminoAcids := "TOP"
 	table := NewTranslationTable(1) // does not contain 'O'
 
-	_, optimizeErr := table.OptimizeSequence(aminoAcids)
+	_, optimizeErr := table.Optimize(aminoAcids)
 	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
@@ -298,7 +298,7 @@ func TestCapitalizationRegression(t *testing.T) {
 		t.Error(err)
 	}
 
-	optimizedSequence, _ := optimizationTable.OptimizeSequence(gfpTranslation, 1)
+	optimizedSequence, _ := optimizationTable.Optimize(gfpTranslation, 1)
 	optimizedSequenceTranslation, _ := optimizationTable.Translate(optimizedSequence)
 
 	if optimizedSequenceTranslation != strings.ToUpper(gfpTranslation) {
@@ -375,7 +375,7 @@ func TestOptimizeSequence(t *testing.T) {
 				t.Errorf("got %v, want %v", err, tt.wantUpdateWeightsErr)
 			}
 
-			got, err := optimizationTable.OptimizeSequence(tt.sequenceToOptimise, 1)
+			got, err := optimizationTable.Optimize(tt.sequenceToOptimise, 1)
 			if !errors.Is(err, tt.wantOptimiseErr) {
 				t.Errorf("got %v, want %v", err, tt.wantOptimiseErr)
 			}

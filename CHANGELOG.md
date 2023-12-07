@@ -14,11 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added option to fragmenter to fragment with only certain overhangs (#387)
 - Added seqhash v2 (#398)
 
-
 ### Fixed
 - `fastq` parser no longer becomes de-aligned when reading (#325)
 - `fastq` now handles optionals correctly (#323)
 -  No more data race in GoldenGate (#276)
+-  Fixed bug that produced wrong overhang in linear, non-directional, single cut reactions (#408)
 
 ### Breaking
 - CutWithEnzymeByName is now a receiver of EnzymeManager. GoldenGate now takes an Enzyme instead of the name of an enzyme.
