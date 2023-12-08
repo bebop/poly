@@ -1,11 +1,25 @@
 package bwt
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"testing"
 
 	"golang.org/x/exp/slices"
 )
+
+func ExampleBWT_Count() {
+	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
+
+	bwt, err := New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(bwt.Count("CG"))
+	// Output: 10
+}
 
 type BWTCountTestCase struct {
 	seq      string
@@ -42,12 +56,36 @@ func TestBWT_Count(t *testing.T) {
 	}
 }
 
+func ExampleBWT_Locate() {
+	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
+
+	bwt, err := New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	offsets := bwt.Locate("CG")
+	slices.Sort(offsets)
+	fmt.Println(offsets)
+	// Output: [7 10 20 23 25 30 33 38 45 50]
+}
+
 type BWTLocateTestCase struct {
 	seq      string
 	expected []int
 }
 
 func TestBWT_Locate(t *testing.T) {
+
+	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
+
+	bwt2, err := New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	offsets := bwt2.Locate("CG")
+	slices.Sort(offsets)
 	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
 	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
 
@@ -81,6 +119,18 @@ func TestBWT_Locate(t *testing.T) {
 			}
 		}
 	}
+}
+
+func ExampleBWT_Extract() {
+	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
+
+	bwt, err := New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(bwt.Extract(48, 54))
+	// Output: AACGTG
 }
 
 type BWTExtractTestCase struct {

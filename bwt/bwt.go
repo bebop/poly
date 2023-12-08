@@ -39,14 +39,6 @@ func (bwt BWT) Count(pattern string) int {
 // Locate returns a list of offsets at which the begging
 // of the provided pattern occurrs in the original
 // sequence.
-// TODO: these are the offsets of the BWT where we added
-// the nullChar. So these offsets don't acutally pertain
-// to the original string, but the indexed BWT string. Do
-// we just want to call that out in documentation? If the user
-// wants to extract that pattern later on as if it were from
-// the origianl unmodified sequence, then the offsets would be
-// off by one. With that beign said, maybe they should be using
-// Extract to do that?
 func (bwt BWT) Locate(pattern string) []int {
 	searchRange := bwt.lfSearch(pattern)
 	if searchRange.start >= searchRange.end {
