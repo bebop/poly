@@ -59,7 +59,7 @@ import (
 //	 /    \    /   \
 //	a      n  b     s
 //
-// If we transalte each bit vector to its corresponding string, then it becomes:
+// If we translate each bit vector to its corresponding string, then it becomes:
 //
 //	     bananas
 //	    /       \
