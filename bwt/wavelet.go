@@ -95,7 +95,12 @@ import (
 //
 // If you've reached this point, then you must really be trying to understand how the
 // waveletTree works. I recommend thinking through how access could work with the example
-// above. HINT: it involved rank.
+// above. HINT: it involves rank.
+//
+// NOTE: The waveletTree literlally have to be a tree. There are other forms that it may
+// exist in like the concatenation of order level representation of all its node's bitvectors...
+// as one example. Please reference the implementation if you'd like to understand how this
+// specific waveletTree works
 type waveletTree struct {
 	root  *node
 	alpha []charInfo
