@@ -9,6 +9,93 @@ import (
 
 // waveletTree datastructure that allows us to
 // conduct RSA queries on strings.
+//
+// For the waveletTree's usage, please read the its
+// method documentation. To understand what it is and how
+// it works, then read below.
+//
+// # The WaveletTree has several imporant components
+//
+// ## The Character's Path Encoding
+//
+// one important component is a character's path encoding.
+// which character we are woring with in a given path in the tree.
+// For example, given the alphabet A B C D E F G, a possible encoding is:
+// A: 000
+// B: 001
+// C: 010
+// D: 011
+// E: 100
+// F: 101
+// G: 110
+// H: 111
+//
+// If we wanted to get to the leaf that represent the character D, we'd
+// take the path:
+//
+//	   root
+//	  /
+//	left
+//	  \
+//	 right
+//	    \
+//	   right
+//
+// ## The Data Represented at each node
+//
+// Let us consider the sequence "bananas"
+// It has the alphabet b, a, n, s
+// Let's say it has the encoding:
+// a: 00
+// n: 01
+// b: 10
+// s: 11
+// and that 0 if left and 1 is right
+// We can represent this tree with bitvectors:
+//
+//	     0010101
+//	    /       \
+//	  1000      001
+//	 /    \    /   \
+//	a      n  b     s
+//
+// If we transalte each bit vector to its corresponding string, then it becomes:
+//
+//	     bananas
+//	    /       \
+//	  baaa      nns
+//	 /    \    /   \
+//	a      b  n     s
+//
+// ## RSA Intuition
+//
+// From here you may be able to build some intuition as to how we can take RSA queries given
+// a characters path encoding and which character we'd like to Rank, Select, and Access.
+//
+// ### Rank Example
+//
+// To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
+// 1. root.Rank(0, 4) of 0010101 is 2
+// 2. Visit Left Child
+// 3. child.Rank(0, 2) of 1000 is 1
+// 4. Visit Left Child
+// 5. return 1
+//
+// ### Select Example
+//
+// To get WaveletTree.Select(n, 1) of banans where n's encoding is 01
+// 1. Go down to n's leaf using the path encoding is 01
+// 2. Go back to n's leaf's parent
+// 3. child.Select(0, 1) of 001 is 1
+// 4. Go to the next parent
+// 5. child.Select(1, 1) of 0010101 is 4
+// 6. return 4 since we are at the root.
+//
+// ### Access Example
+//
+// If you've reached this point, then you must really be trying to understand how the
+// waveletTree works. I recommend thinking through how access could work with the example
+// above. HINT: it involved rank.
 type waveletTree struct {
 	root  *node
 	alpha []charInfo
@@ -231,28 +318,6 @@ func getCharInfoDescByRank(b []byte) []charInfo {
 	return sortedInfo
 }
 
-// encodeCharPathIntoBitVector important metadata to understand
-// which character we are woring with in a given path in the tree.
-// For example, given the alphabet A B C D E F G, a possible encoding is:
-// A: 000
-// B: 001
-// C: 010
-// D: 011
-// E: 100
-// F: 101
-// G: 110
-// H: 111
-//
-// If we wanted to get to the leaf that represent the character D, we'd
-// take the path:
-//
-//	   root
-//	  /
-//	left
-//	  \
-//	 right
-//	    \
-//	   right
 func encodeCharPathIntoBitVector(bv bitvector, n uint64) {
 	shift := 0
 	for n>>shift > 0 {
