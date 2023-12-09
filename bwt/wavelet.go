@@ -7,19 +7,16 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// waveletTree datastructure that allows us to
-// conduct RSA queries on strings.
-//
 // For the waveletTree's usage, please read the its
 // method documentation. To understand what it is and how
-// it works, then read below.
+// it works for either curiosity or maintence, then read below.
 //
 // # The WaveletTree has several imporant components
 //
 // ## The Character's Path Encoding
 //
 // one important component is a character's path encoding.
-// which character we are woring with in a given path in the tree.
+// which character we are working with in a given path in the tree.
 // For example, given the alphabet A B C D E F G, a possible encoding is:
 // A: 000
 // B: 001
@@ -69,6 +66,8 @@ import (
 //
 // ## RSA Intuition
 //
+// RSA stands for (R)ank, (S)elect, (A)ccess.
+//
 // From here you may be able to build some intuition as to how we can take RSA queries given
 // a characters path encoding and which character we'd like to Rank, Select, and Access.
 //
@@ -86,21 +85,30 @@ import (
 // To get WaveletTree.Select(n, 1) of banans where n's encoding is 01
 // 1. Go down to n's leaf using the path encoding is 01
 // 2. Go back to n's leaf's parent
-// 3. child.Select(0, 1) of 001 is 1
+// 3. parent.Select(0, 1) of 001 is 1
 // 4. Go to the next parent
-// 5. child.Select(1, 1) of 0010101 is 4
+// 5. parent.Select(1, 1) of 0010101 is 4
 // 6. return 4 since we are at the root.
 //
 // ### Access Example
 //
 // If you've reached this point, then you must really be trying to understand how the
 // waveletTree works. I recommend thinking through how access could work with the example
-// above. HINT: it involves rank.
+// above. HINT: rank might help.
 //
-// NOTE: The waveletTree literlally have to be a tree. There are other forms that it may
+// NOTE: The waveletTree does not literally have to be a tree. There are other forms that it may
 // exist in like the concatenation of order level representation of all its node's bitvectors...
 // as one example. Please reference the implementation if you'd like to understand how this
-// specific waveletTree works
+// specific waveletTree works.
+
+// waveletTree is datastructure that allows us to index a sequence
+// in a memory efficient way that allows us to conduct RSA, (R)ank (S)elect (A)ccess
+// queries on strings. This is very useful in situations where you'd like to understand
+// certain aspects of a sequence like:
+// * the number of times a character appears
+// * counting how the frequency of a character up to certain offset
+// * locating characters of certain rank within the sequence
+// * accessing the character at a given position
 type waveletTree struct {
 	root  *node
 	alpha []charInfo
@@ -143,7 +151,7 @@ func (wt waveletTree) Rank(char byte, i int) int {
 	return rank
 }
 
-// Select allows us to get the corresponding posisiton of a character
+// Select allows us to get the corresponding position of a character
 // in the original string given its rank.
 func (wt waveletTree) Select(char byte, rank int) int {
 	curr := wt.root

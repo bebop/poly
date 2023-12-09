@@ -213,3 +213,35 @@ func TestBWT_Extract(t *testing.T) {
 		}
 	}
 }
+
+func TestBWT_Extract_DoNotAllowExtractionOfLastNullChar(t *testing.T) {
+	defer func() { _ = recover() }()
+	testStr := "banana"
+
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	str := bwt.Extract(0, 6)
+	if str != testStr {
+		t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", 0, 6, testStr, str)
+	}
+
+	str = bwt.Extract(0, 7)
+
+	t.Fatalf("extractRange=(%d, %d) expected panic so we do not allow access to the null character", 0, 7)
+}
+
+func TestBWT_Len(t *testing.T) {
+	testStr := "banana"
+
+	bwt, err := New(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bwt.Len() != len(testStr) {
+		t.Fatalf("expected Len to be %d but got %d", len(testStr), bwt.Len())
+	}
+}

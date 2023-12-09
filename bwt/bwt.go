@@ -60,8 +60,8 @@ func (bwt BWT) Locate(pattern string) []int {
 // end is the end of the range of text to extract exclusive.
 // If either start or end are out of bounds, Extract will panic.
 func (bwt BWT) Extract(start, end int) string {
-	if end > bwt.getLenOfOriginalString() {
-		msg := fmt.Sprintf("end [%d] exceeds the max range of the BWT [%d]", end, bwt.getLenOfOriginalString())
+	if end > bwt.getLenOfOriginalStringWithNullChar()-1 {
+		msg := fmt.Sprintf("end [%d] exceeds the max range of the BWT [%d]", end, bwt.getLenOfOriginalStringWithNullChar()-1)
 		panic(msg)
 	}
 	if start < 0 {
@@ -78,6 +78,11 @@ func (bwt BWT) Extract(start, end int) string {
 	return strB.String()
 }
 
+// Len return the length of the sequence used to build the BWT
+func (bwt BWT) Len() int {
+	return bwt.getLenOfOriginalStringWithNullChar() - 1
+}
+
 // getFCharPosFromOriginalSequenceCharPos looks up mapping from the original position
 // of the sequence to its corresponding posisiton in the First Column of the BWT
 func (bwt BWT) getFCharPosFromOriginalSequenceCharPos(originalPos int) int {
@@ -86,14 +91,14 @@ func (bwt BWT) getFCharPosFromOriginalSequenceCharPos(originalPos int) int {
 			return i
 		}
 	}
-	panic("Unable to find the corresponding orginal positiong for a character in the original sequence in the suffix array. This should not be possible and indicates a malformed BWT.")
+	panic("Unable to find the corresponding original position for a character in the original sequence in the suffix array. This should not be possible and indicates a malformed BWT.")
 }
 
 // lfSearch LF Search- Last First Search.
 // Finds the valid range within the BWT index where the provided pattern is possible.
 // If the final range is <= 0, then the pattern does not exist in the original sequence.
 func (bwt BWT) lfSearch(pattern string) interval {
-	searchRange := interval{start: 0, end: bwt.getLenOfOriginalString()}
+	searchRange := interval{start: 0, end: bwt.getLenOfOriginalStringWithNullChar()}
 	for i := 0; i < len(pattern); i++ {
 		if searchRange.end-searchRange.start <= 0 {
 			return interval{}
@@ -123,8 +128,8 @@ func (bwt BWT) lookupSkipByChar(c byte) (entry skipEntry, ok bool) {
 // lookupSkipByOffset looks up a skipEntry based off of an
 // offset of the Fist Coulmn of the BWT.
 func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
-	if offset > bwt.getLenOfOriginalString()-1 {
-		msg := fmt.Sprintf("offset [%d] exceeds the max bound of the BWT [%d]", offset, bwt.getLenOfOriginalString()-1)
+	if offset > bwt.getLenOfOriginalStringWithNullChar()-1 {
+		msg := fmt.Sprintf("offset [%d] exceeds the max bound of the BWT [%d]", offset, bwt.getLenOfOriginalStringWithNullChar()-1)
 		panic(msg)
 	}
 	if offset < 0 {
@@ -140,7 +145,7 @@ func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
 	panic("figure out what to do here")
 }
 
-func (bwt BWT) getLenOfOriginalString() int {
+func (bwt BWT) getLenOfOriginalStringWithNullChar() int {
 	return bwt.firstColumnSkipList[len(bwt.firstColumnSkipList)-1].openEndedInterval.end
 }
 
