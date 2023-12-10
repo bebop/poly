@@ -233,29 +233,28 @@ func (table *TranslationTable) Translate(dnaSeq string) (string, error) {
 	translationTable := table.TranslationMap
 	startCodonTable := table.StartCodonTable
 
-	startCodonReached := false
 	for _, letter := range dnaSeq {
 		// add current nucleotide to currentCodon
 		currentCodon.WriteRune(letter)
 
-		// if current nucleotide is the third in a codon translate to aminoAcid write to aminoAcids and reset currentCodon.
-		// use start codon table for the first codon only, erroring out if an invalid start codon is provided
+		// if current nucleotide is the third in a codon, translate to amino acid, write to aminoAcids, and reset currentCodon
 		if currentCodon.Len() == 3 {
-			if startCodonReached {
-				aminoAcids.WriteString(translationTable[strings.ToUpper(currentCodon.String())])
-			} else {
-				aminoAcid, ok := startCodonTable[strings.ToUpper(currentCodon.String())]
-				if !ok {
-					return "", fmt.Errorf("start codon %q is not in start codon table %v", currentCodon.String(), startCodonTable)
-				}
+			codon := strings.ToUpper(currentCodon.String())
+
+			// check if the currentCodon exists in the startCodonTable
+			if aminoAcid, ok := startCodonTable[codon]; ok {
 				aminoAcids.WriteString(aminoAcid)
-				startCodonReached = true
+			} else if aminoAcid, ok := translationTable[codon]; ok {
+				aminoAcids.WriteString(aminoAcid)
+			} else {
+				return "", fmt.Errorf("codon %q not found in translation table", codon)
 			}
 
-			// reset codon string builder for next codon.
+			// reset codon string builder for the next codon
 			currentCodon.Reset()
 		}
 	}
+
 	return aminoAcids.String(), nil
 }
 
