@@ -47,9 +47,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/seqhash"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/checks"
+	"github.com/bebop/poly/seqhash"
+	"github.com/bebop/poly/transform"
 )
 
 // Part is a simple struct that can carry a circular or linear DNA sequence.

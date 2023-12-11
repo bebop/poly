@@ -1,10 +1,10 @@
 package io_test
 
 import (
-	"github.com/TimothyStiles/poly/io/fasta"
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/io/polyjson"
+	"github.com/bebop/poly/io/fasta"
+	"github.com/bebop/poly/io/genbank"
+	"github.com/bebop/poly/io/gff"
+	"github.com/bebop/poly/io/polyjson"
 )
 
 // This is where the integration tests that make effed up cyclic dependencies go.

@@ -33,7 +33,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/transform"
 )
 
 // Zuker folds the DNA sequence and return the lowest free energy score.

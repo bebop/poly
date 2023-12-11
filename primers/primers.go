@@ -24,8 +24,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/checks"
+	"github.com/bebop/poly/transform"
 )
 
 // For reference: https://www.sigmaaldrich.com/technical-documents/articles/biology/oligos-melting-temp.html

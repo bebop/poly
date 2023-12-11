@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/bebop/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"

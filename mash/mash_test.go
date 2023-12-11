@@ -3,7 +3,7 @@ package mash_test
 import (
 	"testing"
 
-	"github.com/TimothyStiles/poly/mash"
+	"github.com/bebop/poly/mash"
 )
 
 func TestMash(t *testing.T) {

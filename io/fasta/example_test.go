@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TimothyStiles/poly/io/fasta"
+	"github.com/bebop/poly/io/fasta"
 )
 
 //go:embed data/base.fasta

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimothyStiles/poly/primers"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/primers"
+	"github.com/bebop/poly/transform"
 )
 
 func ExampleMarmurDoty() {

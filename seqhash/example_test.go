@@ -3,8 +3,8 @@ package seqhash_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/bebop/poly/io/genbank"
+	"github.com/bebop/poly/seqhash"
 )
 
 // This example shows how to seqhash a sequence.
