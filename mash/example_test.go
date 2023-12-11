@@ -3,7 +3,7 @@ package mash_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/mash"
+	"github.com/bebop/poly/mash"
 )
 
 func ExampleMash() {

@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/checks"
+	"github.com/bebop/poly/transform"
 )
 
 // SetEfficiency gets the estimated fidelity rate of a given set of

@@ -12,7 +12,7 @@ import (
 
 	"reflect"
 
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/transform"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"

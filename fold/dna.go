@@ -1,6 +1,6 @@
 package fold
 
-import "github.com/TimothyStiles/poly/transform"
+import "github.com/bebop/poly/transform"
 
 var dnaComplement = transform.ComplementBase
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TimothyStiles/poly/io/genbank"
-	"github.com/TimothyStiles/poly/synthesis/codon"
+	"github.com/bebop/poly/io/genbank"
+	"github.com/bebop/poly/synthesis/codon"
 )
 
 func ExampleTranslationTable_Translate() {

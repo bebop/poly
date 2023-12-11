@@ -3,7 +3,7 @@ package fragment_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/synthesis/fragment"
+	"github.com/bebop/poly/synthesis/fragment"
 )
 
 // This example shows how to use the fragmenter to fragment a gene in

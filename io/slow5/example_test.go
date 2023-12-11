@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TimothyStiles/poly/io/slow5"
+	"github.com/bebop/poly/io/slow5"
 )
 
 func ExampleNewParser() {

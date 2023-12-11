@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/gff"
-	"github.com/TimothyStiles/poly/transform"
+	"github.com/bebop/poly/io/gff"
+	"github.com/bebop/poly/transform"
 )
 
 // This example shows how to open a gff file and search for a gene given its

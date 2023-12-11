@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/TimothyStiles/poly/io/polyjson"
-	"github.com/TimothyStiles/poly/seqhash"
+	"github.com/bebop/poly/io/polyjson"
+	"github.com/bebop/poly/seqhash"
 )
 
 func Example() {

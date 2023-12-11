@@ -1,8 +1,8 @@
 # (Poly)merase <img align="right" src="https://cdn.discordapp.com/attachments/766785755305213953/777596834734145546/ProfileFrameArtboard_1.png" width="100">
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/TimothyStiles/poly)](https://pkg.go.dev/github.com/TimothyStiles/poly)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TimothyStiles/poly/blob/main/LICENSE) 
-![Tests](https://github.com/TimothyStiles/poly/workflows/Test/badge.svg)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/bebop/poly)](https://pkg.go.dev/github.com/bebop/poly)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/bebop/poly/blob/main/LICENSE) 
+![Tests](https://github.com/bebop/poly/workflows/Test/badge.svg)
 ![Test Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/TimothyStiles/e58f265655ac0acacdd1a38376ccd32a/raw/coverage.json)
 
 Poly is a Go package for engineering organisms.
@@ -18,14 +18,14 @@ Poly is a Go package for engineering organisms.
 
 ## Install
 
-`go get github.com/TimothyStiles/poly@latest`
+`go get github.com/bebop/poly@latest`
 
 ## Documentation
 
 
-* **[Library](https://pkg.go.dev/github.com/TimothyStiles/poly#pkg-examples)**
+* **[Library](https://pkg.go.dev/github.com/bebop/poly#pkg-examples)**
 
-* **[Tutorials](https://github.com/TimothyStiles/poly/tree/main/tutorials)**
+* **[Tutorials](https://github.com/bebop/poly/tree/main/tutorials)**
 
 * **[Learning Synbio](https://github.com/TimothyStiles/how-to-synbio)**
 

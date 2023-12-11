@@ -5,7 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/TimothyStiles/poly/checks"
+	"github.com/bebop/poly/checks"
 )
 
 const (

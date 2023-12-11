@@ -1,4 +1,4 @@
-module github.com/TimothyStiles/poly
+module github.com/bebop/poly
 
 go 1.18
 

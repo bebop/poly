@@ -3,7 +3,7 @@ package rebase_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/io/rebase"
+	"github.com/bebop/poly/io/rebase"
 )
 
 // This example reads rebase into an enzymeMap and returns the AarI recognition
