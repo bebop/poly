@@ -40,7 +40,7 @@ I've written about many times in many other places.
 
 Point is. To start you're going to need to get data in and out of your computer
 and Poly makes it easy. Follow along below and run each test through the
-included debugger via gitpod if you really want to know what's going on.
+included debugger via VScode if you really want to know what's going on.
 
 TTFN,
 Tim
