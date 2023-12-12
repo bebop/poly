@@ -397,10 +397,10 @@ func sortPrefixArray(prefixArray []string) {
 			if a[i] == b[i] {
 				continue
 			}
-			if a[i] == byte(nullChar[0]) {
+			if a[i] == nullChar[0] {
 				return true
 			}
-			if b[i] == byte(nullChar[0]) {
+			if b[i] == nullChar[0] {
 				return false
 			}
 			return a[i] < b[i]
@@ -408,5 +408,4 @@ func sortPrefixArray(prefixArray []string) {
 
 		return len(a) < len(b)
 	})
-
 }
