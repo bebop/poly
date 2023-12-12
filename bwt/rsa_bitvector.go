@@ -32,6 +32,12 @@ func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
 	}
 }
 
+// Rank returns the rank of the given value up to, but not including
+// the ith bit. We count Rank starting a 0.
+// For Example:
+// Given the bitvector 001000100001
+// Rank(true, 8) = 1
+// Rank(false, 8) = 5
 func (rsa rsaBitVector) Rank(val bool, i int) int {
 	if i > rsa.bv.len()-1 {
 		if val {
@@ -61,6 +67,11 @@ func (rsa rsaBitVector) Rank(val bool, i int) int {
 	return (chunkPos*rsa.jrBitsPerChunk - chunk.onesCumulativeRank) + (subChunkPos*rsa.jrBitsPerSubChunk - subChunk.onesCumulativeRank) + bits.OnesCount64(remaining)
 }
 
+// Select returns the the position of the given value of a specified Rank
+// For Example:
+// Given the bitvector 001000100001
+// Select(true, 1) = 6
+// Rank(false, 5) = 7
 func (rsa rsaBitVector) Select(val bool, rank int) (i int, ok bool) {
 	if val {
 		i, ok := rsa.oneSelectMap[rank]
@@ -71,6 +82,7 @@ func (rsa rsaBitVector) Select(val bool, rank int) (i int, ok bool) {
 	}
 }
 
+// Access returns the value of a bit at a given offset
 func (rsa rsaBitVector) Access(i int) bool {
 	return rsa.bv.getBit(i)
 }

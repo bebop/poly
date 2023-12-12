@@ -7,101 +7,106 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// For the waveletTree's usage, please read the its
-// method documentation. To understand what it is and how
-// it works for either curiosity or maintence, then read below.
-//
-// # The WaveletTree has several imporant components
-//
-// ## The Character's Path Encoding
-//
-// one important component is a character's path encoding.
-// which character we are working with in a given path in the tree.
-// For example, given the alphabet A B C D E F G, a possible encoding is:
-// A: 000
-// B: 001
-// C: 010
-// D: 011
-// E: 100
-// F: 101
-// G: 110
-// H: 111
-//
-// If we wanted to get to the leaf that represent the character D, we'd
-// take the path:
-//
-//	   root
-//	  /
-//	left
-//	  \
-//	 right
-//	    \
-//	   right
-//
-// ## The Data Represented at each node
-//
-// Let us consider the sequence "bananas"
-// It has the alphabet b, a, n, s
-// Let's say it has the encoding:
-// a: 00
-// n: 01
-// b: 10
-// s: 11
-// and that 0 if left and 1 is right
-// We can represent this tree with bitvectors:
-//
-//	     0010101
-//	    /       \
-//	  1000      001
-//	 /    \    /   \
-//	a      n  b     s
-//
-// If we translate each bit vector to its corresponding string, then it becomes:
-//
-//	     bananas
-//	    /       \
-//	  baaa      nns
-//	 /    \    /   \
-//	a      b  n     s
-//
-// ## RSA Intuition
-//
-// RSA stands for (R)ank, (S)elect, (A)ccess.
-//
-// From here you may be able to build some intuition as to how we can take RSA queries given
-// a characters path encoding and which character we'd like to Rank, Select, and Access.
-//
-// ### Rank Example
-//
-// To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
-// 1. root.Rank(0, 4) of 0010101 is 2
-// 2. Visit Left Child
-// 3. child.Rank(0, 2) of 1000 is 1
-// 4. Visit Left Child
-// 5. return 1
-//
-// ### Select Example
-//
-// To get WaveletTree.Select(n, 1) of banans where n's encoding is 01
-// 1. Go down to n's leaf using the path encoding is 01
-// 2. Go back to n's leaf's parent
-// 3. parent.Select(0, 1) of 001 is 1
-// 4. Go to the next parent
-// 5. parent.Select(1, 1) of 0010101 is 4
-// 6. return 4 since we are at the root.
-//
-// ### Access Example
-//
-// If you've reached this point, then you must really be trying to understand how the
-// waveletTree works. I recommend thinking through how access could work with the example
-// above. HINT: rank might help.
-//
-// NOTE: The waveletTree does not literally have to be a tree. There are other forms that it may
-// exist in like the concatenation of order level representation of all its node's bitvectors...
-// as one example. Please reference the implementation if you'd like to understand how this
-// specific waveletTree works.
+/*
 
-// waveletTree is datastructure that allows us to index a sequence
+For the waveletTree's usage, please read the its
+method documentation. To understand what it is and how
+it works for either curiosity or maintenance, then read below.
+
+# WaveletTree Components
+
+## The Character's Path Encoding
+
+One important component is a character's path encoding.
+Which character we are working with in a given path in the tree.
+For example, given the alphabet A B C D E F G, a possible encoding is:
+
+A: 000
+B: 001
+C: 010
+D: 011
+E: 100
+F: 101
+G: 110
+H: 111
+
+If we wanted to get to the leaf that represent the character D, we'd
+take the path:
+
+   root
+  /
+left
+  \
+ right
+    \
+   right
+
+## The Data Represented at each node
+
+Let us consider the sequence "bananas"
+It has the alphabet b, a, n, s
+Let's say it has the encoding:
+a: 00
+n: 01
+b: 10
+s: 11
+and that 0 if left and 1 is right
+We can represent this tree with bitvectors:
+
+     0010101
+    /       \
+  1000      001
+ /    \    /   \
+a      n  b     s
+
+If we translate each bit vector to its corresponding string, then it becomes:
+
+     bananas
+    /       \
+  baaa      nns
+ /    \    /   \
+a      b  n     s
+
+## RSA Intuition
+
+RSA stands for (R)ank, (S)elect, (A)ccess.
+
+From here you may be able to build some intuition as to how we can take RSA queries given
+a characters path encoding and which character we'd like to Rank, Select, and Access.
+
+### Rank Example
+
+To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
+1. root.Rank(0, 4) of 0010101 is 2
+2. Visit Left Child
+3. child.Rank(0, 2) of 1000 is 1
+4. Visit Left Child
+5. return 1
+
+### Select Example
+
+To get WaveletTree.Select(n, 1) of bananas where n's encoding is 01
+1. Go down to n's leaf using the path encoding is 01
+2. Go back to n's leaf's parent
+3. parent.Select(0, 1) of 001 is 1
+4. Go to the next parent
+5. parent.Select(1, 1) of 0010101 is 4
+6. return 4 since we are at the root.
+
+### Access Example
+
+If you've reached this point, then you must really be trying to understand how the
+waveletTree works. I recommend thinking through how access could work with the example
+above. HINT: rank might help.
+
+NOTE: The waveletTree does not literally have to be a tree. There are other forms that it may
+exist in like the concatenation of order level representation of all its node's bitvectors...
+as one example. Please reference the implementation if you'd like to understand how this
+specific waveletTree works.
+
+*/
+
+// waveletTree is a data structure that allows us to index a sequence
 // in a memory efficient way that allows us to conduct RSA, (R)ank (S)elect (A)ccess
 // queries on strings. This is very useful in situations where you'd like to understand
 // certain aspects of a sequence like:
@@ -174,7 +179,7 @@ func (wt waveletTree) Select(char byte, rank int) int {
 		pathBit := ci.path.getBit(ci.path.len() - 1 - level)
 		rank, ok := curr.data.Select(pathBit, rank)
 		if !ok {
-			msg := fmt.Sprintf("could not find a correspodning bit for node.Select(%t, %d) for characterInfo %+v", pathBit, rank, ci)
+			msg := fmt.Sprintf("could not find a corresponding bit for node.Select(%t, %d) for characterInfo %+v", pathBit, rank, ci)
 			panic(msg)
 		}
 	}
@@ -275,7 +280,7 @@ func isInAlpha(alpha []charInfo, b byte) bool {
 	return false
 }
 
-// partitionAlpha partitions the alaphabet in half based on whether its corresponding path bit
+// partitionAlpha partitions the alphabet in half based on whether its corresponding path bit
 // is a 0 or 1. 0 with comprise the left tree while 1 will comprise the right. The alphabet
 // should be sorted in such a way that we remove the most amount of characters nearest to the
 // root of the tree to reduce the memory footprint as much as possible.
@@ -294,7 +299,7 @@ func partitionAlpha(currentLevel int, alpha []charInfo) (left []charInfo, right 
 // getCharInfoDescByRank takes in the bytes of the original
 // string and return a sorted list of character metadata descending
 // by rank. The character metadata is important for building the rest
-// of the tree along with quering it later on. The sorting is important
+// of the tree along with querying it later on. The sorting is important
 // because this allows us to build the tree in the most memory efficient
 // way since the characters with the greatest counts will be removed first
 // before build the subsequent nodes in the lower levels.
