@@ -11,13 +11,8 @@ type GetBitTestCase struct {
 
 func TestBitVector(t *testing.T) {
 	initialNumberOfBits := wordSize*10 + 1
-	expectedCapacity := 11
 
 	bv := newBitVector(initialNumberOfBits)
-
-	if bv.capacity() != expectedCapacity {
-		t.Fatalf("expected capacity to be %d but got %d", expectedCapacity, bv.capacity())
-	}
 
 	if bv.len() != initialNumberOfBits {
 		t.Fatalf("expected len to be %d but got %d", initialNumberOfBits, bv.len())
@@ -114,44 +109,4 @@ func TestBitVectorBoundPanic_SetBit_Upper(t *testing.T) {
 	initialNumberOfBits := wordSize*10 + 1
 	bv := newBitVector(initialNumberOfBits)
 	bv.setBit(initialNumberOfBits, true)
-}
-
-func TestBitVectorPush_NextPushLessThanCapacity_Single(t *testing.T) {
-	initialNumberOfBits := wordSize*10 + 1
-	bv := newBitVector(initialNumberOfBits)
-	bv.push(true)
-
-	expectedCapacity := 11
-	if bv.capacity() != expectedCapacity {
-		t.Fatalf("expected capacity to be %d but got %d", expectedCapacity, bv.capacity())
-	}
-
-	expectedLength := initialNumberOfBits + 1
-	if bv.len() != expectedLength {
-		t.Fatalf("expected len to be %d but got %d", expectedLength, bv.len())
-	}
-
-	if bv.getBit(initialNumberOfBits) != true {
-		t.Fatalf("expected %dth bit to be %t but got %t", initialNumberOfBits, true, bv.getBit(initialNumberOfBits))
-	}
-}
-
-func TestBitVectorPush_NextPushGreaterThanCapacity_Single(t *testing.T) {
-	initialNumberOfBits := wordSize * 10
-	bv := newBitVector(initialNumberOfBits)
-	initialCapacity := bv.capacity()
-	bv.push(true)
-
-	if bv.capacity() <= initialCapacity {
-		t.Fatalf("expected capacity to have grown. currently the capacity is %d and was previously %d", bv.capacity(), initialCapacity)
-	}
-
-	expectedLength := initialNumberOfBits + 1
-	if bv.len() != expectedLength {
-		t.Fatalf("expected len to be %d but got %d", expectedLength, bv.len())
-	}
-
-	if bv.getBit(initialNumberOfBits) != true {
-		t.Fatalf("expected %dth bit to be %t but got %t", initialNumberOfBits, true, bv.getBit(initialNumberOfBits))
-	}
 }

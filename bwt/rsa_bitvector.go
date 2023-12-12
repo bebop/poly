@@ -2,8 +2,8 @@ package bwt
 
 import "math/bits"
 
-// TODO: doc what rsa is, why these DSAs, and why we take in a bit vector
-// TODO: clarks select
+// rsaBitVector allows us to perform RSA: (R)ank, (S)elect, and (A)ccess
+// queries in a memory performant and memory compact way.
 type rsaBitVector struct {
 	bv                  bitvector
 	totalOnesRank       int
@@ -15,7 +15,10 @@ type rsaBitVector struct {
 	zeroSelectMap       map[int]int
 }
 
-// TODO: talk about why bv should never be modidifed after building the RSA bit vector
+// newRSABitVectorFromBitVector allows us to build the auxillary components
+// needed to perform RSA queries on top of the provided bitvector.
+// WARNING: Do not modify the underlying bitvector. The rsaBitvector will
+// get out of sync with the original bitvector.
 func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
 	jacobsonRankChunks, jrSubChunksPerChunk, jrBitsPerSubChunk, totalOnesRank := buildJacobsonRank(bv)
 	ones, zeros := buildSelectMaps(bv)
@@ -96,7 +99,26 @@ type subChunk struct {
 	onesCumulativeRank int
 }
 
-// TODO: talk about easy to read instead vs perf
+/*
+buildJacobsonRank Jacobson rank is a succinct data structure. This allows us to represent something
+normally would require O(N) worth of memory with less that N memory. Jacobson Rank allows for
+sub linear growth. Jacobson rank also allows us to lookup rank for some value of a bitvector in O(1)
+time. Theoretically, Jacobson Rank tells us to:
+1. Create log(N) "Chunks"
+2. Create 2log(N) "Sub Chunks"
+3. Have "Sub Chunks" be 0.5log(N) in length
+4. For each "Chunk", store the cumulative rank of set bits relative to the overall bitvector
+5. For each "Sub Chunk", store the cumulative rank of set bits relative to the parent "Chunk"
+6. We can One's count the N bit word if possible. We will only consider this possibility :)
+
+For simplicity and all around good results, we just have "Sub Chunks" of size 64 bits.
+
+It is O(1) because given some offset i, all we have to do is calculate rank is:
+rank = CumulativeRank(ChunkOfi(i))) + CumulativeRank(SubChunkOfi(i))) + OnesCount(SubChunkOfi(i))
+
+To understand why it is sub linear in space, you can refer to Ben Langmead and other literature that
+describes this complexity.
+*/
 func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk, totalRank int) {
 	// TODO: talk about why this is probably good enough, improves as n grows, gets worse as n gets smaller, and how this fits into a machine instruction, and how this is "simple"
 	numOfSubChunksPerChunk = 4
@@ -137,8 +159,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize, totalRank
 }
 
-// TODO: talk about how this could be improved memory wise. Talk about how clarks select exists, but keeping it "simple for now" but maybe worth
-// making succinct later
+// This is not good. We should find a better means of select- like Clark's Select
 func buildSelectMaps(inBv bitvector) (oneSelectMap, zeroSelectMap map[int]int) {
 	oneSelectMap = make(map[int]int)
 	zeroSelectMap = make(map[int]int)

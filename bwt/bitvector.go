@@ -4,33 +4,37 @@ import (
 	"math"
 )
 
-// TODO: talk about why this is and why we approximate things to make them "simple enough"
 const wordSize = 64
 
+// bitvector a sequence of 1's and 0's. You can also think
+// of this as an array of bits. This allows us to encode
+// data in a memory efficient manner.
 type bitvector struct {
-	bits             []uint64
-	capacityInChunks int
-	numberOfBits     int
+	bits         []uint64
+	numberOfBits int
 }
 
+// newBitVector will return an initialized bitvector with
+// the specified number of zeroed bits.
 func newBitVector(initialNumberOfBits int) bitvector {
 	capacity := getNumOfBitSetsNeededForNumOfBits(initialNumberOfBits)
 	bits := make([]uint64, capacity)
 	return bitvector{
-		bits:             bits,
-		capacityInChunks: capacity,
-		numberOfBits:     initialNumberOfBits,
+		bits:         bits,
+		numberOfBits: initialNumberOfBits,
 	}
 }
 
-func (b bitvector) getNumOfBitSets() int {
-	return getNumOfBitSetsNeededForNumOfBits(b.len())
+// getBitSet gets the while word as some offset from the
+// bitvector. Useful if you'd prefer to work with the
+// word rather than with individual bits.
+func (b bitvector) getBitSet(bitSetPos int) uint64 {
+	return b.bits[bitSetPos]
 }
 
-func (b bitvector) getBitSet(i int) uint64 {
-	return b.bits[i]
-}
-
+// getBit returns the value of the bit at a given offset
+// True represents 1
+// False represents 0
 func (b bitvector) getBit(i int) bool {
 	b.checkBounds(i)
 
@@ -40,6 +44,9 @@ func (b bitvector) getBit(i int) bool {
 	return (b.bits[chunkStart] & (uint64(1) << (63 - offset))) != 0
 }
 
+// setBit sets the value of the bit at a given offset
+// True represents 1
+// False represents 0
 func (b bitvector) setBit(i int, val bool) {
 	b.checkBounds(i)
 
@@ -52,6 +59,7 @@ func (b bitvector) setBit(i int, val bool) {
 		b.bits[chunkStart] &= ^(uint64(1) << (63 - offset))
 	}
 }
+
 func (b bitvector) checkBounds(i int) {
 	if i >= b.len() || i < 0 {
 		panic("better out of bounds message")
@@ -61,45 +69,8 @@ func (b bitvector) checkBounds(i int) {
 const factor1point2Threshold = 1e9
 const factor1point5Threshold = 1e6
 
-func (b *bitvector) push(val bool) {
-	previousNumberOfBits := b.numberOfBits
-	nextNumberOfBits := previousNumberOfBits + 1
-	if getNumOfBitSetsNeededForNumOfBits(nextNumberOfBits) <= b.capacityInChunks {
-		b.numberOfBits = nextNumberOfBits
-		b.setBit(previousNumberOfBits, val)
-		return
-	}
-
-	var numOfBitsForNextCapacity int
-	switch true {
-	case nextNumberOfBits >= factor1point2Threshold:
-		numOfBitsForNextCapacity = int(math.Ceil(float64(previousNumberOfBits) * 1.2))
-		break
-	case nextNumberOfBits >= factor1point5Threshold:
-		numOfBitsForNextCapacity = int(math.Ceil(float64(previousNumberOfBits) * 1.5))
-		break
-	default:
-		numOfBitsForNextCapacity = previousNumberOfBits * 2
-	}
-
-	nextCapacity := getNumOfBitSetsNeededForNumOfBits(numOfBitsForNextCapacity)
-
-	nextBits := make([]uint64, nextCapacity)
-	copy(b.bits, nextBits)
-	b.bits = nextBits
-
-	b.numberOfBits = nextNumberOfBits
-	b.capacityInChunks = nextCapacity
-
-	b.setBit(previousNumberOfBits, val)
-}
-
 func (b bitvector) len() int {
 	return b.numberOfBits
-}
-
-func (b bitvector) capacity() int {
-	return b.capacityInChunks
 }
 
 func getNumOfBitSetsNeededForNumOfBits(n int) int {
