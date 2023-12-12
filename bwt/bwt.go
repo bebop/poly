@@ -2,6 +2,7 @@ package bwt
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -168,7 +169,7 @@ reference the implementation below to see how the BWT is actually currently
 working
 */
 
-const nullChar = "0"
+const nullChar = "$"
 
 // BWT Burrow Wheeler Transform
 // Compresses and Indexes a given sequence so that it can be
@@ -337,10 +338,7 @@ func New(sequence string) (BWT, error) {
 		prefixArray[i] = sequence[len(sequence)-i-1:]
 	}
 
-	// TODO: at the time of writing, the nullChar is 0, this is to ensure correctness in most cases.
-	// Do we want to roll our own sorting so we can make sure whatever is defined as the nullChar
-	// will absolutely be defined as the least?
-	slices.Sort(prefixArray)
+	sortPrefixArray(prefixArray)
 
 	suffixArray := make([]int, len(sequence))
 	lastColBuilder := strings.Builder{}
@@ -390,4 +388,25 @@ func getBWTIndex(lenOfSequenceBeingBuilt, lenOfSuffixArrayVisited int) int {
 		bwtCharIndex = lenOfSequenceBeingBuilt - 1
 	}
 	return bwtCharIndex
+}
+
+func sortPrefixArray(prefixArray []string) {
+	slices.SortFunc(prefixArray, func(a, b string) bool {
+		minLen := int(math.Min(float64(len(a)), float64(len(b))))
+		for i := 0; i < minLen; i++ {
+			if a[i] == b[i] {
+				continue
+			}
+			if a[i] == byte(nullChar[0]) {
+				return true
+			}
+			if b[i] == byte(nullChar[0]) {
+				return false
+			}
+			return a[i] < b[i]
+		}
+
+		return len(a) < len(b)
+	})
+
 }
