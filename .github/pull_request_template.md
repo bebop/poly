@@ -1,10 +1,15 @@
 ## Changes in this PR
+<!--
 *Clearly and concisely summarize the changes you are making. Bullet points are completely okay. Please be specific, saying "improves X" is not enough!*
+-->
 
 ### Why are you making these changes?
+<!--
 *Explain why these changes are necessary. Link to GitHub issues here with the format `fixes: #XXX` to indicate this PR resolves the issue.*
+-->
 
 ### Are any changes breaking? (IMPORTANT)
+<!--
 *Will merging this PR change `poly`'s API in a non-backwards-compatible manner?*
 
 *Examples of breaking changes:*
@@ -17,6 +22,7 @@
 * *Adding a function.*
 * *Fixing a bug in a function/method.*
 * *Creating a new package.*
+-->
 
 ## Pre-merge checklist
 *All of these must be satisfied before this PR is considered
