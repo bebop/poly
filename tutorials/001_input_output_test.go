@@ -25,7 +25,7 @@ The bane of the bioinformatician's existence are the blasted file formats that
 have been foisted upon us by our predecessors. Most are hard to understand and
 even harder to parse programmatically.
 
-My least favorite is the most common format for annotated sequence. The Genbank
+My least favorite is the most common format for annotated sequences. The Genbank
 format.
 
 Made by some secret council of jerks in the deserts of New Mexico sometime in
