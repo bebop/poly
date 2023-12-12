@@ -177,11 +177,12 @@ func (wt waveletTree) Select(char byte, rank int) int {
 		curr = curr.parent
 		level--
 		pathBit := ci.path.getBit(ci.path.len() - 1 - level)
-		rank, ok := curr.data.Select(pathBit, rank)
+		nextRank, ok := curr.data.Select(pathBit, rank)
 		if !ok {
 			msg := fmt.Sprintf("could not find a corresponding bit for node.Select(%t, %d) for characterInfo %+v", pathBit, rank, ci)
 			panic(msg)
 		}
+		rank = nextRank
 	}
 
 	return rank
