@@ -51,7 +51,7 @@ func RNASequence(length int, seed int64) (string, error) {
 
 func randomNucelotideSequence(length int, seed int64, alphabet []rune) string {
 	alphabetLength := len(alphabet)
-	rand.Seed(seed)
+	rand := rand.New(rand.NewSource(seed))
 
 	randomSequence := make([]rune, length)
 	for basepair := range randomSequence {
