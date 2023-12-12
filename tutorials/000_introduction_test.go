@@ -10,7 +10,7 @@ real, live, running examples that you can modify and play with. Heck, it may
 be the first "book" on computational synthetic biology period as far as I know.
 
 It feels strange for me to be the first author to write this sort of thing for
-a field that's already been around for 20 ~years but here I am.
+a field that's already been around for ~20 years but here I am.
 
 When I first entered the field there wasn't anything even close to resembling
 a software framework for engineering organisms and even today Poly (the library

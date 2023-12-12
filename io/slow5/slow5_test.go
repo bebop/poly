@@ -3,7 +3,6 @@ package slow5
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -190,11 +189,11 @@ func TestWrite(t *testing.T) {
 	}
 
 	// Compare both files
-	example, err := ioutil.ReadFile("data/example.slow5")
+	example, err := os.ReadFile("data/example.slow5")
 	if err != nil {
 		t.Errorf("Failed to read example file: %s", err)
 	}
-	testWrite, err := ioutil.ReadFile("data/test_write.slow5")
+	testWrite, err := os.ReadFile("data/test_write.slow5")
 	if err != nil {
 		t.Errorf("Failed to read test file: %s", err)
 	}

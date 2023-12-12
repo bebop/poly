@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/bebop/poly/io/genbank"
 )
 
 // This example shows how to open a genbank file and search for a gene given

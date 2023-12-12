@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `fastq` parser no longer becomes de-aligned when reading (#325)
 - `fastq` now handles optionals correctly (#323)
+-  Fixed bug that produced wrong overhang in linear, non-directional, single cut reactions. #408 
 
 ## [0.26.0] - 2023-07-22
 Oops, we weren't keeping a changelog before this tag!

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/TimothyStiles/poly/synthesis/codon"
-	"github.com/TimothyStiles/poly/synthesis/fix"
+	"github.com/bebop/poly/synthesis/codon"
+	"github.com/bebop/poly/synthesis/fix"
 )
 
 var dataDir string = "../../data/"

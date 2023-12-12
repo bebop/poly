@@ -3,7 +3,7 @@ package fold_test
 import (
 	"fmt"
 
-	"github.com/TimothyStiles/poly/fold"
+	"github.com/bebop/poly/fold"
 )
 
 func ExampleZuker() {

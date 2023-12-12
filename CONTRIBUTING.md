@@ -60,13 +60,11 @@ As one final guideline please be welcoming to newcomers and encourage new contri
 
 Unsure where to begin contributing to Poly? You can start by looking through these beginner and help-wanted issues:
 
-[Beginner issues](https://github.com/TimothyStiles/poly/issues?q=is%3Aissue+is%3Aopen+label%3A%22beginner%22+) - issues which should only require a few lines of code, and a test or two.
+[Good first issues](https://github.com/bebop/poly/contribute) - issues which are good for first time contributors.
 
-[Good first issues](https://github.com/TimothyStiles/poly/contribute) - issues which are good for first time contributors.
+[Help wanted issues](https://github.com/bebop/poly/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues which should be a bit more involved than beginner issues.
 
-[Help wanted issues](https://github.com/TimothyStiles/poly/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues which should be a bit more involved than beginner issues.
-
-[Feature requests](https://github.com/TimothyStiles/poly/labels/enhancement) - before requesting a new feature search through previous feature requests to see if it's already been requested. If not then feel free to submit a request and tag it with the enhancement tag!
+[Feature requests](https://github.com/bebop/poly/labels/enhancement) - before requesting a new feature search through previous feature requests to see if it's already been requested. If not then feel free to submit a request and tag it with the enhancement tag!
 
 ### Working on your first Pull Request? 
 
@@ -97,22 +95,22 @@ Whether you're a beginner with Go or you're an experienced developer, You should
 
 ### Security disclosures
 
-If you find a security vulnerability, do NOT open an issue. I've yet to set up a security email for this so please in the interim DM me on twitter for my email [@timothystiles](https://twitter.com/TimothyStiles).
+If you find a security vulnerability, do NOT open an issue. Instead, email poly-collaborators@googlegroups.com with a description of the vulnerability and we will get in contact with you ASAP.
 
 In order to determine whether you are dealing with a security issue, ask yourself these two questions:
 
 * Can I access something that's not mine, or something I shouldn't have access to?
 * Can I disable something for other people?
   
-If the answer to either of those two questions are "yes", then you're probably dealing with a security issue. Note that even if you answer "no" to both questions, you may still be dealing with a security issue, so if you're unsure, just DM me [@timothystiles](https://twitter.com/TimothyStiles) for my personal email until I can set up a security related email.
+If the answer to either of those two questions are "yes", then you're probably dealing with a security issue. Note that even if you answer "no" to both questions, you may still be dealing with a security issue, so if you're unsure, shoot an email to poly.maintainers@bebop.bio.
 
 ### Non-security related bugs
 
-For non-security bug reports please [submit it using this template!](https://github.com/TimothyStiles/poly/issues/new?assignees=&labels=&template=bug_report.md&title=)
+For non-security bug reports please [submit it using this template!](https://github.com/bebop/poly/issues/new?assignees=&labels=&template=bug_report.md&title=)
 
 # How to suggest a feature or enhancement
 
-If you want to suggest a feature it's as easy as filling out this [issue template](https://github.com/TimothyStiles/poly/issues/new?assignees=&labels=&template=feature_request.md&title=), but before you do please [check to see if it's already been suggested!](https://github.com/TimothyStiles/poly/labels/enhancement)
+If you want to suggest a feature it's as easy as filling out this [issue template](https://github.com/bebop/poly/issues/new?assignees=&labels=&template=feature_request.md&title=), but before you do please [check to see if it's already been suggested!](https://github.com/bebop/poly/labels/enhancement)
 
 # How add a recommended VSCode Plugin
 

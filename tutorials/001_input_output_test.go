@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TimothyStiles/poly/io/genbank"
+	"github.com/bebop/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -25,7 +25,7 @@ The bane of the bioinformatician's existence are the blasted file formats that
 have been foisted upon us by our predecessors. Most are hard to understand and
 even harder to parse programmatically.
 
-My least favorite is the most common format for annotated sequence. The Genbank
+My least favorite is the most common format for annotated sequences. The Genbank
 format.
 
 Made by some secret council of jerks in the deserts of New Mexico sometime in
@@ -40,7 +40,7 @@ I've written about many times in many other places.
 
 Point is. To start you're going to need to get data in and out of your computer
 and Poly makes it easy. Follow along below and run each test through the
-included debugger via gitpod if you really want to know what's going on.
+included debugger via VScode if you really want to know what's going on.
 
 TTFN,
 Tim
