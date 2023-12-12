@@ -76,7 +76,6 @@ type BWTLocateTestCase struct {
 }
 
 func TestBWT_Locate(t *testing.T) {
-
 	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
 
 	bwt2, err := New(inputSequence)
@@ -228,7 +227,7 @@ func TestBWT_Extract_DoNotAllowExtractionOfLastNullChar(t *testing.T) {
 		t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", 0, 6, testStr, str)
 	}
 
-	str = bwt.Extract(0, 7)
+	_ = bwt.Extract(0, 7)
 
 	t.Fatalf("extractRange=(%d, %d) expected panic so we do not allow access to the null character", 0, 7)
 }

@@ -66,9 +66,6 @@ func (b bitvector) checkBounds(i int) {
 	}
 }
 
-const factor1point2Threshold = 1e9
-const factor1point5Threshold = 1e6
-
 func (b bitvector) len() int {
 	return b.numberOfBits
 }

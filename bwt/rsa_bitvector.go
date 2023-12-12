@@ -15,7 +15,7 @@ type rsaBitVector struct {
 	zeroSelectMap       map[int]int
 }
 
-// newRSABitVectorFromBitVector allows us to build the auxillary components
+// newRSABitVectorFromBitVector allows us to build the auxiliary components
 // needed to perform RSA queries on top of the provided bitvector.
 // WARNING: Do not modify the underlying bitvector. The rsaBitvector will
 // get out of sync with the original bitvector.

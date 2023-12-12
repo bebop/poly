@@ -39,7 +39,6 @@ func TestRSARank_singlePartialChunk(t *testing.T) {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
 	}
-
 }
 
 func TestRSARank_singleCompleteChunk_PastBounds_Ones(t *testing.T) {
@@ -62,7 +61,6 @@ func TestRSARank_singleCompleteChunk_PastBounds_Ones(t *testing.T) {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
 	}
-
 }
 
 func TestRSARank_singleCompleteChunk_PastBounds_Zeros(t *testing.T) {
@@ -85,7 +83,6 @@ func TestRSARank_singleCompleteChunk_PastBounds_Zeros(t *testing.T) {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
 	}
-
 }
 
 func TestRSARank_singleCompleteChunk(t *testing.T) {
