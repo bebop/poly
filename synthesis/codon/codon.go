@@ -165,9 +165,9 @@ func (table *TranslationTable) OptimizeSequence(aminoAcids string, randomState .
 		if !ok {
 			return "", invalidAminoAcidError{aminoAcid}
 		}
-		chooser.PickSource(rand)
+		codon := chooser.PickSource(rand)
 
-		codons.WriteString(chooser.Pick().(string))
+		codons.WriteString(codon.(string))
 	}
 
 	return codons.String(), nil
