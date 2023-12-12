@@ -13,7 +13,11 @@ For the waveletTree's usage, please read the its
 method documentation. To understand what it is and how
 it works for either curiosity or maintenance, then read below.
 
-# WaveletTree Components
+# WaveletTree
+
+The Wavelet Tree allows us to conduct RSA queries on strings. in
+a memory and run time efficient manner.
+RSA stands for (R)ank, (S)elect, (A)ccess.
 
 ## The Character's Path Encoding
 
@@ -68,8 +72,6 @@ If we translate each bit vector to its corresponding string, then it becomes:
 a      b  n     s
 
 ## RSA Intuition
-
-RSA stands for (R)ank, (S)elect, (A)ccess.
 
 From here you may be able to build some intuition as to how we can take RSA queries given
 a characters path encoding and which character we'd like to Rank, Select, and Access.

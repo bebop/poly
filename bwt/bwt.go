@@ -13,11 +13,19 @@ For the BWT usage, please read the its
 method documentation. To understand what it is and how
 it works for either curiosity or maintenance, then read below.
 
-# BWT Components
+# BWT
+
+BWT Stand for (B)urrow (W)heeler (T)ransform. The BWT aids in
+text compression and acts as a search index for any arbitrary
+sequence of characters. With the BWT and some auxiliary data
+structures, we can analyze a sequence in a memory and run time
+efficient manner.
 
 ## BWT Transform
 
-BWT Stand for (B)urrow (W)heeler (T)ransform. This is done by:
+The first step to build the BWT is to get the BWT itself.
+
+This is done by:
 1. Appending a null terminating character to the end of a sequence
 2. Rotate the sequence so that the last character is now the first
 3. Repeat 2. N times where N is the length of the sequence
@@ -78,7 +86,7 @@ F(b0) -> L($0) -> Complete
 If we take the rank subscripts away from: b0a2n1a1n0a0$0
 We get... "banana$" !
 
-## LF Mapping
+## LF Mapping Usage
 
 From these properties, the most important concept emerges- the LF Mapping.
 The LF mapping is what enables us to query and analyze the BWT to gain
@@ -108,7 +116,7 @@ Another way to look at this is that we are constantly refining our search
 range for each character of the pattern we are searching for. Once we
 reach the end of the pattern, our final range represents the a's which
 start our pattern. If the range < 0, then at some point our search ranged
-has collapsed and there is no matching pattern.
+has collapsed and we can conclude that there is no matching pattern.
 
 ## Suffix Array
 
