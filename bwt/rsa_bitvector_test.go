@@ -157,7 +157,6 @@ func TestRSARank_singleCompleteChunk(t *testing.T) {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
 	}
-
 }
 
 func TestRSARank_multipleChunks(t *testing.T) {
@@ -239,7 +238,6 @@ func TestRSARank_multipleChunks(t *testing.T) {
 			t.Fatalf("expected rank(%t, %d) to be %d but got %d", tc.val, tc.bitPosition, tc.expectedRank, rank)
 		}
 	}
-
 }
 
 type rsaSelectTestCase struct {
