@@ -1,0 +1,17 @@
+name: notify social media
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  notify:
+    if: github.event.label.name == 'help wanted'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Actions for Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_HELP_WANTED }}
+        uses: Ilshidur/action-discord@0.3.2
