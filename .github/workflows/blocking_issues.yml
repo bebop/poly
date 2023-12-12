@@ -9,6 +9,8 @@ on:
 jobs: 
   blocking_issues: 
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     name: Checks for blocking issues
     steps: 
       - uses: Levi-Lesches/blocking-issues@v2
