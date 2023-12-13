@@ -193,27 +193,31 @@ type BWT struct {
 
 // Count represents the number of times the provided pattern
 // shows up in the original sequence.
-func (bwt BWT) Count(pattern string) int {
+func (bwt BWT) Count(pattern string) (count int, err error) {
+	// defer func() { BWTRecoverAPIBoundary("Count", *err) }()
+
 	searchRange := bwt.lfSearch(pattern)
-	return searchRange.end - searchRange.start
+	return searchRange.end - searchRange.start, nil
 }
 
 // Locate returns a list of offsets at which the begging
 // of the provided pattern occurs in the original
 // sequence.
-func (bwt BWT) Locate(pattern string) []int {
+func (bwt BWT) Locate(pattern string) (offsets []int, err error) {
+	// defer func() { BWTRecoverAPIBoundary("Locate") }()
+
 	searchRange := bwt.lfSearch(pattern)
 	if searchRange.start >= searchRange.end {
-		return nil
+		return nil, nil
 	}
 
 	numOfOffsets := searchRange.end - searchRange.start
-	offsets := make([]int, numOfOffsets)
+	offsets = make([]int, numOfOffsets)
 	for i := 0; i < numOfOffsets; i++ {
 		offsets[i] = bwt.suffixArray[searchRange.start+i]
 	}
 
-	return offsets
+	return offsets, nil
 }
 
 // Extract this allows us to extract parts of the original
@@ -221,14 +225,15 @@ func (bwt BWT) Locate(pattern string) []int {
 // start is the begging of the range of text to extract inclusive.
 // end is the end of the range of text to extract exclusive.
 // If either start or end are out of bounds, Extract will panic.
-func (bwt BWT) Extract(start, end int) string {
+func (bwt BWT) Extract(start, end int) (extracted string, err error) {
+	defer bwtRecovery("Extract", &err)
+
 	if end > bwt.getLenOfOriginalStringWithNullChar()-1 {
-		msg := fmt.Sprintf("end [%d] exceeds the max range of the BWT [%d]", end, bwt.getLenOfOriginalStringWithNullChar()-1)
-		panic(msg)
+		return "", fmt.Errorf("end [%d] exceeds the max range of the BWT [%d]", end, bwt.getLenOfOriginalStringWithNullChar()-1)
 	}
+
 	if start < 0 {
-		msg := fmt.Sprintf("start [%d] exceeds the min range of the BWT [0]", start)
-		panic(msg)
+		return "", fmt.Errorf("start [%d] exceeds the min range of the BWT [0]", start)
 	}
 
 	strB := strings.Builder{}
@@ -237,7 +242,8 @@ func (bwt BWT) Extract(start, end int) string {
 		skip := bwt.lookupSkipByOffset(fPos)
 		strB.WriteByte(skip.char)
 	}
-	return strB.String()
+
+	return strB.String(), nil
 }
 
 // Len return the length of the sequence used to build the BWT
@@ -408,4 +414,11 @@ func sortPrefixArray(prefixArray []string) {
 
 		return len(a) < len(b)
 	})
+}
+
+func bwtRecovery(operation string, err *error) {
+	if r := recover(); r != nil {
+		rErr := fmt.Errorf("BWT %s InternalError=%s", operation, r)
+		*err = rErr
+	}
 }

@@ -49,7 +49,10 @@ func TestBWT_Count(t *testing.T) {
 	}
 
 	for _, v := range testTable {
-		count := bwt.Count(v.seq)
+		count, err := bwt.Count(v.seq)
+		if err != nil {
+			t.Fatalf("seq=%s unexpectedError=%s", v.seq, err)
+		}
 		if count != v.expected {
 			t.Fatalf("seq=%s expectedCount=%v actualCount=%v", v.seq, v.expected, count)
 		}
@@ -64,7 +67,10 @@ func ExampleBWT_Locate() {
 		log.Fatal(err)
 	}
 
-	offsets := bwt.Locate("CG")
+	offsets, err := bwt.Locate("CG")
+	if err != nil {
+		log.Fatal(err)
+	}
 	slices.Sort(offsets)
 	fmt.Println(offsets)
 	// Output: [7 10 20 23 25 30 33 38 45 50]
@@ -76,15 +82,6 @@ type BWTLocateTestCase struct {
 }
 
 func TestBWT_Locate(t *testing.T) {
-	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
-
-	bwt2, err := New(inputSequence)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	offsets := bwt2.Locate("CG")
-	slices.Sort(offsets)
 	baseTestStr := "thequickbrownfoxjumpsoverthelazydogwithanovertfrownafterfumblingitsparallelogramshapedbananagramallarounddowntown" // len == 112
 	testStr := strings.Join([]string{baseTestStr, baseTestStr, baseTestStr}, "")
 
@@ -107,7 +104,10 @@ func TestBWT_Locate(t *testing.T) {
 	}
 
 	for _, v := range testTable {
-		offsets := bwt.Locate(v.seq)
+		offsets, err := bwt.Locate(v.seq)
+		if err != nil {
+			t.Fatalf("seq=%s unexpectedError=%s", v.seq, err)
+		}
 		slices.Sort(offsets)
 		if len(offsets) != len(v.expected) {
 			t.Fatalf("seq=%s expectedOffsets=%v actualOffsets=%v", v.seq, v.expected, offsets)
@@ -206,7 +206,10 @@ func TestBWT_Extract(t *testing.T) {
 	}
 
 	for _, v := range testTable {
-		str := bwt.Extract(v.start, v.end)
+		str, err := bwt.Extract(v.start, v.end)
+		if err != nil {
+			t.Fatalf("extractRange=(%d, %d) unexpectedError=%s", v.start, v.end, err)
+		}
 		if str != v.expected {
 			t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", v.start, v.end, v.expected, str)
 		}
@@ -214,7 +217,6 @@ func TestBWT_Extract(t *testing.T) {
 }
 
 func TestBWT_Extract_DoNotAllowExtractionOfLastNullChar(t *testing.T) {
-	defer func() { _ = recover() }()
 	testStr := "banana"
 
 	bwt, err := New(testStr)
@@ -222,14 +224,23 @@ func TestBWT_Extract_DoNotAllowExtractionOfLastNullChar(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	str := bwt.Extract(0, 6)
+	str, err := bwt.Extract(0, 6)
+	if err != nil {
+		t.Fatalf("extractRange=(%d, %d) unexpectedError=%s", 0, 6, err)
+	}
 	if str != testStr {
 		t.Fatalf("extractRange=(%d, %d) expected=%s actual=%s", 0, 6, testStr, str)
 	}
 
-	_ = bwt.Extract(0, 7)
+	_, err = bwt.Extract(0, 7)
 
-	t.Fatalf("extractRange=(%d, %d) expected panic so we do not allow access to the null character", 0, 7)
+	if err == nil {
+		t.Fatalf("extractRange=(%d, %d) expected err but was nil", 0, 7)
+	}
+
+	if !strings.Contains(err.Error(), "exceeds the max range") {
+		t.Fatalf("expected error to contain \"exceeds the max range\" but received \"%s\"", err)
+	}
 }
 
 func TestBWT_Len(t *testing.T) {
