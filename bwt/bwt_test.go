@@ -17,7 +17,11 @@ func ExampleBWT_Count() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(bwt.Count("CG"))
+	count, err := bwt.Count("CG")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(count)
 	// Output: 10
 }
 
@@ -128,7 +132,11 @@ func ExampleBWT_Extract() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(bwt.Extract(48, 54))
+	extracted, err := bwt.Extract(48, 54)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(extracted)
 	// Output: AACGTG
 }
 
