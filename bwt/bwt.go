@@ -194,7 +194,7 @@ type BWT struct {
 // Count represents the number of times the provided pattern
 // shows up in the original sequence.
 func (bwt BWT) Count(pattern string) (count int, err error) {
-	// defer func() { BWTRecoverAPIBoundary("Count", *err) }()
+	defer bwtRecovery("Count", &err)
 
 	searchRange := bwt.lfSearch(pattern)
 	return searchRange.end - searchRange.start, nil
@@ -204,7 +204,7 @@ func (bwt BWT) Count(pattern string) (count int, err error) {
 // of the provided pattern occurs in the original
 // sequence.
 func (bwt BWT) Locate(pattern string) (offsets []int, err error) {
-	// defer func() { BWTRecoverAPIBoundary("Locate") }()
+	defer bwtRecovery("Locate", &err)
 
 	searchRange := bwt.lfSearch(pattern)
 	if searchRange.start >= searchRange.end {
