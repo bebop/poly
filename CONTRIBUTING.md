@@ -137,12 +137,11 @@ and then run `just cut-release <version>` (without the `v` before the version nu
 will perform the following actions locally:
 
 1. Lint and test the codebase
-2. Update the changelog
-3. Create a commit with the updated changelog
-4. `git tag` the commit as `v<version>` with a message containing a changelog
+2. Update the changelog and commit it
+3. `git tag` the commit as `v<version>`
 
-Afterward, simply `git push` to upload the new commit and tag to the repository, and GitHub
-Actions will automatically make a release!
+Afterward, simply run `git push` and `git push <remote> v<version>` to upload the new commit
+and tag to the repository, and GitHub Actions will automatically make a release!
 
 ## Nightly Releases
 `poly` features automatic nightly releases via GitHub Actions, located

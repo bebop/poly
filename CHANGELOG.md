@@ -14,7 +14,4 @@ Oops, we weren't keeping a changelog before this tag!
 ### Fixed
 -  Fixed bug that produced wrong overhang in linear, non-directional, single cut reactions. #408 
 
-[unreleased]: https://github.com/TimothyStiles/poly/compare/v0.30.0...main
 [0.30.0]: https://github.com/TimothyStiles/poly/releases/tag/v0.30.0
-
-
