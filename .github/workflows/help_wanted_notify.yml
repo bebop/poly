@@ -1,4 +1,4 @@
-name: notify discord (help wanted)
+name: Notify Discord about "help wanted" issues
 
 on:
   issues:
