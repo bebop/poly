@@ -12,7 +12,7 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v3
-    - run: echo "RELEASE_BODY=${git tag -l --format='%(subject)' ${{ github.ref_name }}}" >> $GITHUB_ENV
+    - run: echo "RELEASE_BODY=$(git tag -l --format='%(subject)' ${{ github.ref_name }})" >> $GITHUB_ENV
     - uses: ncipollo/release-action@v1
       with:
         makeLatest: true
