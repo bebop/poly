@@ -20,4 +20,4 @@ jobs:
       with:
         makeLatest: true
         prerelease: true
-        body: ${RELEASE_BODY}
+        body: ${{env.RELEASE_BODY}}
