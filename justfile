@@ -17,7 +17,6 @@ test:
   go test -v ./...
   
 branch := `git branch --show-current`
-release_changelog := `awk '/## \[Unreleased]/{flag=1; next} /## \[/{flag=0} flag' CHANGELOG.md`
 
 # Bump version in changelog and create commit + tag on current branch
 cut-release $NEW_VERSION:
@@ -28,4 +27,4 @@ cut-release $NEW_VERSION:
   echo "[$NEW_VERSION]: https://github.com/bebop/poly/releases/tag/v$NEW_VERSION" >> CHANGELOG.md
   git add CHANGELOG.md
   git commit -m "Release version v$NEW_VERSION"
-  git tag v$NEW_VERSION -m "## Changelog:\n{{release_changelog}}"
+  git tag v$NEW_VERSION
