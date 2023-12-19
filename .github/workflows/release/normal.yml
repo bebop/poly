@@ -1,0 +1,19 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+    - run: echo "RELEASE_BODY=${git tag -l --format='%(subject)' ${{ github.ref_name }}}" >> $GITHUB_ENV
+    - uses: ncipollo/release-action@v1
+      with:
+        makeLatest: true
+        prerelease: true
