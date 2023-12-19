@@ -112,10 +112,43 @@ For non-security bug reports please [submit it using this template!](https://git
 
 If you want to suggest a feature it's as easy as filling out this [issue template](https://github.com/bebop/poly/issues/new?assignees=&labels=&template=feature_request.md&title=), but before you do please [check to see if it's already been suggested!](https://github.com/bebop/poly/labels/enhancement)
 
-# How add a recommended VSCode Plugin
+## How to add a recommended VSCode Plugin
 
 Poly comes with a set of recommended plugins for VSCode. If you have suggestions that will simplify life for the poly dev community, consider doing a pull-request after modifying `.vscode/extensions.json`. 
 
+# Build and Release Pipelines
+
+## `just` Build System
+We use [`just`](https://github.com/casey/just) as a task runner. See their README for install 
+instructions. To see the available recipes, execute `just list` in the root of the repository.
+
+## Normal Releases
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), which
+looks like so: `vMAJOR.MINOR.PATCH`. We also keep a changelog in `CHANGELOG.md`. Major
+versions indicate breaking changes to the API, minor versions indicate backwards-compatible
+additions to the API, and patch versions indicate bugfixes.
+
+### Cutting a Major or Minor Release
+
+> NOTE: Only contributors with write access to the repository can do this.
+
+To cut a release, check out the `release` branch, merge any desired changes,
+and then run `just cut-release <version>` (without the `v` before the version number). This
+will perform the following actions locally:
+
+1. Lint and test the codebase
+2. Update the changelog
+3. Create a commit with the updated changelog
+4. `git tag` the commit as `v<version>` with a message containing a changelog
+
+Afterward, simply `git push` to upload the new commit and tag to the repository, and GitHub
+Actions will automatically make a release!
+
+## Nightly Releases
+`poly` features automatic nightly releases via GitHub Actions, located
+[here](https://github.com/bebop/poly/releases/tag/nightly). These will reflect the status
+of the `main` branch as of 0800UTC/0300EST.
+
 # In closing
 
-Thanks, for reading and I'm super psyched to see what you'll do with Poly!
+Thanks for reading and I'm super psyched to see what you'll do with Poly!
