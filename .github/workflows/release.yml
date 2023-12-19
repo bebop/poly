@@ -15,7 +15,8 @@ jobs:
     - name: Get changelog
       run: |
         TAG=${{github.ref_name}}
-        echo "RELEASE_BODY='$(awk '/## \[${TAG#v}]/{flag=1} /## \[/{flag=0} flag' CHANGELOG.md)'" >> $GITHUB_ENV
+        VERSION=${TAG#v}
+        echo "RELEASE_BODY='# [$VERSION] - $(date +%Y-%m-%d)\n$(awk '/## \['$VERSION']/{flag=1; next} /## \[/{flag=0} flag' CHANGELOG.md)'" >> $GITHUB_ENV
     - uses: ncipollo/release-action@v1
       with:
         makeLatest: true
