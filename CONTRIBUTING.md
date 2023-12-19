@@ -128,16 +128,16 @@ looks like so: `vMAJOR.MINOR.PATCH`. We also keep a changelog in `CHANGELOG.md`.
 versions indicate breaking changes to the API, minor versions indicate backwards-compatible
 additions to the API, and patch versions indicate bugfixes.
 
-### Cutting a Major or Minor Release
+### Cutting a Release
 
 > NOTE: Only contributors with write access to the repository can do this.
 
-To cut a release, check out the `release` branch, merge any desired changes,
+To cut a release, check out the `main` branch, merge any desired changes,
 and then run `just cut-release <version>` (without the `v` before the version number). This
 will perform the following actions locally:
 
 1. Lint and test the codebase
-2. Update the changelog and commit it
+2. Bump the version in the changelog and commit it
 3. `git tag` the commit as `v<version>`
 
 Afterward, simply run `git push` and `git push <remote> v<version>` to upload the new commit

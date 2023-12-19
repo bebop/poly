@@ -20,7 +20,6 @@ branch := `git branch --show-current`
 
 # Bump version in changelog and create commit + tag on current branch
 cut-release $NEW_VERSION:
-  {{if branch != "release" {error("Releases can only be cut in the releases branch.")} else {""} }}
   just lint
   just test
   sed -i "s/## \[Unreleased]\s*\n*/## [Unreleased]\n\n## [$NEW_VERSION] $(date +'%Y-%m-%d')/g" CHANGELOG.md
