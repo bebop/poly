@@ -50,6 +50,8 @@ All successfully merged pull requests must meet the following criteria:
   
 * Code must be clean, readable, and commented. How you do that is up to you!
 
+* The PR template, which covers most of these points, should be filled out.
+
 Don't worry if you submit a pull request and all the tests break and the code is not readable. We won't merge it just yet and then you can get some feedback about what needs to be changed before we do!
 
 ### Be welcoming
@@ -65,6 +67,10 @@ Unsure where to begin contributing to Poly? You can start by looking through the
 [Help wanted issues](https://github.com/bebop/poly/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues which should be a bit more involved than beginner issues.
 
 [Feature requests](https://github.com/bebop/poly/labels/enhancement) - before requesting a new feature search through previous feature requests to see if it's already been requested. If not then feel free to submit a request and tag it with the enhancement tag!
+
+## Taking issues
+To assign an issue to yourself, simply comment `.take` on it and it will be
+assigned to you!
 
 ### Working on your first Pull Request? 
 
@@ -147,6 +153,26 @@ and tag to the repository, and GitHub Actions will automatically make a release!
 `poly` features automatic nightly releases via GitHub Actions, located
 [here](https://github.com/bebop/poly/releases/tag/nightly). These will reflect the status
 of the `main` branch as of 0800UTC/0300EST.
+
+# Issue management
+As `poly` grows, we will see more and more issues added to our GitHub. This will
+require us to be disciplined about properly labeling issues for easier
+discoverability and task assignment. Issues will also be tracked in the Projects
+section of the repository.
+
+## Triaging new issues
+All new issues will be marked with the `needs-triage` label, which should
+promptly be replaced with the following:
+
+- An issue type label (`devops`, `bug`, `ux`, `question`, `proposal`, `enhancement`, `documentation`)
+- A difficulty/effort label (`easy`, `intermediate`, `hard`)
+- A priority label (`high priority`, `normal priority`, `low priority`)
+- OPTIONAL: `help wanted` or `good first issue` where appropriate
+
+## Stale issues
+After 2 months of no activity, issues will be marked with the `stale` label.
+We should periodically sort through `stale` issues and either close them
+or assign them.
 
 # In closing
 
