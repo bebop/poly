@@ -6,7 +6,7 @@ default:
 
 # Get coverage profile
 coverage:
-  go test -v -coverprofile=provile.cov ./...
+  go test -v -coverprofile=profile.cov ./...
 
 # Linting and static checks
 lint:
