@@ -1,4 +1,4 @@
-name: notify social media (help wanted)
+name: Notify Discord about "help wanted" issues
 
 on:
   issues:
