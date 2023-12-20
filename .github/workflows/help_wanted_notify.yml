@@ -1,4 +1,4 @@
-name: notify social media
+name: Notify Discord about "help wanted" issues
 
 on:
   issues:
@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Actions for Discord
+        uses: Ilshidur/action-discord@0.3.2
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_HELP_WANTED }}
-        uses: Ilshidur/action-discord@0.3.2

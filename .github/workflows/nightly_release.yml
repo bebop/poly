@@ -1,0 +1,22 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Run at 0800 UTC (0300 EST) every day
+
+jobs:
+  mwe:
+    runs-on: ubuntu-latest
+    steps:
+
+    # Clone repository
+    - uses: actions/checkout@v2
+
+    # Update tag and pre-release
+    # - Update (force-push) tag to the commit that is used in the workflow.
+    # - Upload artifacts defined by the user.
+    - uses: pyTooling/Actions/releaser@r0
+      with:
+        tag: nightly
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: ./*

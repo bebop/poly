@@ -1,4 +1,4 @@
-name: notify social media
+name: Notify Discord
 
 on:
   release: 

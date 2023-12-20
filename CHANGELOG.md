@@ -10,5 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Basic BWT for sub-sequence count and offset for sequence alignment. Only supports exact matches for now.
 
+
+## [0.30.0] - 2023-12-18
+Oops, we weren't keeping a changelog before this tag!
+
 ### Fixed
 -  Fixed bug that produced wrong overhang in linear, non-directional, single cut reactions. #408 
+
+[0.30.0]: https://github.com/TimothyStiles/poly/releases/tag/v0.30.0
