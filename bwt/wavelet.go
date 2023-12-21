@@ -83,6 +83,9 @@ a characters path encoding and which character we'd like to Rank, Select, and Ac
 
 ### Rank Example
 
+WaveletTree.Rank(c, n) returns the rank of character c at index n in a sequence, i.e. how many
+times c has occurred in a sequence before index n.
+
 To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
 1. root.Rank(0, 4) of 0010101 is 2
 2. Visit Left Child
