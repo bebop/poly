@@ -1,6 +1,7 @@
 package bwt
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -149,6 +150,10 @@ type waveletTree struct {
 // Access will return the ith character of the original
 // string used to build the waveletTree
 func (wt waveletTree) Access(i int) byte {
+	if wt.root.isLeaf() {
+		return *wt.root.char
+	}
+
 	curr := wt.root
 	for !curr.isLeaf() {
 		bit := curr.data.Access(i)
@@ -159,12 +164,16 @@ func (wt waveletTree) Access(i int) byte {
 			curr = curr.left
 		}
 	}
-	return curr.char
+	return *curr.char
 }
 
 // Rank allows us to get the rank of a specified character in
 // the original string
 func (wt waveletTree) Rank(char byte, i int) int {
+	if wt.root.isLeaf() {
+		return wt.root.data.Rank(true, i)
+	}
+
 	curr := wt.root
 	ci := wt.lookupCharInfo(char)
 	level := 0
@@ -186,6 +195,15 @@ func (wt waveletTree) Rank(char byte, i int) int {
 // Select allows us to get the corresponding position of a character
 // in the original string given its rank.
 func (wt waveletTree) Select(char byte, rank int) int {
+	if wt.root.isLeaf() {
+		s, ok := wt.root.data.Select(true, rank)
+		if !ok {
+			msg := fmt.Sprintf("could not find a corresponding bit for node.Select(true, %d) root as leaf node", rank)
+			panic(msg)
+		}
+		return s
+	}
+
 	curr := wt.root
 	ci := wt.lookupCharInfo(char)
 	level := 0
@@ -227,14 +245,14 @@ func (wt waveletTree) lookupCharInfo(char byte) charInfo {
 
 type node struct {
 	data   rsaBitVector
-	char   byte
+	char   *byte
 	parent *node
 	left   *node
 	right  *node
 }
 
 func (n node) isLeaf() bool {
-	return n.char != 0
+	return n.char != nil
 }
 
 type charInfo struct {
@@ -243,16 +261,31 @@ type charInfo struct {
 	path    bitvector
 }
 
-func NewWaveletTreeFromString(str string) waveletTree {
+func newWaveletTreeFromString(str string) (waveletTree, error) {
+	err := validateWaveletTreeBuildInput(&str)
+	if err != nil {
+		return waveletTree{}, err
+	}
+
 	bytes := []byte(str)
 
 	alpha := getCharInfoDescByRank(bytes)
 	root := buildWaveletTree(0, alpha, bytes)
 
+	// Handle the case where the provided sequence only has an alphabet
+	// of size 1
+	if root.isLeaf() {
+		bv := newBitVector(len(bytes))
+		for i := 0; i < bv.len(); i++ {
+			bv.setBit(i, true)
+		}
+		root.data = newRSABitVectorFromBitVector(bv)
+	}
+
 	return waveletTree{
 		root:  root,
 		alpha: alpha,
-	}
+	}, nil
 }
 
 func buildWaveletTree(currentLevel int, alpha []charInfo, bytes []byte) *node {
@@ -261,7 +294,7 @@ func buildWaveletTree(currentLevel int, alpha []charInfo, bytes []byte) *node {
 	}
 
 	if len(alpha) == 1 {
-		return &node{char: alpha[0].char}
+		return &node{char: &alpha[0].char}
 	}
 
 	leftAlpha, rightAlpha := partitionAlpha(currentLevel, alpha)
@@ -378,4 +411,11 @@ func encodeCharPathIntoBitVector(bv bitvector, n uint64) {
 
 func getTreeHeight(alpha []charInfo) int {
 	return int(math.Log2(float64(len(alpha)))) + 1
+}
+
+func validateWaveletTreeBuildInput(sequence *string) error {
+	if len(*sequence) == 0 {
+		return errors.New("Sequence can not be empty")
+	}
+	return nil
 }

@@ -181,6 +181,8 @@ func TestRSARank_multipleChunks(t *testing.T) {
 		0xffffffffffffffff,
 		0x0000000000000000,
 
+		// If Jacobson rank is still there, this should go past the first
+		// chunk
 		0xffffffffffffffff,
 		0x0000000000000000,
 		0xffffffffffffffff,
@@ -201,6 +203,8 @@ func TestRSARank_multipleChunks(t *testing.T) {
 		0xffffffffffffffff,
 		0x0000000000000000,
 
+		// If Jacobson rank is still there, this should go past the second
+		// chunk
 		0xffffffffffffffff,
 		0x0000000000000000,
 		0xffffffffffffffff,

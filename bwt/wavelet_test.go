@@ -12,7 +12,10 @@ type WaveletTreeAccessTestCase struct {
 
 func TestWaveletTree_Access(t *testing.T) {
 	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
-	wt := NewWaveletTreeFromString(testStr)
+	wt, err := newWaveletTreeFromString(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testCases := []WaveletTreeAccessTestCase{
 		{0, "A"},
@@ -74,7 +77,10 @@ type WaveletTreeRankTestCase struct {
 
 func TestWaveletTree_Rank_Genomic(t *testing.T) {
 	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
-	wt := NewWaveletTreeFromString(testStr)
+	wt, err := newWaveletTreeFromString(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testCases := []WaveletTreeRankTestCase{
 		{"A", 0, 0},
@@ -129,7 +135,10 @@ type WaveletTreeSelectTestCase struct {
 
 func TestWaveletTree_Select(t *testing.T) {
 	testStr := "AAAACCCCTTTTGGGG" + "ACTG" + "TGCA" + "TTAA" + "CCGG" + "GGGGTTTTCCCCAAAA"
-	wt := NewWaveletTreeFromString(testStr)
+	wt, err := newWaveletTreeFromString(testStr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testCases := []WaveletTreeSelectTestCase{
 		{"A", 0, 0},
@@ -169,9 +178,14 @@ func TestWaveletTree_Select(t *testing.T) {
 	}
 }
 
+// TestWaveletTree_Access_Reconstruction these tests are to ensure that the wavelet tree is formed correctly. If we can reconstruct the string, we can be
+// fairly confident that the WaveletTree is well formed.
 func TestWaveletTree_Access_Reconstruction(t *testing.T) {
+	// Build with a fair sized alphabet
 	enhancedQuickBrownFox := "the quick brown fox jumps over the lazy dog with an overt frown after fumbling its parallelogram shaped bananagram all around downtown"
 	enhancedQuickBrownFoxRepeated := strings.Join([]string{enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox, enhancedQuickBrownFox}, " ")
+	// Make it very large to account for any succinct data structures being used under the hood. For example, this helped uncover and errors
+	// diagnose issues with the Jacobson's Rank used under the hood.
 	enhancedQuickBrownFoxSuperLarge := ""
 	for i := 0; i < 100; i++ {
 		enhancedQuickBrownFoxSuperLarge += enhancedQuickBrownFoxRepeated
@@ -179,13 +193,17 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 
 	testCases := []string{
 		"the quick brown fox jumped over the lazy dog",
+		"the quick brown fox jumped over the lazy dog!", // odd numbered alphabet
 		enhancedQuickBrownFox,
 		enhancedQuickBrownFoxRepeated,
 		enhancedQuickBrownFoxSuperLarge,
 	}
 
 	for _, str := range testCases {
-		wt := NewWaveletTreeFromString(str)
+		wt, err := newWaveletTreeFromString(str)
+		if err != nil {
+			t.Fatal(err)
+		}
 		actual := ""
 		for i := 0; i < len(str); i++ {
 			actual += string(wt.Access(i))
@@ -193,5 +211,55 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 		if actual != str {
 			t.Fatalf("expected to rebuild:\n%s\nbut instead got:\n%s", str, actual)
 		}
+	}
+}
+
+func TestWaveletTreeEmptyStr(t *testing.T) {
+	str := ""
+	_, err := newWaveletTreeFromString(str)
+	if err == nil {
+		t.Fatal("expected error but got nil")
+	}
+}
+
+func TestWaveletTreeSingleChar(t *testing.T) {
+	char := "l"
+	wt, err := newWaveletTreeFromString(char)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := wt.Rank(char[0], 1)
+	s := wt.Select(char[0], 0)
+	a := wt.Access(0)
+
+	if r != 1 {
+		t.Fatalf("expected Rank(%s, %d) to be %d but got %d", char, 1, 1, r)
+	}
+	if s != 0 {
+		t.Fatalf("expected Select(%s, %d) to be %d but got %d", char, 0, 0, s)
+	}
+	if a != char[0] {
+		t.Fatalf("expected Access(%d) to be %d but got %d", 1, 1, s)
+	}
+}
+
+func TestWaveletTreeSingleAlpha(t *testing.T) {
+	str := "lll"
+	wt, err := newWaveletTreeFromString(str)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := wt.Rank(str[0], 1)
+	s := wt.Select(str[0], 1)
+	a := wt.Access(0)
+
+	if r != 1 {
+		t.Fatalf("expected Rank(%s, %d) to be %d but got %d", str, 1, 1, r)
+	}
+	if s != 1 {
+		t.Fatalf("expected Select(%s, %d) to be %d but got %d", str, 1, 1, s)
+	}
+	if a != str[0] {
+		t.Fatalf("expected Access(%d) to be %d but got %d", 1, 1, s)
 	}
 }

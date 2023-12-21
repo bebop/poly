@@ -1,6 +1,7 @@
 package bwt
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -198,16 +199,24 @@ type BWT struct {
 // shows up in the original sequence.
 func (bwt BWT) Count(pattern string) (count int, err error) {
 	defer bwtRecovery("Count", &err)
+	err = isValidPattern(pattern)
+	if err != nil {
+		return 0, err
+	}
 
 	searchRange := bwt.lfSearch(pattern)
 	return searchRange.end - searchRange.start, nil
 }
 
-// Locate returns a list of offsets at which the begging
+// Locate returns a list of offsets at which the beginning
 // of the provided pattern occurs in the original
 // sequence.
 func (bwt BWT) Locate(pattern string) (offsets []int, err error) {
 	defer bwtRecovery("Locate", &err)
+	err = isValidPattern(pattern)
+	if err != nil {
+		return nil, err
+	}
 
 	searchRange := bwt.lfSearch(pattern)
 	if searchRange.start >= searchRange.end {
@@ -225,11 +234,15 @@ func (bwt BWT) Locate(pattern string) (offsets []int, err error) {
 
 // Extract this allows us to extract parts of the original
 // sequence from the BWT.
-// start is the begging of the range of text to extract inclusive.
+// start is the beginning of the range of text to extract inclusive.
 // end is the end of the range of text to extract exclusive.
 // If either start or end are out of bounds, Extract will panic.
 func (bwt BWT) Extract(start, end int) (extracted string, err error) {
 	defer bwtRecovery("Extract", &err)
+	err = validateRange(start, end)
+	if err != nil {
+		return "", err
+	}
 
 	if end > bwt.getLenOfOriginalStringWithNullChar()-1 {
 		return "", fmt.Errorf("end [%d] exceeds the max range of the BWT [%d]", end, bwt.getLenOfOriginalStringWithNullChar()-1)
@@ -336,8 +349,9 @@ type skipEntry struct {
 // defined in this package. If it does, New will return
 // an error.
 func New(sequence string) (BWT, error) {
-	if strings.Contains(sequence, nullChar) {
-		return BWT{}, fmt.Errorf("Provided sequence contains the nullChar %s. BWT cannot be constructed", nullChar)
+	err := validateSequenceBeforeTransforming(&sequence)
+	if err != nil {
+		return BWT{}, err
 	}
 
 	sequence += nullChar
@@ -362,9 +376,14 @@ func New(sequence string) (BWT, error) {
 		fb.WriteByte(prefixArray[i][0])
 	}
 
+	wt, err := newWaveletTreeFromString(lastColBuilder.String())
+	if err != nil {
+		return BWT{}, err
+	}
+
 	return BWT{
 		firstColumnSkipList: buildSkipList(prefixArray),
-		lastColumn:          NewWaveletTreeFromString(lastColBuilder.String()),
+		lastColumn:          wt,
 		suffixArray:         suffixArray,
 	}, nil
 }
@@ -424,4 +443,28 @@ func bwtRecovery(operation string, err *error) {
 		rErr := fmt.Errorf("BWT %s InternalError=%s", operation, r)
 		*err = rErr
 	}
+}
+
+func isValidPattern(s string) (err error) {
+	if len(s) == 0 {
+		return errors.New("Pattern can not be empty")
+	}
+	return nil
+}
+
+func validateRange(start, end int) (err error) {
+	if start >= end {
+		return errors.New("Start must be strictly less than end")
+	}
+	return nil
+}
+
+func validateSequenceBeforeTransforming(sequence *string) (err error) {
+	if len(*sequence) == 0 {
+		return fmt.Errorf("Provided sequence must not by empty. BWT cannot be constructed")
+	}
+	if strings.Contains(*sequence, nullChar) {
+		return fmt.Errorf("Provided sequence contains the nullChar %s. BWT cannot be constructed", nullChar)
+	}
+	return nil
 }

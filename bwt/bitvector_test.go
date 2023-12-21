@@ -31,6 +31,8 @@ func TestBitVector(t *testing.T) {
 	bv.setBit(42, false)
 	bv.setBit(63, false)
 	bv.setBit(64, false)
+	bv.setBit(255, false)
+	bv.setBit(256, false)
 
 	getBitTestCases := []GetBitTestCase{
 		{0, true},
@@ -54,10 +56,15 @@ func TestBitVector(t *testing.T) {
 		{62, true},
 		{63, false},
 		{64, false},
+		// Test past the first word
 		{65, true},
 		{72, true},
 		{79, true},
 		{80, true},
+		{255, false},
+		{256, false},
+		{511, true},
+		{512, true},
 	}
 
 	for _, v := range getBitTestCases {
