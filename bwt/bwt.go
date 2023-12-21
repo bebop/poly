@@ -187,7 +187,7 @@ type BWT struct {
 	firstColumnSkipList []skipEntry
 	// Column last column of the BWT- the actual textual representation
 	// of the BWT.
-	lastCoulmn waveletTree
+	lastColumn waveletTree
 	// suffixArray an array that allows us to map a position in the first
 	// column to a position in the original sequence. This is needed to be
 	// able to extract text from the BWT.
@@ -280,8 +280,8 @@ func (bwt BWT) lfSearch(pattern string) interval {
 		if !ok {
 			return interval{}
 		}
-		searchRange.start = skip.openEndedInterval.start + bwt.lastCoulmn.Rank(c, searchRange.start)
-		searchRange.end = skip.openEndedInterval.start + bwt.lastCoulmn.Rank(c, searchRange.end)
+		searchRange.start = skip.openEndedInterval.start + bwt.lastColumn.Rank(c, searchRange.start)
+		searchRange.end = skip.openEndedInterval.start + bwt.lastColumn.Rank(c, searchRange.end)
 	}
 	return searchRange
 }
@@ -364,7 +364,7 @@ func New(sequence string) (BWT, error) {
 
 	return BWT{
 		firstColumnSkipList: buildSkipList(prefixArray),
-		lastCoulmn:          NewWaveletTreeFromString(lastColBuilder.String()),
+		lastColumn:          NewWaveletTreeFromString(lastColBuilder.String()),
 		suffixArray:         suffixArray,
 	}, nil
 }
