@@ -76,6 +76,10 @@ If we translate each bit vector to its corresponding string, then it becomes:
  /    \    /   \
 a      b  n     s
 
+Each node of the tree consists of a bitvector whose values indicate whether
+the character at a particular index is in the left (0) or right (1) child of the
+tree.
+
 ## RSA Intuition
 
 From here you may be able to build some intuition as to how we can take RSA queries given
