@@ -167,6 +167,9 @@ with more steps.
 NOTE: The above is just to explain what is happening at a high level. Please
 reference the implementation below to see how the BWT is actually currently
 working
+
+Many of the Idea's come from Ben Langmead.
+He has a whole YouTube playlist about BWT Indexing: https://www.youtube.com/watch?v=5G2Db41pSHE&list=PL2mpR0RYFQsADmYpW2YWBrXJZ_6EL_3nu
 */
 
 const nullChar = "$"
