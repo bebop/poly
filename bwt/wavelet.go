@@ -95,7 +95,7 @@ To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
 2. Visit Left Child
 3. child.Rank(0, 2) of 1000 is 1
 4. Visit Left Child
-5. return 1
+5. We are at a leaf node, so return our last recorded rank: 1
 
 ### Select Example
 
