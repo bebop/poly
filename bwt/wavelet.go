@@ -54,7 +54,7 @@ a: 00
 n: 01
 b: 10
 s: 11
-and that 0 if left and 1 is right
+and that 0 is left and 1 is right
 We can represent this tree with bitvectors:
 
      0010101
