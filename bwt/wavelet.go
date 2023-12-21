@@ -62,6 +62,7 @@ and that 0 is left and 1 is right
 We can represent this tree with bitvectors:
 
      0010101
+     bananas
     /       \
   1000      001
  /    \    /   \
