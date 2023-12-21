@@ -35,7 +35,8 @@ G: 110
 H: 111
 
 If we wanted to get to the leaf that represent the character D, we'd
-take the path:
+take the path that corresponds to the character's encoding, considering a 0 as choosing the left
+child of a node and a 1 as choosing the right child of a node:
 
    root
   /
