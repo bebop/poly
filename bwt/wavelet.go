@@ -23,7 +23,7 @@ RSA stands for (R)ank, (S)elect, (A)ccess.
 
 One important component is a character's path encoding.
 Which character we are working with in a given path in the tree.
-For example, given the alphabet A B C D E F G, a possible encoding is:
+For example, given the alphabet A B C D E F G H, a possible encoding is:
 
 A: 000
 B: 001
