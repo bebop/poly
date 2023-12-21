@@ -133,7 +133,7 @@ SA: [6  5  3  1  0  4  2]
 
 If we take our count example for the pattern "ana" above, you'll remember
 that our final search range was [1, 2). If we look up 1 in the SA, we'll
-fund that there is only one offset at position 3 in the original sequence
+find that there is only one offset at position 3 in the original sequence
 "banana"
 
 ## Notes on Performance
