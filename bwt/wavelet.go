@@ -19,6 +19,9 @@ The Wavelet Tree allows us to conduct RSA queries on strings. in
 a memory and run time efficient manner.
 RSA stands for (R)ank, (S)elect, (A)ccess.
 
+See this blog post by Alex Bowe for an additional explanation:
+https://www.alexbowe.com/wavelet-trees/
+
 ## The Character's Path Encoding
 
 One important component is a character's path encoding.
