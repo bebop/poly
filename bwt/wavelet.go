@@ -109,9 +109,22 @@ To get WaveletTree.Select(n, 1) of bananas where n's encoding is 01
 
 ### Access Example
 
-If you've reached this point, then you must really be trying to understand how the
-waveletTree works. I recommend thinking through how access could work with the example
-above. HINT: rank might help.
+Take the tree we constructed earlier to represent the sequence "bananas".
+
+     0010101
+    /       \
+  1000      001
+ /    \    /   \
+a      n  b     s
+
+To access the 4th character of the sequence, we would call WaveletTree.Access(3),
+which performs the following operations:
+
+1. root[3] is 0 and root.Rank(0, 3) is 2
+2. Since root[3] is 0, visit left child
+3. child[2] is 0 and child.Rank(0, 2) is 1
+4. Since child[2] is 0, visit left child
+5. Left child is a leaf, so we've found our value (a)!
 
 NOTE: The waveletTree does not literally have to be a tree. There are other forms that it may
 exist in like the concatenation of order level representation of all its node's bitvectors...
