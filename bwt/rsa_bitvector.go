@@ -8,6 +8,7 @@ import "math/bits"
 // examples in each respective method.
 type rsaBitVector struct {
 	bv                  bitvector
+	totalOnesRank       int
 	jrc                 []chunk
 	jrSubChunksPerChunk int
 	jrBitsPerChunk      int
@@ -21,11 +22,12 @@ type rsaBitVector struct {
 // WARNING: Do not modify the underlying bitvector. The rsaBitvector will
 // get out of sync with the original bitvector.
 func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
-	jacobsonRankChunks, jrSubChunksPerChunk, jrBitsPerSubChunk := buildJacobsonRank(bv)
+	jacobsonRankChunks, jrSubChunksPerChunk, jrBitsPerSubChunk, totalOnesRank := buildJacobsonRank(bv)
 	ones, zeros := buildSelectMaps(bv)
 
 	return rsaBitVector{
 		bv:                  bv,
+		totalOnesRank:       totalOnesRank,
 		jrc:                 jacobsonRankChunks,
 		jrSubChunksPerChunk: jrSubChunksPerChunk,
 		jrBitsPerChunk:      jrSubChunksPerChunk * jrBitsPerSubChunk,
@@ -45,6 +47,13 @@ func newRSABitVectorFromBitVector(bv bitvector) rsaBitVector {
 // Rank(true, 8) = 2
 // Rank(false, 8) = 6
 func (rsa rsaBitVector) Rank(val bool, i int) int {
+	if i == rsa.bv.len() {
+		if val {
+			return rsa.totalOnesRank
+		}
+		return rsa.bv.len() - rsa.totalOnesRank
+	}
+
 	chunkPos := (i / rsa.jrBitsPerChunk)
 	chunk := rsa.jrc[chunkPos]
 
@@ -118,9 +127,10 @@ To understand why it is sub linear in space, you can refer to Ben Langmead and o
 describes the space complexity.
 https://www.youtube.com/watch?v=M1sUZxXVjG8&list=PL2mpR0RYFQsADmYpW2YWBrXJZ_6EL_3nu&index=7
 */
-func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk int) {
+func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChunksPerChunk, numOfBitsPerSubChunk, totalRank int) {
 	numOfSubChunksPerChunk = 4
 
+	totalRank = 0
 	chunkCumulativeRank := 0
 	subChunkCumulativeRank := 0
 
@@ -143,6 +153,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 
 		onesCount := bits.OnesCount64(inBv.getBitSet(i))
 		subChunkCumulativeRank += onesCount
+		totalRank += onesCount
 	}
 
 	if currSubChunks != nil {
@@ -152,7 +163,7 @@ func buildJacobsonRank(inBv bitvector) (jacobsonRankChunks []chunk, numOfSubChun
 		})
 	}
 
-	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize
+	return jacobsonRankChunks, numOfSubChunksPerChunk, wordSize, totalRank
 }
 
 // This is not good. We should find a better means of select- like Clark's Select
