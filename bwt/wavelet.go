@@ -10,13 +10,13 @@ import (
 
 /*
 
-For the waveletTree's usage, please read the its
+For the waveletTree's usage, please read its
 method documentation. To understand what it is and how
 it works for either curiosity or maintenance, then read below.
 
 # WaveletTree
 
-The Wavelet Tree allows us to conduct RSA queries on strings. in
+The Wavelet Tree allows us to conduct RSA queries on strings in
 a memory and run time efficient manner.
 RSA stands for (R)ank, (S)elect, (A)ccess.
 
@@ -25,8 +25,9 @@ https://www.alexbowe.com/wavelet-trees/
 
 ## The Character's Path Encoding
 
-One important component is a character's path encoding.
-Which character we are working with in a given path in the tree.
+Each character from a sequence's alphabet will be assigned a path.
+This path encoding represents a path from the Wavelet Tree's root to some
+leaf node that represents a character.
 For example, given the alphabet A B C D E F G H, a possible encoding is:
 
 A: 000
@@ -38,9 +39,10 @@ F: 101
 G: 110
 H: 111
 
-If we wanted to get to the leaf that represent the character D, we'd
-take the path that corresponds to the character's encoding, considering a 0 as choosing the left
-child of a node and a 1 as choosing the right child of a node:
+If we wanted to get to the leaf that represents the character D, we'd have
+to use D's path encoding to traverse the tree.
+Consider 0 as the left and 1 as the right.
+If we follow D's encoding, 011, then we'd take a path that looks like:
 
    root
   /
@@ -66,6 +68,7 @@ We can represent this tree with bitvectors:
      bananas
     /       \
   1000      001
+  baaa      nns
  /    \    /   \
 a      n  b     s
 
@@ -81,10 +84,9 @@ Each node of the tree consists of a bitvector whose values indicate whether
 the character at a particular index is in the left (0) or right (1) child of the
 tree.
 
-## RSA Intuition
+## RSA
 
-From here you may be able to build some intuition as to how we can take RSA queries given
-a characters path encoding and which character we'd like to Rank, Select, and Access.
+At this point, we can talk about RSA. RSA stands for (R)ank, (S)elect, (A)ccess.
 
 ### Rank Example
 
@@ -92,21 +94,21 @@ WaveletTree.Rank(c, n) returns the rank of character c at index n in a sequence,
 times c has occurred in a sequence before index n.
 
 To get WaveletTree.Rank(a, 4) of bananas where a's encoding is 00
-1. root.Rank(0, 4) of 0010101 is 2
+1. root.Rank(0, 4) of 0010101 is 3
 2. Visit Left Child
-3. child.Rank(0, 2) of 1000 is 1
+3. child.Rank(0, 3) of 1000 is 2
 4. Visit Left Child
-5. We are at a leaf node, so return our last recorded rank: 1
+5. We are at a leaf node, so return our last recorded rank: 2
 
 ### Select Example
 
 To get WaveletTree.Select(n, 1) of bananas where n's encoding is 01
 1. Go down to n's leaf using the path encoding is 01
 2. Go back to n's leaf's parent
-3. parent.Select(0, 1) of 001 is 1
+3. parent.Select(0, 1) of 001 is 0
 4. Go to the next parent
-5. parent.Select(1, 1) of 0010101 is 4
-6. return 4 since we are at the root.
+5. parent.Select(1, 0) of 0010101 is 2
+6. return 2 since we are at the root.
 
 ### Access Example
 
@@ -342,7 +344,7 @@ func isInAlpha(alpha []charInfo, b byte) bool {
 }
 
 // partitionAlpha partitions the alphabet in half based on whether its corresponding path bit
-// is a 0 or 1. 0 with comprise the left tree while 1 will comprise the right. The alphabet
+// is a 0 or 1. 0 will comprise the left tree while 1 will comprise the right. The alphabet
 // should be sorted in such a way that we remove the most amount of characters nearest to the
 // root of the tree to reduce the memory footprint as much as possible.
 func partitionAlpha(currentLevel int, alpha []charInfo) (left []charInfo, right []charInfo) {
