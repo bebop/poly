@@ -267,6 +267,11 @@ func (bwt BWT) Len() int {
 	return bwt.getLenOfOriginalStringWithNullChar() - 1
 }
 
+// GetTransform returns the last column of the BWT transform of the original sequence.
+func (bwt BWT) GetTransform() string {
+	return bwt.lastColumn.reconstruct()
+}
+
 // getFCharPosFromOriginalSequenceCharPos looks up mapping from the original position
 // of the sequence to its corresponding position in the First Column of the BWT
 // NOTE: This clearly isn't ideal. Instead of improving this implementation, this will be replaced with

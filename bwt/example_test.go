@@ -56,3 +56,15 @@ func ExampleBWT_Extract() {
 	fmt.Println(extracted)
 	// Output: AACGTG
 }
+
+func ExampleBWT_GetTransform() {
+	inputSequence := "banana"
+
+	bwt, err := bwt.New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(bwt.GetTransform())
+	// Output: annb$aa
+}

@@ -204,10 +204,7 @@ func TestWaveletTree_Access_Reconstruction(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		actual := ""
-		for i := 0; i < len(str); i++ {
-			actual += string(wt.Access(i))
-		}
+		actual := wt.reconstruct()
 		if actual != str {
 			t.Fatalf("expected to rebuild:\n%s\nbut instead got:\n%s", str, actual)
 		}

@@ -145,8 +145,9 @@ specific waveletTree works.
 // * locating characters of certain rank within the sequence
 // * accessing the character at a given position
 type waveletTree struct {
-	root  *node
-	alpha []charInfo
+	root   *node
+	alpha  []charInfo
+	length int
 }
 
 // Access will return the ith character of the original
@@ -245,6 +246,14 @@ func (wt waveletTree) lookupCharInfo(char byte) charInfo {
 	panic(msg)
 }
 
+func (wt waveletTree) reconstruct() string {
+	str := ""
+	for i := 0; i < wt.length; i++ {
+		str += string(wt.Access(i))
+	}
+	return str
+}
+
 type node struct {
 	data   rsaBitVector
 	char   *byte
@@ -285,8 +294,9 @@ func newWaveletTreeFromString(str string) (waveletTree, error) {
 	}
 
 	return waveletTree{
-		root:  root,
-		alpha: alpha,
+		root:   root,
+		alpha:  alpha,
+		length: len(str),
 	}, nil
 }
 
