@@ -260,3 +260,26 @@ func TestWaveletTreeSingleAlpha(t *testing.T) {
 		t.Fatalf("expected Access(%d) to be %d but got %d", 1, 1, s)
 	}
 }
+func TestBuildWaveletTree_ZeroAlpha(t *testing.T) {
+	bytes := []byte("AAAACCCCTTTTGGGG")
+	alpha := []charInfo{}
+
+	root := buildWaveletTree(0, alpha, bytes)
+
+	if root != nil {
+		t.Fatalf("expected root to be nil but got %v", root)
+	}
+}
+func TestWaveletTree_LookupCharInfo_Panic(t *testing.T) {
+	wt := waveletTree{
+		alpha: []charInfo{},
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("expected panic but got nil")
+		}
+	}()
+
+	wt.lookupCharInfo('B')
+}

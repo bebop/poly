@@ -328,9 +328,9 @@ func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
 		panic(msg)
 	}
 
-	for i := range bwt.firstColumnSkipList {
-		if bwt.firstColumnSkipList[i].openEndedInterval.start <= offset && offset < bwt.firstColumnSkipList[i].openEndedInterval.end {
-			return bwt.firstColumnSkipList[i]
+	for skipIndex := range bwt.firstColumnSkipList {
+		if bwt.firstColumnSkipList[skipIndex].openEndedInterval.start <= offset && offset < bwt.firstColumnSkipList[skipIndex].openEndedInterval.end {
+			return bwt.firstColumnSkipList[skipIndex]
 		}
 	}
 	panic("figure out what to do here")
