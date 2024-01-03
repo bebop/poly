@@ -1,7 +1,6 @@
 package bwt
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -403,10 +402,18 @@ func TestBWT_LookupSkipByOffset_PanicOffsetExceedsMinBound(t *testing.T) {
 
 func TestBWTRecovery(t *testing.T) {
 	// Test panic recovery for bwtRecovery function
-	err := fmt.Errorf("test error")
+	var err error
 	operation := "test operation"
-	defer bwtRecovery(operation, &err)
 
+	defer func() {
+		if err == nil {
+			t.Fatal("expected bwtRecovery to recover from the panic and set an error message, but got nil")
+		}
+	}()
+	defer bwtRecovery(operation, &err)
+	doPanic()
+}
+
+func doPanic() {
 	panic("test panic")
-	t.Errorf("Expected panic, but it did not occur")
 }
