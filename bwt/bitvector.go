@@ -1,6 +1,7 @@
 package bwt
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -62,7 +63,8 @@ func (b bitvector) setBit(i int, val bool) {
 
 func (b bitvector) checkBounds(i int) {
 	if i >= b.len() || i < 0 {
-		panic("better out of bounds message")
+		msg := fmt.Sprintf("access of %d is out of bounds for bitvector with length %d", i, b.len())
+		panic(msg)
 	}
 }
 

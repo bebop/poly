@@ -8,6 +8,28 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// This example shows how BWT can be used for exact pattern
+// matching by returning the offsets at which the pattern exists.
+// This can be useful for alignment when you need  need to reduce
+// the memory footprint of a reference sequence without loosing
+// any data since BWT is a lossless compression.
+func ExampleBWT_basic() {
+	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
+
+	bwt, err := bwt.New(inputSequence)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	offsets, err := bwt.Locate("GCC")
+	if err != nil {
+		log.Fatal(err)
+	}
+	slices.Sort(offsets)
+	fmt.Println(offsets)
+	// Output: [5 17]
+}
+
 func ExampleBWT_Count() {
 	inputSequence := "AACCTGCCGTCGGGGCTGCCCGTCGCGGGACGTCGAAACGTGGGGCGAAACGTG"
 

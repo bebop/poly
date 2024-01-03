@@ -333,7 +333,8 @@ func (bwt BWT) lookupSkipByOffset(offset int) skipEntry {
 			return bwt.firstColumnSkipList[skipIndex]
 		}
 	}
-	panic("figure out what to do here")
+	msg := fmt.Sprintf("could not find the skip entry that falls within the range of the skip column at a given offset. range: [0, %d) offset: %d", bwt.getLenOfOriginalStringWithNullChar(), offset)
+	panic(msg)
 }
 
 func (bwt BWT) getLenOfOriginalStringWithNullChar() int {
