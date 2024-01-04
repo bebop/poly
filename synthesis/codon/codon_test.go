@@ -8,6 +8,7 @@ import (
 
 	"github.com/bebop/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
@@ -592,6 +593,85 @@ func TestUpdateWeights(t *testing.T) {
 			err = optimizationTable.UpdateWeights(tt.aminoAcids)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCopy(t *testing.T) {
+	t.Parallel()
+
+	cmpOptions := []cmp.Option{
+		cmpopts.IgnoreUnexported(weightedRand.Chooser{}),
+	}
+
+	tests := []struct {
+		name string
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		var tt = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			original, err := NewTranslationTable(11)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// perform a deep copy (changing the copy will not change the original)
+
+			deepCopy, err := original.Copy()
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+
+			// modify fields
+
+			deepCopy.StartCodons[0] = "🍌"
+			deepCopy.StopCodons[0] = "🐗"
+			deepCopy.AminoAcids = []AminoAcid{}
+			deepCopy.Choosers = map[string]weightedRand.Chooser{}
+			deepCopy.Stats = &Stats{}
+			deepCopy.TranslationMap = map[string]string{}
+
+			// this compares pointers
+			if cmp.Equal(deepCopy, original, cmpOptions...) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy, original, cmpOptions...))
+			}
+
+			// we compare the table's fields
+
+			if cmp.Equal(deepCopy.StartCodonTable, original.StartCodons) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.StartCodonTable, original.StartCodons))
+			}
+
+			if cmp.Equal(deepCopy.StopCodons, original.StopCodons) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.StopCodons, original.StopCodons))
+			}
+
+			if cmp.Equal(deepCopy.AminoAcids, original.AminoAcids) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.AminoAcids, original.AminoAcids))
+			}
+
+			if cmp.Equal(deepCopy.Choosers, original.Choosers) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.Choosers, original.Choosers))
+			}
+
+			if cmp.Equal(deepCopy.Stats, original.Stats) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.Stats, original.Stats))
+			}
+
+			if cmp.Equal(deepCopy.TranslationMap, original.TranslationMap) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.TranslationMap, original.TranslationMap))
 			}
 		})
 	}

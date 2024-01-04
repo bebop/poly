@@ -117,19 +117,46 @@ type TranslationTable struct {
 }
 
 // Copy returns a deep copy of the translation table. This is to prevent an unintended update of data used in another
-// process, since the tables are generated at build time.
-func (table *TranslationTable) Copy() *TranslationTable {
-	return &TranslationTable{
-		StartCodons: table.StartCodons,
-		StopCodons:  table.StopCodons,
-		AminoAcids:  table.AminoAcids,
+// process.
+func (table *TranslationTable) Copy() (*TranslationTable, error) {
+	newTranslationMap := map[string]string{}
+	newStartCodonTable := map[string]string{}
 
-		StartCodonTable: table.StartCodonTable,
-		TranslationMap:  table.TranslationMap,
-		Choosers:        table.Choosers,
-
-		Stats: table.Stats,
+	for k, v := range table.TranslationMap {
+		newTranslationMap[k] = v
 	}
+
+	for k, v := range table.StartCodonTable {
+		newStartCodonTable[k] = v
+	}
+
+	newAAs := []AminoAcid{}
+	for _, v := range table.AminoAcids {
+		newAAs = append(newAAs, AminoAcid{
+			Letter: "",
+			Codons: append([]Codon{}, v.Codons...),
+		})
+	}
+
+	newChoosers, err := newAminoAcidChoosers(newAAs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TranslationTable{
+		StartCodons: append([]string{}, table.StartCodons...),
+		StopCodons:  append([]string{}, table.StopCodons...),
+		AminoAcids:  append([]AminoAcid{}, table.AminoAcids...),
+
+		TranslationMap:  newTranslationMap,
+		StartCodonTable: newStartCodonTable,
+		Choosers:        newChoosers,
+
+		Stats: &Stats{
+			StartCodonCount: table.Stats.StartCodonCount,
+			GeneCount:       table.Stats.GeneCount,
+		},
+	}, nil
 }
 
 // GetWeightedAminoAcids returns the amino acids along with their associated codon weights
@@ -592,7 +619,10 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable *TranslationTable, c
 	//
 	// this take start and stop strings from first table
 	// and use them as start + stops in final codonTable
-	mergedTable := firstCodonTable.Copy()
+	mergedTable, err := firstCodonTable.Copy()
+	if err != nil {
+		return nil, err
+	}
 
 	// Check if cutOff is too high or low (this is converted to a percent)
 	if cutOff < 0 {
@@ -663,7 +693,7 @@ func CompromiseCodonTable(firstCodonTable, secondCodonTable *TranslationTable, c
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	err := mergedTable.UpdateWeights(finalAminoAcids)
+	err = mergedTable.UpdateWeights(finalAminoAcids)
 	if err != nil {
 		return nil, err
 	}
@@ -690,9 +720,12 @@ func AddCodonTable(firstCodonTable, secondCodonTable *TranslationTable) (*Transl
 		finalAminoAcids = append(finalAminoAcids, AminoAcid{firstAa.Letter, finalCodons})
 	}
 
-	mergedTable := firstCodonTable.Copy()
+	mergedTable, err := firstCodonTable.Copy()
+	if err != nil {
+		return nil, err
+	}
 
-	err := mergedTable.UpdateWeights(finalAminoAcids)
+	err = mergedTable.UpdateWeights(finalAminoAcids)
 	if err != nil {
 		return nil, err
 	}
