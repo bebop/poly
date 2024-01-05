@@ -1,6 +1,7 @@
 package fold
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -200,4 +201,14 @@ func TestFold(t *testing.T) {
 		require.NoError(t, err)
 		assert.InDelta(t, struc.energy, -4.2, 0.2)
 	})
+}
+func TestZuker_ErrorCreatingFoldingContext(t *testing.T) {
+	seq := "ATGGATTTAGATAGATADFQ#(RSDOFIA)"
+	temp := 4000.0
+
+	expectedErr := fmt.Errorf("error creating folding context: the sequence ATGGATTTAGATAGATADFQ#(RSDOFIA) is not RNA or DNA")
+
+	_, err := Zuker(seq, temp)
+	require.Error(t, err)
+	assert.Equal(t, expectedErr.Error(), err.Error())
 }
