@@ -8,6 +8,7 @@ import (
 
 	"github.com/bebop/poly/io/genbank"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	weightedRand "github.com/mroth/weightedrand"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,14 +17,23 @@ func TestTranslation(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
 
-	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
+	table, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	if got, _ := table.Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslation has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
 
 func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
-	nonEmptyCodonTable := NewTranslationTable(1)
-	_, err := nonEmptyCodonTable.Translate("")
+	nonEmptyCodonTable, err := NewTranslationTable(1)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	_, err = nonEmptyCodonTable.Translate("")
 
 	if err != errEmptySequenceString {
 		t.Error("Translation should return an error if given an empty sequence string")
@@ -33,7 +43,12 @@ func TestTranslationErrorsOnEmptyAminoAcidString(t *testing.T) {
 func TestTranslationMixedCase(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "atggctagcaaaggagaagaacttttcactggagttgtcccaaTTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
+	table, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	if got, _ := table.Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslationMixedCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -41,7 +56,13 @@ func TestTranslationMixedCase(t *testing.T) {
 func TestTranslationLowerCase(t *testing.T) {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "atggctagcaaaggagaagaacttttcactggagttgtcccaattcttgttgaattagatggtgatgttaatgggcacaaattttctgtcagtggagagggtgaaggtgatgctacatacggaaagcttacccttaaatttatttgcactactggaaaactacctgttccatggccaacacttgtcactactttctcttatggtgttcaatgcttttcccgttatccggatcatatgaaacggcatgactttttcaagagtgccatgcccgaaggttatgtacaggaacgcactatatctttcaaagatgacgggaactacaagacgcgtgctgaagtcaagtttgaaggtgatacccttgttaatcgtatcgagttaaaaggtattgattttaaagaagatggaaacattctcggacacaaactcgagtacaactataactcacacaatgtatacatcacggcagacaaacaaaagaatggaatcaaagctaacttcaaaattcgccacaacattgaagatggatccgttcaactagcagaccattatcaacaaaatactccaattggcgatggccctgtccttttaccagacaaccattacctgtcgacacaatctgccctttcgaaagatcccaacgaaaagcgtgaccacatggtccttcttgagtttgtaactgctgctgggattacacatggcatggatgagctctacaaataa"
-	if got, _ := NewTranslationTable(11).Translate(gfpDnaSequence); got != gfpTranslation {
+
+	table, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	if got, _ := table.Translate(gfpDnaSequence); got != gfpTranslation {
 		t.Errorf("TestTranslationLowerCase has failed. Translate has returned %q, want %q", got, gfpTranslation)
 	}
 }
@@ -51,13 +72,20 @@ func TestOptimize(t *testing.T) {
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
-	table := NewTranslationTable(11)
-	err := table.UpdateWeightsWithSequence(sequence)
+	table, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = table.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
 
-	codonTable := NewTranslationTable(11)
+	codonTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
 
 	optimizedSequence, _ := table.Optimize(gfpTranslation)
 	optimizedSequenceTranslation, _ := codonTable.Translate(optimizedSequence)
@@ -70,8 +98,12 @@ func TestOptimize(t *testing.T) {
 func TestOptimizeSameSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
-	optimizationTable := NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,8 +124,12 @@ func TestOptimizeSameSeed(t *testing.T) {
 func TestOptimizeDifferentSeed(t *testing.T) {
 	var gfpTranslation = "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	var sequence, _ = genbank.Read("../../data/puc19.gbk")
-	optimizationTable := NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -107,8 +143,12 @@ func TestOptimizeDifferentSeed(t *testing.T) {
 }
 
 func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
-	nonEmptyCodonTable := NewTranslationTable(1)
-	_, err := nonEmptyCodonTable.Optimize("")
+	nonEmptyCodonTable, err := NewTranslationTable(1)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	_, err = nonEmptyCodonTable.Optimize("")
 
 	if err != errEmptyAminoAcidString {
 		t.Error("Optimize should return an error if given an empty amino acid string")
@@ -116,14 +156,22 @@ func TestOptimizeErrorsOnEmptyAminoAcidString(t *testing.T) {
 }
 func TestOptimizeErrorsOnInvalidAminoAcid(t *testing.T) {
 	aminoAcids := "TOP"
-	table := NewTranslationTable(1) // does not contain 'O'
+	table, err := NewTranslationTable(1)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+	// does not contain 'O'
 
 	_, optimizeErr := table.Optimize(aminoAcids)
 	assert.EqualError(t, optimizeErr, invalidAminoAcidError{'O'}.Error())
 }
 
 func TestGetCodonFrequency(t *testing.T) {
-	translationTable := NewTranslationTable(11).TranslationMap
+	table, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+	translationTable := table.TranslationMap
 
 	var codons strings.Builder
 
@@ -197,14 +245,22 @@ func TestCompromiseCodonTable(t *testing.T) {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 
-	optimizationTable := NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	optimizationTable2 := NewTranslationTable(11)
+	optimizationTable2, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
 	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		t.Error(err)
@@ -239,14 +295,22 @@ func TestAddCodonTable(t *testing.T) {
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
 
-	optimizationTable := NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	optimizationTable2 := NewTranslationTable(11)
+	optimizationTable2, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
 	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		t.Error(err)
@@ -273,8 +337,12 @@ func TestCapitalizationRegression(t *testing.T) {
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
-	optimizationTable := NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := NewTranslationTable(11)
+	if err != nil {
+		t.Fatalf("failed to initialise codon table: %s", err)
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		t.Error(err)
 	}
@@ -350,8 +418,12 @@ func TestOptimizeSequence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			optimizationTable := NewTranslationTable(11)
-			err := optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
+			optimizationTable, err := NewTranslationTable(11)
+			if err != nil {
+				t.Fatalf("failed to initialise codon table: %s", err)
+			}
+
+			err = optimizationTable.UpdateWeightsWithSequence(tt.updateWeightsWith)
 			if !errors.Is(err, tt.wantUpdateWeightsErr) {
 				t.Errorf("got %v, want %v", err, tt.wantUpdateWeightsErr)
 			}
@@ -453,7 +525,8 @@ func TestUpdateWeights(t *testing.T) {
 
 		chooserFn func(choices ...weightedRand.Choice) (*weightedRand.Chooser, error)
 
-		wantErr error
+		wantInitErr error
+		wantErr     error
 	}{
 		{
 			name: "ok",
@@ -493,7 +566,8 @@ func TestUpdateWeights(t *testing.T) {
 				return nil, mockError
 			},
 
-			wantErr: mockError,
+			wantInitErr: mockError,
+			wantErr:     mockError,
 		},
 	}
 
@@ -506,11 +580,98 @@ func TestUpdateWeights(t *testing.T) {
 				newChooserFn = weightedRand.NewChooser
 			}()
 
-			optimizationTable := NewTranslationTable(11)
+			optimizationTable, err := NewTranslationTable(11)
+			if !errors.Is(err, tt.wantInitErr) {
+				t.Fatalf("got %v, want %v", err, tt.wantInitErr)
+				return
+			}
 
-			err := optimizationTable.UpdateWeights(tt.aminoAcids)
+			if tt.wantInitErr != nil {
+				return
+			}
+
+			err = optimizationTable.UpdateWeights(tt.aminoAcids)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCopy(t *testing.T) {
+	t.Parallel()
+
+	cmpOptions := []cmp.Option{
+		cmpopts.IgnoreUnexported(weightedRand.Chooser{}),
+	}
+
+	tests := []struct {
+		name string
+
+		wantErr error
+	}{
+		{
+			name: "ok",
+
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		var tt = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			original, err := NewTranslationTable(11)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// perform a deep copy (changing the copy will not change the original)
+
+			deepCopy, err := original.Copy()
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("got %v, want %v", err, tt.wantErr)
+			}
+
+			// modify fields
+
+			deepCopy.StartCodons[0] = "🍌"
+			deepCopy.StopCodons[0] = "🐗"
+			deepCopy.AminoAcids = []AminoAcid{}
+			deepCopy.Choosers = map[string]weightedRand.Chooser{}
+			deepCopy.Stats = &Stats{}
+			deepCopy.TranslationMap = map[string]string{}
+
+			// this compares pointers
+			if cmp.Equal(deepCopy, original, cmpOptions...) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy, original, cmpOptions...))
+			}
+
+			// we compare the table's fields
+
+			if cmp.Equal(deepCopy.StartCodonTable, original.StartCodons) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.StartCodonTable, original.StartCodons))
+			}
+
+			if cmp.Equal(deepCopy.StopCodons, original.StopCodons) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.StopCodons, original.StopCodons))
+			}
+
+			if cmp.Equal(deepCopy.AminoAcids, original.AminoAcids) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.AminoAcids, original.AminoAcids))
+			}
+
+			if cmp.Equal(deepCopy.Choosers, original.Choosers) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.Choosers, original.Choosers))
+			}
+
+			if cmp.Equal(deepCopy.Stats, original.Stats) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.Stats, original.Stats))
+			}
+
+			if cmp.Equal(deepCopy.TranslationMap, original.TranslationMap) {
+				t.Errorf("deepCopy and original matched, we did not want them to %s", cmp.Diff(deepCopy.TranslationMap, original.TranslationMap))
 			}
 		})
 	}
