@@ -11,7 +11,13 @@ import (
 func ExampleTranslationTable_Translate() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 	gfpDnaSequence := "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA"
-	testTranslation, _ := codon.NewTranslationTable(11).Translate(gfpDnaSequence) // need to specify which codons map to which amino acids per NCBI table
+	table, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
+	testTranslation, _ := table.Translate(gfpDnaSequence) // need to specify which codons map to which amino acids per NCBI table
 
 	fmt.Println(gfpTranslation == testTranslation)
 	// output: true
@@ -19,14 +25,19 @@ func ExampleTranslationTable_Translate() {
 
 func ExampleTranslationTable_UpdateWeights() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
-	sequenceWithCustomWeights := "ATGGCAAGTAAGGGAGAAGAGCTTTTTACCGGCGTAGTACCAATTCTGGTAGAACTGGATGGTGATGTAAACGGTCACAAATTTAGTGTAAGCGGAGAAGGTGAGGGTGATGCTACCTATGGCAAACTGACCCTAAAGTTTATATGCACGACTGGAAAACTTCCGGTACCGTGGCCAACGTTAGTTACAACGTTTTCTTATGGAGTACAGTGCTTCAGCCGCTACCCAGATCATATGAAACGCCATGATTTCTTTAAGAGCGCCATGCCAGAGGGTTATGTTCAGGAGCGCACGATCTCGTTTAAGGATGATGGTAACTATAAGACTCGTGCTGAGGTGAAGTTCGAAGGCGATACCCTTGTAAATCGTATTGAATTGAAGGGTATAGACTTCAAGGAGGATGGAAATATTCTTGGACATAAGCTGGAATACAATTACAATTCACATAACGTTTATATAACTGCCGACAAGCAAAAAAACGGGATAAAAGCTAATTTTAAAATACGCCACAACATAGAGGACGGGTCGGTGCAACTAGCCGATCATTATCAACAAAACACACCAATCGGCGACGGACCAGTTCTGTTGCCCGATAATCATTACTTATCAACCCAAAGTGCCTTAAGTAAGGATCCGAACGAAAAGCGCGATCATATGGTACTTCTTGAGTTTGTTACCGCTGCAGGCATAACGCATGGCATGGACGAGCTATACAAATAA"
 
-	table := codon.NewTranslationTable(11)
+	sequenceWithCustomWeights := "ATGGCGAGCAAGGGCGAAGAGCTTTTTACTGGAGTGGTACCCATCCTTGTGGAGCTGGATGGGGATGTTAATGGGCACAAGTTTTCTGTGTCCGGTGAGGGGGAGGGTGACGCGACCTATGGCAAACTAACGTTGAAGTTTATCTGCACCACCGGCAAGCTCCCTGTCCCTTGGCCGACGCTGGTAACCACTTTTTCATACGGAGTGCAATGCTTTTCACGATACCCAGACCACATGAAACGGCACGACTTCTTCAAGAGCGCGATGCCAGAAGGTTATGTGCAAGAGCGTACGATCTCATTCAAGGACGACGGGAATTATAAGACAAGAGCAGAGGTGAAATTTGAGGGGGACACGTTAGTAAATCGGATTGAATTAAAGGGAATCGACTTTAAGGAGGATGGGAACATACTTGGTCACAAACTGGAATATAATTACAATTCACACAATGTTTACATCACTGCCGACAAGCAAAAAAATGGGATTAAAGCAAATTTCAAAATTCGGCATAATATTGAGGATGGTAGTGTCCAGCTCGCGGATCACTATCAGCAAAACACACCTATCGGAGACGGACCCGTTTTACTACCGGATAATCATTACTTAAGCACCCAATCAGCGTTATCCAAAGATCCGAACGAAAAACGTGACCACATGGTTCTCTTGGAGTTCGTCACCGCAGCTGGAATAACTCATGGAATGGACGAACTATACAAATAA"
+
+	table, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
 
 	// this example is using custom weights for different codons for Arginine. Use this if you would rather use your own
 	// codon weights, they can also be computed for you with `UpdateWeightsWithSequence`.
 
-	err := table.UpdateWeights([]codon.AminoAcid{
+	err = table.UpdateWeights([]codon.AminoAcid{
 		{
 			Letter: "R",
 			Codons: []codon.Codon{
@@ -57,7 +68,11 @@ func ExampleTranslationTable_UpdateWeights() {
 		fmt.Println("Could not update weights in example")
 	}
 
-	optimizedSequence, _ := table.Optimize(gfpTranslation, 1)
+	optimizedSequence, err := table.Optimize(gfpTranslation, 1)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
 
 	fmt.Println(optimizedSequence == sequenceWithCustomWeights)
 	// output: true
@@ -67,7 +82,12 @@ func ExampleTranslationTable_Optimize() {
 	gfpTranslation := "MASKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKRHDFFKSAMPEGYVQERTISFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYITADKQKNGIKANFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK*"
 
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
-	codonTable := codon.NewTranslationTable(11)
+	codonTable, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
 	_ = codonTable.UpdateWeightsWithSequence(sequence)
 
 	// Here, we double check if the number of genes is equal to the number of stop codons
@@ -122,14 +142,24 @@ func ExampleCompromiseCodonTable() {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codon.NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	optimizationTable2 := codon.NewTranslationTable(11)
+	optimizationTable2, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
 	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
@@ -143,21 +173,31 @@ func ExampleCompromiseCodonTable() {
 			}
 		}
 	}
-	//output: 2727
+	//output: 3863
 }
 
 func ExampleAddCodonTable() {
 	sequence, _ := genbank.Read("../../data/puc19.gbk")
 
 	// weight our codon optimization table using the regions we collected from the genbank file above
-	optimizationTable := codon.NewTranslationTable(11)
-	err := optimizationTable.UpdateWeightsWithSequence(sequence)
+	optimizationTable, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
+	err = optimizationTable.UpdateWeightsWithSequence(sequence)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
 	}
 
 	sequence2, _ := genbank.Read("../../data/phix174.gb")
-	optimizationTable2 := codon.NewTranslationTable(11)
+	optimizationTable2, err := codon.NewTranslationTable(11)
+	if err != nil {
+		fmt.Printf("error running example: %s\n", err)
+		return
+	}
+
 	err = optimizationTable2.UpdateWeightsWithSequence(sequence2)
 	if err != nil {
 		panic(fmt.Errorf("got unexpected error in an example: %w", err))
@@ -175,5 +215,5 @@ func ExampleAddCodonTable() {
 			}
 		}
 	}
-	//output: 90
+	//output: 51
 }
