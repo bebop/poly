@@ -37,6 +37,12 @@ func NewParser(reader io.Reader) *Parser {
 	}
 }
 
+// A tokenRange holds indices in which a token is expected to occur.
+type tokenRange struct {
+	start int
+	end   int
+}
+
 /* PARSER UTILITY FUNCTIONS */
 
 func (p *Parser) makeSyntaxError(msg string, innerError ...error) GenbankSyntaxError {
@@ -210,6 +216,12 @@ func (p *Parser) Parse() (Genbank, error) {
 
 const headerDateLayout = "January 2 2006"
 
+var fileNameRange = tokenRange{start: 0, end: 10}
+var releaseNumRange = tokenRange{start: 47, end: 52}
+var entryNumRange = tokenRange{start: 0, end: 8}
+var baseNumRange = tokenRange{start: 15, end: 26}
+var sequenceNumRange = tokenRange{start: 39, end: 47}
+
 func (p *Parser) parseHeader() (Header, error) {
 	res := Header{}
 
@@ -217,7 +229,7 @@ func (p *Parser) parseHeader() (Header, error) {
 	if err != nil {
 		return res, fmt.Errorf("failed to read file name: %w", err)
 	}
-	fileName := strings.TrimSpace(fileNameLine[:10])
+	fileName := strings.TrimSpace(fileNameLine[fileNameRange.start:fileNameRange.end])
 	if fileName == "" {
 		return res, p.makeSyntaxError("empty file name")
 	}
@@ -239,10 +251,10 @@ func (p *Parser) parseHeader() (Header, error) {
 	if err != nil {
 		return res, fmt.Errorf("failed to read release: %w", err)
 	}
-	if len(releaseLine) < 48 {
+	if len(releaseLine) < releaseNumRange.end {
 		return res, p.makeSyntaxError("release line too short")
 	}
-	release := strings.Split(strings.TrimSpace(releaseLine[47:]), ".")
+	release := strings.Split(strings.TrimSpace(releaseLine[releaseNumRange.start:releaseNumRange.end]), ".")
 	if len(release) != 2 {
 		return res, p.makeSyntaxError("malformed release version")
 	}
@@ -269,18 +281,18 @@ func (p *Parser) parseHeader() (Header, error) {
 	if err != nil {
 		return res, fmt.Errorf("failed to read file statistics: %w", err)
 	}
-	if len(releaseLine) < 48 {
-		return res, p.makeSyntaxError("release line too short")
+	if len(statsLine) < sequenceNumRange.end {
+		return res, p.makeSyntaxError("file statistics line too short")
 	}
-	res.NumEntries, err = strconv.Atoi(strings.TrimSpace(statsLine[:8]))
+	res.NumEntries, err = strconv.Atoi(strings.TrimSpace(statsLine[entryNumRange.start:entryNumRange.end]))
 	if err != nil {
 		return res, p.makeSyntaxError("failed to parse number of entries/loci", err)
 	}
-	res.NumBases, err = strconv.Atoi(strings.TrimSpace(statsLine[15:26]))
+	res.NumBases, err = strconv.Atoi(strings.TrimSpace(statsLine[baseNumRange.start:baseNumRange.end]))
 	if err != nil {
 		return res, p.makeSyntaxError("failed to parse number of bases", err)
 	}
-	res.NumSequences, err = strconv.Atoi(strings.TrimSpace(statsLine[39:47]))
+	res.NumSequences, err = strconv.Atoi(strings.TrimSpace(statsLine[sequenceNumRange.start:sequenceNumRange.end]))
 	if err != nil {
 		return res, p.makeSyntaxError("failed to parse number of sequences", err)
 	}
@@ -651,7 +663,7 @@ func (p *Parser) parseReference(pCtx parseContext) error {
 	re := regexp.MustCompile(`(\d+)\s+\(bases (\d)+ to (\d+)`)
 	matches := re.FindStringSubmatch(after)
 	if matches == nil {
-		return p.makeSyntaxError("malfored REFERENCE line")
+		return p.makeSyntaxError("malformed REFERENCE line")
 	}
 
 	refNum, _ := strconv.Atoi(matches[0])

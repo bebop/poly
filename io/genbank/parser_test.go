@@ -8,24 +8,38 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseHeader(t *testing.T) {
+func TestParseHeaderErrs(t *testing.T) {
 	testcases := []struct {
-		name    string
-		data    string
-		want    Header
-		wantErr bool
+		name string
+		data string
 	}{{
-		name: "parses example header from spec",
+		name: "fails on premature EOF",
 		data: `GBBCT1.SEQ          Genetic Sequence Data Bank
                           October 15 2023
 
-                NCBI-GenBank Flat File Release 258.0
+                NCBI-GenBank Flat File Release`,
+	}}
 
-                     Bacterial Sequences (Part 1)
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := NewParser(strings.NewReader(tc.data))
+			got, err := p.parseHeader()
 
-   51396 loci,    92682287 bases, from    51396 reported sequences
-`,
-		want: Header{
+			if err == nil {
+				t.Fatalf("no error returned by parseHeader on invalid input, got: %v", got)
+			}
+		})
+	}
+
+}
+
+func TestParseHeaderRoundTrip(t *testing.T) {
+	testcases := []struct {
+		name string
+		data Header
+	}{{
+		name: "parses example header from spec",
+		data: Header{
 			FileName:     "GBBCT1.SEQ",
 			Date:         time.Date(2023, time.October, 15, 0, 0, 0, 0, time.UTC),
 			Title:        "Bacterial Sequences (Part 1)",
@@ -34,27 +48,43 @@ func TestParseHeader(t *testing.T) {
 			NumSequences: 51396,
 			MajorRelease: 258,
 			MinorRelease: 0,
-		},
-	}, {
-		name: "fails on premature EOF",
-		data: `GBBCT1.SEQ          Genetic Sequence Data Bank
-                          October 15 2023
-
-                NCBI-GenBank Flat File Release`,
-		wantErr: true,
-	}}
+		}}, {
+		name: "parses header with largest possible ints in stats line",
+		data: Header{
+			FileName:     "GBBCT1.SEQ",
+			Date:         time.Date(2023, time.October, 15, 0, 0, 0, 0, time.UTC),
+			Title:        "Bacterial Sequences (Part 1)",
+			NumEntries:   99999999,
+			NumBases:     99999999999,
+			NumSequences: 99999999,
+			MajorRelease: 258,
+			MinorRelease: 0,
+		}}, {
+		name: "parses header with smallest possible ints in stats line",
+		data: Header{
+			FileName:     "GBBCT1.SEQ",
+			Date:         time.Date(2023, time.October, 15, 0, 0, 0, 0, time.UTC),
+			Title:        "Bacterial Sequences (Part 1)",
+			NumEntries:   1,
+			NumBases:     1,
+			NumSequences: 1,
+			MajorRelease: 258,
+			MinorRelease: 0,
+		}}}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := NewParser(strings.NewReader(tc.data))
+			headerStr := tc.data.String()
+
+			p := NewParser(strings.NewReader(headerStr))
 			got, err := p.parseHeader()
 
-			if gotErr := err != nil; gotErr != tc.wantErr {
-				t.Fatalf("incorrect error returned from parseHeader, wantErr: %v, err: %v", tc.wantErr, err)
+			if err != nil {
+				t.Fatalf("unexpected error from parseHeader: %v", err)
 			}
 
-			if diff := cmp.Diff(tc.want, got); !tc.wantErr && diff != "" {
-				t.Fatalf("parseHeader returned incorrect header, (-want, +got): %v", diff)
+			if diff := cmp.Diff(tc.data, got); diff != "" {
+				t.Fatalf("parseHeader returned incorrect header after round trip, (-want, +got): %v", diff)
 			}
 
 		})
