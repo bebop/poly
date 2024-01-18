@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bebop/poly/bwt"
+	"github.com/bebop/poly/search/bwt"
 	"golang.org/x/exp/slices"
 )
 
