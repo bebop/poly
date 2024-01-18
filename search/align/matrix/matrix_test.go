@@ -3,8 +3,8 @@ package matrix_test
 import (
 	"testing"
 
-	"github.com/bebop/poly/align/matrix"
 	"github.com/bebop/poly/alphabet"
+	"github.com/bebop/poly/search/align/matrix"
 	"github.com/stretchr/testify/assert"
 )
 
