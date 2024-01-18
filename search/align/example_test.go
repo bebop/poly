@@ -4,9 +4,9 @@ package align_test
 import (
 	"fmt"
 
-	"github.com/bebop/poly/align"
-	"github.com/bebop/poly/align/matrix"
 	"github.com/bebop/poly/alphabet"
+	"github.com/bebop/poly/search/align"
+	"github.com/bebop/poly/search/align/matrix"
 )
 
 func ExampleNeedlemanWunsch() {
