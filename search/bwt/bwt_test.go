@@ -305,8 +305,7 @@ type sparseOnesTestCase struct {
 	expected int
 }
 
-// TODO: better name
-func TestSparseOnesRS_RankOnes(t *testing.T) {
+func TestRunInfo_FindNearestRunStartPosition(t *testing.T) {
 	runs := runInfo{
 		0,
 		6,
