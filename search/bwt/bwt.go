@@ -308,6 +308,7 @@ func (bwt BWT) GetTransform() string {
 	return lastColumn.String()
 }
 
+//lint:ignore U1000 Ignore unused function. This is valuable for future debugging
 func (bwt BWT) getFirstColumnStr() string {
 	firstColumn := strings.Builder{}
 	firstColumn.Grow(bwt.getLenOfOriginalStringWithNullChar())
