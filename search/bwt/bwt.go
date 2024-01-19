@@ -308,6 +308,18 @@ func (bwt BWT) GetTransform() string {
 	return lastColumn.String()
 }
 
+func (bwt BWT) getFirstColumnStr() string {
+	firstColumn := strings.Builder{}
+	firstColumn.Grow(bwt.getLenOfOriginalStringWithNullChar())
+	for i := 0; i < len(bwt.firstColumnSkipList); i++ {
+		e := bwt.firstColumnSkipList[i]
+		for j := e.openEndedInterval.start; j < e.openEndedInterval.end; j++ {
+			firstColumn.WriteByte(e.char)
+		}
+	}
+	return firstColumn.String()
+}
+
 // getFCharPosFromOriginalSequenceCharPos looks up mapping from the original position
 // of the sequence to its corresponding position in the First Column of the BWT
 // NOTE: This clearly isn't ideal. Instead of improving this implementation, this will be replaced with
@@ -341,8 +353,8 @@ func (bwt BWT) lfSearch(pattern string) interval {
 }
 
 func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
-	maxRunRank := bwt.runStartPositions.Rank(offset + 1)
-	maxRun := bwt.runBWTCompression.Rank(c, maxRunRank)
+	nearestRunStart := bwt.runStartPositions.FindNearestRunStartPosition(offset + 1)
+	maxRunInCompressedSpace := bwt.runBWTCompression.Rank(c, nearestRunStart)
 
 	skip, ok := bwt.lookupSkipByChar(c)
 	if !ok {
@@ -354,10 +366,10 @@ func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
 		return 0
 	}
 
-	cumulativeCountBeforeMaxRun := cumulativeCounts.Select(maxRun)
+	cumulativeCountBeforeMaxRun := cumulativeCounts[maxRunInCompressedSpace]
 
-	currentRunRank := bwt.runStartPositions.Rank(offset)
-	currentRunChar := string(bwt.runBWTCompression.Access(currentRunRank))
+	currRunStart := bwt.runStartPositions.FindNearestRunStartPosition(offset)
+	currentRunChar := string(bwt.runBWTCompression.Access(currRunStart))
 	extraOffset := 0
 	// It is possible that an offset currently lies within a run of the same
 	// character we are inspecting. In this case, cumulativeCountBeforeMaxRun
@@ -366,7 +378,7 @@ func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
 	// of character occurrences since the beginning of the run that the offset
 	// is currently in.
 	if c == currentRunChar[0] {
-		o := bwt.runStartPositions.Select(maxRunRank)
+		o := bwt.runStartPositions[nearestRunStart]
 		extraOffset += offset - o
 	}
 
@@ -558,22 +570,24 @@ func bwtRecovery(operation string, err *error) {
 	}
 }
 
+// runInfo each element of runInfo should represent an offset i where i
+// corresponds to the start of a run in a given sequence. For example,
+// aaaabbccc would have the run info [0, 4, 6]
 type runInfo []int
 
-func (r runInfo) Select(rank int) int {
-	return r[rank]
-}
-
-func (r runInfo) Rank(startPos int) int {
+// FindNearestRunStartPosition given some offset, find the nearest starting position for the.
+// beginning of a run. Another way of saying this is give me the max i where runStartPositions[i] <= offset.
+// This is needed so we can understand which run an offset is a part of.
+func (r runInfo) FindNearestRunStartPosition(offset int) int {
 	start := 0
 	end := len(r) - 1
 	for start < end {
 		mid := start + (end-start)/2
-		if r[mid] < startPos {
+		if r[mid] < offset {
 			start = mid + 1
 			continue
 		}
-		if r[mid] > startPos {
+		if r[mid] > offset {
 			end = mid - 1
 			continue
 		}
@@ -581,10 +595,7 @@ func (r runInfo) Rank(startPos int) int {
 		return mid
 	}
 
-	if r[start] > startPos {
-		if start == 0 {
-			return start
-		}
+	if r[start] > offset {
 		return start - 1
 	}
 
