@@ -1,0 +1,2 @@
+# .gitattributes
+*justfile linguist-vendored=true

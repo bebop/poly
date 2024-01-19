@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Basic BWT for sub-sequence count and offset for sequence alignment. Only supports exact matches for now.
+- Moved `BWT`, `align`, and `mash` packages to new `search` sub-directory.
 
 
 ## [0.30.0] - 2023-12-18

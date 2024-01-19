@@ -66,7 +66,7 @@ Tim
 package align
 
 import (
-	"github.com/bebop/poly/align/matrix"
+	"github.com/bebop/poly/search/align/matrix"
 )
 
 // Scoring is a struct that holds the scoring matrix for match, mismatch, and gap penalties.
