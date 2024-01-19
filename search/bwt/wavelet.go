@@ -178,7 +178,10 @@ func (wt waveletTree) Rank(char byte, i int) int {
 	}
 
 	curr := wt.root
-	ci := wt.lookupCharInfo(char)
+	ci, ok := wt.lookupCharInfo(char)
+	if !ok {
+		return 0
+	}
 	level := 0
 	var rank int
 	for !curr.isLeaf() {
@@ -208,7 +211,10 @@ func (wt waveletTree) Select(char byte, rank int) int {
 	}
 
 	curr := wt.root
-	ci := wt.lookupCharInfo(char)
+	ci, ok := wt.lookupCharInfo(char)
+	if !ok {
+		return 0
+	}
 	level := 0
 
 	for !curr.isLeaf() {
@@ -236,22 +242,21 @@ func (wt waveletTree) Select(char byte, rank int) int {
 	return rank
 }
 
-func (wt waveletTree) lookupCharInfo(char byte) charInfo {
-	for i := range wt.alpha {
-		if wt.alpha[i].char == char {
-			return wt.alpha[i]
-		}
-	}
-	msg := fmt.Sprintf("could not find character %s in alphabet %+v. this should not be possible and indicates that the WaveletTree is malformed", string(char), wt.alpha)
-	panic(msg)
-}
-
 func (wt waveletTree) reconstruct() string {
 	str := ""
 	for i := 0; i < wt.length; i++ {
 		str += string(wt.Access(i))
 	}
 	return str
+}
+
+func (wt waveletTree) lookupCharInfo(char byte) (charInfo, bool) {
+	for i := range wt.alpha {
+		if wt.alpha[i].char == char {
+			return wt.alpha[i], true
+		}
+	}
+	return charInfo{}, false
 }
 
 type node struct {

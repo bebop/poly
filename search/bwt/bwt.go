@@ -186,13 +186,35 @@ type BWT struct {
 	// represented as a list of skipEntries because the first column of
 	// the BWT is always lexicographically ordered. This saves time and memory.
 	firstColumnSkipList []skipEntry
-	// Column last column of the BWT- the actual textual representation
-	// of the BWT.
-	lastColumn waveletTree
 	// suffixArray an array that allows us to map a position in the first
 	// column to a position in the original sequence. This is needed to be
 	// able to extract text from the BWT.
 	suffixArray []int
+	// runLengthCompressedBWT is the compressed version of the BWT. The compression
+	// is for each run. For Example:
+	// the sequence "banana" has BWT "annb$aa"
+	// the run length compression of "annb$aa" is "anb$a"
+	// This helps us save a lot of memory while still having a search index we can
+	// use to align the original sequence. This allows us to understand how many
+	// runs of a certain character there are and where a run of a certain rank exists.
+	runBWTCompression waveletTree
+	// runStartPositions are the starting position of each run in the original sequence
+	// For example:
+	// "annb$aa" will have the runStartPositions [0, 1, 3, 4, 5]
+	// This helps us map our search range from "uncompressed BWT Space" to its
+	// "compressed BWT Run Space". With this, we can understand which runs we need
+	// to consider during LF mapping.
+	runStartPositions runInfo
+	// runCumulativeCounts is the cumulative count of characters for each run.
+	// This helps us efficiently lookup the number of occurrences of a given
+	// character before a given offset in "uncompressed BWT Space"
+	// For Example:
+	// "annb$aa" will have the runCumulativeCounts:
+	//   "a": [0, 1, 3],
+	//   "n": [0, 2],
+	//   "b": [0, 1],
+	//   "$": [0, 1],
+	runCumulativeCounts map[string]runInfo
 }
 
 // Count represents the number of times the provided pattern
@@ -269,7 +291,21 @@ func (bwt BWT) Len() int {
 
 // GetTransform returns the last column of the BWT transform of the original sequence.
 func (bwt BWT) GetTransform() string {
-	return bwt.lastColumn.reconstruct()
+	lastColumn := strings.Builder{}
+	lastColumn.Grow(bwt.getLenOfOriginalStringWithNullChar())
+	for i := 0; i < bwt.runBWTCompression.length; i++ {
+		currChar := bwt.runBWTCompression.Access(i)
+		var currCharEnd int
+		if i+1 >= len(bwt.runStartPositions) {
+			currCharEnd = bwt.getLenOfOriginalStringWithNullChar()
+		} else {
+			currCharEnd = bwt.runStartPositions[i+1]
+		}
+		for lastColumn.Len() < currCharEnd {
+			lastColumn.WriteByte(currChar)
+		}
+	}
+	return lastColumn.String()
 }
 
 // getFCharPosFromOriginalSequenceCharPos looks up mapping from the original position
@@ -296,14 +332,45 @@ func (bwt BWT) lfSearch(pattern string) interval {
 		}
 
 		c := pattern[len(pattern)-1-i]
-		skip, ok := bwt.lookupSkipByChar(c)
-		if !ok {
-			return interval{}
-		}
-		searchRange.start = skip.openEndedInterval.start + bwt.lastColumn.Rank(c, searchRange.start)
-		searchRange.end = skip.openEndedInterval.start + bwt.lastColumn.Rank(c, searchRange.end)
+		nextStart := bwt.getNextLfSearchOffset(c, searchRange.start)
+		nextEnd := bwt.getNextLfSearchOffset(c, searchRange.end)
+		searchRange.start = nextStart
+		searchRange.end = nextEnd
 	}
 	return searchRange
+}
+
+func (bwt BWT) getNextLfSearchOffset(c byte, offset int) int {
+	maxRunRank := bwt.runStartPositions.Rank(offset + 1)
+	maxRun := bwt.runBWTCompression.Rank(c, maxRunRank)
+
+	skip, ok := bwt.lookupSkipByChar(c)
+	if !ok {
+		return 0
+	}
+
+	cumulativeCounts, ok := bwt.runCumulativeCounts[string(c)]
+	if !ok {
+		return 0
+	}
+
+	cumulativeCountBeforeMaxRun := cumulativeCounts.Select(maxRun)
+
+	currentRunRank := bwt.runStartPositions.Rank(offset)
+	currentRunChar := string(bwt.runBWTCompression.Access(currentRunRank))
+	extraOffset := 0
+	// It is possible that an offset currently lies within a run of the same
+	// character we are inspecting. In this case, cumulativeCountBeforeMaxRun
+	// is not enough since the Max Run in this case does not include the run
+	// the offset is currently in. To adjust for this, we must count the number
+	// of character occurrences since the beginning of the run that the offset
+	// is currently in.
+	if c == currentRunChar[0] {
+		o := bwt.runStartPositions.Select(maxRunRank)
+		extraOffset += offset - o
+	}
+
+	return skip.openEndedInterval.start + cumulativeCountBeforeMaxRun + extraOffset
 }
 
 // lookupSkipByChar looks up a skipEntry by its character in the First Column
@@ -372,28 +439,62 @@ func New(sequence string) (BWT, error) {
 	sortPrefixArray(prefixArray)
 
 	suffixArray := make([]int, len(sequence))
-	lastColBuilder := strings.Builder{}
+	charCount := 0
+	runBWTCompressionBuilder := strings.Builder{}
+	var runStartPositions runInfo
+	runCumulativeCounts := make(map[string]runInfo)
+
+	var prevChar *byte
 	for i := 0; i < len(prefixArray); i++ {
 		currChar := sequence[getBWTIndex(len(sequence), len(prefixArray[i]))]
-		lastColBuilder.WriteByte(currChar)
+		if prevChar == nil {
+			prevChar = &currChar
+		}
 
+		if currChar != *prevChar {
+			runBWTCompressionBuilder.WriteByte(*prevChar)
+			runStartPositions = append(runStartPositions, i-charCount)
+			addRunCumulativeCountEntry(runCumulativeCounts, *prevChar, charCount)
+
+			charCount = 0
+			prevChar = &currChar
+		}
+
+		charCount++
 		suffixArray[i] = len(sequence) - len(prefixArray[i])
 	}
+	runBWTCompressionBuilder.WriteByte(*prevChar)
+	runStartPositions = append(runStartPositions, len(prefixArray)-charCount)
+	addRunCumulativeCountEntry(runCumulativeCounts, *prevChar, charCount)
+
 	fb := strings.Builder{}
 	for i := 0; i < len(prefixArray); i++ {
 		fb.WriteByte(prefixArray[i][0])
 	}
 
-	wt, err := newWaveletTreeFromString(lastColBuilder.String())
+	skipList := buildSkipList(prefixArray)
+
+	wt, err := newWaveletTreeFromString(runBWTCompressionBuilder.String())
 	if err != nil {
 		return BWT{}, err
 	}
-
 	return BWT{
-		firstColumnSkipList: buildSkipList(prefixArray),
-		lastColumn:          wt,
+		firstColumnSkipList: skipList,
 		suffixArray:         suffixArray,
+		runBWTCompression:   wt,
+		runStartPositions:   runStartPositions,
+		runCumulativeCounts: runCumulativeCounts,
 	}, nil
+}
+
+func addRunCumulativeCountEntry(rumCumulativeCounts map[string]runInfo, char byte, charCount int) {
+	cumulativeCountsOfChar, ok := rumCumulativeCounts[string(char)]
+	if ok {
+		cumulativeCountsOfChar = append(cumulativeCountsOfChar, charCount+cumulativeCountsOfChar[len(cumulativeCountsOfChar)-1])
+	} else {
+		cumulativeCountsOfChar = runInfo{0, charCount}
+	}
+	rumCumulativeCounts[string(char)] = cumulativeCountsOfChar
 }
 
 // buildSkipList compressed the First Column of the BWT into a skip list
@@ -455,6 +556,39 @@ func bwtRecovery(operation string, err *error) {
 		rErr := fmt.Errorf("BWT %s InternalError=%s", operation, r)
 		*err = rErr
 	}
+}
+
+type runInfo []int
+
+func (r runInfo) Select(rank int) int {
+	return r[rank]
+}
+
+func (r runInfo) Rank(startPos int) int {
+	start := 0
+	end := len(r) - 1
+	for start < end {
+		mid := start + (end-start)/2
+		if r[mid] < startPos {
+			start = mid + 1
+			continue
+		}
+		if r[mid] > startPos {
+			end = mid - 1
+			continue
+		}
+
+		return mid
+	}
+
+	if r[start] > startPos {
+		if start == 0 {
+			return start
+		}
+		return start - 1
+	}
+
+	return start
 }
 
 func isValidPattern(s string) (err error) {
