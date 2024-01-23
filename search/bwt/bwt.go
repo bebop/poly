@@ -215,6 +215,9 @@ type BWT struct {
 	//   "b": [0, 1],
 	//   "$": [0, 1],
 	runCumulativeCounts map[string]runInfo
+
+	// flag for turning on BWT debugging
+	debug bool
 }
 
 // Count represents the number of times the provided pattern
@@ -340,6 +343,9 @@ func (bwt BWT) getFCharPosFromOriginalSequenceCharPos(originalPos int) int {
 func (bwt BWT) lfSearch(pattern string) interval {
 	searchRange := interval{start: 0, end: bwt.getLenOfOriginalStringWithNullChar()}
 	for i := 0; i < len(pattern); i++ {
+		if bwt.debug {
+			printLFDebug(bwt, searchRange, i)
+		}
 		if searchRange.end-searchRange.start <= 0 {
 			return interval{}
 		}
@@ -625,4 +631,59 @@ func validateSequenceBeforeTransforming(sequence *string) (err error) {
 		return fmt.Errorf("Provided sequence contains the nullChar %s. BWT cannot be constructed", nullChar)
 	}
 	return nil
+}
+
+// printLFDebug this will print the first column and last column of the BWT along with some ascii visualizations.
+// This is very helpful for debugging the LF mapping. For example, lets say you're in the middle of making some changes to the LF
+// mapping and the test for counting starts to fail. To understand where the LF search is going wrong, you
+// can do something like the below to outline which parts of the BWT are being searched some given iteration.
+//
+// For Example, if you had the BWT of:
+// "rowrowrowyourboat"
+// and wanted to Count the number of occurrences of "row"
+// Then the iterations of the LF search would look something like:
+//
+// BWT Debug Begin Iteration: 0
+// torbyrrru$wwaoooow
+// $abooooorrrrtuwwwy
+// ^^^^^^^^^^^^^^^^^^X
+//
+// BWT Debug Begin Iteration: 1
+// torbyrrru$wwaoooow
+// $abooooorrrrtuwwwy
+// ______________^^^X
+//
+// BWT Debug Begin Iteration: 2
+// torbyrrru$wwaoooow
+// $abooooorrrrtuwwwy
+// _____^^^X
+//
+// Where:
+// * '^' denotes the active search range
+// * 'X' denotes one character after the end of the active search searchRange
+// * '_' is visual padding to help align the active search range
+//
+// NOTE: It can also be helpful to include the other auxiliary data structures. For example, it can be very helpful to include
+// a similar visualization for the run length compression to help debug and understand which run were used to compute the active
+// search window during each iteration.
+func printLFDebug(bwt BWT, searchRange interval, iteration int) {
+	first := bwt.getFirstColumnStr()
+	last := bwt.GetTransform()
+	lastRunCompression := bwt.runBWTCompression.reconstruct()
+
+	fullAsciiRange := strings.Builder{}
+	fullAsciiRange.Grow(searchRange.end + 1)
+	for i := 0; i < searchRange.start; i++ {
+		fullAsciiRange.WriteRune('_')
+	}
+	for i := searchRange.start; i < searchRange.end; i++ {
+		fullAsciiRange.WriteRune('^')
+	}
+	fullAsciiRange.WriteRune('X')
+
+	fmt.Println("BWT Debug Begin Iteration:", iteration)
+	fmt.Println(last)
+	fmt.Println(first)
+	fmt.Println(fullAsciiRange.String())
+	fmt.Println(lastRunCompression)
 }

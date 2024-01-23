@@ -97,11 +97,6 @@ func (rsa rsaBitVector) Access(i int) bool {
 	return rsa.bv.getBit(i)
 }
 
-//lint:ignore U1000 Ignore unused function. This is valuable for future debugging
-func (rsa rsaBitVector) getBinStr() string {
-	return rsa.bv.toBinStr()
-}
-
 type chunk struct {
 	subChunks          []subChunk
 	onesCumulativeRank int

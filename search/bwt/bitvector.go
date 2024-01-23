@@ -72,19 +72,6 @@ func (b bitvector) len() int {
 	return b.numberOfBits
 }
 
-//lint:ignore U1000 Ignore unused function. This is valuable for future debugging
-func (b bitvector) toBinStr() string {
-	str := ""
-	for i := 0; i < b.len(); i++ {
-		if b.getBit(i) {
-			str += "1"
-		} else {
-			str += "0"
-		}
-	}
-	return str
-}
-
 func getNumOfBitSetsNeededForNumOfBits(n int) int {
 	return int(math.Ceil(float64(n) / wordSize))
 }
