@@ -671,19 +671,19 @@ func printLFDebug(bwt BWT, searchRange interval, iteration int) {
 	last := bwt.GetTransform()
 	lastRunCompression := bwt.runBWTCompression.reconstruct()
 
-	fullAsciiRange := strings.Builder{}
-	fullAsciiRange.Grow(searchRange.end + 1)
+	fullASCIIRange := strings.Builder{}
+	fullASCIIRange.Grow(searchRange.end + 1)
 	for i := 0; i < searchRange.start; i++ {
-		fullAsciiRange.WriteRune('_')
+		fullASCIIRange.WriteRune('_')
 	}
 	for i := searchRange.start; i < searchRange.end; i++ {
-		fullAsciiRange.WriteRune('^')
+		fullASCIIRange.WriteRune('^')
 	}
-	fullAsciiRange.WriteRune('X')
+	fullASCIIRange.WriteRune('X')
 
 	fmt.Println("BWT Debug Begin Iteration:", iteration)
 	fmt.Println(last)
 	fmt.Println(first)
-	fmt.Println(fullAsciiRange.String())
+	fmt.Println(fullASCIIRange.String())
 	fmt.Println(lastRunCompression)
 }
