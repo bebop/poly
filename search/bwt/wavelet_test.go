@@ -141,6 +141,7 @@ func TestWaveletTree_Select(t *testing.T) {
 	}
 
 	testCases := []WaveletTreeSelectTestCase{
+		{"@", 0, 0},
 		{"A", 0, 0},
 		{"A", 1, 1},
 		{"A", 2, 2},
@@ -153,6 +154,7 @@ func TestWaveletTree_Select(t *testing.T) {
 		{"T", 4, 18},
 		{"G", 4, 19},
 
+		{"@", 5, 0},
 		{"T", 5, 20},
 		{"G", 5, 21},
 		{"C", 5, 22},
@@ -168,6 +170,8 @@ func TestWaveletTree_Select(t *testing.T) {
 
 		{"G", 8, 32},
 		{"A", 11, 47},
+
+		{"@", 200, 0},
 	}
 
 	for _, tc := range testCases {
@@ -269,17 +273,4 @@ func TestBuildWaveletTree_ZeroAlpha(t *testing.T) {
 	if root != nil {
 		t.Fatalf("expected root to be nil but got %v", root)
 	}
-}
-func TestWaveletTree_LookupCharInfo_Panic(t *testing.T) {
-	wt := waveletTree{
-		alpha: []charInfo{},
-	}
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected panic but got nil")
-		}
-	}()
-
-	wt.lookupCharInfo('B')
 }
