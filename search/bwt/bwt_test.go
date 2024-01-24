@@ -552,9 +552,6 @@ func TestPrintLFDebug(t *testing.T) {
 	expectedOutput += "$aaabnn" + "\n"
 	expectedOutput += "__^^^X" + "\n"
 	expectedOutput += "anb$a" + "\n"
-	// $aaabnn
-	// __^^^X
-	// anb$a`
 
 	// Redirect stdout to capture the output
 	old := os.Stdout
@@ -569,7 +566,11 @@ func TestPrintLFDebug(t *testing.T) {
 
 	// Read the captured output
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, err = io.Copy(&buf, r)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Compare the output with the expected value
 	actualOutput := buf.String()
