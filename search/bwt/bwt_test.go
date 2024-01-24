@@ -1,6 +1,9 @@
 package bwt
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -534,4 +537,43 @@ func TestBWTRecovery(t *testing.T) {
 
 func doPanic() {
 	panic("test panic")
+}
+func TestPrintLFDebug(t *testing.T) {
+	bwt, err := New("banana")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	searchRange := interval{start: 2, end: 5}
+	iteration := 1
+
+	expectedOutput := "BWT Debug Begin Iteration: 1" + "\n"
+	expectedOutput += "annb$aa" + "\n"
+	expectedOutput += "$aaabnn" + "\n"
+	expectedOutput += "__^^^X" + "\n"
+	expectedOutput += "anb$a" + "\n"
+	// $aaabnn
+	// __^^^X
+	// anb$a`
+
+	// Redirect stdout to capture the output
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	printLFDebug(bwt, searchRange, iteration)
+
+	// Reset stdout
+	w.Close()
+	os.Stdout = old
+
+	// Read the captured output
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+
+	// Compare the output with the expected value
+	actualOutput := buf.String()
+	if actualOutput != expectedOutput {
+		t.Errorf("Unexpected output:\nExpected:\n%s\nActual:\n%s", expectedOutput, actualOutput)
+	}
 }
