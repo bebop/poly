@@ -1,3 +1,13 @@
+/*
+Package bwt is a package for performing burrows-wheeler transforms on sequences.
+
+The BWT is a lossless compression algorithm that can be used to reduce the memory
+footprint of a sequence while still maintaining the ability to search, align, and
+extract the original sequence. This is useful for sequences so large that it would
+be beneficial to reduce its memory footprint while also maintaining a way to analyze
+and work with the sequence. BWT is used in both bioinformatics(burrows wheeler alignment)
+and data compression (bzip2).
+*/
 package bwt
 
 import (
