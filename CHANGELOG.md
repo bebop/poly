@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Fixed package level doc strings for search and bwt packages.
 
-[0.31.0]: https://github.com/TimothyStiles/poly/releases/tag/v0.31.0
+[0.31.1]: https://github.com/TimothyStiles/poly/releases/tag/v0.31.0
 
-## [0.31.0] - 2024-01-31
+## [0.31.1] - 2024-01-31
 
 ### Added
 - Basic BWT for sub-sequence count and offset for sequence alignment. Only supports exact matches for now.
