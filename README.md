@@ -1,4 +1,4 @@
-# (Poly)merase <img align="right" src="https://cdn.discordapp.com/attachments/766785755305213953/777596834734145546/ProfileFrameArtboard_1.png" width="100">
+# (Poly)merase <img align="right" src="https://raw.githubusercontent.com/bebop/presskit/main/gopher.png" width="100">
 
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/bebop/poly)](https://pkg.go.dev/github.com/bebop/poly)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/bebop/poly/blob/main/LICENSE) 
