@@ -47,7 +47,7 @@ Tim
 ******************************************************************************/
 
 // if you're using VS-CODE you should see a DEBUG TEST button right below this
-// comment. Please set break points and use it early and often.
+// comment. Please set break points and use them early and often.
 func TestFileIOTutorial(t *testing.T) {
 	// First we're going to read in a Genbank file for the well known plasmid
 	// backbone puc19. Plasmids are super small rings of "Circular DNA" that are
