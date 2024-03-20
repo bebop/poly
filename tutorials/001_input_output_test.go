@@ -110,7 +110,7 @@ func TestFileIOTutorial(t *testing.T) {
 	}
 
 	// We'll go into more detail about features and DNA parts
-	// in the next tutorial but for now know that we can also
+	// later in this tutorial series but for now know that we can also
 	// get the sequence of each feature using the GetSequence method.
 
 	feature := puc19.Features[1]
