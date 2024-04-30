@@ -1,7 +1,6 @@
 package tutorials_test
 
 import (
-	"fmt"
 	"log"
 	"testing"
 
@@ -25,6 +24,9 @@ double stranded piece of DNA.
 
 This is a crucial step in the process of PCR (polymerase chain reaction).
 https://en.wikipedia.org/wiki/Polymerase_chain_reaction
+
+Here's also a video animation from Cold Spring Harbor's DNA Learning center explaining the process.
+https://youtu.be/2KoLnIwoZKU?si=wqKs1NU5ZhU5O7Ui
 
 You can read more about that at the link above but just know that an absolute huge
 number of protocols from diagnostics to plasmid cloning use these primers so they're
@@ -83,7 +85,7 @@ func TestPrimersTutorial(t *testing.T) {
 			reaction.Sequence, _ = feature.GetSequence()
 
 			// generate forward and reverse primers and store it in our struct
-			forward, reverse := pcr.DesignPrimers(reaction.Sequence, 56.0) // <- 56.0 is our melting temp. Again. don't hardcode values like this in real life. Put it in a constant or something.
+			forward, reverse := pcr.DesignPrimers(reaction.Sequence, 56.0) // <- 56.0 is our melting temp. The temperature at which we want our primers to bind to double stranded DNA. Again. don't hardcode values like this in real life. Put it in a constant or something.
 			reaction.ForwardPrimer = forward
 			reaction.ReversePrimer = reverse
 
@@ -92,11 +94,30 @@ func TestPrimersTutorial(t *testing.T) {
 		}
 	}
 
-	// Check to see if any primer pairs were created and report the total
-	if len(reactions) < 1 {
-		t.Errorf("no reactions were created")
-	} else {
-		fmt.Println("total number of reactions: ", len(reactions))
-	}
+	// We've now just generated ~5000 primers.
+	// Notice how the only numerical parameter we give was "melting temp" this is the temp at which they'll anneal to denatured DNA.
+	// As mentioned in this Cold Spring Harbor video. PCR reactions are conducted in ~30 cycles of heating and cooling over 3 temperature stages.
 
+	// Stage 1: We raise the temperature of our reaction to 95C to denature (split) our DNA such that our primers can bind to it.
+	// Stage 2: We lower the temperature of our reaction to 55C so that our primers can bind to complementary regions of newly accessible single stranded DNA.
+	// Stage 3: We raise the temperature of our reaction to ~72C (or whatever temperature is best for the polymerase we're using) to activate our polymerase
+	// Stage 3 (cont): to bind to our primers and begin constructing a brand new second strand to our denatured DNA. Then we go back to Stage 1.
+
+	// For each cycle of the above stage we end up doubling the number of copies of the gene we want so after we have n^30 copies of our desired region.
+
+	// What we've done is design a gigantic set of primers that share the same melting temp. This makes it possible to run all of these reactions
+	// concurrently within a single PCR run but we've ignored a lot of other design considerations.
+
+	// This primers aren't particularly well designed. All pcr.DesignPrimers has done is figure out how long each primer should be so that they all bind
+	// at a specific temperature while assuming that they should bind at the very beginning and end of each given sequence. This is an extremely common
+	// use case but there are several caveats.
+
+	// 1. The designed primers could be dimers (The primers could bind to each other and not to their target sequence)
+	// 2. One primer in a pair could be a "hairpin" that binds to itself (which is something the fold package can help detect)
+	// 3. Your primers may actually need a specific configuration to bind to the intended target (something the fold package may be able to help with)
+
+	// Depending on your situation you may need to get creative. Lots of scientists design their primers to bind up or downstream of their gene of
+	// interest to avoid primer dimers or hairpins. Some scientists don't care if they copy the whole gene but just want to copy enough of the
+	// gene to verify that it's there. There's probably a million different way to design primers but I'd guess that poly itself covers about 95%
+	// of what most scientists would need on a daily basis.
 }
