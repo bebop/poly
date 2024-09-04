@@ -1,6 +1,7 @@
 package tutorials_test
 
 import (
+	"fmt"
 	"log"
 	"testing"
 
@@ -97,6 +98,7 @@ func TestPrimersTutorial(t *testing.T) {
 		}
 	}
 
+	fmt.Println("Total reactions:", len(reactions))
 	// We've now just generated ~5000 primers.
 	// Notice how the only numerical parameter we give was "melting temp" this is the temp at which they'll anneal to denatured DNA.
 	// As mentioned in this Cold Spring Harbor video. PCR reactions are conducted in ~30 cycles of heating and cooling over 3 temperature stages.
