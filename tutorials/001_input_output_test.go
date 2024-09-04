@@ -2,7 +2,6 @@ package tutorials_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -105,8 +104,9 @@ func TestFileIOTutorial(t *testing.T) {
 	// Next let's see what sort of features puc19 has
 	// Features are the parts of the sequence that are annotated.
 
+	uniqueFeatures := make(map[string]int)
 	for _, feature := range puc19.Features {
-		fmt.Println(feature.Type)
+		uniqueFeatures[feature.Type]++
 	}
 
 	// We'll go into more detail about features and DNA parts
