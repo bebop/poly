@@ -13,6 +13,9 @@ Sep, 12, 2022
 
 == Designing Primers for Just About Anything ==
 
+Now that you've learned what plasmids are you should probably know what primers
+are as well.
+
 "Primers are short sequences of DNA that can be used to amplify DNA sequences
 and they are the workhorse of modern molecular biology.
 
@@ -43,7 +46,7 @@ In This tutorial we're going to design a large set of primers to help us extract
 isolate every protein coding region in the bacillus subtilis genome so we can express
 and characterize each protein's structure individually in vivo (in the lab).
 
-We could also use these primers for RNA interference experiments to supress
+We could also use these primers for RNA interference experiments to suppress
 protein expression in vivo to better understand how these proteins interact.
 
 Point is that primers are incredibly versatile tools by automating their design
