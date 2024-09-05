@@ -48,11 +48,11 @@ func BenchmarkCds(b *testing.B) {
 		for _, cutSite := range []string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"} {
 			if strings.Contains(optimizedSeq, cutSite) {
 				fmt.Println(changes)
-				b.Errorf("phusion" + " contains " + cutSite)
+				b.Errorf("phusion contains %s", cutSite)
 			}
 			if strings.Contains(transform.ReverseComplement(optimizedSeq), cutSite) {
 				fmt.Println(changes)
-				b.Errorf("phusion" + " reverse complement contains " + cutSite)
+				b.Errorf("phusion reverse complement contains %s", cutSite)
 			}
 		}
 	}
@@ -84,10 +84,10 @@ func TestCds(t *testing.T) {
 
 	for _, cutSite := range []string{"GAAGAC", "GGTCTC", "GCGATG", "CGTCTC", "GCTCTTC", "CACCTGC"} {
 		if strings.Contains(optimizedSeq, cutSite) {
-			t.Errorf("phusion" + " contains " + cutSite)
+			t.Errorf("phusion contains %s", cutSite)
 		}
 		if strings.Contains(transform.ReverseComplement(optimizedSeq), cutSite) {
-			t.Errorf("phusion" + " reverse complement contains " + cutSite)
+			t.Errorf("phusion reverse complement contains %s", cutSite)
 		}
 	}
 
