@@ -20,7 +20,6 @@ linters:
     - stylecheck
     - unconvert
     - unparam
-    - whitespace
 linters-settings:
   stylecheck:
     # https://staticcheck.io/docs/options#checks
