@@ -103,7 +103,7 @@ func testParseReadsHelper(t *testing.T, fileTarget string, errorMessage string) 
 		}
 	}
 	if len(targetErr) == 0 {
-		t.Errorf(errorMessage)
+		t.Errorf("Test failed: %s", errorMessage)
 	}
 }
 
