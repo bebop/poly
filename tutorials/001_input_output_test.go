@@ -47,7 +47,7 @@ Tim
 ******************************************************************************/
 
 // if you're using VS-CODE you should see a DEBUG TEST button right below this
-// comment. Please set break points and use it early and often.
+// comment. Please set break points and use them early and often.
 func TestFileIOTutorial(t *testing.T) {
 	// First we're going to read in a Genbank file for the well known plasmid
 	// backbone puc19. Plasmids are super small rings of "Circular DNA" that are
@@ -110,7 +110,7 @@ func TestFileIOTutorial(t *testing.T) {
 	}
 
 	// We'll go into more detail about features and DNA parts
-	// in the next tutorial but for now know that we can also
+	// later in this tutorial series but for now know that we can also
 	// get the sequence of each feature using the GetSequence method.
 
 	feature := puc19.Features[1]
