@@ -2,15 +2,8 @@
 {
 	"name": "poly-devcontainer",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"image": "mcr.microsoft.com/devcontainers/go:1.23-bookworm",
 
-	"features": {
-		"ghcr.io/devcontainers/features/go:1": {
-			"version": "latest",
-			"golangciLintVersion": "latest"
-		},
-	},
-	
 	"extensions": ["golang.go"],
 	
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
