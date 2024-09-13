@@ -41,7 +41,7 @@ const (
 	DoubleStranded Strandedness = "ds"
 	SingleStranded Strandedness = "ss"
 	MixedStranded  Strandedness = "ms"
-	Unknown        Strandedness = "unknown"
+	Unknown        Strandedness = ""
 )
 
 // MoleculeType represents what kind of molecule a sequence
@@ -112,20 +112,9 @@ type Reference struct {
 	PageNumbers string
 	Remark      string
 	Year        string
-}
-
-type Book struct {
-	Reference
-	Editors           []string
-	BookTitle         string
-	PublisherName     string
-	PublisherLocation string
-}
-
-type Article struct {
-	Reference
-	Journal string
-	Volume  string
+	Journal     string
+	IsBook      bool
+	Consortium  string
 }
 
 // Source describes the source of an entry (see
@@ -170,4 +159,5 @@ type Entry struct {
 	Keywords         []string
 	Segment          int
 	TotalSegments    int
+	Comment          string
 }

@@ -1,6 +1,7 @@
 package genbank
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -198,6 +199,48 @@ DEFINITION another test`,
 				t.Fatalf("parseEntry returned incorrect Entry, (-want, +got): %v", diff)
 			}
 
+		})
+	}
+}
+
+func TestRoundtrip(t *testing.T) {
+	testCases := []struct {
+		name string
+		file string
+	}{
+		{
+			name: "Saccharomyces cerevisiae S288C chromosome IX, complete sequence",
+			file: "./data/NC_001141.2.gb",
+		}, {
+			name: "Saccharomyces cerevisiae TCP1-beta gene, partial cds; and Axl2p (AXL2) and Rev7p (REV7) genes, complete cds",
+			file: "./data/U49845.1.gb",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.Open(tc.file)
+			if err != nil {
+				t.Fatalf("failed to open file: %v", err)
+			}
+			p := NewParser(f)
+
+			firstParse, err := p.Parse()
+			if err != nil {
+				t.Fatalf("failed initial parsing: %v", err)
+			}
+			firstWrite := firstParse.String()
+
+			p2 := NewParser(strings.NewReader(firstWrite))
+			secondParse, err := p2.Parse()
+			if err != nil {
+				t.Fatalf("failed second parsing: %v", err)
+			}
+			secondWrite := secondParse.String()
+
+			if diff := cmp.Diff(firstWrite, secondWrite); diff != "" {
+				t.Errorf("mismatch in roundtrip parsing (-firstParse,+secondParse):\n%s", diff)
+			}
 		})
 	}
 }

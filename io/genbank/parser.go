@@ -155,7 +155,7 @@ func (p *Parser) peekNextLineType() (lineType, error) {
 		return keyword, nil
 	case strings.HasPrefix(nextLine, "//"):
 		return entryEnd, nil
-	case unicode.IsLetter(rune(nextLine[2])):
+	case unicode.IsLetter(rune(nextLine[2])) || unicode.IsLetter(rune(nextLine[3])):
 		return subKeyword, nil
 	case !unicode.IsSpace(rune(nextLine[5])):
 		return featureKey, nil
@@ -188,16 +188,21 @@ func (p *Parser) dispatchByPrefix(pCtx parseContext, funcs map[string]func(parse
 
 /* MAIN PARSER FUNCTIONS */
 
-// Parse parses a Genbank file from a Parser's
-// io.Reader.
+// Parse parses a Genbank file from a Parser's io.Reader.
 func (p *Parser) Parse() (Genbank, error) {
 	res := Genbank{}
 
-	header, err := p.parseHeader()
+	hasHeader, err := p.hasHeader()
 	if err != nil {
-		return res, fmt.Errorf("failed to parse header: %w", err)
+		return res, err
 	}
-	res.Header = header
+	if hasHeader {
+		header, err := p.parseHeader()
+		if err != nil {
+			return res, fmt.Errorf("failed to parse header: %w", err)
+		}
+		res.Header = header
+	}
 
 	res.Entries = make([]Entry, 0)
 	var entry Entry
@@ -208,7 +213,6 @@ func (p *Parser) Parse() (Genbank, error) {
 			return res, fmt.Errorf("failed to parse entry %v: %w", len(res.Entries), err)
 		}
 		res.Entries = append(res.Entries, entry)
-
 	}
 
 	return res, nil
@@ -221,6 +225,14 @@ var releaseNumRange = tokenRange{start: 47, end: 52}
 var entryNumRange = tokenRange{start: 0, end: 8}
 var baseNumRange = tokenRange{start: 15, end: 26}
 var sequenceNumRange = tokenRange{start: 39, end: 47}
+
+func (p *Parser) hasHeader() (bool, error) {
+	firstLine, err := p.peekLine()
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(firstLine[dbNameIdx:]) == "Genetic Sequence Data Bank", nil
+}
 
 func (p *Parser) parseHeader() (Header, error) {
 	res := Header{}
@@ -312,6 +324,8 @@ func (p *Parser) parseEntry() (entry Entry, reachedEOF bool, err error) {
 		"KEYWORDS":   p.parseKeywords,
 		"SEGMENT":    p.parseSegment,
 		"SOURCE":     p.parseSource,
+		"REFERENCE":  p.parseReference,
+		"COMMENT":    p.parseComment,
 	}
 
 	res := Entry{}
@@ -390,6 +404,37 @@ func (p *Parser) parseLocus(pCtx parseContext) error {
 	pCtx.entry.UpdateDate = date
 
 	return nil
+}
+
+func (p *Parser) parseComment(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+	comment, _ := strings.CutPrefix(line, "COMMENT")
+	comment = strings.TrimSpace(comment)
+
+	for {
+		linetype, err := p.peekNextLineType()
+		if err != nil {
+			return fmt.Errorf("failed to read COMMENT line: %w", err)
+		}
+
+		switch linetype {
+		case continuation:
+			line, err := p.readLine()
+			if err != nil {
+				return err
+			}
+			comment = appendLine(comment, strings.TrimSpace(line))
+		case empty:
+			p.readLine()
+			comment = appendLine(comment, "")
+		default:
+			pCtx.entry.Comment = comment
+			return nil
+		}
+	}
 }
 
 // See Genbank spec 3.4.5
@@ -581,10 +626,10 @@ func (p *Parser) parseSource(pCtx parseContext) error {
 	}
 
 	after, _ := strings.CutPrefix(line, "SOURCE")
-	after, endsWithPeriod := strings.CutSuffix(strings.TrimSpace(after), ".")
-	if !endsWithPeriod {
-		return p.makeSyntaxError("SOURCE line must end with a period")
-	}
+	after, _ = strings.CutSuffix(strings.TrimSpace(after), ".")
+	//if !endsWithPeriod {
+	//	return p.makeSyntaxError("SOURCE line must end with a period")
+	//}
 	pCtx.entry.Source.Name = strings.TrimSpace(after)
 
 	return p.parseOrganism(pCtx)
@@ -602,10 +647,10 @@ func (p *Parser) parseOrganism(pCtx parseContext) error {
 	if !organismKeyword {
 		return p.makeSyntaxError("SOURCE keyword must be followed by ORGANISM subkeyword")
 	}
-	after, endsWithPeriod := strings.CutSuffix(strings.TrimSpace(after), ".")
-	if !endsWithPeriod {
-		return p.makeSyntaxError("ORGANISM line must end with a period")
-	}
+	after, _ = strings.CutSuffix(strings.TrimSpace(after), ".")
+	//if !endsWithPeriod {
+	//	return p.makeSyntaxError("ORGANISM line must end with a period")
+	//}
 
 	pCtx.entry.Source.ScientificName = strings.TrimSpace(after)
 
@@ -679,7 +724,15 @@ func (p *Parser) parseReference(pCtx parseContext) error {
 	})
 	pCtx.reference = &pCtx.entry.References[len(pCtx.entry.References)-1]
 
-	subKeywordFuncs := map[string]func(parseContext) error{}
+	subKeywordFuncs := map[string]func(parseContext) error{
+		"  AUTHORS":  p.parseAuthors,
+		"  TITLE":    p.parseTitle,
+		"  JOURNAL":  p.parseJournal,
+		"   MEDLINE": p.parseMedline,
+		"   PUBMED":  p.parsePubMed,
+		"  CONSRTM":  p.parseConsortium,
+		"  REMARK":   p.parseRemark,
+	}
 
 	for {
 		lineType, err := p.peekNextLineType()
@@ -695,7 +748,6 @@ func (p *Parser) parseReference(pCtx parseContext) error {
 			}
 		case empty:
 			p.readLine() // We need to read the empty line to advance the reader
-
 		default:
 			pCtx.reference = nil
 			return nil
@@ -710,7 +762,7 @@ func (p *Parser) parseAuthors(pCtx parseContext) error {
 		return err
 	}
 
-	authors, _ := strings.CutPrefix(line, "AUTHORS")
+	authors, _ := strings.CutPrefix(line, "  AUTHORS")
 	authors = strings.TrimSpace(authors)
 	for {
 		lineType, err := p.peekNextLineType()
@@ -733,11 +785,122 @@ func (p *Parser) parseAuthors(pCtx parseContext) error {
 	}
 }
 
+func (p *Parser) parseTitle(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	title, _ := strings.CutPrefix(line, "  TITLE")
+	title = strings.TrimSpace(title)
+	for {
+		lineType, err := p.peekNextLineType()
+		if err != nil {
+			return fmt.Errorf("could not parse TITLE subkeyword: %w", err)
+		}
+		switch lineType {
+		case continuation:
+			line, err := p.readLine()
+			if err != nil {
+				return err
+			}
+			title += " "
+			title += strings.TrimSpace(line)
+		case empty:
+			p.readLine() // Skip empty lines
+		default:
+			pCtx.reference.Title = strings.TrimSpace(title)
+			return nil
+		}
+	}
+}
+
+func (p *Parser) parseJournal(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	journal, _ := strings.CutPrefix(line, "  JOURNAL")
+	journal = strings.TrimSpace(journal)
+
+	// Detect if JOURNAL entry refers to a book.
+	if strings.HasPrefix(journal, "(in)") {
+		pCtx.reference.IsBook = true
+	}
+
+	for {
+		lineType, err := p.peekNextLineType()
+		if err != nil {
+			return fmt.Errorf("could not parse JOURNAL subkeyword: %w", err)
+		}
+		switch lineType {
+		case continuation:
+			line, err := p.readLine()
+			if err != nil {
+				return err
+			}
+			journal += " "
+			journal += strings.TrimSpace(line)
+		case empty:
+			p.readLine()
+		default:
+			pCtx.reference.Journal = strings.TrimSpace(journal)
+			return nil
+		}
+	}
+}
+
+func (p *Parser) parseMedline(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	medline, _ := strings.CutPrefix(line, "   MEDLINE")
+	pCtx.reference.Medline = strings.TrimSpace(medline)
+	return nil
+}
+
+func (p *Parser) parsePubMed(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	pubMed, _ := strings.CutPrefix(line, "   PUBMED")
+	pCtx.reference.PubMed = strings.TrimSpace(pubMed)
+	return nil
+}
+
+func (p *Parser) parseConsortium(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	consortium, _ := strings.CutPrefix(line, "  CONSRTM")
+	pCtx.reference.Consortium = strings.TrimSpace(consortium)
+	return nil
+
+}
+
+func (p *Parser) parseRemark(pCtx parseContext) error {
+	line, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	remark, _ := strings.CutPrefix(line, "  REMARK")
+	pCtx.reference.Remark = strings.TrimSpace(remark)
+	return nil
+}
+
 /* OTHER UTILITY FUNCTIONS */
 
 // appendLine appends a line to s. If s is empty, simply
 // returns append. If s is not empty, ensures that s is followed
-// by a newline and then what is contained in apend.
+// by a newline and then what is contained in append.
 func appendLine(s string, append string) string {
 	if s == "" {
 		return append
