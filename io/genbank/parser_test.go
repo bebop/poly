@@ -221,20 +221,20 @@ func TestRoundtrip(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			f, err := os.Open(tc.file)
 			if err != nil {
-				t.Fatalf("failed to open file: %v", err)
+				t.Fatalf("failed to open file %v: %v", tc.file, err)
 			}
 			p := NewParser(f)
 
 			firstParse, err := p.Parse()
 			if err != nil {
-				t.Fatalf("failed initial parsing: %v", err)
+				t.Fatalf("failed initial parsing for %v: %v", tc.file, err)
 			}
 			firstWrite := firstParse.String()
 
 			p2 := NewParser(strings.NewReader(firstWrite))
 			secondParse, err := p2.Parse()
 			if err != nil {
-				t.Fatalf("failed second parsing: %v", err)
+				t.Fatalf("failed second parsing for %v: %v", tc.file, err)
 			}
 			secondWrite := secondParse.String()
 

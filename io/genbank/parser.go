@@ -326,6 +326,7 @@ func (p *Parser) parseEntry() (entry Entry, reachedEOF bool, err error) {
 		"SOURCE":     p.parseSource,
 		"REFERENCE":  p.parseReference,
 		"COMMENT":    p.parseComment,
+		"FEATURES":   p.parseFeatures,
 	}
 
 	res := Entry{}
@@ -360,6 +361,80 @@ func (p *Parser) parseEntry() (entry Entry, reachedEOF bool, err error) {
 }
 
 /* KEYWORD PARSING FUNCTIONS */
+
+// See Genbank spec 3.4.12, which redirects to http://www.insdc.org/documents/feature-table
+func (p *Parser) parseFeatures(pCtx parseContext) error {
+	_, err := p.readLine()
+	if err != nil {
+		return err
+	}
+
+	for {
+		lType, err := p.peekNextLineType()
+		if err != nil {
+			return err
+		}
+		switch lType {
+		case featureKey:
+			feature, err := p.parseFeatureKey(pCtx)
+			if err != nil {
+				return err
+			}
+
+			pCtx.entry.Features = append(pCtx.entry.Features, feature)
+		case keyword:
+			return nil
+		default:
+			return p.makeWrongContextError(lType)
+		}
+	}
+}
+
+var featureKeyRange = tokenRange{start: 6, end: 20}
+var featureValueRange = tokenRange{start: 22, end: 80}
+
+func (p *Parser) parseFeatureKey(pCtx parseContext) (Feature, error) {
+	res := Feature{}
+	line, err := p.readLine()
+	if err != nil {
+		return res, err
+	}
+
+	if len(line) <= featureValueRange.start {
+		return res, p.makeSyntaxError("feature key line not long enough")
+	}
+	res.Key = strings.TrimSpace(line[featureKeyRange.start:featureKeyRange.end])
+
+	res.Location, err = ParseLocation(strings.TrimSpace(line[featureValueRange.start:]))
+	if err != nil {
+		return res, p.makeSyntaxError("could not parse location", err)
+	}
+
+	for {
+		lType, err := p.peekNextLineType()
+		if err != nil {
+			return res, err
+		}
+
+		switch lType {
+		case sequence:
+			key, value := parseQualifier()
+			prevValues, _ := res.Qualifiers[key]
+			res.Qualifiers[key] = append(prevValues, value)
+		case featureKey:
+			return res, err
+		case keyword:
+			return res, err
+		default:
+			return res, p.makeWrongContextError(lType)
+		}
+	}
+}
+
+// ParseLocation parses a GENBANK feature location from a string. See https://www.insdc.org/submitting-standards/feature-table/#3.4
+func ParseLocation(str string) (Location, error) {
+	return Location(str), nil
+}
 
 const locusDateLayout = "02-Jan-2006"
 
