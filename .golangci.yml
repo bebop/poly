@@ -1,28 +1,31 @@
+version: "2"
 run:
   timeout: 1m
-  skip-dirs:
+issues:
+  exclude-dirs:
     - data
+formatters:
+  enable:
+    - gofmt
+    - goimports
 linters:
   enable:
     - bodyclose
     - dupl
-    - exportloopref
+    - copyloopvar
     - gochecknoinits
     # - goconst # TODO: Enable this and fix the errors.
-    - gofmt
-    - goimports
     - goprintffuncname
     - misspell
     - nakedret
     - nilnil
     - noctx
     - nolintlint
-    - stylecheck
+    - staticcheck
     - unconvert
     - unparam
 linters-settings:
-  stylecheck:
-    # https://staticcheck.io/docs/options#checks
+  staticcheck:
     checks:
       - "all"
-      - "-ST1005" # Disable "Incorrectly formatted error string" errors. TODO: Enable this and fix the errors.
+      - "-ST1005"
