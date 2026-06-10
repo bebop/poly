@@ -1,14 +1,14 @@
 version: "2"
 run:
   timeout: 1m
-issues:
-  exclude-dirs:
-    - data
 formatters:
   enable:
     - gofmt
     - goimports
 linters:
+  exclusions:
+    paths:
+      - data
   enable:
     - bodyclose
     - dupl
@@ -24,8 +24,8 @@ linters:
     - staticcheck
     - unconvert
     - unparam
-linters-settings:
-  staticcheck:
-    checks:
-      - "all"
-      - "-ST1005"
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST1005"
