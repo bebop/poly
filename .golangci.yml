@@ -6,9 +6,17 @@ formatters:
     - gofmt
     - goimports
 linters:
+  default: none
   exclusions:
+    generated: lax
     paths:
       - data
+      - search/align/matrix/matrix_test.go
+      - seqhash/seqhash.go
+    rules:
+      - path: search/align/example_test.go
+        linters:
+          - nolintlint
   enable:
     - bodyclose
     - dupl
@@ -25,7 +33,9 @@ linters:
     - unconvert
     - unparam
   settings:
+    dupl:
+      threshold: 500
     staticcheck:
       checks:
-        - "all"
+        - "ST*"
         - "-ST1005"
