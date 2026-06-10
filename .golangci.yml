@@ -1,28 +1,41 @@
+version: "2"
 run:
   timeout: 1m
-  skip-dirs:
-    - data
+formatters:
+  enable:
+    - gofmt
+    - goimports
 linters:
+  default: none
+  exclusions:
+    generated: lax
+    paths:
+      - data
+      - search/align/matrix/matrix_test.go
+      - seqhash/seqhash.go
+    rules:
+      - path: search/align/example_test.go
+        linters:
+          - nolintlint
   enable:
     - bodyclose
     - dupl
-    - exportloopref
+    - copyloopvar
     - gochecknoinits
     # - goconst # TODO: Enable this and fix the errors.
-    - gofmt
-    - goimports
     - goprintffuncname
     - misspell
     - nakedret
     - nilnil
     - noctx
     - nolintlint
-    - stylecheck
+    - staticcheck
     - unconvert
     - unparam
-linters-settings:
-  stylecheck:
-    # https://staticcheck.io/docs/options#checks
-    checks:
-      - "all"
-      - "-ST1005" # Disable "Incorrectly formatted error string" errors. TODO: Enable this and fix the errors.
+  settings:
+    dupl:
+      threshold: 500
+    staticcheck:
+      checks:
+        - "ST*"
+        - "-ST1005"
