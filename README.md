@@ -31,7 +31,7 @@ Poly is a Go package for engineering organisms.
 
 ## Community
 
-* **[Discord](https://discord.gg/Hc8Ncwt):** Chat about Poly and join us for game nights on our discord server!
+* **[Discord](https://discord.gg/Hc8Ncwt):** Chat about Poly and join us on our discord server!
 
 ## Contributing
 
