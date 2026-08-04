@@ -206,6 +206,26 @@ func TestGetSequenceMethod(t *testing.T) {
 	}
 }
 
+func TestGetSequenceMethod_Errors(t *testing.T) {
+	gbk, _ := Read("../../data/t4_intron.gb")
+
+	// A feature with no parent sequence should return an error rather than
+	// panicking with a nil pointer dereference.
+	orphanFeature := gbk.Features[1]
+	orphanFeature.ParentSequence = nil
+	if _, err := orphanFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when getting the sequence of a feature with no parent sequence, got nil")
+	}
+
+	// A location outside the bounds of the parent sequence should return an
+	// error rather than panicking with an index out of range.
+	outOfBoundsFeature := gbk.Features[1]
+	outOfBoundsFeature.Location.End = len(outOfBoundsFeature.ParentSequence.Sequence) + 1000
+	if _, err := outOfBoundsFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when getting the sequence of a feature with an out-of-bounds location, got nil")
+	}
+}
+
 func TestLocationParser(t *testing.T) {
 	gbk, _ := Read("../../data/t4_intron.gb")
 
