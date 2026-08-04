@@ -151,3 +151,16 @@ func ExampleFeature_GetSequence() {
 
 	// Output: true
 }
+
+// This example shows that GetSequence returns an error, instead of
+// panicking, if the feature has not been added to a parent sequence.
+func ExampleFeature_GetSequence_error() {
+	var feature polyjson.Feature
+	feature.Location.Start = 0
+	feature.Location.End = 10
+
+	_, err := feature.GetSequence()
+	fmt.Println(err)
+
+	// Output: feature '' has no parent sequence to get its sequence from
+}
