@@ -224,6 +224,17 @@ func TestGetSequenceMethod_Errors(t *testing.T) {
 	if _, err := outOfBoundsFeature.GetSequence(); err == nil {
 		t.Error("Expected an error when getting the sequence of a feature with an out-of-bounds location, got nil")
 	}
+
+	// An out-of-bounds sub-location nested inside a joined feature should
+	// have its error propagated up, rather than being silently discarded.
+	joinFeature := gbk.Features[6] // join(893..1441,2459..2770)
+	subLocations := make([]Location, len(joinFeature.Location.SubLocations))
+	copy(subLocations, joinFeature.Location.SubLocations)
+	subLocations[0].End = len(joinFeature.ParentSequence.Sequence) + 1000
+	joinFeature.Location.SubLocations = subLocations
+	if _, err := joinFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when a joined feature's sub-location is out of bounds, got nil")
+	}
 }
 
 func TestLocationParser(t *testing.T) {
