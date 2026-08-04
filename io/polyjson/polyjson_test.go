@@ -66,6 +66,45 @@ func TestFeature_GetSequence(t *testing.T) {
 	}
 }
 
+func TestFeature_GetSequence_Errors(t *testing.T) {
+	var sequence Poly
+	sequence.Sequence = "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTT"
+
+	var feature Feature
+	feature.Location.Start = 0
+	feature.Location.End = 10
+	_ = sequence.AddFeature(&feature)
+
+	// A feature with no parent sequence should return an error rather than
+	// panicking with a nil pointer dereference.
+	orphanFeature := feature
+	orphanFeature.ParentSequence = nil
+	if _, err := orphanFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when getting the sequence of a feature with no parent sequence, got nil")
+	}
+
+	// A location outside the bounds of the parent sequence should return an
+	// error rather than panicking with an index out of range.
+	outOfBoundsFeature := feature
+	outOfBoundsFeature.Location.End = len(sequence.Sequence) + 1000
+	if _, err := outOfBoundsFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when getting the sequence of a feature with an out-of-bounds location, got nil")
+	}
+
+	// An out-of-bounds sub-location nested inside a joined feature should
+	// have its error propagated up, rather than being silently discarded.
+	joinFeature := feature
+	joinFeature.Location.Start = 0
+	joinFeature.Location.End = 0
+	joinFeature.Location.SubLocations = []Location{
+		{Start: 0, End: 5},
+		{Start: 5, End: len(sequence.Sequence) + 1000},
+	}
+	if _, err := joinFeature.GetSequence(); err == nil {
+		t.Error("Expected an error when a joined feature's sub-location is out of bounds, got nil")
+	}
+}
+
 func TestParse_error(t *testing.T) {
 	unmarshalErr := errors.New("unmarshal error")
 	oldUnmarshalFn := unmarshalFn

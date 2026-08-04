@@ -141,13 +141,23 @@ func (feature Feature) GetSequence() (string, error) {
 func getFeatureSequence(feature Feature, location Location) (string, error) {
 	var sequenceBuffer bytes.Buffer
 	var sequenceString string
+
+	if feature.ParentSequence == nil {
+		return "", fmt.Errorf("feature '%s' has no parent sequence to get its sequence from", feature.Type)
+	}
 	parentSequence := feature.ParentSequence.Sequence
 
 	if len(location.SubLocations) == 0 {
+		if location.Start < 0 || location.End > len(parentSequence) || location.Start > location.End {
+			return "", fmt.Errorf("location [%d:%d] is out of bounds for parent sequence of length %d", location.Start, location.End, len(parentSequence))
+		}
 		sequenceBuffer.WriteString(parentSequence[location.Start:location.End])
 	} else {
 		for _, subLocation := range location.SubLocations {
-			sequence, _ := getFeatureSequence(feature, subLocation)
+			sequence, err := getFeatureSequence(feature, subLocation)
+			if err != nil {
+				return "", err
+			}
 
 			sequenceBuffer.WriteString(sequence)
 		}
