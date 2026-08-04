@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Made it possible to simulate primers shorter than design minimum.
+ - `genbank.Feature.GetSequence()` and `polyjson.Feature.GetSequence()` now return a real error instead of always `nil`, for a feature with no parent sequence or a location out of bounds of its parent sequence, instead of panicking. (#352)
 
 ## [0.31.1] - 2024-01-31
 
