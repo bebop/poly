@@ -127,6 +127,62 @@ func TestRead_error(t *testing.T) {
 	}
 }
 
+// TestAddFeature_doesNotShareState verifies that AddFeature stores an
+// independent copy of the given feature: mutating the caller's Feature
+// (its Attributes map or Location.SubLocations slice) after the call must
+// not affect the feature stored on the Gff, and vice versa.
+func TestAddFeature_doesNotShareState(t *testing.T) {
+	var sequence Gff
+
+	feature := Feature{
+		Name: "testFeature",
+		Attributes: map[string]string{
+			"gene_id": "original",
+		},
+		Location: Location{
+			Start: 0,
+			End:   10,
+			SubLocations: []Location{
+				{Start: 0, End: 5},
+			},
+		},
+	}
+
+	if err := sequence.AddFeature(&feature); err != nil {
+		t.Fatalf("AddFeature() returned an unexpected error: %v", err)
+	}
+
+	// Mutating the caller's copy after AddFeature must not leak into the
+	// feature stored on sequence.Features.
+	feature.Attributes["gene_id"] = "mutated"
+	feature.Location.SubLocations[0].Start = 999
+
+	storedFeature := sequence.Features[0]
+	if storedFeature.Attributes["gene_id"] != "original" {
+		t.Errorf("mutating the caller's Attributes map after AddFeature changed the stored feature's Attributes: got %q, want %q", storedFeature.Attributes["gene_id"], "original")
+	}
+	if storedFeature.Location.SubLocations[0].Start != 0 {
+		t.Errorf("mutating the caller's SubLocations after AddFeature changed the stored feature's SubLocations: got %d, want %d", storedFeature.Location.SubLocations[0].Start, 0)
+	}
+
+	// Mutating the stored feature must not leak back into the caller's
+	// feature either.
+	sequence.Features[0].Attributes["gene_id"] = "mutated again"
+	sequence.Features[0].Location.SubLocations[0].Start = -1
+
+	if feature.Attributes["gene_id"] != "mutated" {
+		t.Errorf("mutating the stored feature's Attributes changed the caller's Attributes: got %q, want %q", feature.Attributes["gene_id"], "mutated")
+	}
+	if feature.Location.SubLocations[0].Start != 999 {
+		t.Errorf("mutating the stored feature's SubLocations changed the caller's SubLocations: got %d, want %d", feature.Location.SubLocations[0].Start, 999)
+	}
+
+	// The stored feature's ParentSequence should point back at sequence.
+	if storedFeature.ParentSequence != &sequence {
+		t.Errorf("stored feature's ParentSequence = %p, want %p", storedFeature.ParentSequence, &sequence)
+	}
+}
+
 func BenchmarkReadGff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = Read("../../data/ecoli-mg1655-short.gff")

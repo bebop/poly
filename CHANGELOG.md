@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Made it possible to simulate primers shorter than design minimum.
+ - `Gff.AddFeature()` now deep copies the `Attributes` map and `Location.SubLocations` slice instead of only dereferencing the feature pointer, so the stored feature and the caller's feature no longer share mutable state.
 
 ## [0.31.1] - 2024-01-31
 
