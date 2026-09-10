@@ -75,12 +75,44 @@ type Location struct {
 	SubLocations      []Location `json:"sub_locations"`
 }
 
-// AddFeature takes a feature and adds it to the Gff struct.
+// AddFeature takes a feature and adds a deep copy of it to the Gff struct's
+// Features slice, with its ParentSequence set to point back at sequence.
+//
+// A deep copy is made (rather than just dereferencing the feature pointer)
+// because Feature contains reference types - namely the Attributes map and
+// the Location's SubLocations slice. Without deep copying those fields,
+// the stored feature and the caller's original feature would keep sharing
+// the same underlying map/slice, so mutating one after the call would be
+// silently visible through the other.
 func (sequence *Gff) AddFeature(feature *Feature) error {
 	feature.ParentSequence = sequence
 	featureCopy := *feature
+
+	if feature.Attributes != nil {
+		featureCopy.Attributes = make(map[string]string, len(feature.Attributes))
+		for key, value := range feature.Attributes {
+			featureCopy.Attributes[key] = value
+		}
+	}
+
+	featureCopy.Location = feature.Location.deepCopy()
+
 	sequence.Features = append(sequence.Features, featureCopy)
 	return nil
+}
+
+// deepCopy returns a copy of location whose SubLocations slice (and any
+// slices nested within it) does not share backing arrays with the
+// original, so the two Locations can be mutated independently.
+func (location Location) deepCopy() Location {
+	locationCopy := location
+	if location.SubLocations != nil {
+		locationCopy.SubLocations = make([]Location, len(location.SubLocations))
+		for i, subLocation := range location.SubLocations {
+			locationCopy.SubLocations[i] = subLocation.deepCopy()
+		}
+	}
+	return locationCopy
 }
 
 // GetSequence takes a feature and returns a sequence string for that feature.
